@@ -2,6 +2,11 @@
 
 > Unsupervised, multi-pass pipeline for discovering minimal, faithful sub-networks inside TuringLLM using Sparse Autoencoders.
 
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.10-orange)
+![CUDA](https://img.shields.io/badge/CUDA-13.0-green)
+![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey)
+
 ---
 
 ## Overview
