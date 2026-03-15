@@ -20,9 +20,9 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
 ## How It Works
 
 ```
-  Dataset shards (.npy)
-         │
-         ▼
+                   Dataset shards (.npy)
+                             │
+                             ▼
   ┌─────────────────────────────────────────────────────────┐
   │  Pass 1 — latent statistics + context collection        │
   │  Welford stats · top/mid/neg context reservoirs         │
