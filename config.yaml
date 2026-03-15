@@ -1,0 +1,153 @@
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt" # Path to the TuringLLM model checkpoint
+  sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
+data:
+  dataset_path: "data" # Directory containing tokenized .npy data shards
+  n_shards: 256 # Number of data shards to process
+  batch_size: 512 # Sequences per batch during inference
+hardware:
+  multi_gpu: false # true = use all available GPUs, false = single primary GPU
+  memory: "efficient" # "efficient" (minimize VRAM, CPU offloading) | "fast" (maximize throughput, pin memory, keep decoders in VRAM)
+  compile: true # torch.compile for model + SAEs (recommended for Hopper/Blackwell GPUs)
+  parallel_kinds: false # true = dispatch attn/mlp/resid SAE encodes on separate CUDA streams for potential overlap
+  ann_device: "auto" # ANN search device for neg_ctx: "auto" (GPU if CUDA available, else CPU) | "gpu" | "cpu"
+latents:
+  top_ctx:
+    n_sequences: 64 # Top sequences to store per latent (ranked by mean activation)
+  mid_ctx:
+    n_sequences: 64 # Reservoir size per latent
+    band_low_sigma: 0.5 # Lower edge of mid band: mean_seq + band_low_sigma * std_seq
+    band_high_sigma: 1.5 # Upper edge of mid band: mean_seq + band_high_sigma * std_seq
+    warmup_batches: 100 # Batches per component before mid_ctx updates begin (lets Welford stats stabilise)
+  neg_ctx:
+    n_sequences: 64 # Negatives to store per latent
+    n_neighbors: 512 # ANN query K per latent (oversamples before PosCtx filter)
+    min_pos_ctx: 8 # Minimum PosCtx sequences required to attempt neg retrieval
+    repr_mode: "mean_pool" # "mean_pool" (average residual over all token positions) | "last_token"
+    max_repr_seqs: 200000 # Max sequences stored in seq_repr (null = store all). Set e.g. 200000 for large datasets to cap memory and ANN cost.
+  logit_ctx:
+    n_tokens_per_latent: 32 # Number of token prediction entries to track per latent
+    topk_output_tokens: 32 # Top predicted tokens to store per latent
+  top_coactivation:
+    n_latents_per_latent: 64 # Final number of top co-activating latents stored per target latent
+    n_candidates_per_component: 16 # Candidates extracted per component per sequence during dump (36 comps x 16 = 576, reduced to 128 globally)
+    freq_alpha: 2.0 # Exponent for frequency adjustment: 1/(log(count+1))^alpha. Higher = suppress frequent latents more
+discovery:
+  n_seeds: 32 # Number of seed latents to select for circuit discovery
+  probe_batch_size: 16 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
+  neg_ctx_eval_max: 16 # Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)
+  min_faithfulness: 0.3 # Minimum faithfulness score for a circuit to be accepted
+  min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
+  max_neighbors: 32 # Default max co-activation neighbors per node (used as fallback by all methods)
+
+  # Which discovery methods to run for each seed. Results from all methods are stored.
+  # Options: "coactivation_statistical", "logit_attribution", "sfc_attribution_patching",
+  #          "neighborhood_expansion", "top_coactivation",
+  #          "attn_sparse_expansion", "mlp_sparse_expansion", "resid_sparse_expansion",
+  #          "attn_mlp_sparse_expansion", "attn_resid_sparse_expansion",
+  #          "mlp_resid_sparse_expansion", "all_sparse_expansion"
+  methods:
+    - attn_sparse_expansion
+    - mlp_sparse_expansion
+    - resid_sparse_expansion
+    - attn_mlp_sparse_expansion
+    - attn_resid_sparse_expansion
+    - mlp_resid_sparse_expansion
+    - all_sparse_expansion
+    # - coactivation_statistical
+    # - logit_attribution
+    # - sfc_attribution_patching
+    # - neighborhood_expansion
+
+  # --- Per-method configuration ---
+
+  coactivation_statistical:
+    coactivation_threshold: 0.1 # Minimum co-activation weight to include a neighbor as a node
+    max_neighbors: 32 # Max neighbors to expand per seed
+    pruning_threshold: 0.0 # Faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  logit_attribution:
+    logit_threshold: 0.001 # Minimum |activation * gradient| to include a feature as a circuit node
+    edge_threshold: 0.00001 # Minimum feature-to-feature attribution score to add an edge
+    max_neighbors: 32 # Max co-activation neighbors to consider as edge candidates per node
+    pruning_threshold: 0.0 # Faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Sparse Feature Circuits (Marks et al. 2024) style attribution patching.
+  # Node scores: delta × gradient (clean vs. patch baseline).
+  # Edge scores: feature-to-feature Jacobian × delta (via compute_feature_attribution).
+  # patch_mode controls the baseline used for delta:
+  #   "mean_neg" — average feature activations over neg_ctx sequences (more realistic baseline)
+  #   "zero"     — zero ablation, equivalent to the SFC paper's patch=None path
+  sfc_attribution_patching:
+    node_threshold: 0.001 # |delta × gradient| threshold to include a node
+    edge_threshold: 0.00001 # minimum edge score to add an edge
+    patch_mode: "mean_neg" # "mean_neg" | "zero"
+    max_neg: 8 # neg sequences to use for the mean_neg baseline
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Two-hop co-activation neighbourhood expansion (purely statistical, no gradients).
+  # Adds all hop-1 co-activation neighbors of the seed, then expands the top n_expand
+  # of those into their own top m_neighbors neighbors (hop 2).
+  neighborhood_expansion:
+    n_expand: 16 # top N hop-1 nodes to further expand into hop-2
+    m_neighbors: 16 # top M co-activation neighbors to add per expanded hop-1 node
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Attn-targeted variable-depth co-activation expansion with full MLP/resid passthrough.
+  # coact_depth is a list: length = expansion depth, each value = top-N neighbors at that depth.
+  # e.g. [32] = depth-1 only, [32, 32] = two hops, [32, 16, 8] = three hops narrowing each level.
+  # Seed must be an attn latent.
+  attn_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N attn neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # MLP-targeted variable-depth co-activation expansion with full attn/resid passthrough.
+  # Only MLP-kind latents are added by the co-activation hops; every active attn/resid
+  # latent (captured via a no-grad probe forward pass) is added as a passthrough node.
+  # Seed must be an MLP latent.
+  mlp_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N MLP neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Resid-targeted variable-depth co-activation expansion with full attn/MLP passthrough.
+  # Seed must be a resid latent.
+  resid_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N resid neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Attn+MLP-targeted variable-depth co-activation expansion with full resid passthrough.
+  # Seed must be attn or mlp. Co-activation hops retain only attn/mlp kinds.
+  attn_mlp_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N attn/mlp neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Attn+resid-targeted variable-depth co-activation expansion with full mlp passthrough.
+  # Seed must be attn or resid. Co-activation hops retain only attn/resid kinds.
+  attn_resid_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N attn/resid neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # MLP+resid-targeted variable-depth co-activation expansion with full attn passthrough.
+  # Seed must be mlp or resid. Co-activation hops retain only mlp/resid kinds.
+  mlp_resid_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N mlp/resid neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # All-kinds variable-depth co-activation expansion (attn/mlp/resid), no passthrough stage.
+  # Seed can be any kind. Co-activation hops retain all kinds.
+  all_sparse_expansion:
+    coact_depth: [32, 16] # per-depth top-N all-kind neighbor limits
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+
+  # Legacy method — note: cross-layer attribution is broken (only same-layer edges are non-zero)
+  top_coactivation:
+    attribution_threshold: 0.01
+    max_neighbors: 32
+    max_hops: 2
+    pruning_threshold: 0.01
+
+persist:
+  save_workers: 1 # max parallel torch.save threads (1 = sequential)
+  search_cache_enabled: true
+  search_cache_n_sequences: 8 # reduce from 16
+  search_cache_component_chunk: 4 # components processed at a time

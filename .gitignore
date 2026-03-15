@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Native extension build artifacts
+*.so
+*.pyd
+src/native/build/
+
+# Virtual environment
+.venv/
+
+# Data & outputs
+data/
+outputs/
+profile_trace/
+
+# Editor
+.cursor/
+
+.venv
+models
+AGENTS.md
