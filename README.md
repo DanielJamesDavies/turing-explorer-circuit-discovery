@@ -1,4 +1,4 @@
-# TuringLLM Circuit Discovery
+# Turing Explorer Circuit Discovery
 
 > Unsupervised, multi-pass pipeline for discovering minimal, faithful sub-networks inside TuringLLM using Sparse Autoencoders.
 
@@ -13,7 +13,7 @@ This project implements a **circuit discovery** pipeline for transformer interpr
 3. Constructs candidate circuits using 12 distinct discovery methods
 4. Evaluates each circuit for **faithfulness**, **sufficiency**, **completeness**, and **minimality**
 
-A _circuit_ is a minimal sub-network of SAE latents whose activations alone faithfully reproduce the model's original behaviour on a given concept or task.
+A *circuit* is a minimal sub-network of SAE latents whose activations alone faithfully reproduce the model's original behaviour on a given concept or task.
 
 ---
 
@@ -92,6 +92,7 @@ A _circuit_ is a minimal sub-network of SAE latents whose activations alone fait
 
 ## Model & SAE Details
 
+
 | TuringLLM       |        | SAE Bank        |                    |
 | --------------- | ------ | --------------- | ------------------ |
 | Layers          | 12     | Total SAEs      | 36                 |
@@ -100,6 +101,7 @@ A _circuit_ is a minimal sub-network of SAE latents whose activations alone fait
 | MLP hidden size | 4,096  | Top-K sparsity  | 128                |
 | Vocabulary      | 50,304 | Input dim       | 1,024              |
 | Context length  | 1,024  |                 |                    |
+
 
 The SAE bank supports multi-GPU layer splitting, `torch.compile`, a cublasLt fused encoder, a Triton radix-select top-K kernel, and per-kind CUDA stream parallelism.
 
@@ -228,6 +230,7 @@ Runs only the discovery phase (requires pre-built `outputs/` from a prior pipeli
 
 All settings live in `config.yaml`. The most commonly adjusted keys:
 
+
 | Key                                             | Description                                      | Default     |
 | ----------------------------------------------- | ------------------------------------------------ | ----------- |
 | `weights.model_path`                            | Path to TuringLLM checkpoint                     | —           |
@@ -246,9 +249,11 @@ All settings live in `config.yaml`. The most commonly adjusted keys:
 | `discovery.min_faithfulness`                    | Minimum faithfulness to accept a circuit         | `0.3`       |
 | `discovery.methods`                             | List of discovery methods to run                 | see below   |
 
+
 ---
 
 ## Discovery Methods
+
 
 | Method                        | Algorithm                                                                    |
 | ----------------------------- | ---------------------------------------------------------------------------- |
@@ -265,6 +270,7 @@ All settings live in `config.yaml`. The most commonly adjusted keys:
 | `neighborhood_expansion`      | Two-hop statistical neighbourhood; no gradients                              |
 | `top_coactivation`            | Legacy feature-to-feature attribution patching                               |
 
+
 The expansion depth for sparse methods is configured per-method with `coact_depth`, e.g. `[32, 16]` = depth-2 BFS with 32 neighbors at hop 1 and 16 at hop 2.
 
 ---
@@ -279,12 +285,14 @@ Faithfulness = 1 − MSE(circuit_logits, original_logits)
                    MSE(zero_ablation_logits, original_logits)
 ```
 
+
 | Metric           | Measures                                                              |
 | ---------------- | --------------------------------------------------------------------- |
 | **Faithfulness** | How well the circuit alone reproduces the model's output distribution |
 | **Sufficiency**  | Whether the circuit is sufficient to produce the correct prediction   |
 | **Completeness** | Whether removing the circuit degrades the model                       |
 | **Minimality**   | Leave-one-out pruning of redundant nodes                              |
+
 
 A circuit is accepted if its faithfulness exceeds `discovery.min_faithfulness` (default `0.3`).
 
@@ -293,6 +301,7 @@ A circuit is accepted if its faithfulness exceeds `discovery.min_faithfulness` (
 ## Outputs
 
 All outputs are written to `outputs/` after a full pipeline run:
+
 
 | File                              | Contents                                          |
 | --------------------------------- | ------------------------------------------------- |
@@ -307,6 +316,7 @@ All outputs are written to `outputs/` after a full pipeline run:
 | `candidates.pt`                   | Selected seed latents                             |
 | `circuits/discovered_circuits.pt` | All discovered circuits with scores               |
 | `circuits/summary.json`           | Per-seed summary of accepted circuits             |
+
 
 ---
 
@@ -327,11 +337,14 @@ python src/native/tests/test_reduce.py
 
 ## Tech Stack
 
-| Category | Details |
+
+| Category    | Details                                                      |
 | ----------- | ------------------------------------------------------------ |
-| **Core** | PyTorch 2.10 · CUDA 13.0 · Python 3.12 |
+| **Core**    | PyTorch 2.10 · CUDA 13.0 · Python 3.12                       |
 | **Kernels** | Triton (top-K) · cublasLt (fused Linear+ReLU) · OpenMP (C++) |
-| **ML** | Transformers 5.1 (Phi-3 tokeniser) · torchao 0.16 |
-| **Data** | pandas 3.0 · pyarrow 23.0 · NumPy |
-| **Display** | Rich 14.3 |
-| **Build** | Ninja 1.13 |
+| **ML**      | Transformers 5.1 (Phi-3 tokeniser) · torchao 0.16            |
+| **Data**    | pandas 3.0 · pyarrow 23.0 · NumPy                            |
+| **Display** | Rich 14.3                                                    |
+| **Build**   | Ninja 1.13                                                   |
+
+
