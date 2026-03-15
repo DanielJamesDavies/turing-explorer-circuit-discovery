@@ -327,7 +327,7 @@ python src/native/tests/test_reduce.py
 
 ## Tech Stack
 
-| Category | |
+| Category | Details |
 | ----------- | ------------------------------------------------------------ |
 | **Core** | PyTorch 2.10 · CUDA 13.0 · Python 3.12 |
 | **Kernels** | Triton (top-K) · cublasLt (fused Linear+ReLU) · OpenMP (C++) |
