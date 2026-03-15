@@ -61,7 +61,7 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
   └──────────────────────────┬──────────────────────────────┘
                              │
                              ▼
-                       outputs/
+                         outputs/
 ```
 
 ---
