@@ -7,4 +7,4 @@
 #   bash scripts/discover.sh --n-seeds 32     # Run selection for 32 seeds
 #
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)/src"
-python src/discover_circuits.py "$@"
+python src/discover_circuits.py --reselect "$@"

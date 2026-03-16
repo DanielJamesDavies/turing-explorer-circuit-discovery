@@ -2,70 +2,64 @@ import torch
 from typing import Dict, Any, List, Tuple, Optional
 from sae.bank import SAEBank
 from model.hooks import multi_patch
+from .sparse_act import SparseAct
 
 class FeatureGraph:
     """
-    Stores grad-anchors and graph-connected activations from an instrumented forward pass.
-
-    Each entry stores a 3-tuple:
-      - top_acts_grad:      detached leaf tensor with requires_grad=True (for gradient accumulation)
-      - top_acts_connected: original top_acts, still connected to the computation graph via the
-                            encoder output; enables cross-layer feature-to-feature attribution
-      - top_indices:        top-K latent indices [B, T, K]
+    Stores grad-anchors and graph-connected activations as SparseAct objects.
+    
+    Each entry stores a pair:
+      - state_grad:      detached leaf SparseAct with requires_grad=True
+      - state_connected: original SparseAct, connected to the computation graph
     """
     def __init__(self, device: torch.device):
         self.device = device
-        # (layer, kind) -> List of (top_acts_grad, top_acts_connected, top_indices)
-        self.activations: Dict[Tuple[int, str], List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = {}
+        # (layer, kind) -> List of (state_grad, state_connected)
+        self.activations: Dict[Tuple[int, str], List[Tuple[SparseAct, SparseAct]]] = {}
 
     def add(
         self,
         layer_idx: int,
         kind: str,
-        top_acts_grad: torch.Tensor,
-        top_acts_connected: torch.Tensor,
-        top_indices: torch.Tensor,
+        state_grad: SparseAct,
+        state_connected: SparseAct,
     ):
         key = (layer_idx, kind)
         if key not in self.activations:
             self.activations[key] = []
-        self.activations[key].append((top_acts_grad, top_acts_connected, top_indices))
+        self.activations[key].append((state_grad, state_connected))
 
-    def get_latents(self, layer_idx: int, kind: str, step: int = 0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Returns (top_acts_grad, top_acts_connected, top_indices) for the given layer/kind."""
+    def get_latents(self, layer_idx: int, kind: str, step: int = 0) -> Tuple[SparseAct, SparseAct]:
+        """Returns (state_grad, state_connected) for the given layer/kind."""
         return self.activations[(layer_idx, kind)][step]
 
     def all_anchors(self) -> List[torch.Tensor]:
-        """Returns all leaf anchor tensors (top_acts_grad) across every layer/kind."""
-        return [
-            acts_grad
-            for steps in self.activations.values()
-            for acts_grad, _, _ in steps
-        ]
+        """Returns all leaf anchor tensors (act and res) that require grad."""
+        anchors = []
+        for steps in self.activations.values():
+            for state_grad, _ in steps:
+                if state_grad.act.requires_grad:
+                    anchors.append(state_grad.act)
+                if state_grad.res is not None and state_grad.res.requires_grad:
+                    anchors.append(state_grad.res)
+                elif state_grad.resc is not None and state_grad.resc.requires_grad:
+                    anchors.append(state_grad.resc)
+        return anchors
 
 
 class SAEGraphInstrument:
     """
-    Instruments the forward pass to capture SAE features with gradients enabled.
+    Instruments the forward pass to capture SAE features and residual error term
+    with gradients enabled, matching the Sparse Feature Circuits (Marks et al. 2024)
+    design.
 
     For each (layer, kind):
-      - Encodes the activation x into SAE latent space.
-      - Stores top_acts_grad  (detached leaf)  — leaf anchor for gradient attribution.
-      - Stores top_acts_connected (not detached) — connected to x, enabling cross-layer
-        feature-to-feature gradients via the error-term path.
-      - Replaces x with SAE reconstruction (from leaf anchor) + error term, preserving
-        information the SAE cannot explain while keeping the graph connected.
-
-    Args:
-        bank:            The SAEBank to encode/decode activations.
-        stop_error_grad: If True, detach the error term before returning, so gradients
-                         can only propagate back through the SAE reconstruction path
-                         (i.e. through top_acts_grad).  This mirrors the feature-circuits
-                         design where ``residual.grad`` is zeroed after each submodule,
-                         ensuring edge weights reflect only SAE-mediated causal influence
-                         rather than the "bypass" error path.
-                         Set to False (default) to allow cross-layer gradient flow through
-                         the error term, which is needed for Pass-1 logit attribution.
+      - Encodes x into SAE feature activations f.
+      - Computes reconstruction error (residual) = x - decode(f).
+      - Replaces x with decode(f_grad) + res_grad, where f_grad and res_grad
+        are detached leaf anchors that capture gradients from downstream.
+      - If stop_error_grad=True, gradients through res_grad are zeroed in backward,
+        ensuring causal attribution only flows through the SAE features.
     """
     def __init__(self, bank: SAEBank, stop_error_grad: bool = False):
         self.bank = bank
@@ -80,32 +74,36 @@ class SAEGraphInstrument:
     def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
         # 1. Encode — top_acts is connected to x through the encoder
         top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-
-        # 2. Leaf anchor for gradient collection (detached from x)
-        top_acts_grad = top_acts.detach().requires_grad_(True)
-
-        # 3. Store both the leaf anchor and the graph-connected version
-        self.graph.add(layer_idx, kind, top_acts_grad, top_acts, top_indices.detach())
-
-        # 4. Decode using the leaf anchor (so d(downstream)/d(top_acts_grad) is well-defined)
         B, T, _ = x.shape
+        d_sae = self.bank.d_sae
         target_dtype = x.dtype
-        sparse_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        sparse_latents.scatter_(dim=-1, index=top_indices.long(), src=top_acts_grad.to(target_dtype))
-        reconstruction = self.bank.decode(sparse_latents, kind, layer_idx)
 
-        # 5. Error term: x minus the full SAE reconstruction (using the graph-connected
-        #    top_acts so the encoder path stays differentiable for Pass-2 attribution).
-        full_sparse = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        full_sparse.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(target_dtype))
-        full_recon = self.bank.decode(full_sparse, kind, layer_idx)
-        error = x - full_recon
+        # Construct full sparse feature tensor (needed for joint feature+residual attribution)
+        f = torch.zeros(B, T, d_sae, device=x.device, dtype=target_dtype)
+        f.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(target_dtype))
 
-        # When stop_error_grad=True, detach the error so gradients can only flow back
-        # through the reconstruction path (top_acts_grad → decoder).  This matches the
-        # feature-circuits convention of zeroing residual.grad after each submodule,
-        # giving edge weights that reflect purely SAE-mediated influence.
+        # 2. Decode and compute residual
+        #    Use the graph-connected f so the encoder path stays differentiable
+        x_hat_connected = self.bank.decode(f, kind, layer_idx)
+        residual = x - x_hat_connected
+
+        # 3. Create leaf anchors (detached, requires_grad=True) for attribution
+        f_grad = f.detach().requires_grad_(True)
+        res_grad = residual.detach().requires_grad_(True)
+        
+        state_grad = SparseAct(act=f_grad, res=res_grad)
+        state_connected = SparseAct(act=f, res=residual)
+        
+        # 4. Store both in the feature graph
+        self.graph.add(layer_idx, kind, state_grad, state_connected)
+
+        # 5. Reconstruct from the f_grad anchor (so d(downstream)/d(f_grad) is well-defined)
+        reconstruction = self.bank.decode(f_grad, kind, layer_idx)
+        
+        # 6. Final activation is reconstruction + residual anchor
+        #    If stop_error_grad=True, zero the gradient of res_grad in backward.
+        #    This matches the reference's residual.grad = 0 logic.
         if self.stop_error_grad:
-            error = error.detach()
+            res_grad.register_hook(lambda grad: torch.zeros_like(grad))
 
-        return reconstruction + error
+        return reconstruction + res_grad

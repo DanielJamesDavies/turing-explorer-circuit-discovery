@@ -91,7 +91,7 @@ class Inference:
         logits = None
 
         sdpa_ctx = sdpa_kernel(SDPBackend.FLASH_ATTENTION) if self.device.type == "cuda" else nullcontext()
-        grad_ctx = torch.enable_grad() if grad_enabled else torch.inference_mode()
+        grad_ctx = torch.enable_grad() if grad_enabled else torch.no_grad()
 
         for i in range(num_gen):
             with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):

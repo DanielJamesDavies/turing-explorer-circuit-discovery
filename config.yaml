@@ -33,10 +33,10 @@ latents:
     n_candidates_per_component: 16 # Candidates extracted per component per sequence during dump (36 comps x 16 = 576, reduced to 128 globally)
     freq_alpha: 2.0 # Exponent for frequency adjustment: 1/(log(count+1))^alpha. Higher = suppress frequent latents more
 discovery:
-  n_seeds: 32 # Number of seed latents to select for circuit discovery
+  n_seeds: 128 # Number of seed latents to select for circuit discovery
   probe_batch_size: 16 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
   neg_ctx_eval_max: 16 # Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)
-  min_faithfulness: 0.3 # Minimum faithfulness score for a circuit to be accepted
+  min_faithfulness: 0.2 # Minimum faithfulness score for a circuit to be accepted
   min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
   max_neighbors: 32 # Default max co-activation neighbors per node (used as fallback by all methods)
 
@@ -47,16 +47,16 @@ discovery:
   #          "attn_mlp_sparse_expansion", "attn_resid_sparse_expansion",
   #          "mlp_resid_sparse_expansion", "all_sparse_expansion"
   methods:
-    - attn_sparse_expansion
-    - mlp_sparse_expansion
-    - resid_sparse_expansion
-    - attn_mlp_sparse_expansion
-    - attn_resid_sparse_expansion
-    - mlp_resid_sparse_expansion
-    - all_sparse_expansion
+    # - attn_sparse_expansion
+    # - mlp_sparse_expansion
+    # - resid_sparse_expansion
+    # - attn_mlp_sparse_expansion
+    # - attn_resid_sparse_expansion
+    # - mlp_resid_sparse_expansion
+    # - all_sparse_expansion
     # - coactivation_statistical
     # - logit_attribution
-    # - sfc_attribution_patching
+    - sfc_attribution_patching
     # - neighborhood_expansion
 
   # --- Per-method configuration ---
@@ -79,11 +79,12 @@ discovery:
   #   "mean_neg" — average feature activations over neg_ctx sequences (more realistic baseline)
   #   "zero"     — zero ablation, equivalent to the SFC paper's patch=None path
   sfc_attribution_patching:
-    node_threshold: 0.001 # |delta × gradient| threshold to include a node
-    edge_threshold: 0.00001 # minimum edge score to add an edge
+    node_threshold: 0.1 # |delta × gradient| threshold to include a node
+    edge_threshold: 0.01 # minimum edge score to add an edge
     patch_mode: "mean_neg" # "mean_neg" | "zero"
     max_neg: 8 # neg sequences to use for the mean_neg baseline
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+    ig_steps: 10 # Number of integrated gradient interpolation steps for node attribution
 
   # Two-hop co-activation neighbourhood expansion (purely statistical, no gradients).
   # Adds all hop-1 co-activation neighbors of the seed, then expands the top n_expand

@@ -69,10 +69,12 @@ class CircuitPatcher:
             patch_kinds:  Optional iterable of SAE kinds to patch (e.g. {"mlp"}).
                           Kinds not listed are passed through unchanged. If None,
                           all kinds are patched (default, backward-compatible behavior).
-            full_circuit: If True, all latents are treated as circuit members and the
-                          background contribution is zero.  The patcher becomes a
-                          mathematical identity (recon + error = x), making this useful
-                          as a sanity-check ceiling for eval metrics.
+            full_circuit: If True, all latents are treated as circuit members.
+                          When inverse=False the background is zero and the patcher
+                          becomes a mathematical identity (recon + error = x).
+                          When inverse=True (complement pass) the background is
+                          W @ avg_acts, matching the circuit=None baseline patcher —
+                          i.e. the complement of all-features is the empty circuit.
         """
         self.bank = bank
         self.circuit = circuit
@@ -91,15 +93,28 @@ class CircuitPatcher:
                 target_device = bank.layer_device_map[l]
 
                 if full_circuit:
-                    # All latents are "in circuit"; background contribution is zero.
-                    # The patcher becomes an identity: recon + 0 + error = x.
                     self.circuit_masks[(l, kind)] = torch.ones(
                         bank.d_sae, dtype=torch.bool, device=target_device
                     )
                     sae = bank.saes[kind][l]
-                    self.background_tensors[(l, kind)] = torch.zeros(
-                        sae.decoder_bias.shape, device=target_device, dtype=sae.decoder_bias.dtype
-                    )
+                    if not inverse:
+                        # mask is all-True → bg_latents[mask] = 0 → bg = 0.
+                        # Patcher is a mathematical identity: recon + 0 + error = x.
+                        self.background_tensors[(l, kind)] = torch.zeros(
+                            sae.decoder_bias.shape, device=target_device, dtype=sae.decoder_bias.dtype
+                        )
+                    else:
+                        # mask is all-True → ~mask is all-False → bg_latents unchanged.
+                        # Complement of all-features = empty circuit, so bg = W @ avg_acts
+                        # (same as the circuit=None baseline patcher).
+                        with torch.no_grad():
+                            ci = component_idx(l, k_idx, len(bank.kinds))
+                            bg_latents = avg_acts[ci].to("cpu")
+                            bg_tensor = bank.decode(bg_latents.view(1, 1, -1), kind, l)
+                            b_dec = sae.decoder_bias.to(bg_tensor.device, dtype=bg_tensor.dtype)
+                            self.background_tensors[(l, kind)] = (
+                                (bg_tensor - b_dec).detach().squeeze(0).squeeze(0)
+                            )
                     continue
 
                 mask = torch.zeros(bank.d_sae, dtype=torch.bool, device="cpu")

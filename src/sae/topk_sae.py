@@ -201,6 +201,12 @@ class SAE(nn.Module):
         """Moves the decoder weights back to the same device as the encoder (VRAM)."""
         target_device = self.encoder.weight.device
         self.decoder.to(target_device)
+        # If called inside torch.inference_mode() the .to() above creates inference
+        # tensors, which would later raise when autograd tries to save them for
+        # backward.  Clone to produce normal autograd-compatible parameters.
+        for param in self.decoder.parameters():
+            if param.is_inference():
+                param.data = param.data.clone()
         self.decoder_device = target_device
 
     def remove_decoder_from_vram(self, empty_cache: bool = True):

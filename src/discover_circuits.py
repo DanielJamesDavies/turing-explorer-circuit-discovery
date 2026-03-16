@@ -1,6 +1,7 @@
 import torch
 import os
 import argparse
+from typing import cast
 from hardware import is_fast_memory, should_compile, detect_devices
 from model.inference import Inference
 from sae.bank import SAEBank
@@ -11,8 +12,12 @@ from store.context import top_ctx, neg_ctx
 from store.logit_context import logit_ctx
 from circuit.discovery_window import DiscoveryWindow
 from circuit.feature_selection import CandidateSelector
+from config import config
 
-def discover_circuits(candidates_path: str = "outputs/candidates.pt", reselect: bool = False, n_seeds: int = 16):
+def discover_circuits(candidates_path: str = "outputs/candidates.pt", reselect: bool = False, n_seeds: int | None = None):
+    if n_seeds is None:
+        n_seeds = cast(int, config.discovery.n_seeds or 128)
+
     devices = detect_devices()
     device = devices[0]
     fast = is_fast_memory()
@@ -61,7 +66,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run circuit discovery standalone from saved outputs.")
     parser.add_argument("--candidates", default="outputs/candidates.pt", help="Path to saved candidates .pt file")
     parser.add_argument("--reselect", action="store_true", help="Force re-selection of seed candidates")
-    parser.add_argument("--n-seeds", type=int, default=16, help="Number of seeds if reselecting")
+    parser.add_argument("--n-seeds", type=int, default=None, help="Number of seeds if reselecting (default: config.discovery.n_seeds)")
     args = parser.parse_args()
     
     discover_circuits(

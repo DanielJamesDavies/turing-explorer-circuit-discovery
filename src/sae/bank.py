@@ -141,6 +141,15 @@ class SAEBank:
         with ctx, self._autocast_ctx(target_device):
             return sae.decode(latents)
 
+    def full_encode(self, x: torch.Tensor, kind: str, layer: int) -> tuple[torch.Tensor, torch.Tensor]:
+        """Returns (features [..., d_sae], residual [..., d_model])."""
+        top_acts, top_indices = self.encode(x, kind, layer)
+        *B_T, d_model = x.shape
+        f = torch.zeros(*B_T, self.d_sae, device=x.device, dtype=x.dtype)
+        f.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(x.dtype))
+        x_hat = self.decode(f, kind, layer)
+        return f, x - x_hat
+
     def profile_encode(
         self,
         x: torch.Tensor,

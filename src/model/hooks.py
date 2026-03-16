@@ -78,3 +78,53 @@ def multi_patch(model, transform):
     finally:
         for h in hs: h.remove()
 
+
+@contextmanager
+def stop_grad_at(model, layer_idx: int, kind: str):
+    """
+    Zeros gradients flowing back through a specific submodule during backward.
+    Used for intermediate stop-grads in edge attribution.
+    """
+    block = model.transformer.h[layer_idx]
+    target = {
+        "attn": block.attn,
+        "mlp": block.mlp,
+        "resid": block
+    }[kind]
+
+    def backward_hook(_module, grad_input, _grad_output):
+        return tuple(torch.zeros_like(g) if g is not None else None for g in grad_input)
+
+    handle = target.register_full_backward_hook(backward_hook)
+    try:
+        yield
+    finally:
+        handle.remove()
+
+
+@contextmanager
+def multi_stop_grad(model, stop_grads: list[tuple[int, str]]):
+    """
+    Context manager to stop gradients at multiple locations simultaneously.
+    stop_grads: list of (layer_idx, kind)
+    """
+    handles = []
+    for layer_idx, kind in stop_grads:
+        block = model.transformer.h[layer_idx]
+        target = {
+            "attn": block.attn,
+            "mlp": block.mlp,
+            "resid": block
+        }[kind]
+
+        def backward_hook(_module, grad_input, _grad_output):
+            return tuple(torch.zeros_like(g) if g is not None else None for g in grad_input)
+
+        handles.append(target.register_full_backward_hook(backward_hook))
+
+    try:
+        yield
+    finally:
+        for h in handles:
+            h.remove()
+
