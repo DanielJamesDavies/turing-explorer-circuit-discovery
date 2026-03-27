@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint
 from dataclasses import dataclass
 
 
@@ -34,8 +35,9 @@ class CausalSelfAttention(nn.Module):
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
         self.n_head = config.n_head
         self.n_embd = config.n_embd
-        
-    def forward(self, x, input_pos=None):
+        self.use_checkpoint = False
+
+    def _forward_impl(self, x: torch.Tensor) -> torch.Tensor:
         B, T, C = x.size()
         qkv = self.c_attn(x)
         q, k, v = qkv.split(self.n_embd, dim=2)
@@ -44,8 +46,12 @@ class CausalSelfAttention(nn.Module):
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         y = y.transpose(1, 2).contiguous().view(B, T, C)
-        y = self.c_proj(y)
-        return y
+        return self.c_proj(y)
+
+    def forward(self, x, input_pos=None):
+        if self.use_checkpoint:
+            return checkpoint(self._forward_impl, x, use_reentrant=False)
+        return self._forward_impl(x)
 
 
 class MLP(nn.Module):
@@ -53,10 +59,16 @@ class MLP(nn.Module):
         super().__init__()
         self.gate_up_proj = nn.Linear(config.n_embd, config.hidden_size * 2)
         self.down_proj = nn.Linear(config.hidden_size, config.n_embd)
+        self.use_checkpoint = False
 
-    def forward(self, x):
+    def _forward_impl(self, x: torch.Tensor) -> torch.Tensor:
         gate, up = self.gate_up_proj(x).chunk(2, dim=-1)
         return self.down_proj(F.silu(gate) * up)
+
+    def forward(self, x):
+        if self.use_checkpoint:
+            return checkpoint(self._forward_impl, x, use_reentrant=False)
+        return self._forward_impl(x)
 
 
 class Block(nn.Module):

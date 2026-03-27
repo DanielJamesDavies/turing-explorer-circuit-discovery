@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from circuit.discovery.attn_mlp_sparse_expansion import AttnMlpSparseExpansion
+from circuit.discovery.top_coact_expansion.mlp_resid_top_coact_sparse_expansion import MlpResidTopCoactSparseExpansion
 from circuit.probe_dataset import ProbeDataset
 
 N_LAYERS = 2
@@ -14,36 +14,36 @@ B_TEST = 2
 T_TEST = 4
 V_TEST = 20
 
-SEED_COMP = 0  # layer=0, kind="attn"
+SEED_COMP = 1  # layer=0, kind="mlp"
 SEED_LAT = 5
-
-_HOP1_GLOBALS_FOR_ATTN_SEED = [
-    3 * D_SAE + 7,   # attn  keep
-    4 * D_SAE + 8,   # mlp   keep
-    2 * D_SAE + 3,   # resid skip
-    3 * D_SAE + 9,   # attn  keep
-    1 * D_SAE + 5,   # mlp   keep
-    5 * D_SAE + 2,   # resid skip
-    4 * D_SAE + 11,  # mlp   keep
-    3 * D_SAE + 13,  # attn  keep
-]
 
 _HOP1_GLOBALS_FOR_MLP_SEED = [
     4 * D_SAE + 7,   # mlp   keep
-    3 * D_SAE + 8,   # attn  keep
-    2 * D_SAE + 1,   # resid skip
+    5 * D_SAE + 8,   # resid keep
+    0 * D_SAE + 3,   # attn  skip
     4 * D_SAE + 9,   # mlp   keep
-    0 * D_SAE + 3,   # attn  keep
-    5 * D_SAE + 6,   # resid skip
-    3 * D_SAE + 11,  # attn  keep
+    2 * D_SAE + 5,   # resid keep
+    3 * D_SAE + 2,   # attn  skip
+    5 * D_SAE + 11,  # resid keep
     4 * D_SAE + 13,  # mlp   keep
 ]
 
-_HOP2_GLOBALS_FOR_3_7 = [
-    4 * D_SAE + 20,  # mlp   keep
-    5 * D_SAE + 15,  # resid skip
-    3 * D_SAE + 21,  # attn  keep
-    1 * D_SAE + 22,  # mlp   keep
+_HOP1_GLOBALS_FOR_RESID_SEED = [
+    5 * D_SAE + 7,   # resid keep
+    4 * D_SAE + 8,   # mlp   keep
+    0 * D_SAE + 1,   # attn  skip
+    5 * D_SAE + 9,   # resid keep
+    1 * D_SAE + 3,   # mlp   keep
+    3 * D_SAE + 6,   # attn  skip
+    4 * D_SAE + 11,  # mlp   keep
+    5 * D_SAE + 13,  # resid keep
+]
+
+_HOP2_GLOBALS_FOR_4_7 = [
+    5 * D_SAE + 20,  # resid keep
+    3 * D_SAE + 15,  # attn  skip
+    4 * D_SAE + 21,  # mlp   keep
+    2 * D_SAE + 22,  # resid keep
 ]
 
 
@@ -114,9 +114,9 @@ def _make_probe(b: int = B_TEST) -> ProbeDataset:
 
 def _make_mock_coact() -> MockTopCoactivation:
     coact = MockTopCoactivation(N_COMP, D_SAE, n_neighbors=8)
-    coact.set_neighbors(SEED_COMP, SEED_LAT, _HOP1_GLOBALS_FOR_ATTN_SEED)
-    coact.set_neighbors(1, SEED_LAT, _HOP1_GLOBALS_FOR_MLP_SEED)
-    coact.set_neighbors(3, 7, _HOP2_GLOBALS_FOR_3_7)
+    coact.set_neighbors(SEED_COMP, SEED_LAT, _HOP1_GLOBALS_FOR_MLP_SEED)
+    coact.set_neighbors(2, SEED_LAT, _HOP1_GLOBALS_FOR_RESID_SEED)
+    coact.set_neighbors(4, 7, _HOP2_GLOBALS_FOR_4_7)
     return coact
 
 
@@ -125,17 +125,17 @@ def setup(mock_model, mock_sae_bank, monkeypatch):
     mock_coact = _make_mock_coact()
     mock_stats = MockLatentStats(N_COMP, D_SAE)
 
-    import circuit.discovery.attn_mlp_sparse_expansion as mod
+    import circuit.discovery.top_coact_expansion.mlp_resid_top_coact_sparse_expansion as mod
 
     monkeypatch.setattr(mod, "top_coactivation", mock_coact)
     monkeypatch.setattr(mod, "latent_stats", mock_stats)
 
-    algo = AttnMlpSparseExpansion(
+    algo = MlpResidTopCoactSparseExpansion(
         inference=MockInference(mock_model),
         sae_bank=mock_sae_bank,
         avg_acts=torch.zeros(N_COMP, D_SAE),
         probe_builder=None,
-        min_faithfulness=0.0,
+        min_faithfulness=-1.0,
         min_active_count=50,
         pruning_threshold=0.0,
         probe_batch_size=16,
@@ -144,39 +144,39 @@ def setup(mock_model, mock_sae_bank, monkeypatch):
     return algo, mock_coact, mock_stats
 
 
-class TestAttnMlpNodeExpansion:
-    def test_seed_attn_accepted(self, setup):
+class TestMlpResidNodeExpansion:
+    def test_seed_mlp_accepted(self, setup):
         algo, _, _ = setup
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
 
-    def test_seed_mlp_accepted(self, setup):
+    def test_seed_resid_accepted(self, setup):
         algo, _, _ = setup
-        circuit = algo.discover(1, SEED_LAT)  # layer=0, kind="mlp"
+        circuit = algo.discover(2, SEED_LAT)  # layer=0, kind="resid"
         assert circuit is not None
 
-    def test_seed_resid_rejected(self, setup):
+    def test_seed_attn_rejected(self, setup):
         algo, _, _ = setup
-        assert algo.discover(2, SEED_LAT) is None  # layer=0, kind="resid"
+        assert algo.discover(0, SEED_LAT) is None  # layer=0, kind="attn"
 
-    def test_hop_nodes_are_attn_or_mlp_only(self, setup):
+    def test_hop_nodes_are_mlp_or_resid_only(self, setup):
         algo, _, _ = setup
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
         for node in circuit.nodes.values():
             if node.metadata["role"] in ("hop1", "hop2"):
-                assert node.metadata["kind"] in ("attn", "mlp")
+                assert node.metadata["kind"] in ("mlp", "resid")
 
 
 class TestPassthroughNodes:
-    def test_passthrough_nodes_are_resid_only(self, setup):
+    def test_passthrough_nodes_are_attn_only(self, setup):
         algo, _, _ = setup
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
         passthrough = [n for n in circuit.nodes.values() if n.metadata["role"] == "passthrough"]
         assert len(passthrough) > 0
         for node in passthrough:
-            assert node.metadata["kind"] == "resid"
+            assert node.metadata["kind"] == "attn"
 
     def test_passthrough_nodes_have_no_edges(self, setup):
         algo, _, _ = setup
@@ -193,19 +193,19 @@ class TestActivityFilterAndMetadata:
     def test_low_count_latent_excluded_from_hop1(self, mock_model, mock_sae_bank, monkeypatch):
         mock_coact = _make_mock_coact()
         mock_stats = MockLatentStats(N_COMP, D_SAE)
-        mock_stats.active_count[4, 8] = 0  # comp=4, lat=8 candidate should be filtered
+        mock_stats.active_count[5, 8] = 0  # comp=5, lat=8 candidate should be filtered
 
-        import circuit.discovery.attn_mlp_sparse_expansion as mod
+        import circuit.discovery.top_coact_expansion.mlp_resid_top_coact_sparse_expansion as mod
 
         monkeypatch.setattr(mod, "top_coactivation", mock_coact)
         monkeypatch.setattr(mod, "latent_stats", mock_stats)
 
-        algo = AttnMlpSparseExpansion(
+        algo = MlpResidTopCoactSparseExpansion(
             inference=MockInference(mock_model),
             sae_bank=mock_sae_bank,
             avg_acts=torch.zeros(N_COMP, D_SAE),
             probe_builder=None,
-            min_faithfulness=0.0,
+            min_faithfulness=-1.0,
             min_active_count=50,
         )
         algo.build_probe_dataset = lambda *a, **kw: _make_probe()
@@ -217,7 +217,7 @@ class TestActivityFilterAndMetadata:
             for n in circuit.nodes.values()
             if n.metadata["role"] == "hop1"
         }
-        assert (1, "mlp", 8) not in hop1_keys
+        assert (1, "resid", 8) not in hop1_keys
 
     def test_accepted_circuit_has_metadata(self, setup):
         algo, _, _ = setup
@@ -236,4 +236,4 @@ class TestActivityFilterAndMetadata:
             "n_passthrough",
         }
         assert required.issubset(circuit.metadata.keys())
-        assert circuit.metadata["discovery_method"] == "attn_mlp_sparse_expansion"
+        assert circuit.metadata["discovery_method"] == "mlp_resid_top_coact_sparse_expansion"

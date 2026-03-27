@@ -260,20 +260,20 @@ All settings live in `config.yaml`. The most commonly adjusted keys:
 ## Discovery Methods
 
 
-| Method                        | Algorithm                                                                    |
-| ----------------------------- | ---------------------------------------------------------------------------- |
-| `attn_sparse_expansion`       | Variable-depth BFS over attn co-activation graph; full MLP/resid passthrough |
-| `mlp_sparse_expansion`        | Same, MLP-targeted; full attn/resid passthrough                              |
-| `resid_sparse_expansion`      | Same, resid-targeted; full attn/MLP passthrough                              |
-| `attn_mlp_sparse_expansion`   | BFS over attn+MLP; full resid passthrough                                    |
-| `attn_resid_sparse_expansion` | BFS over attn+resid; full MLP passthrough                                    |
-| `mlp_resid_sparse_expansion`  | BFS over MLP+resid; full attn passthrough                                    |
-| `all_sparse_expansion`        | BFS over all kinds; no passthrough                                           |
-| `coactivation_statistical`    | Threshold-based co-activation edge pruning                                   |
-| `logit_attribution`           | Two-pass gradient: `activation × gradient` node/edge scoring                 |
-| `sfc_attribution_patching`    | SFC-style `delta × gradient` (Marks et al. 2024), clean vs. neg-ctx baseline |
-| `neighborhood_expansion`      | Two-hop statistical neighbourhood; no gradients                              |
-| `top_coactivation`            | Legacy feature-to-feature attribution patching                               |
+| Method                                  | Algorithm                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| `attn_top_coact_sparse_expansion`       | Variable-depth BFS over attn co-activation graph; full MLP/resid passthrough |
+| `mlp_top_coact_sparse_expansion`        | Same, MLP-targeted; full attn/resid passthrough                              |
+| `resid_top_coact_sparse_expansion`      | Same, resid-targeted; full attn/MLP passthrough                              |
+| `attn_mlp_top_coact_sparse_expansion`   | BFS over attn+MLP; full resid passthrough                                    |
+| `attn_resid_top_coact_sparse_expansion` | BFS over attn+resid; full MLP passthrough                                    |
+| `mlp_resid_top_coact_sparse_expansion`  | BFS over MLP+resid; full attn passthrough                                    |
+| `all_top_coact_sparse_expansion`        | BFS over all kinds; no passthrough                                           |
+| `coactivation_statistical`              | Threshold-based co-activation edge pruning                                   |
+| `logit_attribution`                     | Two-pass gradient: `activation × gradient` node/edge scoring                 |
+| `sfc_attribution_patching`              | SFC-style `delta × gradient` (Marks et al. 2024), clean vs. neg-ctx baseline |
+| `neighborhood_expansion`                | Two-hop statistical neighbourhood; no gradients                              |
+| `top_coactivation`                      | Legacy feature-to-feature attribution patching                               |
 
 
 The expansion depth for sparse methods is configured per-method with `coact_depth`, e.g. `[32, 16]` = depth-2 BFS with 32 neighbors at hop 1 and 16 at hop 2.

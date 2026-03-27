@@ -1,6 +1,8 @@
 import torch
 from typing import Dict, Tuple, List, Optional
 from .sae_graph import FeatureGraph
+from .sparse_act import SparseAct
+from .feature_id import FeatureID
 
 
 def compute_logit_attribution(
@@ -8,16 +10,17 @@ def compute_logit_attribution(
     logits: torch.Tensor,
     pos_argmax: torch.Tensor,
     target_tokens: torch.Tensor,
-) -> Dict[Tuple[int, str, int], float]:
+) -> Dict[FeatureID, float]:
     """
     Pass 1 — Logit-based attribution.
 
     Runs a single backward pass from the target token logit at each sequence's
     peak activation position to all leaf anchors (top_acts_grad) in the graph.
 
-    The gradient path exists because logits depend on the final residual stream,
-    which is connected back through each layer's error term to earlier anchors:
-        logits → x_final → ... → x_L (via error terms) → x_L-1 → top_acts_grad_L-1
+    Cross-layer gradient flow is maintained by the identity passthrough term
+    (x - x.detach()) in each SAEGraphInstrument hook.  This gives each leaf
+    anchor the full downstream gradient (Jacobian = I w.r.t. x), rather than
+    the lossy error-complement projection of the old approach.
 
     Args:
         graph:         FeatureGraph populated by SAEGraphInstrument.
@@ -26,7 +29,7 @@ def compute_logit_attribution(
         target_tokens: [B, T] — ground-truth next tokens (probe_data.target_tokens).
 
     Returns:
-        Dict mapping (layer, kind, latent_idx) → attribution score (activation * gradient).
+        Dict mapping FeatureID → attribution score (activation * gradient).
     """
     B = logits.shape[0]
     batch_idx = torch.arange(B, device=logits.device)
@@ -42,27 +45,36 @@ def compute_logit_attribution(
     grads = torch.autograd.grad(target_scalar, anchors, retain_graph=True, allow_unused=True)
 
     # Build a flat map from anchor tensor id → (layer, kind, grad)
-    anchor_info: List[Tuple[Tuple[int, str], torch.Tensor, torch.Tensor]] = []
+    anchor_info: List[Tuple[Tuple[int, str], SparseAct, SparseAct]] = []
     anchor_iter = iter(grads)
     for (layer, kind), steps in graph.activations.items():
         for acts_grad, _, _ in steps:
-            grad = next(anchor_iter)
-            if grad is not None:
+            grad_act = next(anchor_iter)
+            grad_res = None
+            if acts_grad.res is not None:
+                grad_res = next(anchor_iter)
+            
+            if grad_act is not None or grad_res is not None:
+                grad = SparseAct(act=grad_act, res=grad_res)
                 anchor_info.append(((layer, kind), acts_grad, grad))
 
-    attributions: Dict[Tuple[int, str, int], float] = {}
+    attributions: Dict[FeatureID, float] = {}
     for (layer, kind), acts_grad, grad in anchor_info:
         _, _, indices = graph.get_latents(layer, kind, step=0)
-        attr_tensor = acts_grad.data * grad.data  # [B, T, K]
+        
+        # Attribution score = activation * gradient
+        # acts_grad and grad are SparseAct objects with dense [B, T, d_sae] act tensors
+        attr = acts_grad * grad  # SparseAct
+        attr_act = attr.act      # [B, T, d_sae]
 
         unique_idx = indices.unique()
         for idx in unique_idx:
             l_idx = int(idx.item())
-            mask = (indices == idx)
-            score = attr_tensor[mask].sum().item()
+            # Sum over batch and sequence for this specific latent
+            score = attr_act[..., l_idx].sum().item()
             if score != 0.0:
-                key = (layer, kind, l_idx)
-                attributions[key] = attributions.get(key, 0.0) + score
+                fid = FeatureID(layer=layer, kind=kind, index=l_idx)
+                attributions[fid] = attributions.get(fid, 0.0) + score
 
     return attributions
 
@@ -73,28 +85,28 @@ def compute_feature_attribution(
     target_kind: str,
     target_latent_idx: int,
     pos_argmax: torch.Tensor,
-    candidate_nodes: Optional[List[Tuple[int, str, int]]] = None,
-) -> Dict[Tuple[int, str, int], float]:
+    candidate_nodes: Optional[List[FeatureID]] = None,
+) -> Dict[FeatureID, float]:
     """
     Pass 2 — Feature-to-feature attribution.
 
     Uses top_acts_connected (the original encoder output, still in the computation
-    graph) as the backward target rather than the detached leaf anchor.  This means
-    gradients can flow through the error-term path to earlier layers' leaf anchors:
+    graph) as the backward target rather than the detached leaf anchor.  Gradients
+    flow cross-layer via the identity passthrough (x - x.detach()) at each hook:
 
-        top_acts_connected_B → encode(x_B_in) → x_B_in
-            = reconstruction_A + error_A
-            → reconstruction_A → decode(scatter(top_acts_grad_A)) → top_acts_grad_A ✓
+        top_acts_connected_B → encode(x_B) → x_B
+            → (x_A - x_A.detach()) → x_A (identity Jacobian)
+            → leaf anchors at layer A (f_grad_A, res_anchor_A)
 
     Args:
         graph:             FeatureGraph from SAEGraphInstrument.
         target_layer/kind/latent_idx: The downstream feature (node B).
         pos_argmax:        [B] peak positions for the probe sequences.
-        candidate_nodes:   Upstream (layer, kind, latent_idx) tuples to evaluate.
+        candidate_nodes:   Upstream FeatureID objects to evaluate.
                            If None, all upstream anchors are scored.
 
     Returns:
-        Dict mapping (layer, kind, latent_idx) → attribution score.
+        Dict mapping FeatureID → attribution score.
     """
     _, target_acts_connected, target_indices = graph.get_latents(target_layer, target_kind, step=0)
     B, T, K = target_acts_connected.shape
@@ -107,8 +119,8 @@ def compute_feature_attribution(
         return {}
 
     # Backward target: connected acts at the target feature's peak positions
-    acts_at_pos = target_acts_connected[batch_indices, pos_argmax]  # [B, K]
-    target_sum = acts_at_pos[matches].sum()
+    # We index the dense [B, T, d_sae] tensor directly by the target_latent_idx
+    target_sum = target_acts_connected.act[batch_indices, pos_argmax, target_latent_idx].sum()
 
     # Guard: if the encoder output has no grad_fn, the custom kernel path was taken
     # and gradients cannot flow.  Return empty rather than crashing.
@@ -117,135 +129,130 @@ def compute_feature_attribution(
 
     # Collect upstream leaf anchors only
     anchors: List[torch.Tensor] = []
-    anchor_keys: List[Tuple[int, str]] = []
     for (layer, kind), steps_data in graph.activations.items():
         if layer > target_layer:
             continue
         for acts_grad, _, _ in steps_data:
-            anchors.append(acts_grad)
-            anchor_keys.append((layer, kind))
+            if acts_grad.act is not None:
+                anchors.append(acts_grad.act)
+            if acts_grad.res is not None:
+                anchors.append(acts_grad.res)
 
     if not anchors:
         return {}
 
     grads = torch.autograd.grad(target_sum, anchors, retain_graph=True, allow_unused=True)
 
-    key_to_grad: Dict[Tuple[int, str], torch.Tensor] = {}
-    for key, grad in zip(anchor_keys, grads):
-        if grad is not None:
-            key_to_grad[key] = grad
+    # Better way: Re-collect grads into key_to_grad
+    key_to_grad: Dict[Tuple[int, str], SparseAct] = {}
+    anchor_iter = iter(grads)
+    for (layer, kind), steps_data in graph.activations.items():
+        if layer > target_layer:
+            continue
+        for acts_grad, _, _ in steps_data:
+            grad_act = next(anchor_iter) if acts_grad.act is not None else None
+            grad_res = next(anchor_iter) if acts_grad.res is not None else None
+            
+            if grad_act is not None or grad_res is not None:
+                key_to_grad[(layer, kind)] = SparseAct(act=grad_act, res=grad_res)
 
-    attributions: Dict[Tuple[int, str, int], float] = {}
+    attributions: Dict[FeatureID, float] = {}
 
     if candidate_nodes is not None:
         by_layer_kind: Dict[Tuple[int, str], List[int]] = {}
-        for l, k, i in candidate_nodes:
-            by_layer_kind.setdefault((l, k), []).append(i)
+        for fid in candidate_nodes:
+            by_layer_kind.setdefault((fid.layer, fid.kind), []).append(fid.index)
 
         for (layer, kind), latent_indices in by_layer_kind.items():
             if (layer, kind) not in key_to_grad:
                 continue
-            acts_grad, _, indices = graph.get_latents(layer, kind, step=0)
+            acts_grad, _, _ = graph.get_latents(layer, kind, step=0)
             grad = key_to_grad[(layer, kind)]
-            attr_tensor = acts_grad.data * grad.data  # [B, T, K]
+            attr = acts_grad * grad
+            attr_act = attr.act  # [B, T, d_sae]
 
             for latent_idx in latent_indices:
-                mask = (indices == latent_idx)
-                score = attr_tensor[mask].sum().item()
+                score = attr_act[..., latent_idx].sum().item()
                 if score != 0.0:
-                    attributions[(layer, kind, latent_idx)] = score
+                    attributions[FeatureID(layer, kind, latent_idx)] = score
     else:
         for (layer, kind), grad in key_to_grad.items():
             acts_grad, _, indices = graph.get_latents(layer, kind, step=0)
-            attr_tensor = acts_grad.data * grad.data
+            attr = acts_grad * grad
+            attr_act = attr.act
 
             unique_indices = indices.unique()
             for idx in unique_indices:
                 l_idx = int(idx.item())
-                score = attr_tensor[indices == idx].sum().item()
+                score = attr_act[..., l_idx].sum().item()
                 if score != 0.0:
-                    key = (layer, kind, l_idx)
-                    attributions[key] = attributions.get(key, 0.0) + score
+                    fid = FeatureID(layer, kind, l_idx)
+                    attributions[fid] = attributions.get(fid, 0.0) + score
 
     return attributions
 
 
-def compute_attribution(
+def compute_feature_gradient(
     graph: FeatureGraph,
     target_layer: int,
     target_kind: str,
     target_latent_idx: int,
     pos_argmax: torch.Tensor,
-    candidate_nodes: Optional[List[Tuple[int, str, int]]] = None,
-) -> Dict[Tuple[int, str, int], float]:
+    candidate_nodes: List[FeatureID],
+) -> Dict[FeatureID, float]:
     """
-    Legacy attribution — backward from the detached leaf anchor of the target feature.
-
-    NOTE: This only produces non-zero gradients for same-layer candidates. Cross-layer
-    attribution is broken because top_acts_grad is a detached leaf with no path to
-    earlier layers. Use compute_logit_attribution + compute_feature_attribution instead.
-
-    Kept for backward compatibility with TopCoactivationDiscovery.
+    Returns the raw gradient d(TargetAct)/d(CandidateAct) rather than Act * Grad.
+    This allows identifying inhibitors that are not active in the current context
+    but would have a strong negative effect if they were.
     """
-    target_acts_grad, _, target_indices = graph.get_latents(target_layer, target_kind, step=0)
-    B, T, K = target_acts_grad.shape
-
+    try:
+        _, target_acts_connected, _ = graph.get_latents(target_layer, target_kind, step=0)
+    except (KeyError, IndexError):
+        return {}
+        
+    B, T, K = target_acts_connected.shape
     batch_indices = torch.arange(B, device=graph.device)
-    vals_at_pos = target_indices[batch_indices, pos_argmax]
-    matches = (vals_at_pos == target_latent_idx)
+    
+    # Backward target: connected acts at the target feature's peak positions
+    # Use max() to ensure we pick the peak even if pos_argmax is slightly off
+    target_scalar = target_acts_connected.act[batch_indices, pos_argmax, target_latent_idx].sum()
 
-    if not matches.any():
+    if target_scalar.grad_fn is None:
         return {}
 
-    acts_at_pos = target_acts_grad[batch_indices, pos_argmax]
-    target_sum = acts_at_pos[matches].sum()
-
-    anchors: List[torch.Tensor] = []
-    anchor_keys: List[Tuple[int, str]] = []
+    # Collect relevant upstream leaf anchors
+    anchors = []
+    anchor_meta = [] # (layer, kind, is_res)
+    
     for (layer, kind), steps_data in graph.activations.items():
         if layer > target_layer:
             continue
         for acts_grad, _, _ in steps_data:
-            anchors.append(acts_grad)
-            anchor_keys.append((layer, kind))
+            if acts_grad.act is not None:
+                anchor_meta.append((layer, kind, False))
+                anchors.append(acts_grad.act)
+            if acts_grad.res is not None:
+                anchor_meta.append((layer, kind, True))
+                anchors.append(acts_grad.res)
 
-    grads = torch.autograd.grad(target_sum, anchors, retain_graph=True, allow_unused=True)
+    if not anchors:
+        return {}
 
-    key_to_grad: Dict[Tuple[int, str], torch.Tensor] = {}
-    for key, grad in zip(anchor_keys, grads):
-        if grad is not None:
-            key_to_grad[key] = grad
+    grads = torch.autograd.grad(target_scalar, anchors, retain_graph=True, allow_unused=True)
+    
+    # Map back to FeatureID
+    layer_kind_to_grad = {}
+    for (layer, kind, is_res), g in zip(anchor_meta, grads):
+        if not is_res and g is not None:
+            layer_kind_to_grad[(layer, kind)] = g
 
-    attributions: Dict[Tuple[int, str, int], float] = {}
-
-    if candidate_nodes is not None:
-        by_layer_kind: Dict[Tuple[int, str], List[int]] = {}
-        for l, k, i in candidate_nodes:
-            by_layer_kind.setdefault((l, k), []).append(i)
-
-        for (layer, kind), latent_indices in by_layer_kind.items():
-            if (layer, kind) not in key_to_grad:
-                continue
-            acts_grad, _, indices = graph.get_latents(layer, kind, step=0)
-            grad = key_to_grad[(layer, kind)]
-            attr_tensor = acts_grad.data * grad.data
-
-            for latent_idx in latent_indices:
-                mask = (indices == latent_idx)
-                score = attr_tensor[mask].sum().item()
-                if score != 0.0:
-                    attributions[(layer, kind, latent_idx)] = score
-    else:
-        for (layer, kind), grad in key_to_grad.items():
-            acts_grad, _, indices = graph.get_latents(layer, kind, step=0)
-            attr_tensor = acts_grad.data * grad.data
-
-            unique_indices = indices.unique()
-            for idx in unique_indices:
-                l_idx = int(idx.item())
-                score = attr_tensor[indices == idx].sum().item()
-                if score != 0.0:
-                    key = (layer, kind, l_idx)
-                    attributions[key] = attributions.get(key, 0.0) + score
-
-    return attributions
+    gradients = {}
+    for fid in candidate_nodes:
+        g = layer_kind_to_grad.get((fid.layer, fid.kind))
+        if g is not None:
+            # Sum gradient across batch and time for this latent
+            val = g[..., fid.index].sum().item()
+            if val != 0.0:
+                gradients[fid] = val
+                
+    return gradients

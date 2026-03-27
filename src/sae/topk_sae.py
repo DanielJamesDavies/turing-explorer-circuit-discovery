@@ -211,9 +211,10 @@ class SAE(nn.Module):
 
     def remove_decoder_from_vram(self, empty_cache: bool = True):
         """Moves the decoder weights to CPU to save VRAM when only encoding is needed."""
-        self.decoder.to('cpu')
+        cpu_device = torch.device('cpu')
+        self.decoder.to(cpu_device)
         if empty_cache and torch.cuda.is_available():
             torch.cuda.empty_cache()
-        self.decoder_device = 'cpu'
+        self.decoder_device = cpu_device
 
 

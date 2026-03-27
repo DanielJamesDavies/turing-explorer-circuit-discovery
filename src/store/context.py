@@ -7,6 +7,7 @@ from typing import cast, Optional, Dict, List, Tuple
 from config import config
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
+from store.utils import _AutoAllocTensor
 
 
 def _load_mid_reservoir_ext():
@@ -55,6 +56,11 @@ def compute_seq_scores(
 
 class Context:
 
+    ctx_seq_idx    = _AutoAllocTensor()
+    ctx_seq_val    = _AutoAllocTensor()
+    reservoir_fill = _AutoAllocTensor()
+    reservoir_n    = _AutoAllocTensor()
+
     def __init__(self, ctx_type: str, device: Optional[torch.device] = None):
         self.ctx_type = ctx_type  # "top" | "mid" | "neg"
         self.llm_config = TuringLLMConfig()
@@ -63,26 +69,36 @@ class Context:
         self.d_sae = self.sae_config.d_sae
 
         if ctx_type == "mid":
-            # mid_ctx always lives on CPU: the C++ reservoir extension requires CPU tensors,
-            # and the reservoir (~540 MB) is not worth keeping in VRAM.
             self.device = torch.device("cpu")
             self.num_ctx_sequences = cast(int, config.latents.mid_ctx.n_sequences or 64)
             self._band_low  = cast(float, config.latents.mid_ctx.band_low_sigma  or 0.5)
             self._band_high = cast(float, config.latents.mid_ctx.band_high_sigma or 1.5)
-            val_dtype = torch.float32
+            self.val_dtype = torch.float32
         elif ctx_type == "neg":
-            # neg_ctx always lives on CPU: populated by the offline ANN step, not
-            # during the GPU forward pass.  ctx_seq_val stores cosine similarities
-            # (float32) rather than activation scores.
             self.device = torch.device("cpu")
             self.num_ctx_sequences = cast(int, config.latents.neg_ctx.n_sequences or 64)
-            val_dtype = torch.float32
+            self.val_dtype = torch.float32
         else:
             self.device = device if device is not None else torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu"
             )
             self.num_ctx_sequences = cast(int, config.latents.top_ctx.n_sequences)
-            val_dtype = torch.bfloat16
+            self.val_dtype = torch.bfloat16
+
+        self._allocated = False
+
+    def allocate(self, device: Optional[torch.device] = None) -> None:
+        if self._allocated:
+            if device is not None and device != self.device:
+                self.set_device(device)
+            return
+
+        # mid_ctx and neg_ctx always live on CPU (they use a CPU C++ extension).
+        if self.ctx_type in ("mid", "neg"):
+            device = None
+
+        if device is not None:
+            self.device = device
 
         self.ctx_seq_idx = torch.zeros(
             (self.num_components, self.d_sae, self.num_ctx_sequences),
@@ -90,17 +106,17 @@ class Context:
         )
         self.ctx_seq_val = torch.zeros(
             (self.num_components, self.d_sae, self.num_ctx_sequences),
-            dtype=val_dtype, device=self.device,
+            dtype=self.val_dtype, device=self.device,
         )
 
-        if ctx_type == "mid":
-            # Auxiliary reservoir state (always CPU, never moved to another device).
+        if self.ctx_type == "mid":
             self.reservoir_fill = torch.zeros(
                 (self.num_components, self.d_sae), dtype=torch.int32,
             )
             self.reservoir_n = torch.zeros(
                 (self.num_components, self.d_sae), dtype=torch.int64,
             )
+        self._allocated = True
 
     # ------------------------------------------------------------------
     # Public update entry point
@@ -123,6 +139,7 @@ class Context:
                    (mean_seq / std_seq), which live in the same value range
                    as compute_seq_scores() so the band is correctly calibrated.
         """
+        self.allocate(sequence_indices.device if sequence_indices.is_cuda else None)
         if self.ctx_type == "top":
             self._update_top(component_idx, sequence_indices, latents)
         elif self.ctx_type == "mid":
@@ -225,6 +242,8 @@ class Context:
     # ------------------------------------------------------------------
 
     def save(self, path: str) -> None:
+        if not self._allocated:
+            return
         checkpoint: dict = {
             "ctx_seq_idx": self.ctx_seq_idx,
             "ctx_seq_val": self.ctx_seq_val,
@@ -235,22 +254,24 @@ class Context:
         torch.save(checkpoint, path)
 
     def load(self, path: str) -> None:
-        checkpoint = torch.load(path, map_location=self.device)
-        self.ctx_seq_idx = checkpoint["ctx_seq_idx"].to(self.device)
-        self.ctx_seq_val = checkpoint["ctx_seq_val"].to(self.device)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        self.allocate()
+        self.ctx_seq_idx.copy_(checkpoint["ctx_seq_idx"])
+        self.ctx_seq_val.copy_(checkpoint["ctx_seq_val"])
         if self.ctx_type == "mid":
             if "reservoir_fill" in checkpoint:
-                self.reservoir_fill = checkpoint["reservoir_fill"].cpu()
+                self.reservoir_fill.copy_(checkpoint["reservoir_fill"])
             if "reservoir_n" in checkpoint:
-                self.reservoir_n = checkpoint["reservoir_n"].cpu()
+                self.reservoir_n.copy_(checkpoint["reservoir_n"])
 
     def set_device(self, device: torch.device) -> None:
         if self.ctx_type in ("mid", "neg"):
             # mid_ctx and neg_ctx always stay on CPU; no VRAM allocation needed.
             return
         self.device = device
-        self.ctx_seq_idx = self.ctx_seq_idx.to(device)
-        self.ctx_seq_val = self.ctx_seq_val.to(device)
+        if self._allocated:
+            self.ctx_seq_idx = self.ctx_seq_idx.to(device)
+            self.ctx_seq_val = self.ctx_seq_val.to(device)
 
     # ------------------------------------------------------------------
     # Query helpers (shared by all context types)
@@ -258,12 +279,16 @@ class Context:
 
     def get_all_sequence_ids(self) -> list[int]:
         """Returns a sorted list of all unique sequence IDs stored (excludes sentinel 0)."""
+        if not self._allocated:
+            return []
         unique_ids = torch.unique(self.ctx_seq_idx)
         unique_ids = unique_ids[unique_ids != 0]
         return unique_ids.tolist()
 
     def get_sequence_to_latents_map(self) -> Dict[int, List[Tuple[int, int]]]:
         """Maps sequence ID → list of (component_idx, latent_idx) pairs."""
+        if not self._allocated:
+            return {}
         full_mask = (self.ctx_seq_val > 0) & (self.ctx_seq_idx != 0)
         if not torch.any(full_mask):
             return {}
@@ -290,6 +315,12 @@ class Context:
         seq_offsets[sid] = end offset in seq_targets_global for sequence sid.
         seq_targets_global holds global latent IDs (comp_idx * d_sae + latent_idx).
         """
+        if not self._allocated:
+            target_device = self.device if device is None else device
+            return (
+                torch.zeros(0, dtype=torch.int64, device=target_device),
+                torch.zeros(0, dtype=torch.int64, device=target_device),
+            )
         target_device = self.device if device is None else device
         ctx_seq_idx = self.ctx_seq_idx.to(target_device)
         ctx_seq_val = self.ctx_seq_val.to(target_device)

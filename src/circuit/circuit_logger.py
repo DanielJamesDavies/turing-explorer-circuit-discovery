@@ -1,5 +1,7 @@
 import os
+import time
 from datetime import datetime
+from utils.observability import obs
 
 
 class CircuitLogger:
@@ -13,23 +15,6 @@ class CircuitLogger:
 
     Output directory: ``outputs/discovery_logs/``
     Filename pattern: ``<method>__comp<N>_lat<M>.txt``
-
-    Typical usage inside a ``discover()`` method::
-
-        logger = CircuitLogger(seed_comp_idx, seed_latent_idx, "logit_attribution")
-        try:
-            ...
-            logger.stage("logit attribution", len(included), 0,
-                         note=f"{n_considered} candidates, threshold={self.logit_threshold}")
-            ...
-            logger.eval(final_f, final_s, final_c)
-            if final_f < self.min_faithfulness:
-                logger.reject(f"faithfulness {final_f:.4f} < {self.min_faithfulness}")
-                return None
-            logger.accept(len(circuit.nodes), len(circuit.edges))
-            return circuit
-        finally:
-            logger.save()
     """
 
     _LOG_DIR = "outputs/discovery_logs"
@@ -39,6 +24,11 @@ class CircuitLogger:
         filename = f"{method_name}__comp{seed_comp}_lat{seed_latent}.txt"
         self.path = os.path.join(self._LOG_DIR, filename)
         self._lines: list[str] = []
+        self._start_time = time.perf_counter()
+        self._last_stage_time = self._start_time
+        self._enabled = True
+        obs.start_attempt()
+        
         self._w(f"=== {method_name}  |  comp={seed_comp}  lat={seed_latent} ===")
         self._w(f"    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self._w("")
@@ -74,9 +64,13 @@ class CircuitLogger:
         n_edges: int,
         note: str = "",
     ) -> None:
-        """Log node/edge counts at a named stage of the algorithm."""
+        """Log node/edge counts at a named stage of the algorithm, with timing."""
+        now = time.perf_counter()
+        stage_dt = (now - self._last_stage_time) * 1000
+        self._last_stage_time = now
+        
         tail = f"  ({note})" if note else ""
-        self._w(f"  [{label}]  nodes={n_nodes}  edges={n_edges}{tail}")
+        self._w(f"  [{label:<25}]  nodes={n_nodes:<4}  edges={n_edges:<4}  | {stage_dt:>8.1f} ms {tail}")
 
     def note(self, text: str) -> None:
         """Append a free-form informational line."""
@@ -88,12 +82,17 @@ class CircuitLogger:
         sufficiency: float,
         completeness: float,
     ) -> None:
-        """Log the three evaluation scores."""
+        """Log the three evaluation scores with timing."""
+        now = time.perf_counter()
+        stage_dt = (now - self._last_stage_time) * 1000
+        self._last_stage_time = now
+
         self._w("")
         self._w(
             f"  EVAL  faithfulness={faithfulness:.4f}"
             f"  sufficiency={sufficiency:.4f}"
             f"  completeness={completeness:.4f}"
+            f"  | {stage_dt:>8.1f} ms"
         )
 
     def reject(self, reason: str) -> None:
@@ -104,12 +103,26 @@ class CircuitLogger:
         """Mark this attempt as accepted."""
         self._w(f"  ACCEPTED  nodes={n_nodes}  edges={n_edges}")
 
+    def cancel(self) -> None:
+        """Prevents the log from being saved to disk. Use for trivial rejections."""
+        self._enabled = False
+
     # ------------------------------------------------------------------
     # Persistence
     # ------------------------------------------------------------------
 
     def save(self) -> None:
         """Flush all buffered lines to the log file. Always call from finally."""
+        total_dt = obs.stop_attempt()
+        if not self._enabled:
+            return
+
+        self._w("")
+        self._w(f"Total time: {total_dt:.2f} s")
+        self._w(f"Total forward passes: {obs.attempt_forward_passes}")
+        if obs.attempt_forward_passes > 0:
+            self._w(f"Average forward time: {total_dt / obs.attempt_forward_passes * 1000:.1f} ms")
+        
         try:
             with open(self.path, "w", encoding="utf-8") as f:
                 f.write("\n".join(self._lines) + "\n")

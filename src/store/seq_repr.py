@@ -98,29 +98,61 @@ class SeqRepr:
         """
         t0 = time.perf_counter()
 
+        # OLD METHOD (Commented out for easy revert)
+        # if self.repr_mode == "last_token":
+        #     pooled = resid[:, -1, :].float()
+        # else:
+        #     pooled = resid.float().mean(dim=1)
+        # pooled_h = pooled.half().cpu()
+        # ids      = seq_ids.long().cpu()
+        # if self.is_capped:
+        #     valid = (ids >= 1) & (ids <= self.n_seqs)
+        #     if valid.any():
+        #         valid_ids = ids[valid]
+        #         slots     = self.id_to_slot[valid_ids].long()   # 0 = not in store
+        #         in_store  = slots > 0
+        #         if in_store.any():
+        #             self.repr_buf[slots[in_store]] = pooled_h[valid][in_store]
+        #             self._n_updates += int(in_store.sum().item())
+        # else:
+        #     valid = (ids >= 1) & (ids <= self.n_seqs)
+        #     if valid.any():
+        #         self.repr_buf[ids[valid]] = pooled_h[valid]
+        #         self._n_updates += int(valid.sum().item())
+
+        # NEW IMPROVED METHOD (VRAM-safe on GPU)
+        # 1. Pool and cast to float16 on GPU (reduces transfer size)
         if self.repr_mode == "last_token":
-            pooled = resid[:, -1, :].float()
+            pooled_gpu = resid[:, -1, :].to(torch.float16)
         else:
-            pooled = resid.float().mean(dim=1)
+            pooled_gpu = resid.to(torch.float32).mean(dim=1).to(torch.float16)
+        
+        # 2. Move pooled results to CPU once
+        pooled_cpu = pooled_gpu.cpu()
+        ids_cpu = seq_ids.cpu().long()
 
-        pooled_h = pooled.half().cpu()
-        ids      = seq_ids.long().cpu()
+        # Bounds-check all IDs at once
+        valid_mask = (ids_cpu >= 1) & (ids_cpu <= self.n_seqs)
+        
+        if valid_mask.any():
+            valid_ids = ids_cpu[valid_mask]
+            valid_pooled = pooled_cpu[valid_mask]
 
-        if self.is_capped:
-            valid = (ids >= 1) & (ids <= self.n_seqs)
-            if valid.any():
-                valid_ids = ids[valid]
-                slots     = self.id_to_slot[valid_ids].long()   # 0 = not in store
-                in_store  = slots > 0
-                if in_store.any():
-                    self.repr_buf[slots[in_store]] = pooled_h[valid][in_store]
-                    self._n_updates += int(in_store.sum().item())
-        else:
-            # Original uncapped path — write directly at seq_id.
-            valid = (ids >= 1) & (ids <= self.n_seqs)
-            if valid.any():
-                self.repr_buf[ids[valid]] = pooled_h[valid]
-                self._n_updates += int(valid.sum().item())
+            if self.is_capped:
+                # 3. Use id_to_slot as a direct lookup (VRAM-safe on CPU)
+                # id_to_slot[valid_ids] gives us the slot for every ID in the batch.
+                # IDs not in store will have slot 0 (sentinel).
+                slots = self.id_to_slot[valid_ids].long()
+                in_store_mask = slots > 0
+                
+                if in_store_mask.any():
+                    active_slots = slots[in_store_mask]
+                    self.repr_buf[active_slots] = valid_pooled[in_store_mask]
+                    self._n_updates += int(active_slots.shape[0])
+            else:
+                # Uncapped path
+                self.repr_buf[valid_ids] = valid_pooled
+                self._n_updates += int(valid_ids.shape[0])
 
         self._total_ms += (time.perf_counter() - t0) * 1000.0
 

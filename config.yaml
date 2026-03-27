@@ -3,7 +3,7 @@ weights:
   sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
-  n_shards: 256 # Number of data shards to process
+  n_shards: 8 # 256 # Number of data shards to process
   batch_size: 512 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
@@ -34,7 +34,7 @@ latents:
     freq_alpha: 2.0 # Exponent for frequency adjustment: 1/(log(count+1))^alpha. Higher = suppress frequent latents more
 discovery:
   n_seeds: 128 # Number of seed latents to select for circuit discovery
-  probe_batch_size: 16 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
+  probe_batch_size: 4 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
   neg_ctx_eval_max: 16 # Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)
   min_faithfulness: 0.2 # Minimum faithfulness score for a circuit to be accepted
   min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
@@ -43,23 +43,43 @@ discovery:
   # Which discovery methods to run for each seed. Results from all methods are stored.
   # Options: "coactivation_statistical", "logit_attribution", "sfc_attribution_patching",
   #          "neighborhood_expansion", "top_coactivation",
-  #          "attn_sparse_expansion", "mlp_sparse_expansion", "resid_sparse_expansion",
-  #          "attn_mlp_sparse_expansion", "attn_resid_sparse_expansion",
-  #          "mlp_resid_sparse_expansion", "all_sparse_expansion"
+  #          "attn_top_coact_sparse_expansion", "mlp_top_coact_sparse_expansion", "resid_top_coact_sparse_expansion",
+  #          "attn_mlp_top_coact_sparse_expansion", "attn_resid_top_coact_sparse_expansion",
+  #          "mlp_resid_top_coact_sparse_expansion", "all_top_coact_sparse_expansion",
+  #          "hard_negative_coact_sparse_expansion",
+  #          "differential_activation"
   methods:
-    # - attn_sparse_expansion
-    # - mlp_sparse_expansion
-    # - resid_sparse_expansion
-    # - attn_mlp_sparse_expansion
-    # - attn_resid_sparse_expansion
-    # - mlp_resid_sparse_expansion
-    # - all_sparse_expansion
+    # - attn_top_coact_sparse_expansion
+    # - mlp_top_coact_sparse_expansion
+    # - resid_top_coact_sparse_expansion
+    # - attn_mlp_top_coact_sparse_expansion
+    # - attn_resid_top_coact_sparse_expansion
+    # - mlp_resid_top_coact_sparse_expansion
+    # - all_top_coact_sparse_expansion
+    # - hard_negative_coact_sparse_expansion
+    # - differential_activation
     # - coactivation_statistical
     # - logit_attribution
     - sfc_attribution_patching
     # - neighborhood_expansion
+    # - top_coactivation
 
   # --- Per-method configuration ---
+
+  # Differential Activation: finds nodes by comparing which latents fire
+  # differentially between positive (seed active) and negative (seed expected but absent)
+  # contexts, then validates edges via feature-to-feature attribution.
+  differential_activation:
+    n_activator_candidates: 64 # top positive-differential latents to consider
+    n_inhibitor_candidates: 32 # top negative-differential latents to consider
+    attribution_threshold: 0.01 # min |edge weight| to keep a causal edge
+    pruning_threshold: 0.0 # faithfulness drop threshold (0 = disabled)
+
+  hard_negative_coact_sparse_expansion:
+    coact_depth: [32, 16] # activator expansion hops
+    neg_candidate_limit: 64 # max inhibitor candidates to evaluate via attribution
+    attribution_threshold: 0.01 # minimum |score| to keep an inhibitor
+    pruning_threshold: 0.0 # faithfulness drop threshold (0 = disabled)
 
   coactivation_statistical:
     coactivation_threshold: 0.1 # Minimum co-activation weight to include a neighbor as a node
@@ -98,7 +118,7 @@ discovery:
   # coact_depth is a list: length = expansion depth, each value = top-N neighbors at that depth.
   # e.g. [32] = depth-1 only, [32, 32] = two hops, [32, 16, 8] = three hops narrowing each level.
   # Seed must be an attn latent.
-  attn_sparse_expansion:
+  attn_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N attn neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
@@ -106,41 +126,41 @@ discovery:
   # Only MLP-kind latents are added by the co-activation hops; every active attn/resid
   # latent (captured via a no-grad probe forward pass) is added as a passthrough node.
   # Seed must be an MLP latent.
-  mlp_sparse_expansion:
+  mlp_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N MLP neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
   # Resid-targeted variable-depth co-activation expansion with full attn/MLP passthrough.
   # Seed must be a resid latent.
-  resid_sparse_expansion:
+  resid_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N resid neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
   # Attn+MLP-targeted variable-depth co-activation expansion with full resid passthrough.
   # Seed must be attn or mlp. Co-activation hops retain only attn/mlp kinds.
-  attn_mlp_sparse_expansion:
+  attn_mlp_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N attn/mlp neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
   # Attn+resid-targeted variable-depth co-activation expansion with full mlp passthrough.
   # Seed must be attn or resid. Co-activation hops retain only attn/resid kinds.
-  attn_resid_sparse_expansion:
+  attn_resid_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N attn/resid neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
   # MLP+resid-targeted variable-depth co-activation expansion with full attn passthrough.
   # Seed must be mlp or resid. Co-activation hops retain only mlp/resid kinds.
-  mlp_resid_sparse_expansion:
+  mlp_resid_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N mlp/resid neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
   # All-kinds variable-depth co-activation expansion (attn/mlp/resid), no passthrough stage.
   # Seed can be any kind. Co-activation hops retain all kinds.
-  all_sparse_expansion:
+  all_top_coact_sparse_expansion:
     coact_depth: [32, 16] # per-depth top-N all-kind neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
-  # Legacy method — note: cross-layer attribution is broken (only same-layer edges are non-zero)
+  # Legacy method — cross-layer attribution now uses identity passthrough (x - x.detach())
   top_coactivation:
     attribution_threshold: 0.01
     max_neighbors: 32

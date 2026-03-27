@@ -10,9 +10,12 @@ from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
 from circuit.sae_graph import SAEGraphInstrument
-from circuit.attribution import compute_attribution
+from circuit.attribution import compute_feature_attribution
+from circuit.feature_id import FeatureID
 from circuit.circuit_logger import CircuitLogger
 from pipeline.component_index import component_idx, split_component_idx
+
+
 class TopCoactivationDiscovery(DiscoveryMethod):
     """
     Discovers circuits by expanding the neighborhood of a seed latent
@@ -34,13 +37,21 @@ class TopCoactivationDiscovery(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.top_coactivation
-        self.min_faithfulness = min_faithfulness or cast(float, config.discovery.min_faithfulness or 0.3)
+        self.min_faithfulness = (
+            min_faithfulness
+            if min_faithfulness is not None
+            else cast(float, config.discovery.min_faithfulness or 0.3)
+        )
         self.max_neighbors = max_neighbors or cast(int, cfg.max_neighbors or config.discovery.max_neighbors or 32)
         self.max_hops = max_hops or cast(int, cfg.max_hops or 2)
-        self.min_active_count = min_active_count or cast(int, config.discovery.min_active_count or 50)
-        self.attribution_threshold = attribution_threshold or cast(float, cfg.attribution_threshold or 0.01)
+        self.min_active_count = min_active_count if min_active_count is not None else cast(int, config.discovery.min_active_count or 50)
+        self.attribution_threshold = attribution_threshold if attribution_threshold is not None else cast(float, cfg.attribution_threshold or 0.01)
         self.pruning_threshold = pruning_threshold if pruning_threshold is not None else cast(float, cfg.pruning_threshold or 0.01)
         self.probe_batch_size = probe_batch_size or cast(int, config.discovery.probe_batch_size or 8)
+
+        # Instance-level singletons for easier monkeypatching in tests
+        self.top_coactivation = top_coactivation
+        self.latent_stats = latent_stats
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         """Executes the multi-hop causal attribution discovery episode."""
@@ -65,6 +76,7 @@ class TopCoactivationDiscovery(DiscoveryMethod):
 
         seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, len(self.sae_bank.kinds))
         seed_kind = self.sae_bank.kinds[seed_kind_idx]
+        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
         logger.header(
             seed_layer, seed_kind, seed_latent_idx,
@@ -88,20 +100,20 @@ class TopCoactivationDiscovery(DiscoveryMethod):
         self.inference.enable_compile()
         logger.note("forward pass complete")
 
-        frontier = [(seed_layer, seed_kind, seed_latent_idx)]
+        frontier: List[FeatureID] = [seed_fid]
 
         seed_node = CircuitNode(metadata={
-            "layer_idx": frontier[0][0],
-            "latent_idx": frontier[0][2],
-            "kind": frontier[0][1],
+            "feature_id": seed_fid,
             "role": "seed"
         })
         circuit.add_node(seed_node)
-        node_id_map: Dict[Tuple[int, str, int], str] = {frontier[0]: seed_node.uuid}
+        node_id_map: Dict[FeatureID, str] = {seed_fid: seed_node.uuid}
 
-        visited: set = set()
+        visited: set[FeatureID] = set()
         kind_order = ["attn", "mlp", "resid"]
         d_sae = self.sae_bank.d_sae
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
         hops_completed = 0
 
         # Upstream parent tracing (multi-hop)
@@ -109,65 +121,63 @@ class TopCoactivationDiscovery(DiscoveryMethod):
             hops_completed = hop + 1
             new_frontier = []
 
-            for target_layer, target_kind, target_latent_idx in frontier:
-                if (target_layer, target_kind, target_latent_idx) in visited:
+            for target_fid in frontier:
+                if target_fid in visited:
                     continue
-                visited.add((target_layer, target_kind, target_latent_idx))
+                visited.add(target_fid)
 
-                comp_idx = component_idx(target_layer, self.sae_bank.kinds.index(target_kind), len(self.sae_bank.kinds))
-                neighbor_globals = top_coactivation.top_indices[comp_idx, target_latent_idx]
-                neighbor_weights = top_coactivation.top_values[comp_idx, target_latent_idx]
+                comp_idx, latent_idx = target_fid.to_component_id(n_kinds, kinds)
+                neighbor_globals = self.top_coactivation.top_indices[comp_idx, latent_idx]
+                neighbor_weights = self.top_coactivation.top_values[comp_idx, latent_idx]
 
-                candidate_nodes: List[Tuple[int, str, int]] = []
+                candidate_nodes: List[FeatureID] = []
 
                 for g_idx, weight in zip(neighbor_globals.tolist(), neighbor_weights.tolist()):
                     if weight <= 0 or len(candidate_nodes) >= self.max_neighbors:
                         continue
-                    c_idx = g_idx // d_sae
-                    l_idx = g_idx % d_sae
-                    if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
-                        continue
-                    n_layer, n_kind_idx = split_component_idx(c_idx, len(self.sae_bank.kinds))
-                    n_kind = self.sae_bank.kinds[n_kind_idx]
-
-                    if n_layer > target_layer:
-                        continue
-                    if n_layer == target_layer and kind_order.index(n_kind) >= kind_order.index(target_kind):
+                    
+                    nfid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+                    c_idx, l_idx = nfid.to_component_id(n_kinds, kinds)
+                    
+                    if self.latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
                         continue
 
-                    candidate_nodes.append((n_layer, n_kind, l_idx))
+                    # Restrict to upstream only (earlier layer or earlier kind in same layer)
+                    if nfid.layer > target_fid.layer:
+                        continue
+                    if nfid.layer == target_fid.layer and kind_order.index(nfid.kind) >= kind_order.index(target_fid.kind):
+                        continue
+
+                    candidate_nodes.append(nfid)
 
                 if not candidate_nodes:
                     continue
 
-                attributions = compute_attribution(
+                attributions = compute_feature_attribution(
                     instrument.graph,
-                    target_layer=target_layer,
-                    target_kind=target_kind,
-                    target_latent_idx=target_latent_idx,
+                    target_layer=target_fid.layer,
+                    target_kind=target_fid.kind,
+                    target_latent_idx=target_fid.index,
                     pos_argmax=probe_argmax,
                     candidate_nodes=candidate_nodes
                 )
 
-                target_uuid = node_id_map[(target_layer, target_kind, target_latent_idx)]
+                target_uuid = node_id_map[target_fid]
 
-                for l, k, i in candidate_nodes:
-                    attr_score = attributions.get((l, k, i), 0.0)
+                for fid in candidate_nodes:
+                    attr_score = attributions.get(fid, 0.0)
 
                     if abs(attr_score) >= self.attribution_threshold:
-                        key = (l, k, i)
-                        if key not in node_id_map:
+                        if fid not in node_id_map:
                             node = CircuitNode(metadata={
-                                "layer_idx": l,
-                                "latent_idx": i,
-                                "kind": k,
+                                "feature_id": fid,
                                 "role": "parent"
                             })
                             circuit.add_node(node)
-                            node_id_map[key] = node.uuid
-                            new_frontier.append(key)
+                            node_id_map[fid] = node.uuid
+                            new_frontier.append(fid)
 
-                        circuit.add_edge(node_id_map[key], target_uuid, weight=attr_score)
+                        circuit.add_edge(node_id_map[fid], target_uuid, weight=attr_score)
 
             logger.stage(
                 f"upstream hop {hops_completed}", len(circuit.nodes), len(circuit.edges),
@@ -178,70 +188,66 @@ class TopCoactivationDiscovery(DiscoveryMethod):
                 break
 
         # Downstream child tracing
-        downstream_candidate_set: set = set()
-        for source_key in list(node_id_map.keys()):
-            source_layer, source_kind, source_latent_idx = source_key
-            comp_idx = component_idx(source_layer, self.sae_bank.kinds.index(source_kind), len(self.sae_bank.kinds))
-            neighbor_globals = top_coactivation.top_indices[comp_idx, source_latent_idx]
-            neighbor_weights = top_coactivation.top_values[comp_idx, source_latent_idx]
+        downstream_candidate_set: set[FeatureID] = set()
+        for source_fid in list(node_id_map.keys()):
+            comp_idx, latent_idx = source_fid.to_component_id(n_kinds, kinds)
+            neighbor_globals = self.top_coactivation.top_indices[comp_idx, latent_idx]
+            neighbor_weights = self.top_coactivation.top_values[comp_idx, latent_idx]
 
             n_downstream = 0
             for g_idx, weight in zip(neighbor_globals.tolist(), neighbor_weights.tolist()):
                 if weight <= 0 or n_downstream >= self.max_neighbors:
                     continue
-                c_idx = g_idx // d_sae
-                l_idx = g_idx % d_sae
-                if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
-                    continue
-                n_layer, n_kind_idx = split_component_idx(c_idx, len(self.sae_bank.kinds))
-                n_kind = self.sae_bank.kinds[n_kind_idx]
-
-                if n_layer < source_layer:
-                    continue
-                if n_layer == source_layer and kind_order.index(n_kind) <= kind_order.index(source_kind):
+                
+                nfid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+                c_idx, l_idx = nfid.to_component_id(n_kinds, kinds)
+                
+                if self.latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
                     continue
 
-                downstream_candidate_set.add((n_layer, n_kind, l_idx))
+                if nfid.layer < source_fid.layer:
+                    continue
+                if nfid.layer == source_fid.layer and kind_order.index(nfid.kind) <= kind_order.index(source_fid.kind):
+                    continue
+
+                downstream_candidate_set.add(nfid)
                 n_downstream += 1
 
-        circuit_node_keys = list(node_id_map.keys())
+        circuit_node_fids = list(node_id_map.keys())
         n_downstream_added = 0
-        for child_layer, child_kind, child_latent_idx in downstream_candidate_set:
+        for child_fid in downstream_candidate_set:
             upstream_sources = [
-                (sl, sk, si) for sl, sk, si in circuit_node_keys
-                if sl < child_layer or (
-                    sl == child_layer and kind_order.index(sk) < kind_order.index(child_kind)
+                fid for fid in circuit_node_fids
+                if fid.layer < child_fid.layer or (
+                    fid.layer == child_fid.layer and kind_order.index(fid.kind) < kind_order.index(child_fid.kind)
                 )
             ]
             if not upstream_sources:
                 continue
 
-            child_attr = compute_attribution(
+            child_attr = compute_feature_attribution(
                 instrument.graph,
-                target_layer=child_layer,
-                target_kind=child_kind,
-                target_latent_idx=child_latent_idx,
+                target_layer=child_fid.layer,
+                target_kind=child_fid.kind,
+                target_latent_idx=child_fid.index,
                 pos_argmax=probe_argmax,
                 candidate_nodes=upstream_sources
             )
 
-            for source_layer, source_kind, source_latent_idx in upstream_sources:
-                source_score = child_attr.get((source_layer, source_kind, source_latent_idx), 0.0)
+            for source_fid in upstream_sources:
+                source_score = child_attr.get(source_fid, 0.0)
                 if abs(source_score) >= self.attribution_threshold:
-                    child_key = (child_layer, child_kind, child_latent_idx)
-                    if child_key not in node_id_map:
+                    if child_fid not in node_id_map:
                         node = CircuitNode(metadata={
-                            "layer_idx": child_layer,
-                            "latent_idx": child_latent_idx,
-                            "kind": child_kind,
+                            "feature_id": child_fid,
                             "role": "child"
                         })
                         circuit.add_node(node)
-                        node_id_map[child_key] = node.uuid
+                        node_id_map[child_fid] = node.uuid
                         n_downstream_added += 1
                     circuit.add_edge(
-                        node_id_map[(source_layer, source_kind, source_latent_idx)],
-                        node_id_map[child_key],
+                        node_id_map[source_fid],
+                        node_id_map[child_fid],
                         weight=source_score
                     )
 

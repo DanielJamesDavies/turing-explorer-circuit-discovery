@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from circuit.discovery.attn_resid_sparse_expansion import AttnResidSparseExpansion
+from circuit.discovery.top_coact_expansion.attn_resid_top_coact_sparse_expansion import AttnResidTopCoactSparseExpansion
 from circuit.probe_dataset import ProbeDataset
 
 N_LAYERS = 2
@@ -125,12 +125,12 @@ def setup(mock_model, mock_sae_bank, monkeypatch):
     mock_coact = _make_mock_coact()
     mock_stats = MockLatentStats(N_COMP, D_SAE)
 
-    import circuit.discovery.attn_resid_sparse_expansion as mod
+    import circuit.discovery.top_coact_expansion.attn_resid_top_coact_sparse_expansion as mod
 
     monkeypatch.setattr(mod, "top_coactivation", mock_coact)
     monkeypatch.setattr(mod, "latent_stats", mock_stats)
 
-    algo = AttnResidSparseExpansion(
+    algo = AttnResidTopCoactSparseExpansion(
         inference=MockInference(mock_model),
         sae_bank=mock_sae_bank,
         avg_acts=torch.zeros(N_COMP, D_SAE),
@@ -195,12 +195,12 @@ class TestActivityFilterAndMetadata:
         mock_stats = MockLatentStats(N_COMP, D_SAE)
         mock_stats.active_count[5, 8] = 0  # comp=5, lat=8 candidate should be filtered
 
-        import circuit.discovery.attn_resid_sparse_expansion as mod
+        import circuit.discovery.top_coact_expansion.attn_resid_top_coact_sparse_expansion as mod
 
         monkeypatch.setattr(mod, "top_coactivation", mock_coact)
         monkeypatch.setattr(mod, "latent_stats", mock_stats)
 
-        algo = AttnResidSparseExpansion(
+        algo = AttnResidTopCoactSparseExpansion(
             inference=MockInference(mock_model),
             sae_bank=mock_sae_bank,
             avg_acts=torch.zeros(N_COMP, D_SAE),
@@ -236,4 +236,4 @@ class TestActivityFilterAndMetadata:
             "n_passthrough",
         }
         assert required.issubset(circuit.metadata.keys())
-        assert circuit.metadata["discovery_method"] == "attn_resid_sparse_expansion"
+        assert circuit.metadata["discovery_method"] == "attn_resid_top_coact_sparse_expansion"

@@ -296,7 +296,7 @@ def main():
         print(f"  node  layer={m.get('layer_idx')}  kind={m.get('kind')}  "
               f"lat={m.get('latent_idx')}  role={m.get('role')}  "
               f"score={m.get('effect_score', 'n/a')}")
-    for e in list(circuit.edges.values())[:10]:
+    for e in circuit.edges[:10]:
         print(f"  edge  {e.source_uuid[:8]}→{e.target_uuid[:8]}  w={e.weight:.6f}")
     if len(circuit.edges) > 10:
         print(f"  ... and {len(circuit.edges)-10} more edges")

@@ -1,5 +1,5 @@
 import torch
-from typing import Optional, Any, Set, Tuple, cast
+from typing import Optional, Any, Set, Tuple, cast, Dict
 from .base import DiscoveryMethod
 from config import config
 from store.circuits import Circuit, CircuitNode
@@ -9,8 +9,10 @@ from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
+from circuit.feature_id import FeatureID
 from circuit.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
+
 
 class NeighborhoodExpansion(DiscoveryMethod):
     """
@@ -50,13 +52,17 @@ class NeighborhoodExpansion(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.neighborhood_expansion
-        self.min_faithfulness = min_faithfulness or cast(
-            float, config.discovery.min_faithfulness or 0.3
+        self.min_faithfulness = (
+            min_faithfulness
+            if min_faithfulness is not None
+            else cast(float, config.discovery.min_faithfulness or 0.3)
         )
         self.n_expand = n_expand or cast(int, cfg.n_expand or 16)
         self.m_neighbors = m_neighbors or cast(int, cfg.m_neighbors or 16)
-        self.min_active_count = min_active_count or cast(
-            int, config.discovery.min_active_count or 50
+        self.min_active_count = (
+            min_active_count
+            if min_active_count is not None
+            else cast(int, config.discovery.min_active_count or 50)
         )
         self.pruning_threshold = (
             pruning_threshold
@@ -70,78 +76,75 @@ class NeighborhoodExpansion(DiscoveryMethod):
 
     def _causal_before(
         self,
-        a_layer: int, a_kind: str,
-        b_layer: int, b_kind: str,
+        a: FeatureID,
+        b: FeatureID,
     ) -> bool:
         """Return True if component A is causally upstream of component B."""
-        if a_layer != b_layer:
-            return a_layer < b_layer
-        return self.KIND_ORDER.index(a_kind) < self.KIND_ORDER.index(b_kind)
+        if a.layer != b.layer:
+            return a.layer < b.layer
+        return self.KIND_ORDER.index(a.kind) < self.KIND_ORDER.index(b.kind)
 
     def _add_node_if_new(
         self,
         circuit: Circuit,
-        node_id_map: dict,
-        comp_idx: int,
-        latent_idx: int,
+        node_id_map: Dict[FeatureID, str],
+        fid: FeatureID,
         role: str,
     ) -> Optional[str]:
         """
-        Add a node for (comp_idx, latent_idx) if it passes the activity filter
+        Add a node for FeatureID if it passes the activity filter
         and hasn't been added yet.  Returns the node UUID on success.
         """
-        if latent_stats.active_count[comp_idx, latent_idx] < self.min_active_count:
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        c_idx, l_idx = fid.to_component_id(n_kinds, kinds)
+        
+        if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
             return None
 
-        layer, kind_idx = split_component_idx(comp_idx, len(self.sae_bank.kinds))
-        kind = self.sae_bank.kinds[kind_idx]
-        key: Tuple[int, str, int] = (layer, kind, latent_idx)
-
-        if key not in node_id_map:
+        if fid not in node_id_map:
             node = CircuitNode(metadata={
-                "layer_idx": layer,
-                "latent_idx": latent_idx,
-                "kind": kind,
+                "feature_id": fid,
                 "role": role,
             })
             circuit.add_node(node)
-            node_id_map[key] = node.uuid
+            node_id_map[fid] = node.uuid
 
-        return node_id_map[key]
+        return node_id_map[fid]
 
     def _add_edge(
         self,
         circuit: Circuit,
-        node_id_map: dict,
-        key_a: Tuple[int, str, int],
-        key_b: Tuple[int, str, int],
+        node_id_map: Dict[FeatureID, str],
+        fid_a: FeatureID,
+        fid_b: FeatureID,
         weight: float,
     ) -> None:
         """
         Add a directed edge between two already-registered nodes, respecting
         causal order (earlier → later).
         """
-        a_layer, a_kind, _ = key_a
-        b_layer, b_kind, _ = key_b
-
-        if self._causal_before(a_layer, a_kind, b_layer, b_kind):
-            circuit.add_edge(node_id_map[key_a], node_id_map[key_b], weight=weight)
+        if self._causal_before(fid_a, fid_b):
+            circuit.add_edge(node_id_map[fid_a], node_id_map[fid_b], weight=weight)
         else:
-            circuit.add_edge(node_id_map[key_b], node_id_map[key_a], weight=weight)
+            circuit.add_edge(node_id_map[fid_b], node_id_map[fid_a], weight=weight)
 
     def _expand_neighbors(
         self,
-        comp_idx: int,
-        latent_idx: int,
+        fid: FeatureID,
         limit: int,
-        exclude: Set[Tuple[int, str, int]],
+        exclude: Set[FeatureID],
     ):
         """
-        Yield (neighbor_comp_idx, neighbor_latent_idx, weight) for the top
-        ``limit`` co-activation neighbors of (comp_idx, latent_idx) that pass
+        Yield (neighbor_fid, weight) for the top
+        ``limit`` co-activation neighbors of fid that pass
         the activity filter and are not in ``exclude``.
         """
         d_sae = self.sae_bank.d_sae
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        
+        comp_idx, latent_idx = fid.to_component_id(n_kinds, kinds)
         indices = top_coactivation.top_indices[comp_idx, latent_idx]
         values = top_coactivation.top_values[comp_idx, latent_idx]
 
@@ -149,17 +152,17 @@ class NeighborhoodExpansion(DiscoveryMethod):
         for g_idx, w in zip(indices.tolist(), values.tolist()):
             if n_yielded >= limit:
                 break
-            n_comp = int(g_idx) // d_sae
-            n_lat = int(g_idx) % d_sae
-            n_layer, n_kind_idx = split_component_idx(n_comp, len(self.sae_bank.kinds))
-            n_kind = self.sae_bank.kinds[n_kind_idx]
-            key = (n_layer, n_kind, n_lat)
-            if key in exclude:
+            
+            nfid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+            if nfid in exclude:
                 continue
-            if latent_stats.active_count[n_comp, n_lat] < self.min_active_count:
+            
+            c_idx, l_idx = nfid.to_component_id(n_kinds, kinds)
+            if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
                 continue
+                
             n_yielded += 1
-            yield n_comp, n_lat, float(w)
+            yield nfid, float(w)
 
     # ------------------------------------------------------------------
     # Main discover method
@@ -186,9 +189,11 @@ class NeighborhoodExpansion(DiscoveryMethod):
             logger.reject("empty probe dataset (no positive contexts found)")
             return None
 
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, len(self.sae_bank.kinds))
-        seed_kind = self.sae_bank.kinds[seed_kind_idx]
-        seed_key: Tuple[int, str, int] = (seed_layer, seed_kind, seed_latent_idx)
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = kinds[seed_kind_idx]
+        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
         logger.header(
             seed_layer, seed_kind, seed_latent_idx,
@@ -198,35 +203,29 @@ class NeighborhoodExpansion(DiscoveryMethod):
 
         # --- Hop 0: seed ---
         seed_node = CircuitNode(metadata={
-            "layer_idx": seed_layer,
-            "latent_idx": seed_latent_idx,
-            "kind": seed_kind,
+            "feature_id": seed_fid,
             "role": "seed",
         })
         circuit.add_node(seed_node)
-        node_id_map: dict = {seed_key: seed_node.uuid}
+        node_id_map: Dict[FeatureID, str] = {seed_fid: seed_node.uuid}
 
         # --- Hop 1: all top co-activation neighbors of the seed ---
         d_sae = self.sae_bank.d_sae
         seed_indices = top_coactivation.top_indices[seed_comp_idx, seed_latent_idx]
         seed_weights = top_coactivation.top_values[seed_comp_idx, seed_latent_idx]
 
-        hop1_candidates: list = []  # (weight, key, comp_idx, latent_idx)
+        hop1_candidates: list = []  # (weight, fid)
         n_hop1_skipped = 0
 
         for g_idx, weight in zip(seed_indices.tolist(), seed_weights.tolist()):
-            n_comp = int(g_idx) // d_sae
-            n_lat = int(g_idx) % d_sae
-            uuid = self._add_node_if_new(circuit, node_id_map, n_comp, n_lat, "hop1")
+            nfid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+            uuid = self._add_node_if_new(circuit, node_id_map, nfid, "hop1")
             if uuid is None:
                 n_hop1_skipped += 1
                 continue
 
-            n_layer, n_kind_idx = split_component_idx(n_comp, len(self.sae_bank.kinds))
-            n_kind = self.sae_bank.kinds[n_kind_idx]
-            key = (n_layer, n_kind, n_lat)
-            self._add_edge(circuit, node_id_map, seed_key, key, float(weight))
-            hop1_candidates.append((float(weight), key, n_comp, n_lat))
+            self._add_edge(circuit, node_id_map, seed_fid, nfid, float(weight))
+            hop1_candidates.append((float(weight), nfid))
 
         logger.stage(
             "hop-1 expansion", len(circuit.nodes), len(circuit.edges),
@@ -238,22 +237,19 @@ class NeighborhoodExpansion(DiscoveryMethod):
 
         # --- Hop 2: expand the top n_expand hop-1 nodes ---
         hop1_candidates.sort(key=lambda x: x[0], reverse=True)
-        already_in_circuit: Set[Tuple[int, str, int]] = set(node_id_map.keys())
+        already_in_circuit: Set[FeatureID] = set(node_id_map.keys())
         n_expanded = min(len(hop1_candidates), self.n_expand)
         n_hop2_added = 0
 
-        for _, h1_key, h1_comp, h1_lat in hop1_candidates[:n_expanded]:
-            for n_comp, n_lat, w in self._expand_neighbors(
-                h1_comp, h1_lat, self.m_neighbors, exclude=already_in_circuit
+        for _, h1_fid in hop1_candidates[:n_expanded]:
+            for n_fid, w in self._expand_neighbors(
+                h1_fid, self.m_neighbors, exclude=already_in_circuit
             ):
-                uuid = self._add_node_if_new(circuit, node_id_map, n_comp, n_lat, "hop2")
+                uuid = self._add_node_if_new(circuit, node_id_map, n_fid, "hop2")
                 if uuid is None:
                     continue
-                n_layer, n_kind_idx = split_component_idx(n_comp, len(self.sae_bank.kinds))
-                n_kind = self.sae_bank.kinds[n_kind_idx]
-                h2_key = (n_layer, n_kind, n_lat)
-                self._add_edge(circuit, node_id_map, h1_key, h2_key, w)
-                already_in_circuit.add(h2_key)
+                self._add_edge(circuit, node_id_map, h1_fid, n_fid, w)
+                already_in_circuit.add(n_fid)
                 n_hop2_added += 1
 
         logger.stage(

@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 import torch
+from circuit.feature_id import FeatureID
 
 @dataclass
 class CircuitNode:
@@ -14,6 +15,19 @@ class CircuitNode:
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     # Common metadata accessors
+    @property
+    def feature_id(self) -> Optional[FeatureID]:
+        """Returns the FeatureID if present in metadata."""
+        if "feature_id" in self.metadata:
+            return self.metadata["feature_id"]
+        # Legacy support: try to reconstruct from individual fields
+        layer = self.metadata.get("layer_idx")
+        kind = self.metadata.get("kind")
+        index = self.metadata.get("latent_idx")
+        if layer is not None and kind is not None and index is not None:
+            return FeatureID(layer, kind, index)
+        return None
+
     @property
     def weight(self) -> Optional[float]:
         return self.metadata.get("weight")

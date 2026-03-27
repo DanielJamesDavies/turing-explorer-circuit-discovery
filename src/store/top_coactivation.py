@@ -5,9 +5,14 @@ from typing import Optional, cast, Dict, Tuple, List
 from config import config
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
+from store.utils import _AutoAllocTensor
 
 
 class TopCoactivation:
+
+    top_indices  = _AutoAllocTensor()
+    top_values   = _AutoAllocTensor()
+    freq_factors = _AutoAllocTensor()
     """
     Computes top co-activating latents: for each target latent, finds which other
     latents fire most strongly (by magnitude) when the target is active.
@@ -35,6 +40,23 @@ class TopCoactivation:
             self.num_components * self.n_candidates_per_component,
         )
 
+        self._allocated = False
+
+        # Dump buffers (allocated by prepare_dump)
+        self.candidate_ids: Optional[torch.Tensor] = None
+        self.candidate_vals: Optional[torch.Tensor] = None
+        self.seq_id_to_row: Dict[int, int] = {}
+
+    def allocate(self, device: Optional[torch.device] = None) -> None:
+        """Explicitly allocate the large GPU tensors. Safe to call multiple times."""
+        if self._allocated:
+            if device is not None and device != self.device:
+                self.set_device(device)
+            return
+
+        if device is not None:
+            self.device = device
+
         self.top_indices = torch.zeros(
             (self.num_components, self.d_sae, self.n_latents_per_latent),
             dtype=torch.int32, device=self.device,
@@ -47,11 +69,7 @@ class TopCoactivation:
             self.num_components * self.d_sae,
             dtype=torch.float32, device=self.device,
         )
-
-        # Dump buffers (allocated by prepare_dump)
-        self.candidate_ids: Optional[torch.Tensor] = None
-        self.candidate_vals: Optional[torch.Tensor] = None
-        self.seq_id_to_row: Dict[int, int] = {}
+        self._allocated = True
 
     # ------------------------------------------------------------------
     # Frequency factors
@@ -59,6 +77,7 @@ class TopCoactivation:
 
     @torch.no_grad()
     def set_frequency_factors(self, active_counts: torch.Tensor, alpha: Optional[float] = None, epsilon: float = 1e-6) -> None:
+        self.allocate(active_counts.device if active_counts.is_cuda else None)
         if alpha is None:
             alpha = cast(float, config.latents.top_coactivation.freq_alpha or 2.0)
         counts = active_counts.flatten().float()
@@ -91,6 +110,7 @@ class TopCoactivation:
         mean-activation vector, apply frequency adjustment, take the top-N,
         then keep the global top-M across all components.
         """
+        self.allocate(batch_ids.device if batch_ids.is_cuda else None)
         cand_ids_buf = self.candidate_ids
         cand_vals_buf = self.candidate_vals
         assert cand_ids_buf is not None and cand_vals_buf is not None, \
@@ -139,13 +159,24 @@ class TopCoactivation:
         top_vals_cpu = top_vals.cpu()
 
         batch_ids_list = batch_ids.cpu().tolist()
-        for b_idx, sid in enumerate(batch_ids_list):
-            row = self.seq_id_to_row.get(int(sid), -1)
-            if row < 0:
-                continue
+        
+        # OLD METHOD (Commented out for easy revert)
+        # for b_idx, sid in enumerate(batch_ids_list):
+        #     row = self.seq_id_to_row.get(int(sid), -1)
+        #     if row < 0:
+        #         continue
+        #     actual_m = top_ids_cpu.shape[1]
+        #     cand_ids_buf[row, :actual_m] = top_ids_cpu[b_idx]
+        #     cand_vals_buf[row, :actual_m] = top_vals_cpu[b_idx]
+
+        # NEW VECTORIZED METHOD (VRAM-safe on CPU)
+        rows = torch.tensor([self.seq_id_to_row.get(int(sid), -1) for sid in batch_ids_list], dtype=torch.int64)
+        valid_mask = rows >= 0
+        if valid_mask.any():
+            valid_rows = rows[valid_mask]
             actual_m = top_ids_cpu.shape[1]
-            cand_ids_buf[row, :actual_m] = top_ids_cpu[b_idx]
-            cand_vals_buf[row, :actual_m] = top_vals_cpu[b_idx]
+            cand_ids_buf[valid_rows, :actual_m] = top_ids_cpu[valid_mask]
+            cand_vals_buf[valid_rows, :actual_m] = top_vals_cpu[valid_mask]
 
     # ------------------------------------------------------------------
     # Phase 2 — Reduce (C++ extension)
@@ -175,10 +206,20 @@ class TopCoactivation:
         assert self.candidate_ids is not None and self.candidate_vals is not None
 
         max_sid = int(seq_offsets.shape[0])
+        
+        # OLD METHOD (Commented out for easy revert)
+        # sid_to_row = torch.full((max_sid,), -1, dtype=torch.int64)
+        # for sid, row in self.seq_id_to_row.items():
+        #     if 0 < sid < max_sid:
+        #         sid_to_row[sid] = row
+
+        # NEW VECTORIZED METHOD (VRAM-safe on CPU)
         sid_to_row = torch.full((max_sid,), -1, dtype=torch.int64)
-        for sid, row in self.seq_id_to_row.items():
-            if 0 < sid < max_sid:
-                sid_to_row[sid] = row
+        if self.seq_id_to_row:
+            sids = torch.tensor(list(self.seq_id_to_row.keys()), dtype=torch.int64)
+            rows = torch.tensor(list(self.seq_id_to_row.values()), dtype=torch.int64)
+            mask = (sids > 0) & (sids < max_sid)
+            sid_to_row[sids[mask]] = rows[mask]
 
         top_ids, top_vals = top_coactivation_reduce.reduce_topk(
             self.candidate_ids.contiguous(),
@@ -193,6 +234,7 @@ class TopCoactivation:
 
         self.top_indices = top_ids
         self.top_values = top_vals
+        self._allocated = True
 
         # Free dump buffers
         self.candidate_ids = None
@@ -205,17 +247,20 @@ class TopCoactivation:
 
     def load(self, path: str) -> None:
         try:
-            checkpoint = torch.load(path, map_location=self.device)
+            checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+            self.allocate()
             if "top_indices" in checkpoint:
-                self.top_indices = checkpoint["top_indices"].to(self.device)
+                self.top_indices.copy_(checkpoint["top_indices"])
             if "top_values" in checkpoint:
-                self.top_values = checkpoint["top_values"].to(self.device)
+                self.top_values.copy_(checkpoint["top_values"])
             if "freq_factors" in checkpoint:
-                self.freq_factors = checkpoint["freq_factors"].to(self.device)
+                self.freq_factors.copy_(checkpoint["freq_factors"])
         except Exception as e:
             print(f"TopCoactivation load failed (likely no file yet): {e}")
 
     def save(self, path: str) -> None:
+        if not self._allocated:
+            return
         torch.save({
             "top_indices": self.top_indices,
             "top_values": self.top_values,
@@ -224,9 +269,10 @@ class TopCoactivation:
 
     def set_device(self, device: torch.device) -> None:
         self.device = device
-        self.top_indices = self.top_indices.to(device)
-        self.top_values = self.top_values.to(device)
-        self.freq_factors = self.freq_factors.to(device)
+        if self._allocated:
+            self.top_indices = self.top_indices.to(device)
+            self.top_values = self.top_values.to(device)
+            self.freq_factors = self.freq_factors.to(device)
 
 
 top_coactivation = TopCoactivation(device=torch.device("cpu"))

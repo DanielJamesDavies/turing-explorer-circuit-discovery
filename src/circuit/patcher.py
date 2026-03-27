@@ -120,11 +120,9 @@ class CircuitPatcher:
                 mask = torch.zeros(bank.d_sae, dtype=torch.bool, device="cpu")
                 if circuit is not None:
                     for node in circuit.nodes.values():
-                        if (node.metadata.get("layer_idx") == l and 
-                            node.metadata.get("kind") == kind):
-                            idx = node.metadata.get("latent_idx")
-                            if idx is not None:
-                                mask[idx] = True
+                        fid = node.feature_id
+                        if fid and fid.layer == l and fid.kind == kind:
+                            mask[fid.index] = True
                 
                 self.circuit_masks[(l, kind)] = mask.to(target_device)
                 

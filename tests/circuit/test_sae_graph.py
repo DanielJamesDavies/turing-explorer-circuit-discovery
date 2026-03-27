@@ -66,8 +66,8 @@ class TestFeatureGraph:
         graph.add(0, "attn", ag, ac, idx)
 
         got_ag, got_ac, got_idx = graph.get_latents(0, "attn", step=0)
-        assert got_ag is ag
-        assert got_ac is ac
+        assert got_ag.act is ag
+        assert got_ac.act is ac
         assert got_idx is idx
 
     def test_multiple_steps_same_key_appended_in_order(self):
@@ -81,8 +81,8 @@ class TestFeatureGraph:
 
         r0_ag, _, _ = graph.get_latents(0, "attn", step=0)
         r1_ag, _, _ = graph.get_latents(0, "attn", step=1)
-        assert r0_ag is ag0
-        assert r1_ag is ag1
+        assert r0_ag.act is ag0
+        assert r1_ag.act is ag1
 
     def test_different_keys_stored_independently(self):
         graph = FeatureGraph(torch.device("cpu"))
@@ -94,8 +94,8 @@ class TestFeatureGraph:
 
         got_ag_a, _, _ = graph.get_latents(0, "attn")
         got_ag_m, _, _ = graph.get_latents(0, "mlp")
-        assert got_ag_a is ag_a
-        assert got_ag_m is ag_m
+        assert got_ag_a.act is ag_a
+        assert got_ag_m.act is ag_m
 
     def test_different_layers_stored_independently(self):
         graph = FeatureGraph(torch.device("cpu"))
@@ -107,8 +107,8 @@ class TestFeatureGraph:
 
         r0, _, _ = graph.get_latents(0, "resid")
         r1, _, _ = graph.get_latents(1, "resid")
-        assert r0 is ag0
-        assert r1 is ag1
+        assert r0.act is ag0
+        assert r1.act is ag1
 
     def test_all_anchors_empty_graph_returns_empty_list(self):
         graph = FeatureGraph(torch.device("cpu"))
@@ -168,8 +168,8 @@ class TestSAEGraphInstrumentTransform:
             instrument.transform(0, "attn", x)
 
         acts_grad, _, _ = instrument.graph.get_latents(0, "attn")
-        assert acts_grad.is_leaf
-        assert acts_grad.requires_grad
+        assert acts_grad.act.is_leaf
+        assert acts_grad.act.requires_grad
 
     def test_leaf_anchor_has_same_values_as_top_acts(self, mock_sae_bank):
         """
@@ -183,7 +183,7 @@ class TestSAEGraphInstrumentTransform:
             instrument.transform(0, "attn", x)
 
         acts_grad, acts_conn, _ = instrument.graph.get_latents(0, "attn")
-        assert torch.allclose(acts_grad.detach(), acts_conn.detach(), atol=1e-6)
+        assert torch.allclose(acts_grad.act.detach(), acts_conn.act.detach(), atol=1e-6)
 
     def test_connected_acts_have_grad_fn_under_enable_grad(self, mock_sae_bank):
         """
@@ -197,7 +197,7 @@ class TestSAEGraphInstrumentTransform:
             instrument.transform(0, "attn", x)
 
         _, acts_conn, _ = instrument.graph.get_latents(0, "attn")
-        assert acts_conn.grad_fn is not None
+        assert acts_conn.act.grad_fn is not None
 
     def test_stored_indices_are_detached(self, mock_sae_bank):
         """top_indices must always be detached (no gradient through discrete indices)."""
@@ -281,8 +281,8 @@ class TestSAEGraphInstrumentGradients:
             output.sum().backward()
 
         acts_grad, _, _ = instrument.graph.get_latents(0, "attn")
-        assert acts_grad.grad is not None
-        assert acts_grad.grad.shape == acts_grad.shape
+        assert acts_grad.act.grad is not None
+        assert acts_grad.act.grad.shape == acts_grad.act.shape
 
     def test_leaf_anchor_grad_is_nonzero(self, mock_sae_bank):
         """The gradient at acts_grad should be non-zero for generic random x."""
@@ -294,7 +294,7 @@ class TestSAEGraphInstrumentGradients:
             output.sum().backward()
 
         acts_grad, _, _ = instrument.graph.get_latents(0, "attn")
-        assert acts_grad.grad.abs().sum().item() > 0.0
+        assert acts_grad.act.grad.abs().sum().item() > 0.0
 
     def test_stop_error_grad_false_allows_gradient_to_reach_x(self, mock_sae_bank):
         """
@@ -462,8 +462,10 @@ class TestSAEGraphInstrumentContextManager:
             output.sum().backward()
 
         anchors = instrument.graph.all_anchors()
-        assert len(anchors) == N_LAYERS * len(KINDS), (
-            "Expected one anchor per (layer, kind) pair"
+        # Each layer/kind now produces 2 anchors (activations and residual error)
+        # unless stop_error_grad=True, but here it's False.
+        assert len(anchors) == N_LAYERS * len(KINDS) * 2, (
+            "Expected two anchors per (layer, kind) pair (act + res)"
         )
         for anchor in anchors:
             assert anchor.grad is not None, "Every leaf anchor must receive a gradient"

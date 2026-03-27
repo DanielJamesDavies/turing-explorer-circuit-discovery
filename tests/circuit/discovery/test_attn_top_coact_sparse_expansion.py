@@ -1,7 +1,7 @@
 """
 tests/circuit/discovery/test_attn_sparse_expansion.py
 
-Tests for the AttnSparseExpansion circuit discovery algorithm.
+Tests for the AttnTopCoactSparseExpansion circuit discovery algorithm.
 Mirrors test_mlp_sparse_expansion.py exactly — only the seed component,
 neighbor global indices, and kind strings are changed for "attn".
 
@@ -30,7 +30,7 @@ Hop-2 neighbors of (comp=3, lat=7):
 import pytest
 import torch
 
-from circuit.discovery.attn_sparse_expansion import AttnSparseExpansion
+from circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion import AttnTopCoactSparseExpansion
 from circuit.probe_dataset import ProbeDataset
 
 # ---------------------------------------------------------------------------
@@ -160,11 +160,11 @@ def setup(mock_model, mock_sae_bank, monkeypatch):
     mock_coact = _make_mock_coact()
     mock_stats = MockLatentStats(N_COMP, D_SAE)
 
-    import circuit.discovery.attn_sparse_expansion as mod
+    import circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion as mod
     monkeypatch.setattr(mod, "top_coactivation", mock_coact)
     monkeypatch.setattr(mod, "latent_stats",     mock_stats)
 
-    algo = AttnSparseExpansion(
+    algo = AttnTopCoactSparseExpansion(
         inference        = MockInference(mock_model),
         sae_bank         = mock_sae_bank,
         avg_acts         = torch.zeros(N_COMP, D_SAE),
@@ -206,11 +206,11 @@ class TestAttnNodeExpansion:
     def test_hop1_count_respects_limit(self, mock_model, mock_sae_bank, monkeypatch):
         mock_coact = _make_mock_coact()
         mock_stats = MockLatentStats(N_COMP, D_SAE)
-        import circuit.discovery.attn_sparse_expansion as mod
+        import circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion as mod
         monkeypatch.setattr(mod, "top_coactivation", mock_coact)
         monkeypatch.setattr(mod, "latent_stats",     mock_stats)
 
-        algo = AttnSparseExpansion(
+        algo = AttnTopCoactSparseExpansion(
             inference=MockInference(mock_model), sae_bank=mock_sae_bank,
             avg_acts=torch.zeros(N_COMP, D_SAE), probe_builder=None,
             coact_depth=[3],   # depth-1 only, capped at 3
@@ -349,11 +349,11 @@ class TestActivityFilter:
         mock_stats = MockLatentStats(N_COMP, D_SAE)
         mock_stats.active_count[3, 8] = 0   # comp=3, lat=8 is a hop-1 attn candidate
 
-        import circuit.discovery.attn_sparse_expansion as mod
+        import circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion as mod
         monkeypatch.setattr(mod, "top_coactivation", mock_coact)
         monkeypatch.setattr(mod, "latent_stats",     mock_stats)
 
-        algo = AttnSparseExpansion(
+        algo = AttnTopCoactSparseExpansion(
             inference=MockInference(mock_model), sae_bank=mock_sae_bank,
             avg_acts=torch.zeros(N_COMP, D_SAE), probe_builder=None,
             min_faithfulness=0.0, min_active_count=50,
@@ -412,11 +412,11 @@ class TestRejectionCases:
     ):
         mock_coact = _make_mock_coact()
         mock_stats = MockLatentStats(N_COMP, D_SAE)
-        import circuit.discovery.attn_sparse_expansion as mod
+        import circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion as mod
         monkeypatch.setattr(mod, "top_coactivation", mock_coact)
         monkeypatch.setattr(mod, "latent_stats",     mock_stats)
 
-        algo = AttnSparseExpansion(
+        algo = AttnTopCoactSparseExpansion(
             inference=MockInference(mock_model), sae_bank=mock_sae_bank,
             avg_acts=torch.zeros(N_COMP, D_SAE), probe_builder=None,
             min_faithfulness=2.0, min_active_count=50,
@@ -434,7 +434,7 @@ class TestRejectionCases:
             "discovery_method", "coact_depth", "n_passthrough",
         }
         assert required.issubset(circuit.metadata.keys())
-        assert circuit.metadata["discovery_method"] == "attn_sparse_expansion"
+        assert circuit.metadata["discovery_method"] == "attn_top_coact_sparse_expansion"
         assert circuit.metadata["seed_comp"]   == SEED_COMP
         assert circuit.metadata["seed_latent"] == SEED_LAT
         assert circuit.metadata["n_nodes"]     == len(circuit.nodes)

@@ -67,6 +67,14 @@ def prune_non_minimal_nodes(
     """
     Identifies and removes nodes that contribute less than a threshold to faithfulness.
     
+    Logic: This implementation uses **Iterative Pruning**. In each step, it identifies
+    the single least important node (the one whose removal causes the smallest drop in
+    faithfulness). If that drop is below the threshold, the node is removed and the
+    entire circuit is re-evaluated.
+    
+    This avoids the "redundancy problem" where two identical nodes might both be
+    seen as unimportant and removed simultaneously, destroying the circuit.
+    
     Args:
         inference: The Inference instance (model.inference.Inference).
         sae_bank: The SAEBank containing the models.
@@ -79,23 +87,44 @@ def prune_non_minimal_nodes(
     Returns:
         List[str]: A list of removed node UUIDs.
     """
-    node_importance = evaluate_minimality(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax)
     removed_nodes = []
     
-    for node_uuid, importance in node_importance.items():
-        # Never prune the seed node if it's marked in metadata
-        node = circuit.nodes.get(node_uuid)
-        if node and node.metadata.get("role") == "seed":
-            continue
-
-        if importance < threshold:
-            # 1. Remove the node
-            circuit.nodes.pop(node_uuid)
-            # 2. Remove all associated edges
+    while True:
+        # 1. Evaluate current importance for all nodes
+        n_eval = len(circuit.nodes)
+        node_importance = evaluate_minimality(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax)
+        
+        # 2. Filter to find pruning candidates (excluding seed)
+        candidates = []
+        for node_uuid, importance in node_importance.items():
+            node = circuit.nodes.get(node_uuid)
+            if node and node.metadata.get("role") == "seed":
+                continue
+            candidates.append((node_uuid, importance))
+            
+        if not candidates:
+            break
+            
+        # 3. Find the single least important node
+        # We sort by importance ascending
+        candidates.sort(key=lambda x: x[1])
+        least_node_uuid, least_importance = candidates[0]
+        
+        # 4. Prune if below threshold
+        if least_importance < threshold:
+            # Remove the node
+            circuit.nodes.pop(least_node_uuid)
+            # Remove all associated edges
             circuit.edges = [
                 e for e in circuit.edges 
-                if e.source_uuid != node_uuid and e.target_uuid != node_uuid
+                if e.source_uuid != least_node_uuid and e.target_uuid != least_node_uuid
             ]
-            removed_nodes.append(node_uuid)
+            removed_nodes.append(least_node_uuid)
+            
+            # (Optional) Log progress
+            # print(f"    [minimality] Pruned node {least_node_uuid} (importance {least_importance:.4f})")
+        else:
+            # Even the least important node is above threshold
+            break
             
     return removed_nodes

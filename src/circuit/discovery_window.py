@@ -1,5 +1,6 @@
 import torch
 import os
+import time
 from typing import List, Dict, Any
 from tqdm import tqdm
 
@@ -18,13 +19,15 @@ from circuit.discovery.logit_attribution import LogitAttribution
 from circuit.discovery.sfc_attribution_patching import SFCAttributionPatching
 from circuit.discovery.neighborhood_expansion import NeighborhoodExpansion
 from circuit.discovery.top_coactivation import TopCoactivationDiscovery
-from circuit.discovery.mlp_sparse_expansion import MlpSparseExpansion
-from circuit.discovery.attn_sparse_expansion import AttnSparseExpansion
-from circuit.discovery.resid_sparse_expansion import ResidSparseExpansion
-from circuit.discovery.attn_mlp_sparse_expansion import AttnMlpSparseExpansion
-from circuit.discovery.attn_resid_sparse_expansion import AttnResidSparseExpansion
-from circuit.discovery.mlp_resid_sparse_expansion import MlpResidSparseExpansion
-from circuit.discovery.all_sparse_expansion import AllSparseExpansion
+from circuit.discovery.top_coact_expansion.mlp_top_coact_sparse_expansion import MlpTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion import AttnTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.resid_top_coact_sparse_expansion import ResidTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.attn_mlp_top_coact_sparse_expansion import AttnMlpTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.attn_resid_top_coact_sparse_expansion import AttnResidTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.mlp_resid_top_coact_sparse_expansion import MlpResidTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.all_top_coact_sparse_expansion import AllTopCoactSparseExpansion
+from circuit.discovery.top_coact_expansion.hard_negative_coact_sparse_expansion import HardNegativeCoactSparseExpansion
+from circuit.discovery.differential_activation import DifferentialActivation
 
 
 METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
@@ -33,13 +36,15 @@ METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
     "sfc_attribution_patching": SFCAttributionPatching,
     "neighborhood_expansion": NeighborhoodExpansion,
     "top_coactivation": TopCoactivationDiscovery,
-    "mlp_sparse_expansion": MlpSparseExpansion,
-    "attn_sparse_expansion": AttnSparseExpansion,
-    "resid_sparse_expansion": ResidSparseExpansion,
-    "attn_mlp_sparse_expansion": AttnMlpSparseExpansion,
-    "attn_resid_sparse_expansion": AttnResidSparseExpansion,
-    "mlp_resid_sparse_expansion": MlpResidSparseExpansion,
-    "all_sparse_expansion": AllSparseExpansion,
+    "mlp_top_coact_sparse_expansion": MlpTopCoactSparseExpansion,
+    "attn_top_coact_sparse_expansion": AttnTopCoactSparseExpansion,
+    "resid_top_coact_sparse_expansion": ResidTopCoactSparseExpansion,
+    "attn_mlp_top_coact_sparse_expansion": AttnMlpTopCoactSparseExpansion,
+    "attn_resid_top_coact_sparse_expansion": AttnResidTopCoactSparseExpansion,
+    "mlp_resid_top_coact_sparse_expansion": MlpResidTopCoactSparseExpansion,
+    "all_top_coact_sparse_expansion": AllTopCoactSparseExpansion,
+    "hard_negative_coact_sparse_expansion": HardNegativeCoactSparseExpansion,
+    "differential_activation": DifferentialActivation,
 }
 
 
@@ -58,13 +63,15 @@ def _build_methods(
       "sfc_attribution_patching"  — SFC-style delta×gradient node attribution + Jacobian edges
       "neighborhood_expansion"    — two-hop co-activation neighbourhood expansion (no gradients)
       "top_coactivation"          — legacy feature-to-feature attribution (broken cross-layer)
-      "mlp_sparse_expansion"      — MLP-only two-hop expansion + full attn/resid passthrough
-      "attn_sparse_expansion"     — attn-only two-hop expansion + full MLP/resid passthrough
-      "resid_sparse_expansion"    — resid-only two-hop expansion + full attn/MLP passthrough
-      "attn_mlp_sparse_expansion" — attn+mlp expansion + full resid passthrough
-      "attn_resid_sparse_expansion" — attn+resid expansion + full mlp passthrough
-      "mlp_resid_sparse_expansion" — mlp+resid expansion + full attn passthrough
-      "all_sparse_expansion"      — all-kinds expansion (attn/mlp/resid), no passthrough
+      "mlp_top_coact_sparse_expansion"      — MLP-only two-hop expansion + full attn/resid passthrough
+      "attn_top_coact_sparse_expansion"     — attn-only two-hop expansion + full MLP/resid passthrough
+      "resid_top_coact_sparse_expansion"    — resid-only two-hop expansion + full attn/MLP passthrough
+      "attn_mlp_top_coact_sparse_expansion" — attn+mlp expansion + full resid passthrough
+      "attn_resid_top_coact_sparse_expansion" — attn+resid expansion + full mlp passthrough
+      "mlp_resid_top_coact_sparse_expansion" — mlp+resid expansion + full attn passthrough
+      "all_top_coact_sparse_expansion"      — all-kinds expansion (attn/mlp/resid), no passthrough
+      "hard_negative_coact_sparse_expansion" — all-kinds expansion + hard-negative inhibitor search
+      "differential_activation"              — pos vs neg differential activation + causal attribution
     """
     enabled_raw = config.discovery.methods
     if isinstance(enabled_raw, list):
@@ -139,7 +146,15 @@ class DiscoveryWindow:
             latent_idx = cand["latent_idx"]
 
             for method in self.methods:
+                m_t0 = time.perf_counter()
                 circuit = method.discover(comp_idx, latent_idx)
+                m_dt = time.perf_counter() - m_t0
+                
+                # If a method is slow (>1s), log its duration to the console for observability
+                if m_dt > 1.0:
+                    from utils.observability import obs
+                    pbar.write(f"  - {method.method_name}: {m_dt:.2f}s ({obs.attempt_forward_passes} forwards)")
+                
                 if circuit:
                     discovered_count += 1
                     circuit_store.add_circuit(circuit)
@@ -149,7 +164,13 @@ class DiscoveryWindow:
                         self.save_store()
 
         self.save_store()
+        
+        from utils.observability import obs
         print(f"Discovery Window complete. Found {discovered_count} faithful circuits.")
+        print(f"Total Forward Passes: {obs.forward_passes}")
+        print(f"Total Forward Time: {obs.total_forward_time:.2f} s")
+        if obs.forward_passes > 0:
+            print(f"Average Forward Duration: {obs.total_forward_time / obs.forward_passes * 1000:.1f} ms")
         print("")
         self._print_summary_table()
 
@@ -248,13 +269,13 @@ def run_discovery_window(
         print(f"Error: Candidates file not found at {candidates_path}. Run candidate selection first.")
         return
 
-    if not torch.any(latent_stats.mean_seq > 0):
+    if not latent_stats._allocated:
         latent_stats.load("outputs/latent_stats.pt")
-    if not torch.any(top_coactivation.top_indices > 0):
+    if not top_coactivation._allocated:
         top_coactivation.load("outputs/top_coactivation.pt")
 
     from store.context import neg_ctx
-    if not torch.any(neg_ctx.ctx_seq_idx > 0):
+    if not neg_ctx._allocated:
         neg_ctx.load("outputs/neg_ctx.pt")
 
     candidates = torch.load(candidates_path, weights_only=False)

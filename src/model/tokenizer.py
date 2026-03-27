@@ -7,7 +7,7 @@ class Tokenizer:
     def __init__(self, model_id = "microsoft/Phi-3-mini-4k-instruct"):
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True, local_files_only=True, _fast_init=True)
-        except:
+        except Exception:
             self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True, _fast_init=True)
 
     def encode(self, text):

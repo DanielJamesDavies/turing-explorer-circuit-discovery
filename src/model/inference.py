@@ -8,6 +8,7 @@ from contextlib import nullcontext
 from config import config
 from .turingllm import TuringLLM, TuringLLMConfig
 from .hooks import capture_activations
+from utils.observability import obs
 
 
 def _fuse_mlp_projections(state_dict: dict) -> dict:
@@ -85,6 +86,25 @@ class Inference:
             block.forward = eager_fn
         self._compiled = False
 
+    def enable_grad_checkpointing(self):
+        """
+        Enables gradient checkpointing on all transformer blocks' attn and mlp
+        submodules. This recomputes their internal activations (Q/K/V, gate/up)
+        during backward instead of storing them, reducing peak VRAM.
+
+        Hooks registered on block.attn and block.mlp still fire exactly once on
+        the module output — checkpointing only covers the internal computation,
+        so patchers and SAEGraphInstrument are completely unaffected.
+        """
+        for block in self.model.transformer.h:
+            block.attn.use_checkpoint = True
+            block.mlp.use_checkpoint = True
+
+    def disable_grad_checkpointing(self):
+        for block in self.model.transformer.h:
+            block.attn.use_checkpoint = False
+            block.mlp.use_checkpoint = False
+
     def forward(self, tokens: torch.Tensor, num_gen: int = 1, tokenize_final: bool = True, activations_callback=None, patcher=None, return_activations: bool = True, all_logits: bool = False, grad_enabled: bool = False):
         sample_rng = torch.Generator(device=self.device).manual_seed(12)
         activations = []
@@ -94,9 +114,10 @@ class Inference:
         grad_ctx = torch.enable_grad() if grad_enabled else torch.no_grad()
 
         for i in range(num_gen):
-            with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):
-                with grad_ctx, sdpa_ctx:
-                    logits, _ = self.model(tokens, return_all_logits=(all_logits and i == 0))
+            with obs.track_forward():
+                with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):
+                    with grad_ctx, sdpa_ctx:
+                        logits, _ = self.model(tokens, return_all_logits=(all_logits and i == 0))
             
             if return_activations:
                 # If generating multiple tokens, only keep the last token's activations 

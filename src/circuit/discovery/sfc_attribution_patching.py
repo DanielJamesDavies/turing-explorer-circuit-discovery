@@ -1,3 +1,4 @@
+import gc
 import torch
 from dataclasses import dataclass
 from typing import Optional, Any, Dict, Tuple, List, cast
@@ -7,6 +8,7 @@ from ..sparse_act import SparseAct
 from config import config
 from store.circuits import Circuit, CircuitNode
 from circuit.sae_graph import SAEGraphInstrument
+from circuit.feature_id import FeatureID
 from circuit.circuit_logger import CircuitLogger
 from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
@@ -39,82 +41,68 @@ class TopKState:
             res=torch.zeros_like(self.res),
         )
 
+    def to_sparse_act(self, d_sae: int) -> SparseAct:
+        """Expands sparse [B, T, k] representation to dense [B, T, d_sae] SparseAct."""
+        B, T, _ = self.vals.shape
+        act = torch.zeros(B, T, d_sae, device=self.device, dtype=torch.float32)
+        act.scatter_(-1, self.idx, self.vals)
+        return SparseAct(act=act, res=self.res.clone())
 
-class IGPatcher:
+
+class SingleSubmodPatcher:
     """
-    Patches the forward pass with interpolated SAE states for Integrated Gradients.
+    Patches only a single (layer, kind) submodule with interpolated SAE features
+    for per-submodule Integrated Gradients, matching Marks et al. 2024.
 
-    Key optimisation: uses small [B, T, k] leaf tensors (not [B, T, d_sae]) for
-    autograd, reducing the gradient-tracking footprint by ~320×. The full [B, T, d_sae]
-    dense tensor is built ephemerally inside each forward pass via scatter_add_ and is
-    freed immediately after backward — it never accumulates in memory.
-
-    scatter_add_ ensures correct interpolation for features active in both clean and
-    patch top-k sets:
-      dense[b, t, i] = (1-α)*clean_val_i + α*patch_val_i   for i in both
-      dense[b, t, i] = (1-α)*clean_val_i                    for i in clean only
-      dense[b, t, i] =          α*patch_val_i               for i in patch only
+    All other submodules see the original clean activation (passthrough), so the
+    full model gradient path is naturally intact without the (x - x.detach()) trick.
     """
 
     def __init__(
         self,
         bank: Any,
-        clean_states: Dict[Tuple[int, str], TopKState],
-        patch_states: Dict[Tuple[int, str], TopKState],
-        alpha: float,
-        d_sae: int,
+        target_lk: Tuple[int, str],
+        f_act: torch.Tensor,
+        f_res: torch.Tensor,
     ):
         self.bank = bank
-        self.clean_states = clean_states
-        self.patch_states = patch_states
-        self.alpha = alpha
-        self.d_sae = d_sae
-        # Populated by __call__ → transform; read after backward to collect grads
-        self.leaves: Dict[Tuple[int, str], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+        self.target_lk = target_lk
+        self.f_act = f_act  # [B, T, d_sae] — detached leaf with requires_grad
+        self.f_res = f_res  # [B, T, d_model] — detached leaf with requires_grad
 
     def __call__(self, model: Any):
-        self.leaves.clear()
-
         def transform(layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
-            lk = (layer_idx, kind)
-            clean = self.clean_states.get(lk)
-            patch = self.patch_states.get(lk)
-            if clean is None or patch is None:
+            if (layer_idx, kind) != self.target_lk:
                 return x
-
-            B, T, _ = x.shape
             dtype = x.dtype
-            dev = x.device
-
-            # Small leaf tensors — [B, T, k] not [B, T, d_sae]
-            c_leaf = ((1 - self.alpha) * clean.vals.to(dev)).detach().float().requires_grad_(True)
-            p_leaf = (self.alpha       * patch.vals.to(dev)).detach().float().requires_grad_(True)
-            r_interp = ((1 - self.alpha) * clean.res.to(dev) + self.alpha * patch.res.to(dev))
-            r_leaf = r_interp.detach().to(dtype).requires_grad_(True)
-
-            # Ephemeral dense tensor — only exists in the forward graph, freed after backward
-            dense = torch.zeros(B, T, self.d_sae, device=dev, dtype=dtype)
-            dense.scatter_add_(-1, clean.idx.to(dev), c_leaf.to(dtype))
-            dense.scatter_add_(-1, patch.idx.to(dev), p_leaf.to(dtype))
-
-            self.leaves[lk] = (c_leaf, p_leaf, r_leaf)
-            return self.bank.decode(dense, kind, layer_idx) + r_leaf
-
+            return self.bank.decode(self.f_act.to(dtype), kind, layer_idx) + self.f_res.to(dtype)
         return multi_patch(model, transform)
+
+
+def _vram_audit(label: str) -> None:
+    """Prints allocated VRAM and the 10 largest live CUDA tensors."""
+    if not torch.cuda.is_available():
+        return
+    gc.collect()
+    torch.cuda.synchronize()
+    alloc = torch.cuda.memory_allocated() / 1024**3
+    resv  = torch.cuda.memory_reserved()  / 1024**3
+    print(f"\n[VRAM] {label}: allocated={alloc:.2f}GB  reserved={resv:.2f}GB")
+    tensors = [
+        (t.element_size() * t.nelement(), t.shape, t.dtype)
+        for t in gc.get_objects()
+        if isinstance(t, torch.Tensor) and t.is_cuda
+    ]
+    tensors.sort(key=lambda x: x[0], reverse=True)
+    for size, shape, dtype in tensors[:10]:
+        print(f"  {size/1024**3:.3f}GB  {dtype}  {list(shape)}")
 
 
 class SFCAttributionPatching(DiscoveryMethod):
     """
     Sparse Feature Circuits (Marks et al. 2024) style circuit discovery.
-    1-to-1 replica of the feature-circuits algorithm with memory-efficient
-    sparse state representation.
-
-    Implements:
-      - Integrated Gradients (IG) for node attribution, using [B,T,k] leaf tensors
-      - JVP-based edge attribution with intermediate stop-grads
-      - Joint attribution to SAE features and reconstruction error (residual)
-      - Aggregation across all token positions and batch
     """
+    method_name = "sfc_attribution_patching"
 
     def __init__(
         self,
@@ -139,12 +127,12 @@ class SFCAttributionPatching(DiscoveryMethod):
         self.max_neg           = max_neg           if max_neg           is not None else cast(int,   cfg.max_neg           or 8)
         self.pruning_threshold = pruning_threshold if pruning_threshold is not None else cast(float, cfg.pruning_threshold or 0.0)
         self.probe_batch_size  = probe_batch_size  or cast(int,   config.discovery.probe_batch_size  or 8)
-        self.min_faithfulness  = min_faithfulness  or cast(float, config.discovery.min_faithfulness  or 0.3)
+        self.min_faithfulness = (
+            min_faithfulness
+            if min_faithfulness is not None
+            else cast(float, config.discovery.min_faithfulness or 0.3)
+        )
         self.ig_steps          = ig_steps          if ig_steps          is not None else cast(int,   getattr(cfg, "ig_steps", 10))
-
-    # ------------------------------------------------------------------
-    # Public entry point
-    # ------------------------------------------------------------------
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, "sfc_attribution_patching")
@@ -170,15 +158,17 @@ class SFCAttributionPatching(DiscoveryMethod):
         probe_argmax  = probe_data.pos_argmax[:n_probe]
         probe_targets = probe_data.target_tokens[:n_probe]
 
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, len(self.sae_bank.kinds))
-        seed_kind = self.sae_bank.kinds[seed_kind_idx]
-        seed_key  = (seed_layer, seed_kind, seed_latent_idx)
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = kinds[seed_kind_idx]
+        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
         logger.header(seed_layer, seed_kind, seed_latent_idx,
                       probe_data.pos_tokens.shape[0], probe_data.neg_tokens.shape[0])
         logger.note(f"probe batch: {n_probe} sequences  ig_steps={self.ig_steps}")
 
-        # 2. Collect clean and patch states (sparse TopKState — ~320× less memory than dense)
+        # 2. Collect clean and patch states
         clean_states = self._get_all_states(probe_tokens)
 
         n_neg = probe_data.neg_tokens.shape[0]
@@ -189,39 +179,42 @@ class SFCAttributionPatching(DiscoveryMethod):
             if neg_tokens.shape[0] >= n_probe:
                 patch_states = self._get_all_states(neg_tokens[:n_probe])
             else:
-                # Fewer neg sequences than probe — fall back to zero ablation
                 patch_states = {lk: s.zeros_like() for lk, s in clean_states.items()}
 
-        # 3. Node attribution via Integrated Gradients (IG)
-        #    Returns aggregated [d_sae] node scores and sparse intermediate data
-        node_scores, res_scores, sparse_data = self._pe_ig(
+        # 3. Node attribution via IG
+        effects, deltas_all, grads_all = self._pe_ig(
             clean_states, patch_states, probe_tokens, probe_argmax, probe_targets
         )
         logger.note(f"IG complete  {self.ig_steps} steps  patch_mode={self.patch_mode}")
+        _vram_audit("after _pe_ig")
 
         # 4. Build circuit nodes
         circuit = Circuit(name=f"SFCAttrPatch_S{seed_comp_idx}_{seed_latent_idx}")
-        node_id_map: Dict[Tuple[int, str, int], str] = {}
+        node_id_map: Dict[FeatureID, str] = {}
         resid_node_id_map: Dict[Tuple[int, str], str] = {}
-        # Pre-build active latent index lists for O(1) upstream lookup in edge loop
         active_latents: Dict[Tuple[int, str], List[int]] = {}
 
-        for (layer, kind), scores in node_scores.items():
+        for (layer, kind), effect in effects.items():
+            agg = effect.sum(dim=1).mean(dim=0)
+            scores = agg.act
+            if scores is None:
+                continue
+
             for l_idx in scores.abs().nonzero(as_tuple=True)[0].tolist():
                 score = float(scores[l_idx].item())
-                key   = (layer, kind, l_idx)
-                if key != seed_key and abs(score) < self.node_threshold:
+                fid = FeatureID(layer, kind, l_idx)
+                if fid != seed_fid and abs(score) < self.node_threshold:
                     continue
-                role = "seed" if key == seed_key else "attributed"
+                role = "seed" if fid == seed_fid else "attributed"
                 node = CircuitNode(metadata={
-                    "layer_idx": layer, "latent_idx": l_idx, "kind": kind,
+                    "feature_id": fid,
                     "role": role, "effect_score": score,
                 })
                 circuit.add_node(node)
-                node_id_map[key] = node.uuid
+                node_id_map[fid] = node.uuid
                 active_latents.setdefault((layer, kind), []).append(l_idx)
 
-            res_score = res_scores.get((layer, kind), 0.0)
+            res_score = float(agg.resc.item()) if agg.resc is not None else 0.0
             if abs(res_score) >= self.node_threshold:
                 node = CircuitNode(metadata={
                     "layer_idx": layer, "kind": kind,
@@ -230,6 +223,11 @@ class SFCAttributionPatching(DiscoveryMethod):
                 circuit.add_node(node)
                 resid_node_id_map[(layer, kind)] = node.uuid
 
+        del effects
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        _vram_audit("after del effects")
+
         logger.stage("node attribution", len(circuit.nodes), 0,
                      note=f"threshold={self.node_threshold}")
 
@@ -237,88 +235,64 @@ class SFCAttributionPatching(DiscoveryMethod):
             logger.reject(f"only seed passed node threshold ({self.node_threshold})")
             return None
 
-        # 5. Edge attribution via JVP with intermediate stop-grads
-        #    Materialise full [B,T,d_sae] grads/deltas only for submodules with active nodes
-        active_submods = sorted(
-            set(active_latents.keys()) | set(resid_node_id_map.keys()),
-            key=lambda x: (x[0], ["attn", "mlp", "resid"].index(x[1]))
-        )
+        # 5. Edge attribution via JVP — 6 edge types per layer (Marks et al. 2024)
+        #    For each layer, working backward:
+        #      MR: mlp  → resid                (no stop-grad)
+        #      AR: attn → resid                (stop mlp)
+        #      AM: attn → mlp                  (no stop-grad)
+        #      RM: prev_resid → mlp            (stop attn)
+        #      RA: prev_resid → attn           (no stop-grad)
+        #      RR: prev_resid → resid          (stop mlp + attn)
 
-        grads_mat:  Dict[Tuple[int, str], SparseAct] = {}
-        deltas_mat: Dict[Tuple[int, str], SparseAct] = {}
-        for lk in active_submods:
-            if lk in sparse_data:
-                grads_mat[lk], deltas_mat[lk] = self._materialize_grad_delta(lk, sparse_data)
-
-        # Single instrumented forward pass for the JVP graph
         self.inference.disable_compile()
+        self.inference.enable_grad_checkpointing()
         instrument = SAEGraphInstrument(self.sae_bank, stop_error_grad=True)
         self.inference.forward(probe_tokens, patcher=instrument,
                                grad_enabled=True, return_activations=False)
+        self.inference.disable_grad_checkpointing()
         self.inference.enable_compile()
+        _vram_audit("after SAE graph forward")
 
-        for downstream in reversed(active_submods):
-            d_layer, d_kind = downstream
-            if downstream not in grads_mat:
-                continue
-            if (d_layer, d_kind) not in instrument.graph.activations:
-                continue
+        n_layers = self.sae_bank.n_layer
 
-            _, d_state_conn = instrument.graph.get_latents(d_layer, d_kind)
-            # [B, T, d_sae+1] — sparse (mostly zeros); backprop from specific target index
-            backprop_vec = (grads_mat[downstream] @ d_state_conn).to_tensor()
+        for layer in reversed(range(n_layers)):
+            resid_lk = (layer, "resid")
+            mlp_lk   = (layer, "mlp")
+            attn_lk  = (layer, "attn")
 
-            # Build target list: (feature_index_in_backprop_vec, circuit_uuid)
-            targets_list: List[Tuple[int, str]] = [
-                (l_idx, node_id_map[(d_layer, d_kind, l_idx)])
-                for l_idx in active_latents.get(downstream, [])
-            ]
-            if downstream in resid_node_id_map:
-                targets_list.append((self.sae_bank.d_sae, resid_node_id_map[downstream]))
+            self._add_jvp_edges(
+                instrument, grads_all, deltas_all, circuit,
+                node_id_map, resid_node_id_map, active_latents,
+                upstream=mlp_lk, downstream=resid_lk, stop_grads=[],
+            )
+            self._add_jvp_edges(
+                instrument, grads_all, deltas_all, circuit,
+                node_id_map, resid_node_id_map, active_latents,
+                upstream=attn_lk, downstream=resid_lk, stop_grads=[mlp_lk],
+            )
+            self._add_jvp_edges(
+                instrument, grads_all, deltas_all, circuit,
+                node_id_map, resid_node_id_map, active_latents,
+                upstream=attn_lk, downstream=mlp_lk, stop_grads=[],
+            )
 
-            if not targets_list:
-                continue
-
-            for target_idx, target_uuid in targets_list:
-                for upstream in active_submods[:active_submods.index(downstream)]:
-                    u_layer, u_kind = upstream
-                    if upstream not in deltas_mat:
-                        continue
-
-                    # Intermediate stop-grads: same-layer submods between upstream and downstream
-                    stop_grads = [
-                        mid for mid in active_submods[
-                            active_submods.index(upstream) + 1 : active_submods.index(downstream)
-                        ]
-                        if mid[0] == d_layer
-                    ]
-
-                    with multi_stop_grad(self.inference.model, stop_grads):
-                        self.inference.model.zero_grad()
-                        backprop_vec[:, :, target_idx].sum().backward(retain_graph=True)
-
-                        u_state_grad, _ = instrument.graph.get_latents(u_layer, u_kind)
-                        attr      = u_state_grad.grad @ deltas_mat[upstream]
-                        score_act = attr.sum(dim=1).mean(dim=0)
-
-                        # Feature → target edges  (only iterate over known active indices)
-                        if score_act.act is not None:
-                            for u_latent in active_latents.get((u_layer, u_kind), []):
-                                score = float(score_act.act[u_latent].item())
-                                if abs(score) >= self.edge_threshold:
-                                    circuit.add_edge(
-                                        node_id_map[(u_layer, u_kind, u_latent)],
-                                        target_uuid, weight=score,
-                                    )
-
-                        # Residual → target edge
-                        if (u_layer, u_kind) in resid_node_id_map and score_act.resc is not None:
-                            score = float(score_act.resc.item())
-                            if abs(score) >= self.edge_threshold:
-                                circuit.add_edge(
-                                    resid_node_id_map[(u_layer, u_kind)],
-                                    target_uuid, weight=score,
-                                )
+            if layer > 0:
+                prev_resid_lk = (layer - 1, "resid")
+                self._add_jvp_edges(
+                    instrument, grads_all, deltas_all, circuit,
+                    node_id_map, resid_node_id_map, active_latents,
+                    upstream=prev_resid_lk, downstream=mlp_lk, stop_grads=[attn_lk],
+                )
+                self._add_jvp_edges(
+                    instrument, grads_all, deltas_all, circuit,
+                    node_id_map, resid_node_id_map, active_latents,
+                    upstream=prev_resid_lk, downstream=attn_lk, stop_grads=[],
+                )
+                self._add_jvp_edges(
+                    instrument, grads_all, deltas_all, circuit,
+                    node_id_map, resid_node_id_map, active_latents,
+                    upstream=prev_resid_lk, downstream=resid_lk, stop_grads=[mlp_lk, attn_lk],
+                )
 
         del instrument
         if torch.cuda.is_available():
@@ -331,7 +305,6 @@ class SFCAttributionPatching(DiscoveryMethod):
             logger.reject("circuit collapsed to ≤1 node after edge pass")
             return None
 
-        # 6. Pruning, evaluation, faithfulness gate
         if self.pruning_threshold > 0:
             n_before = len(circuit.nodes)
             prune_non_minimal_nodes(
@@ -365,16 +338,80 @@ class SFCAttributionPatching(DiscoveryMethod):
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+    def _add_jvp_edges(
+        self,
+        instrument: SAEGraphInstrument,
+        grads: Dict[Tuple[int, str], SparseAct],
+        deltas: Dict[Tuple[int, str], SparseAct],
+        circuit: Circuit,
+        node_id_map: Dict[FeatureID, str],
+        resid_node_id_map: Dict[Tuple[int, str], str],
+        active_latents: Dict[Tuple[int, str], List[int]],
+        upstream: Tuple[int, str],
+        downstream: Tuple[int, str],
+        stop_grads: List[Tuple[int, str]],
+    ) -> None:
+        """
+        Computes JVP edge attributions for a single (upstream → downstream) pair.
+
+        For each active downstream feature, backpropagates through the graph (stopping
+        gradients at `stop_grads` submodules), reads accumulated gradients at the upstream
+        leaf anchor, and scores edges as grad @ delta.
+        """
+        if downstream not in grads or upstream not in deltas:
+            return
+        if downstream not in instrument.graph.activations:
+            return
+        if upstream not in instrument.graph.activations:
+            return
+
+        d_layer, d_kind = downstream
+        u_layer, u_kind = upstream
+
+        _, d_state_conn, _ = instrument.graph.get_latents(d_layer, d_kind)
+        backprop_vec = (grads[downstream] @ d_state_conn).to_tensor()
+
+        targets: List[Tuple[int, str]] = []
+        for l_idx in active_latents.get(downstream, []):
+            fid = FeatureID(d_layer, d_kind, l_idx)
+            if fid in node_id_map:
+                targets.append((l_idx, node_id_map[fid]))
+        if downstream in resid_node_id_map:
+            targets.append((self.sae_bank.d_sae, resid_node_id_map[downstream]))
+
+        if not targets:
+            return
+
+        for target_idx, target_uuid in targets:
+            with multi_stop_grad(self.inference.model, stop_grads):
+                self.inference.model.zero_grad()
+                instrument.graph.zero_grad()
+                backprop_vec[:, :, target_idx].sum().backward(retain_graph=True)
+
+                u_state_grad, _, _ = instrument.graph.get_latents(u_layer, u_kind)
+                attr = u_state_grad.grad @ deltas[upstream]
+                score_act = attr.sum(dim=1).mean(dim=0)
+
+                if score_act.act is not None:
+                    for u_latent in active_latents.get(upstream, []):
+                        score = float(score_act.act[u_latent].item())
+                        if abs(score) >= self.edge_threshold:
+                            fid = FeatureID(u_layer, u_kind, u_latent)
+                            if fid in node_id_map:
+                                circuit.add_edge(
+                                    node_id_map[fid],
+                                    target_uuid, weight=score,
+                                )
+
+                if upstream in resid_node_id_map and score_act.resc is not None:
+                    score = float(score_act.resc.item())
+                    if abs(score) >= self.edge_threshold:
+                        circuit.add_edge(
+                            resid_node_id_map[upstream],
+                            target_uuid, weight=score,
+                        )
 
     def _get_all_states(self, tokens: torch.Tensor) -> Dict[Tuple[int, str], TopKState]:
-        """
-        Runs a no-grad forward pass and collects SAE states as TopKState objects.
-        Stores only (top_k_vals, top_k_idx, residual) — ~320× less memory than a
-        full dense [B, T, d_sae] SparseAct.
-        """
         states: Dict[Tuple[int, str], TopKState] = {}
         d_sae = self.sae_bank.d_sae
 
@@ -384,7 +421,6 @@ class SFCAttributionPatching(DiscoveryMethod):
                 top_acts, top_idx = self.sae_bank.encode(act, kind, layer_idx)
                 B, T, _ = act.shape
                 dtype = act.dtype
-                # Ephemeral dense tensor just to compute residual, then freed
                 dense = torch.zeros(B, T, d_sae, device=act.device, dtype=dtype)
                 dense.scatter_(-1, top_idx.long(), top_acts.to(dtype))
                 x_hat = self.sae_bank.decode(dense, kind, layer_idx)
@@ -400,122 +436,90 @@ class SFCAttributionPatching(DiscoveryMethod):
     def _pe_ig(
         self,
         clean_states: Dict[Tuple[int, str], TopKState],
-        patch_states:  Dict[Tuple[int, str], TopKState],
-        tokens:  torch.Tensor,
-        argmax:  torch.Tensor,
+        patch_states: Dict[Tuple[int, str], TopKState],
+        tokens: torch.Tensor,
+        argmax: torch.Tensor,
         targets: torch.Tensor,
     ) -> Tuple[
-        Dict[Tuple[int, str], torch.Tensor],  # node_scores: [d_sae] per lk
-        Dict[Tuple[int, str], float],          # res_scores: scalar per lk
-        Dict[Tuple[int, str], Any],            # sparse_data for later edge materialisation
+        Dict[Tuple[int, str], SparseAct],
+        Dict[Tuple[int, str], SparseAct],
+        Dict[Tuple[int, str], SparseAct],
     ]:
         """
-        Integrated Gradients node attribution using sparse [B,T,k] leaf tensors.
+        Per-submodule Integrated Gradients, matching Marks et al. 2024.
 
-        Peak VRAM during this function:
-          - Autograd graph: 36 × ephemeral [B,T,d_sae] decoder intermediates (~5.8 GB)
-            These are freed immediately after each step's backward.
-          - Leaf tensors: 36 × [B,T,k] × 3 (~150 MB total)
-          No dense [B,T,d_sae] tensors accumulate in memory across steps.
+        For each (layer, kind) independently: interpolate that one submodule's
+        SAE state between clean and patch across `ig_steps` points, holding all
+        other submodules at their clean activations.  Backward from the logit
+        metric at each step, then average gradients.
+
+        Returns (effects, deltas, grads) where each is a dict keyed by (layer, kind):
+            effects[lk] = grad @ delta  (SparseAct with .act and .resc)
+            deltas[lk]  = patch - clean  (SparseAct with .act and .res)
+            grads[lk]   = mean IG gradient (SparseAct with .act and .res)
         """
-        B         = tokens.shape[0]
+        B = tokens.shape[0]
         batch_idx = torch.arange(B, device=tokens.device)
-        d_sae     = self.sae_bank.d_sae
+        d_sae = self.sae_bank.d_sae
 
-        # Sparse gradient accumulators — [B, T, k] instead of [B, T, d_sae]
-        grad_sum_c: Dict[Tuple[int, str], torch.Tensor] = {
-            lk: torch.zeros_like(s.vals) for lk, s in clean_states.items()
-        }
-        grad_sum_p: Dict[Tuple[int, str], torch.Tensor] = {
-            lk: torch.zeros_like(patch_states[lk].vals) for lk in clean_states
-        }
-        grad_sum_r: Dict[Tuple[int, str], torch.Tensor] = {
-            lk: torch.zeros_like(s.res) for lk, s in clean_states.items()
-        }
+        effects: Dict[Tuple[int, str], SparseAct] = {}
+        deltas:  Dict[Tuple[int, str], SparseAct] = {}
+        grads:   Dict[Tuple[int, str], SparseAct] = {}
 
         self.inference.disable_compile()
-        for step in range(self.ig_steps):
-            alpha   = step / self.ig_steps
-            patcher = IGPatcher(self.sae_bank, clean_states, patch_states, alpha, d_sae)
-            _, logits, _ = self.inference.forward(
-                tokens, patcher=patcher, grad_enabled=True,
-                return_activations=False, all_logits=True,
-            )
-            target_ids = targets[batch_idx, argmax.to(targets.device)].to(logits.device)
-            logits[batch_idx, argmax, target_ids].sum().backward()  # No retain_graph
+        self.inference.enable_grad_checkpointing()
+        for lk in clean_states:
+            clean_sa = clean_states[lk].to_sparse_act(d_sae)
+            patch_sa = patch_states[lk].to_sparse_act(d_sae)
 
-            for lk, (c_leaf, p_leaf, r_leaf) in patcher.leaves.items():
-                if c_leaf.grad is not None:
-                    grad_sum_c[lk].add_(c_leaf.grad.float())
-                if p_leaf.grad is not None:
-                    grad_sum_p[lk].add_(p_leaf.grad.float())
-                if r_leaf.grad is not None:
-                    grad_sum_r[lk].add_(r_leaf.grad.float())
+            assert clean_sa.act is not None and patch_sa.act is not None
+            assert clean_sa.res is not None and patch_sa.res is not None
+
+            # Running sums avoid accumulating ig_steps tensors simultaneously.
+            act_grad_sum = torch.zeros_like(clean_sa.act)
+            res_grad_sum = torch.zeros_like(clean_sa.res)
+
+            for step in range(self.ig_steps):
+                alpha = step / self.ig_steps
+                f_act = ((1 - alpha) * clean_sa.act + alpha * patch_sa.act).detach().requires_grad_(True)
+                f_res = ((1 - alpha) * clean_sa.res + alpha * patch_sa.res).detach().requires_grad_(True)
+
+                patcher = SingleSubmodPatcher(self.sae_bank, lk, f_act, f_res)
+                _, logits, _ = self.inference.forward(
+                    tokens, patcher=patcher, grad_enabled=True,
+                    return_activations=False, all_logits=True,
+                )
+                target_ids = targets[batch_idx, argmax.to(targets.device)].to(logits.device)
+                logits[batch_idx, argmax, target_ids].sum().backward()
+
+                act_grad_sum += f_act.grad.detach() if f_act.grad is not None else torch.zeros_like(f_act)
+                res_grad_sum += f_res.grad.detach() if f_res.grad is not None else torch.zeros_like(f_res)
+                del f_act, f_res
+
+            # Cast to bfloat16 before storing: reduces grads/deltas from float32 to
+            # bfloat16, cutting the combined dict footprint by ~2× (2.88GB → 1.44GB each).
+            mean_grad = SparseAct(
+                act=(act_grad_sum / self.ig_steps).bfloat16(),
+                res=(res_grad_sum / self.ig_steps).bfloat16(),
+            )
+            del act_grad_sum, res_grad_sum
+
+            delta = SparseAct(
+                act=(patch_sa.act - clean_sa.act).detach().bfloat16(),
+                res=(patch_sa.res - clean_sa.res).detach().bfloat16(),
+            )
+            effect = mean_grad @ delta
+
+            effects[lk] = SparseAct(
+                act=effect.act.bfloat16() if effect.act is not None else None,
+                resc=effect.resc.bfloat16() if effect.resc is not None else None,
+            )
+            deltas[lk] = delta
+            grads[lk] = mean_grad
+
+            del clean_sa, patch_sa
+        self.inference.disable_grad_checkpointing()
         self.inference.enable_compile()
 
-        node_scores: Dict[Tuple[int, str], torch.Tensor] = {}
-        res_scores:  Dict[Tuple[int, str], float]         = {}
-        sparse_data: Dict[Tuple[int, str], Any]           = {}
+        return effects, deltas, grads
 
-        for lk in clean_states:
-            clean = clean_states[lk]
-            patch = patch_states[lk]
-
-            mean_g_c = grad_sum_c[lk] / self.ig_steps  # [B, T, k]
-            mean_g_p = grad_sum_p[lk] / self.ig_steps  # [B, T, k]
-            mean_g_r = grad_sum_r[lk] / self.ig_steps  # [B, T, d_model]
-
-            # Effect = mean_grad * delta, scattered into [d_sae] (no full tensor kept)
-            # Contributions from clean positions (delta component: -clean_vals)
-            # Contributions from patch positions (delta component: +patch_vals)
-            # For features in both: scatter_add_ sums them = mean_grad*(patch-clean) ✓
-            node_score = torch.zeros(d_sae, device=clean.device)
-            node_score.scatter_add_(
-                0,
-                clean.idx.reshape(-1),
-                (mean_g_c * (-clean.vals)).reshape(-1).float(),
-            )
-            node_score.scatter_add_(
-                0,
-                patch.idx.reshape(-1),
-                (mean_g_p * patch.vals).reshape(-1).float(),
-            )
-            node_scores[lk] = node_score / B  # mean over batch
-
-            delta_res = patch.res.float() - clean.res.float()
-            res_scores[lk] = float(
-                (mean_g_r * delta_res).sum(dim=-1).sum(dim=1).mean(dim=0).item()
-            )
-
-            # Store only sparse ingredients — full [B,T,d_sae] built lazily in
-            # _materialize_grad_delta only for submodules that have active nodes
-            sparse_data[lk] = (mean_g_c, mean_g_p, mean_g_r,
-                                clean.idx, patch.idx,
-                                clean.vals, patch.vals, delta_res)
-
-        return node_scores, res_scores, sparse_data
-
-    def _materialize_grad_delta(
-        self,
-        lk: Tuple[int, str],
-        sparse_data: Dict[Tuple[int, str], Any],
-    ) -> Tuple[SparseAct, SparseAct]:
-        """
-        Materialise full [B, T, d_sae] SparseActs for one submodule on demand.
-        Only called for submodules that have nodes passing the threshold.
-        """
-        mean_g_c, mean_g_p, mean_g_r, c_idx, p_idx, c_vals, p_vals, delta_res = sparse_data[lk]
-        B, T, k = mean_g_c.shape
-        d_sae   = self.sae_bank.d_sae
-
-        # Mean gradient tensor: scatter clean then patch (duplicates get same value — safe)
-        mean_g_act = torch.zeros(B, T, d_sae, device=c_idx.device, dtype=torch.float32)
-        mean_g_act.scatter_(-1, c_idx, mean_g_c)
-        mean_g_act.scatter_(-1, p_idx, mean_g_p)
-
-        # Delta tensor: scatter_add_ correctly handles features in both sets
-        delta_act = torch.zeros(B, T, d_sae, device=c_idx.device, dtype=torch.float32)
-        delta_act.scatter_add_(-1, c_idx, -c_vals.float())
-        delta_act.scatter_add_(-1, p_idx,  p_vals.float())
-
-        return SparseAct(act=mean_g_act, res=mean_g_r), SparseAct(act=delta_act, res=delta_res)

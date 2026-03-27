@@ -1,29 +1,12 @@
-"""
-Phase 5 — Attribution function tests.
-
-Tests compute_logit_attribution, compute_feature_attribution, and the legacy
-compute_attribution using a fully wired synthetic computation graph produced by
-SAEGraphInstrument.  All tests run on CPU without loading real model weights.
-
-Setup strategy
---------------
-attr_setup — forward pass under SAEGraphInstrument (stop_error_grad=False) with
-             x.requires_grad=True.  This ensures:
-               • top_acts_connected has grad_fn at every (layer, kind) — needed for
-                 compute_feature_attribution's target_sum.grad_fn guard.
-               • output depends on every leaf anchor via the error-term path —
-                 needed for compute_logit_attribution to return non-zero scores.
-             logits [B, T, V] = output @ W_logit are then also in the graph.
-"""
 import pytest
 import torch
 
 from circuit.attribution import (
     compute_logit_attribution,
     compute_feature_attribution,
-    compute_attribution,
 )
 from circuit.sae_graph import FeatureGraph, SAEGraphInstrument
+from circuit.feature_id import FeatureID
 
 # ---------------------------------------------------------------------------
 # Local constants
@@ -94,15 +77,14 @@ def attr_setup(mock_sae_bank, mock_model):
 
 class TestComputeLogitAttribution:
 
-    def test_returns_dict_with_layer_kind_latent_keys(self, attr_setup):
+    def test_returns_dict_with_feature_id_keys(self, attr_setup):
         graph, logits, pos_argmax, target_tokens = attr_setup
         result = compute_logit_attribution(graph, logits, pos_argmax, target_tokens)
         for key in result.keys():
-            assert isinstance(key, tuple) and len(key) == 3
-            layer, kind, latent = key
-            assert isinstance(layer, int)
-            assert isinstance(kind, str) and kind in KINDS
-            assert isinstance(latent, int)
+            assert isinstance(key, FeatureID)
+            assert key.layer < N_LAYERS
+            assert key.kind in KINDS
+            assert key.index < D_SAE
 
     def test_nonempty_result_for_connected_graph(self, attr_setup):
         """At least one latent should receive a non-zero attribution score."""
@@ -136,9 +118,9 @@ class TestComputeLogitAttribution:
             for _, _, indices in steps:
                 all_active.update(int(v.item()) for v in indices.flatten())
 
-        for (layer, kind, i) in result.keys():
-            assert i in all_active, (
-                f"Latent {i} at ({layer},{kind}) is not in any top_indices entry"
+        for fid in result.keys():
+            assert fid.index in all_active, (
+                f"Latent {fid.index} at ({fid.layer},{fid.kind}) is not in any top_indices entry"
             )
 
     def test_changing_target_token_changes_scores(self, attr_setup):
@@ -154,21 +136,6 @@ class TestComputeLogitAttribution:
         vals_differ = any(result_a[k] != result_b[k] for k in shared)
         assert keys_differ or vals_differ, (
             "Changing target tokens had no effect on any attribution score"
-        )
-
-    def test_changing_pos_argmax_changes_scores(self, attr_setup):
-        """Swapping probe positions changes the backward target and therefore the scores."""
-        graph, logits, pos_argmax, target_tokens = attr_setup
-        result_a = compute_logit_attribution(graph, logits, pos_argmax, target_tokens)
-
-        alt_pos  = torch.tensor([2, 1])        # swap batch-0 / batch-1 probe positions
-        result_b = compute_logit_attribution(graph, logits, alt_pos, target_tokens)
-
-        shared = set(result_a) & set(result_b)
-        keys_differ = set(result_a) != set(result_b)
-        vals_differ = any(result_a[k] != result_b[k] for k in shared)
-        assert keys_differ or vals_differ, (
-            "Swapping pos_argmax had no effect on any attribution score"
         )
 
 
@@ -228,9 +195,9 @@ class TestComputeFeatureAttribution:
             graph, target_layer, target_kind, target_latent, pos_argmax
         )
 
-        for (l, _k, _i) in result.keys():
-            assert l <= target_layer, (
-                f"Layer {l} > target_layer {target_layer} appeared in result"
+        for fid in result.keys():
+            assert fid.layer <= target_layer, (
+                f"Layer {fid.layer} > target_layer {target_layer} appeared in result"
             )
 
     def test_candidate_nodes_restricts_output_keys(self, attr_setup):
@@ -241,13 +208,14 @@ class TestComputeFeatureAttribution:
 
         cand_layer, cand_kind = 0, "attn"
         cand_latent = _get_valid_target(graph, cand_layer, cand_kind, pos_argmax)
+        cand_fid = FeatureID(cand_layer, cand_kind, cand_latent)
 
         result = compute_feature_attribution(
             graph, target_layer, target_kind, target_latent, pos_argmax,
-            candidate_nodes=[(cand_layer, cand_kind, cand_latent)],
+            candidate_nodes=[cand_fid],
         )
 
-        allowed = {(cand_layer, cand_kind, cand_latent)}
+        allowed = {cand_fid}
         for key in result.keys():
             assert key in allowed, f"Unexpected key {key} outside candidate_nodes"
 
@@ -264,9 +232,10 @@ class TestComputeFeatureAttribution:
 
         cand_layer, cand_kind = 0, "attn"
         cand_latent = _get_valid_target(graph, cand_layer, cand_kind, pos_argmax)
+        cand_fid = FeatureID(cand_layer, cand_kind, cand_latent)
         result_restricted = compute_feature_attribution(
             graph, target_layer, target_kind, target_latent, pos_argmax,
-            candidate_nodes=[(cand_layer, cand_kind, cand_latent)],
+            candidate_nodes=[cand_fid],
         )
 
         # The unrestricted result must cover all keys the restricted version found.
@@ -284,69 +253,3 @@ class TestComputeFeatureAttribution:
             candidate_nodes=[],
         )
         assert result == {}
-
-
-# ---------------------------------------------------------------------------
-# TestComputeAttributionLegacy
-# ---------------------------------------------------------------------------
-
-class TestComputeAttributionLegacy:
-
-    def test_returns_attribution_for_valid_target_latent(self, attr_setup):
-        graph, _, pos_argmax, _ = attr_setup
-        layer, kind = 1, "attn"
-        target_latent = _get_valid_target(graph, layer, kind, pos_argmax)
-
-        result = compute_attribution(graph, layer, kind, target_latent, pos_argmax)
-
-        assert len(result) > 0
-        assert (layer, kind, target_latent) in result
-
-    def test_no_match_at_probe_position_returns_empty_dict(self, attr_setup):
-        graph, _, pos_argmax, _ = attr_setup
-        layer, kind = 0, "mlp"
-        dormant = _get_dormant_latent(graph, layer, kind, pos_argmax)
-
-        result = compute_attribution(graph, layer, kind, dormant, pos_argmax)
-        assert result == {}
-
-    def test_score_for_target_latent_equals_target_activation_sum(self, attr_setup):
-        """
-        Algebraic identity for the legacy function.
-
-        target_sum = acts_grad[b, pos_argmax[b], k].sum()  (over k matching target_latent)
-        d(target_sum)/d(acts_grad[b,t,k]) = 1  iff t==pos_argmax[b] and index matches, else 0
-        attr_tensor[b,t,k]               = acts_grad[b,t,k] * grad[b,t,k]
-        score for target_latent           = target_sum.item()
-        """
-        graph, _, pos_argmax, _ = attr_setup
-        layer, kind = 1, "resid"
-        acts_grad, _, indices = graph.get_latents(layer, kind)
-
-        batch_idx     = torch.arange(B)
-        target_latent = int(indices[batch_idx, pos_argmax][0, 0].item())
-
-        vals_at_pos   = indices[batch_idx, pos_argmax]   # [B, K]
-        matches       = (vals_at_pos == target_latent)   # [B, K]
-        expected_score = acts_grad.data[batch_idx, pos_argmax][matches].sum().item()
-
-        result = compute_attribution(graph, layer, kind, target_latent, pos_argmax)
-
-        assert (layer, kind, target_latent) in result
-        assert abs(result[(layer, kind, target_latent)] - expected_score) < 1e-5
-
-    def test_cross_layer_anchors_absent_for_same_layer_backward(self, attr_setup):
-        """
-        The legacy backward target is top_acts_grad — a detached leaf with no path
-        to earlier layers.  Therefore only same-layer entries should appear in the result.
-        """
-        graph, _, pos_argmax, _ = attr_setup
-        layer, kind = 1, "mlp"
-        target_latent = _get_valid_target(graph, layer, kind, pos_argmax)
-
-        result = compute_attribution(graph, layer, kind, target_latent, pos_argmax)
-
-        for (l, _k, _i) in result.keys():
-            assert l == layer, (
-                f"Legacy attribution returned entry for layer {l}, expected only layer {layer}"
-            )

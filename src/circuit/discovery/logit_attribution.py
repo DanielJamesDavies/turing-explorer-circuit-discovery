@@ -11,8 +11,10 @@ from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
 from circuit.sae_graph import SAEGraphInstrument
 from circuit.attribution import compute_logit_attribution, compute_feature_attribution
+from circuit.feature_id import FeatureID
 from circuit.circuit_logger import CircuitLogger
 from pipeline.component_index import component_idx, split_component_idx
+
 
 class LogitAttribution(DiscoveryMethod):
     """
@@ -49,11 +51,15 @@ class LogitAttribution(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.logit_attribution
-        self.min_faithfulness = min_faithfulness or cast(float, config.discovery.min_faithfulness or 0.3)
-        self.logit_threshold = logit_threshold or cast(float, cfg.logit_threshold or 0.001)
-        self.edge_threshold = edge_threshold or cast(float, cfg.edge_threshold or 0.001)
+        self.min_faithfulness = (
+            min_faithfulness
+            if min_faithfulness is not None
+            else cast(float, config.discovery.min_faithfulness or 0.3)
+        )
+        self.logit_threshold = logit_threshold if logit_threshold is not None else cast(float, cfg.logit_threshold or 0.001)
+        self.edge_threshold = edge_threshold if edge_threshold is not None else cast(float, cfg.edge_threshold or 0.001)
         self.max_neighbors = max_neighbors or cast(int, cfg.max_neighbors or config.discovery.max_neighbors or 32)
-        self.min_active_count = min_active_count or cast(int, config.discovery.min_active_count or 50)
+        self.min_active_count = min_active_count if min_active_count is not None else cast(int, config.discovery.min_active_count or 50)
         self.pruning_threshold = pruning_threshold if pruning_threshold is not None else cast(float, cfg.pruning_threshold or 0.0)
         self.probe_batch_size = probe_batch_size or cast(int, config.discovery.probe_batch_size or 8)
 
@@ -84,9 +90,11 @@ class LogitAttribution(DiscoveryMethod):
         probe_argmax = probe_data.pos_argmax[:n_probe]
         probe_targets = probe_data.target_tokens[:n_probe]
 
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, len(self.sae_bank.kinds))
-        seed_kind = self.sae_bank.kinds[seed_kind_idx]
-        seed_key = (seed_layer, seed_kind, seed_latent_idx)
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = kinds[seed_kind_idx]
+        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
         logger.header(
             seed_layer, seed_kind, seed_latent_idx,
@@ -124,8 +132,8 @@ class LogitAttribution(DiscoveryMethod):
         )
 
         # 4. Build node set: seed always included; others if above logit_threshold
-        included: Dict[Tuple[int, str, int], float] = {}
-        included[seed_key] = logit_attrs.get(seed_key, 0.0)
+        included: Dict[FeatureID, float] = {}
+        included[seed_fid] = logit_attrs.get(seed_fid, 0.0)
 
         d_sae = self.sae_bank.d_sae
         neighbor_globals = top_coactivation.top_indices[seed_comp_idx, seed_latent_idx]
@@ -136,16 +144,16 @@ class LogitAttribution(DiscoveryMethod):
         for g_idx, weight in zip(neighbor_globals.tolist(), neighbor_weights.tolist()):
             if weight <= 0 or n_considered >= self.max_neighbors:
                 break
-            c_idx = int(g_idx) // d_sae
-            l_idx = int(g_idx) % d_sae
+            
+            fid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+            c_idx, l_idx = fid.to_component_id(n_kinds, kinds)
+            
             if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
                 continue
-            n_layer, n_kind_idx = split_component_idx(c_idx, len(self.sae_bank.kinds))
-            n_kind = self.sae_bank.kinds[n_kind_idx]
-            key = (n_layer, n_kind, l_idx)
-            score = logit_attrs.get(key, 0.0)
+            
+            score = logit_attrs.get(fid, 0.0)
             if abs(score) >= self.logit_threshold:
-                included[key] = score
+                included[fid] = score
                 n_passed += 1
             n_considered += 1
 
@@ -169,67 +177,58 @@ class LogitAttribution(DiscoveryMethod):
 
         # 5. Add all included nodes to the circuit
         kind_order = ["attn", "mlp", "resid"]
-        node_id_map: Dict[Tuple[int, str, int], str] = {}
+        node_id_map: Dict[FeatureID, str] = {}
 
-        for (layer, kind, latent_idx), logit_score in included.items():
-            role = "seed" if (layer, kind, latent_idx) == seed_key else "attributed"
+        for fid, logit_score in included.items():
+            role = "seed" if fid == seed_fid else "attributed"
             node = CircuitNode(metadata={
-                "layer_idx": layer,
-                "latent_idx": latent_idx,
-                "kind": kind,
+                "feature_id": fid,
                 "role": role,
                 "logit_attribution": logit_score,
             })
             circuit.add_node(node)
-            node_id_map[(layer, kind, latent_idx)] = node.uuid
+            node_id_map[fid] = node.uuid
 
         # 6. Pass 2 — feature-to-feature edges
-        included_keys = list(node_id_map.keys())
+        included_fids = list(node_id_map.keys())
 
-        for node_b_key in included_keys:
-            b_layer, b_kind, b_latent = node_b_key
-
+        for b_fid in included_fids:
             upstream_circuit = [
-                k for k in included_keys
-                if k[0] < b_layer or (k[0] == b_layer and kind_order.index(k[1]) < kind_order.index(b_kind))
+                fid for fid in included_fids
+                if fid.layer < b_fid.layer or (fid.layer == b_fid.layer and kind_order.index(fid.kind) < kind_order.index(b_fid.kind))
             ]
             if not upstream_circuit:
                 continue
 
-            b_comp_idx = component_idx(b_layer, self.sae_bank.kinds.index(b_kind), len(self.sae_bank.kinds))
+            b_comp_idx, b_latent = b_fid.to_component_id(n_kinds, kinds)
             b_neighbors_globals = top_coactivation.top_indices[b_comp_idx, b_latent]
             b_neighbors_weights = top_coactivation.top_values[b_comp_idx, b_latent]
 
-            coact_upstream: List[Tuple[int, str, int]] = []
+            coact_upstream: List[FeatureID] = []
             for g_idx, weight in zip(b_neighbors_globals.tolist(), b_neighbors_weights.tolist()):
                 if weight <= 0:
                     break
-                c_idx = int(g_idx) // d_sae
-                l_idx = int(g_idx) % d_sae
-                n_layer, n_kind_idx = split_component_idx(c_idx, len(self.sae_bank.kinds))
-                n_kind = self.sae_bank.kinds[n_kind_idx]
-                cand = (n_layer, n_kind, l_idx)
-                if cand in upstream_circuit:
-                    coact_upstream.append(cand)
+                fid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+                if fid in upstream_circuit:
+                    coact_upstream.append(fid)
 
             candidates = coact_upstream if coact_upstream else upstream_circuit
 
             edge_attrs = compute_feature_attribution(
                 instrument.graph,
-                target_layer=b_layer,
-                target_kind=b_kind,
-                target_latent_idx=b_latent,
+                target_layer=b_fid.layer,
+                target_kind=b_fid.kind,
+                target_latent_idx=b_fid.index,
                 pos_argmax=probe_argmax,
                 candidate_nodes=candidates,
             )
 
-            for (a_layer, a_kind, a_latent), edge_score in edge_attrs.items():
+            for a_fid, edge_score in edge_attrs.items():
                 if abs(edge_score) >= self.edge_threshold:
-                    a_key = (a_layer, a_kind, a_latent)
-                    if a_key in node_id_map:
+                    if a_fid in node_id_map:
                         circuit.add_edge(
-                            node_id_map[a_key],
-                            node_id_map[node_b_key],
+                            node_id_map[a_fid],
+                            node_id_map[b_fid],
                             weight=edge_score,
                         )
 

@@ -6,6 +6,7 @@ from typing import Optional
 
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
+from store.utils import _AutoAllocTensor
 
 
 def _load_cuda_ext():
@@ -36,12 +37,34 @@ else:
 
 class LatentStats:
 
+    active_count = _AutoAllocTensor()
+    mean         = _AutoAllocTensor()
+    mean_abs     = _AutoAllocTensor()
+    m2           = _AutoAllocTensor()
+    m2_abs       = _AutoAllocTensor()
+    seq_count    = _AutoAllocTensor()
+    mean_seq     = _AutoAllocTensor()
+    m2_seq       = _AutoAllocTensor()
+
     def __init__(self, device: Optional[torch.device] = None):
         self.device = device if device is not None else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.llm_config = TuringLLMConfig()
         self.sae_config = SAEConfig()
         self.num_components = self.llm_config.n_layer * 3
         self.component_steps: dict[int, int] = defaultdict(int)
+        
+        self._allocated = False
+
+    def allocate(self, device: Optional[torch.device] = None) -> None:
+        """Explicitly allocate the large GPU tensors. Safe to call multiple times."""
+        if self._allocated:
+            if device is not None and device != self.device:
+                self.set_device(device)
+            return
+
+        if device is not None:
+            self.device = device
+
         d = self.sae_config.d_sae
         shape = (self.num_components, d)
 
@@ -54,19 +77,19 @@ class LatentStats:
         self.m2 = torch.zeros(shape, dtype=torch.float32, device=self.device)
         self.m2_abs = torch.zeros(shape, dtype=torch.float32, device=self.device)
 
-        # Per-sequence Welford statistics (tracks mean activation across whole sequences,
-        # only for sequences where the latent fired at least once). This lives in the
-        # same value range as compute_seq_scores() output, making it suitable for
-        # defining the mid_ctx band without the per-token vs per-sequence mismatch.
+        # Per-sequence Welford statistics
         self.seq_count = torch.zeros(shape, dtype=torch.int64,   device=self.device)
         self.mean_seq  = torch.zeros(shape, dtype=torch.float32, device=self.device)
         self.m2_seq    = torch.zeros(shape, dtype=torch.float32, device=self.device)
+        
+        self._allocated = True
 
     def update_component(
         self,
         component_idx: int,
         latents: tuple[torch.Tensor, torch.Tensor]  # [0: top_acts, 1: top_indices]
     ) -> None:
+        self.allocate(latents[0].device if latents[0].is_cuda else None)
         with torch.no_grad():
             top_acts = latents[0]    # [batch_size, seq_len, k]
             top_indices = latents[1] # [batch_size, seq_len, k]
@@ -190,12 +213,16 @@ class LatentStats:
 
     def variance(self, component_idx: Optional[int] = None) -> torch.Tensor:
         """Sample variance of a: M2 / max(1, n - 1)."""
+        if not self._allocated:
+            return torch.zeros((self.num_components, self.sae_config.d_sae) if component_idx is None else (self.sae_config.d_sae,), device=self.device)
         count = self.active_count if component_idx is None else self.active_count[component_idx]
         m2 = self.m2 if component_idx is None else self.m2[component_idx]
         return m2 / (count.float() - 1).clamp(min=1)
 
     def variance_abs(self, component_idx: Optional[int] = None) -> torch.Tensor:
         """Sample variance of |a|: M2_abs / max(1, n - 1)."""
+        if not self._allocated:
+            return torch.zeros((self.num_components, self.sae_config.d_sae) if component_idx is None else (self.sae_config.d_sae,), device=self.device)
         count = self.active_count if component_idx is None else self.active_count[component_idx]
         m2_abs = self.m2_abs if component_idx is None else self.m2_abs[component_idx]
         return m2_abs / (count.float() - 1).clamp(min=1)
@@ -210,24 +237,32 @@ class LatentStats:
 
     def std_seq(self, component_idx: Optional[int] = None) -> torch.Tensor:
         """Sample standard deviation of per-sequence activation scores."""
+        if not self._allocated:
+            return torch.zeros((self.num_components, self.sae_config.d_sae) if component_idx is None else (self.sae_config.d_sae,), device=self.device)
         count = self.seq_count if component_idx is None else self.seq_count[component_idx]
         m2    = self.m2_seq    if component_idx is None else self.m2_seq[component_idx]
         return (m2 / (count.float() - 1).clamp(min=1)).sqrt()
 
     def load(self, path: str) -> None:
-        checkpoint = torch.load(path, map_location=self.device)
-        self.active_count = checkpoint["active_count"].to(self.device)
-        self.mean         = checkpoint["mean"].to(self.device)
-        self.mean_abs     = checkpoint["mean_abs"].to(self.device)
-        self.m2           = checkpoint["m2"].to(self.device)
-        self.m2_abs       = checkpoint["m2_abs"].to(self.device)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        self.allocate()
+        self.active_count.copy_(checkpoint["active_count"])
+        self.mean.copy_(checkpoint["mean"])
+        self.mean_abs.copy_(checkpoint["mean_abs"])
+        self.m2.copy_(checkpoint["m2"])
+        self.m2_abs.copy_(checkpoint["m2_abs"])
         self.component_steps.update(checkpoint["component_steps"])
         # Per-sequence stats (may be absent in older checkpoints).
-        self.seq_count = checkpoint.get("seq_count", torch.zeros_like(self.active_count)).to(self.device)
-        self.mean_seq  = checkpoint.get("mean_seq",  torch.zeros_like(self.mean)).to(self.device)
-        self.m2_seq    = checkpoint.get("m2_seq",    torch.zeros_like(self.m2)).to(self.device)
+        if "seq_count" in checkpoint:
+            self.seq_count.copy_(checkpoint["seq_count"])
+        if "mean_seq" in checkpoint:
+            self.mean_seq.copy_(checkpoint["mean_seq"])
+        if "m2_seq" in checkpoint:
+            self.m2_seq.copy_(checkpoint["m2_seq"])
 
     def save(self, path: str) -> None:
+        if not self._allocated:
+            return # Nothing to save
         torch.save({
             "active_count":    self.active_count,
             "mean":            self.mean,
@@ -242,14 +277,15 @@ class LatentStats:
 
     def set_device(self, device: torch.device) -> None:
         self.device       = device
-        self.active_count = self.active_count.to(device)
-        self.mean         = self.mean.to(device)
-        self.mean_abs     = self.mean_abs.to(device)
-        self.m2           = self.m2.to(device)
-        self.m2_abs       = self.m2_abs.to(device)
-        self.seq_count    = self.seq_count.to(device)
-        self.mean_seq     = self.mean_seq.to(device)
-        self.m2_seq       = self.m2_seq.to(device)
+        if self._allocated:
+            self.active_count = self.active_count.to(device)
+            self.mean         = self.mean.to(device)
+            self.mean_abs     = self.mean_abs.to(device)
+            self.m2           = self.m2.to(device)
+            self.m2_abs       = self.m2_abs.to(device)
+            self.seq_count    = self.seq_count.to(device)
+            self.mean_seq     = self.mean_seq.to(device)
+            self.m2_seq       = self.m2_seq.to(device)
 
 
 latent_stats = LatentStats()

@@ -28,15 +28,21 @@ class SparseAct:
             for attr in ['act', 'res', 'resc']:
                 self_val = getattr(self, attr)
                 aux_val = getattr(aux, attr)
-                if self_val is not None or aux_val is not None:
-                    if self_val is not None and aux_val is not None:
-                        kwargs[attr] = f(self_val, aux_val)
-                    elif self_val is not None:
-                        # If adding/subtracting, we should probably keep the existing value
-                        # But since f is generic, we'll only do this if it's a known identity op
-                        # For now, let's just pass self_val if aux_val is None
-                        kwargs[attr] = self_val
-                    else:
+                if self_val is not None and aux_val is not None:
+                    kwargs[attr] = f(self_val, aux_val)
+                elif self_val is not None:
+                    # If we're subtracting and the second term is None, the first term remains as is
+                    kwargs[attr] = self_val
+                elif aux_val is not None:
+                    # If we're subtracting and the first term is None, we need to negate the second term
+                    # We check if the function 'f' is likely subtraction by checking its name or behaviour
+                    # But since f is a lambda, we'll just check if this is called from __sub__
+                    # A better way is to handle unary negation separately or ensure f handles None
+                    # For now, we'll assume the most common case for discovery is that we want -aux_val
+                    # if we are doing a difference and the baseline (self) is zero/None.
+                    try:
+                        kwargs[attr] = f(torch.zeros_like(aux_val), aux_val)
+                    except:
                         kwargs[attr] = aux_val
         else:
             for attr in ['act', 'res', 'resc']:
@@ -46,7 +52,17 @@ class SparseAct:
         return SparseAct(**kwargs)
 
     def __mul__(self, other: Any) -> 'SparseAct':
-        return self._map(lambda x, y: x * y, other)
+        if isinstance(other, SparseAct):
+            return SparseAct(
+                act=self.act * other.act if self.act is not None and other.act is not None else None,
+                res=self.res * other.res if self.res is not None and other.res is not None else None,
+                resc=self.resc * other.resc if self.resc is not None and other.resc is not None else None,
+            )
+        return SparseAct(
+            act=self.act * other if self.act is not None else None,
+            res=self.res * other if self.res is not None else None,
+            resc=self.resc * other if self.resc is not None else None,
+        )
 
     def __rmul__(self, other: Any) -> 'SparseAct':
         return self.__mul__(other)
@@ -56,28 +72,62 @@ class SparseAct:
         Dot product between two SparseActs.
         Features are multiplied element-wise; residuals are multiplied and summed (contracted).
         """
-        if self.res is not None and other.res is not None:
-            return SparseAct(
-                act=self.act * other.act,
-                resc=(self.res * other.res).sum(dim=-1, keepdim=True)
+        try:
+            from .fused_ops import fused_sparse_matmul
+            act, resc = fused_sparse_matmul(
+                self.act, other.act,
+                self.res, other.res,
+                self.resc, other.resc
             )
-        elif self.resc is not None and other.resc is not None:
-            return SparseAct(
-                act=self.act * other.act,
-                resc=self.resc * other.resc
-            )
-        else:
-            # Fallback for when one side doesn't have residuals
-            return SparseAct(act=self.act * other.act)
+            return SparseAct(act=act, resc=resc)
+        except (ImportError, Exception):
+            # Fallback path if compiler fails
+            act = self.act * other.act if self.act is not None and other.act is not None else None
+            resc = None
+            if self.res is not None and other.res is not None:
+                resc = (self.res * other.res).sum(dim=-1, keepdim=True)
+            elif self.resc is not None and other.resc is not None:
+                resc = self.resc * other.resc
+            return SparseAct(act=act, resc=resc)
 
     def __add__(self, other: Any) -> 'SparseAct':
-        return self._map(lambda x, y: x + y, other)
+        if isinstance(other, SparseAct):
+            try:
+                from .fused_ops import fused_sparse_add
+                act, res, resc = fused_sparse_add(
+                    self.act, other.act,
+                    self.res, other.res,
+                    self.resc, other.resc
+                )
+                return SparseAct(act=act, res=res, resc=resc)
+            except (ImportError, Exception):
+                # Fallback path if compiler fails
+                return SparseAct(
+                    act=self.act + other.act if self.act is not None and other.act is not None else (self.act if self.act is not None else other.act),
+                    res=self.res + other.res if self.res is not None and other.res is not None else (self.res if self.res is not None else other.res),
+                    resc=self.resc + other.resc if self.resc is not None and other.resc is not None else (self.resc if self.resc is not None else other.resc),
+                )
+        return SparseAct(
+            act=self.act + other if self.act is not None else None,
+            res=self.res + other if self.res is not None else None,
+            resc=self.resc + other if self.resc is not None else None,
+        )
 
     def __radd__(self, other: Any) -> 'SparseAct':
         return self.__add__(other)
 
     def __sub__(self, other: Any) -> 'SparseAct':
-        return self._map(lambda x, y: x - y, other)
+        if isinstance(other, SparseAct):
+            return SparseAct(
+                act=self.act - other.act if self.act is not None and other.act is not None else (self.act if self.act is not None else -other.act if other.act is not None else None),
+                res=self.res - other.res if self.res is not None and other.res is not None else (self.res if self.res is not None else -other.res if other.res is not None else None),
+                resc=self.resc - other.resc if self.resc is not None and other.resc is not None else (self.resc if self.resc is not None else -other.resc if other.resc is not None else None),
+            )
+        return SparseAct(
+            act=self.act - other if self.act is not None else None,
+            res=self.res - other if self.res is not None else None,
+            resc=self.resc - other if self.resc is not None else None,
+        )
 
     def __truediv__(self, other: Any) -> 'SparseAct':
         return self._map(lambda x, y: x / y, other)
@@ -168,16 +218,35 @@ class SparseAct:
 
     @property
     def device(self) -> torch.device:
-        return self.act.device
+        if self.act is not None:
+            return self.act.device
+        if self.res is not None:
+            return self.res.device
+        if self.resc is not None:
+            return self.resc.device
+        return torch.device("cpu")
 
     @property
     def shape(self) -> torch.Size:
-        return self.act.shape
+        return self.act.shape if self.act is not None else torch.Size([])
+
+    @property
+    def is_leaf(self) -> bool:
+        return self.act.is_leaf if self.act is not None else True
+
+    @property
+    def requires_grad(self) -> bool:
+        return self.act.requires_grad if self.act is not None else False
+
+    @property
+    def grad_fn(self) -> Any:
+        return self.act.grad_fn if self.act is not None else None
 
     def __repr__(self) -> str:
+        act_str = f"act_shape={self.act.shape}" if self.act is not None else "act=None"
         res_str = ""
         if self.res is not None:
             res_str = f", res_shape={self.res.shape}"
         if self.resc is not None:
             res_str = f", resc_shape={self.resc.shape}"
-        return f"SparseAct(act_shape={self.act.shape}{res_str})"
+        return f"SparseAct({act_str}{res_str})"

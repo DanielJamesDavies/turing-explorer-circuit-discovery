@@ -1,5 +1,5 @@
 import torch
-from typing import Optional, Any, cast
+from typing import Optional, Any, cast, Dict
 from .base import DiscoveryMethod
 from config import config
 from store.circuits import Circuit, CircuitNode
@@ -9,8 +9,10 @@ from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
+from circuit.feature_id import FeatureID
 from circuit.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
+
 
 class CoactivationStatistical(DiscoveryMethod):
     """
@@ -38,10 +40,26 @@ class CoactivationStatistical(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.coactivation_statistical
-        self.min_faithfulness = min_faithfulness or cast(float, config.discovery.min_faithfulness or 0.3)
-        self.coactivation_threshold = coactivation_threshold or cast(float, cfg.coactivation_threshold or 0.1)
-        self.max_neighbors = max_neighbors or cast(int, cfg.max_neighbors or config.discovery.max_neighbors or 32)
-        self.min_active_count = min_active_count or cast(int, config.discovery.min_active_count or 50)
+        self.min_faithfulness = (
+            min_faithfulness
+            if min_faithfulness is not None
+            else cast(float, config.discovery.min_faithfulness or 0.3)
+        )
+        self.coactivation_threshold = (
+            coactivation_threshold
+            if coactivation_threshold is not None
+            else cast(float, cfg.coactivation_threshold or 0.1)
+        )
+        self.max_neighbors = (
+            max_neighbors
+            if max_neighbors is not None
+            else cast(int, cfg.max_neighbors or config.discovery.max_neighbors or 32)
+        )
+        self.min_active_count = (
+            min_active_count
+            if min_active_count is not None
+            else cast(int, config.discovery.min_active_count or 50)
+        )
         self.pruning_threshold = pruning_threshold if pruning_threshold is not None else cast(float, cfg.pruning_threshold or 0.0)
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
@@ -65,9 +83,11 @@ class CoactivationStatistical(DiscoveryMethod):
             logger.reject("empty probe dataset (no positive contexts found)")
             return None
 
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, len(self.sae_bank.kinds))
-        seed_kind = self.sae_bank.kinds[seed_kind_idx]
-        seed_key = (seed_layer, seed_kind, seed_latent_idx)
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = kinds[seed_kind_idx]
+        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
         logger.header(
             seed_layer, seed_kind, seed_latent_idx,
@@ -76,13 +96,11 @@ class CoactivationStatistical(DiscoveryMethod):
         )
 
         seed_node = CircuitNode(metadata={
-            "layer_idx": seed_layer,
-            "latent_idx": seed_latent_idx,
-            "kind": seed_kind,
+            "feature_id": seed_fid,
             "role": "seed",
         })
         circuit.add_node(seed_node)
-        node_id_map = {seed_key: seed_node.uuid}
+        node_id_map: Dict[FeatureID, str] = {seed_fid: seed_node.uuid}
 
         kind_order = ["attn", "mlp", "resid"]
         d_sae = self.sae_bank.d_sae
@@ -100,34 +118,30 @@ class CoactivationStatistical(DiscoveryMethod):
                 continue
             if n_added >= self.max_neighbors:
                 break
-            c_idx = int(g_idx) // d_sae
-            l_idx = int(g_idx) % d_sae
+            
+            fid = FeatureID.from_global_id(int(g_idx), n_kinds, d_sae, kinds)
+            c_idx, l_idx = fid.to_component_id(n_kinds, kinds)
+            
             if latent_stats.active_count[c_idx, l_idx] < self.min_active_count:
                 n_skipped_active += 1
                 continue
 
-            n_layer, n_kind_idx = split_component_idx(c_idx, len(self.sae_bank.kinds))
-            n_kind = self.sae_bank.kinds[n_kind_idx]
-            key = (n_layer, n_kind, l_idx)
-
-            if key not in node_id_map:
+            if fid not in node_id_map:
                 node = CircuitNode(metadata={
-                    "layer_idx": n_layer,
-                    "latent_idx": l_idx,
-                    "kind": n_kind,
+                    "feature_id": fid,
                     "role": "neighbor",
                 })
                 circuit.add_node(node)
-                node_id_map[key] = node.uuid
+                node_id_map[fid] = node.uuid
 
             is_upstream = (
-                n_layer < seed_layer or
-                (n_layer == seed_layer and kind_order.index(n_kind) < kind_order.index(seed_kind))
+                fid.layer < seed_fid.layer or
+                (fid.layer == seed_fid.layer and kind_order.index(fid.kind) < kind_order.index(seed_fid.kind))
             )
             if is_upstream:
-                circuit.add_edge(node_id_map[key], node_id_map[seed_key], weight=float(weight))
+                circuit.add_edge(node_id_map[fid], node_id_map[seed_fid], weight=float(weight))
             else:
-                circuit.add_edge(node_id_map[seed_key], node_id_map[key], weight=float(weight))
+                circuit.add_edge(node_id_map[seed_fid], node_id_map[fid], weight=float(weight))
 
             n_added += 1
 
