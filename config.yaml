@@ -3,7 +3,7 @@ weights:
   sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
-  n_shards: 8 # 256 # Number of data shards to process
+  n_shards: 512 # Number of data shards to process
   batch_size: 512 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
@@ -55,12 +55,12 @@ discovery:
     # - attn_mlp_top_coact_sparse_expansion
     # - attn_resid_top_coact_sparse_expansion
     # - mlp_resid_top_coact_sparse_expansion
-    # - all_top_coact_sparse_expansion
-    # - hard_negative_coact_sparse_expansion
+    - all_top_coact_sparse_expansion
+    - hard_negative_coact_sparse_expansion
     # - differential_activation
     # - coactivation_statistical
     # - logit_attribution
-    - sfc_attribution_patching
+    # - sfc_attribution_patching
     # - neighborhood_expansion
     # - top_coactivation
 
