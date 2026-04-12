@@ -32,8 +32,12 @@ class CandidateSelector:
         logit_seeds = self._top_k_indices(logit_impact, self.n_seeds, "logit_impact")
 
         # 2. Network Centrality (Structural Hubs)
-        # sum of frequency-adjusted co-occurrence magnitudes
-        connectivity = top_coactivation.top_values.to(self.device).sum(dim=-1)
+        # sum of frequency-adjusted co-occurrence magnitudes (or PMI scores)
+        # In PMI mode, we clamp to min=0 to avoid negative scores reducing connectivity
+        connectivity = top_coactivation.top_values.to(self.device)
+        if top_coactivation.mode == "pmi":
+            connectivity = connectivity.clamp(min=0)
+        connectivity = connectivity.sum(dim=-1)
         conn_seeds = self._top_k_indices(connectivity, self.n_seeds, "connectivity")
 
         # 3. "Surprise" / Salient Rarity

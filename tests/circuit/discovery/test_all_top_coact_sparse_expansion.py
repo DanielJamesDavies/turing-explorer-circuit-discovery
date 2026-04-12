@@ -147,7 +147,7 @@ class TestAllKindsExpansion:
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
         hop_kinds = {
-            n.metadata["kind"]
+            n.feature_id.kind
             for n in circuit.nodes.values()
             if n.metadata["role"] in ("hop1", "hop2")
         }
@@ -199,7 +199,7 @@ class TestActivityFilterAndMetadata:
         assert circuit is not None
 
         hop1_keys = {
-            (n.metadata["layer_idx"], n.metadata["kind"], n.metadata["latent_idx"])
+            (n.feature_id.layer, n.feature_id.kind, n.feature_id.index)
             for n in circuit.nodes.values()
             if n.metadata["role"] == "hop1"
         }

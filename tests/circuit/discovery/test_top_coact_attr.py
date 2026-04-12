@@ -2,8 +2,8 @@ import pytest
 import torch
 from unittest.mock import MagicMock, patch
 
-from circuit.discovery.top_coactivation import TopCoactivationDiscovery
-from circuit.feature_id import FeatureID
+from circuit.discovery.top_coact_attr import TopCoactAttrDiscovery
+from circuit.types.feature_id import FeatureID
 from store.circuits import Circuit
 
 # ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ def discovery_setup():
     avg_acts = torch.zeros(N_LAYERS, len(KINDS), D_SAE)
     probe_builder = MagicMock()
     
-    algo = TopCoactivationDiscovery(
+    algo = TopCoactAttrDiscovery(
         inference, sae_bank, avg_acts, probe_builder,
         min_faithfulness=0.1,
         attribution_threshold=0.001,
@@ -55,7 +55,7 @@ def discovery_setup():
 # Tests
 # ---------------------------------------------------------------------------
 
-def test_top_coactivation_discovery_calls_feature_attribution(discovery_setup):
+def test_top_coact_attr_discovery_calls_feature_attribution(discovery_setup):
     algo = discovery_setup
     seed_comp, seed_lat = 2, 5  # Layer 0, Resid
     
@@ -77,20 +77,20 @@ def test_top_coactivation_discovery_calls_feature_attribution(discovery_setup):
     algo.inference.forward = MagicMock(return_value=(None, None, None))
     
     # Mock inference.forward to not do anything but provide a graph via instrument
-    with patch("circuit.discovery.top_coactivation.SAEGraphInstrument") as mock_instrument_cls:
+    with patch("circuit.discovery.top_coact_attr.SAEGraphInstrument") as mock_instrument_cls:
         mock_instrument = MagicMock()
         mock_instrument_cls.return_value = mock_instrument
         mock_instrument.graph = MagicMock()
         
         # Mock compute_feature_attribution to return a score for the neighbor
-        with patch("circuit.discovery.top_coactivation.compute_feature_attribution") as mock_attr:
+        with patch("circuit.discovery.top_coact_attr.compute_feature_attribution") as mock_attr:
             neighbor_fid = FeatureID(0, "mlp", 10)
             mock_attr.return_value = {neighbor_fid: 0.1}
             
             # Mock evaluation functions
-            with patch("circuit.discovery.top_coactivation.evaluate_faithfulness", return_value=0.5), \
-                 patch("circuit.discovery.top_coactivation.evaluate_sufficiency", return_value=0.5), \
-                 patch("circuit.discovery.top_coactivation.evaluate_completeness", return_value=0.5):
+            with patch("circuit.discovery.top_coact_attr.evaluate_faithfulness", return_value=0.5), \
+                 patch("circuit.discovery.top_coact_attr.evaluate_sufficiency", return_value=0.5), \
+                 patch("circuit.discovery.top_coact_attr.evaluate_completeness", return_value=0.5):
                 
                 circuit = algo.discover(seed_comp, seed_lat)
                 

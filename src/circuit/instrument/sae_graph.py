@@ -2,8 +2,8 @@ import torch
 from typing import Dict, Any, List, Tuple, Optional, Union
 from sae.bank import SAEBank
 from model.hooks import multi_patch
-from .sparse_act import SparseAct
-from .feature_id import FeatureID
+from circuit.types.sparse_act import SparseAct
+from circuit.types.feature_id import FeatureID
 
 class FeatureGraph:
     """

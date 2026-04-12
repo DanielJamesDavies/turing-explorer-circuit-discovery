@@ -1,17 +1,19 @@
 import torch
-from typing import Any, Optional
+from typing import Any, Optional, Set
 from store.circuits import Circuit
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.patcher import CircuitPatcher
 from eval.faithfulness import _calculate_faithfulness_score
 
 @torch.no_grad()
 def evaluate_completeness(
-    inference: Any, 
-    sae_bank: Any, 
-    avg_acts: torch.Tensor, 
-    circuit: Circuit, 
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
     tokens: torch.Tensor,
-    pos_argmax: Optional[torch.Tensor] = None
+    pos_argmax: Optional[torch.Tensor] = None,
+    max_layer: Optional[int] = None,
+    circuit_layers: Optional[Set[int]] = None,
 ) -> float:
     """
     Measures if the circuit is complete by checking the performance of its complement.
@@ -26,6 +28,7 @@ def evaluate_completeness(
         circuit: The Circuit object to evaluate.
         tokens: The input tokens tensor [batch, seq_len].
         pos_argmax: The position where each sequence peaks for the seed latent.
+        max_layer: Optional layer limit for patching.
         
     Returns:
         float: The completeness score (0 to 1 typical range, 1.0 is ideal).
@@ -44,7 +47,7 @@ def evaluate_completeness(
     
     # 2. Complement Pass (Inverted Intervention)
     # We ablate ONLY the circuit nodes and keep everything else live
-    complement_patcher = CircuitPatcher(sae_bank, circuit, avg_acts, inverse=True, pos_argmax=pos_argmax)
+    complement_patcher = CircuitPatcher(sae_bank, circuit, avg_acts, inverse=True, pos_argmax=pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
     _, complement_logits, _ = inference.forward(
         tokens,
         num_gen=1,
@@ -55,7 +58,7 @@ def evaluate_completeness(
     )
 
     # 3. Baseline Pass (Total Ablation)
-    baseline_patcher = CircuitPatcher(sae_bank, None, avg_acts, pos_argmax=pos_argmax)
+    baseline_patcher = CircuitPatcher(sae_bank, None, avg_acts, pos_argmax=pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
     _, baseline_logits, _ = inference.forward(
         tokens,
         num_gen=1,

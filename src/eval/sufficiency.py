@@ -1,18 +1,20 @@
 import torch
 import torch.nn.functional as F
-from typing import Optional, Any
+from typing import Optional, Any, Set
 from store.circuits import Circuit
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.patcher import CircuitPatcher
 
 @torch.no_grad()
 def evaluate_sufficiency(
-    inference: Any, 
-    sae_bank: Any, 
-    avg_acts: torch.Tensor, 
-    circuit: Circuit, 
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
     tokens: torch.Tensor,
     target_tokens: torch.Tensor,
-    pos_argmax: Optional[torch.Tensor] = None
+    pos_argmax: Optional[torch.Tensor] = None,
+    max_layer: Optional[int] = None,
+    circuit_layers: Optional[Set[int]] = None,
 ) -> float:
     """
     Measures if the circuit captures the "full story" for a specific prompt.
@@ -28,6 +30,7 @@ def evaluate_sufficiency(
         tokens: The input tokens tensor [batch, seq_len].
         target_tokens: The expected next token(s) tensor [batch, seq_len].
         pos_argmax: The position where each sequence peaks for the seed latent.
+        max_layer: Optional layer limit for patching.
         
     Returns:
         float: The sufficiency score (0 to 1 typical range).
@@ -64,7 +67,7 @@ def evaluate_sufficiency(
     target_logprobs_orig = log_probs_orig.gather(-1, target_tokens_at_pos.unsqueeze(-1)).squeeze(-1)
     
     # 2. Circuit Pass (Intervened Logprobs)
-    patcher = CircuitPatcher(sae_bank, circuit, avg_acts, pos_argmax=pos_argmax)
+    patcher = CircuitPatcher(sae_bank, circuit, avg_acts, pos_argmax=pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
     _, circuit_logits, _ = inference.forward(
         tokens,
         num_gen=1,

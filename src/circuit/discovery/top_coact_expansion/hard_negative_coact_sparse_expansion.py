@@ -4,10 +4,10 @@ from typing import Optional, Any, List, Set, Dict, cast
 from .top_coact_sparse_expansion import TopCoactSparseExpansion
 from config import config
 from store.circuits import Circuit, CircuitNode
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
-from circuit.sae_graph import SAEGraphInstrument
-from circuit.attribution import compute_feature_gradient
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
+from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.instrument.attribution import compute_feature_gradient
 from pipeline.component_index import split_component_idx
 from eval.faithfulness import evaluate_faithfulness, evaluate_kind_local_faithfulness
 from eval.sufficiency import evaluate_sufficiency

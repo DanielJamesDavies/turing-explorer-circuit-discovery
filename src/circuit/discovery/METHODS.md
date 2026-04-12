@@ -24,7 +24,7 @@ This document is implementation-aligned with the discovery code in this director
 | `CoactivationStatistical` | No | No | Very low | Fast baseline / sanity check |
 | `NeighborhoodExpansion` | No | No | Low | Controlled two-hop structural expansion |
 | `LogitAttribution` | No | Yes | Medium | Direct logit-causal parent/edge discovery |
-| `TopCoactivationDiscovery` | No | Yes | Medium-high | Multi-hop upstream + downstream attribution |
+| `TopCoactAttrDiscovery` | No | Yes | Medium-high | Multi-hop upstream + downstream attribution |
 | `DifferentialActivation` | Yes | Yes | High | Explicit activator vs inhibitor analysis |
 | `SFCAttributionPatching` | Optional (depends on `patch_mode`) | Yes | Very high | Most comprehensive node+edge attribution |
 | `TopCoactSparseExpansion` family | `HardNegative...` only | Base family: no, `HardNegative...`: partial | Low to medium | Kind-targeted BFS with optional passthrough |
@@ -97,9 +97,9 @@ Uses an `SAEGraphInstrument` for two gradient passes:
 
 ---
 
-### 4. `TopCoactivationDiscovery` - multi-hop co-activation + attribution
+### 4. `TopCoactAttrDiscovery` - Top Coactivation with Attribution pruning
 
-**File:** `top_coactivation.py`
+**File:** `top_coact_attr.py`
 
 Hybrid method:
 

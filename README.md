@@ -273,7 +273,7 @@ All settings live in `config.yaml`. The most commonly adjusted keys:
 | `logit_attribution`                     | Two-pass gradient: `activation × gradient` node/edge scoring                 |
 | `sfc_attribution_patching`              | SFC-style `delta × gradient` (Marks et al. 2024), clean vs. neg-ctx baseline |
 | `neighborhood_expansion`                | Two-hop statistical neighbourhood; no gradients                              |
-| `top_coactivation`                      | Legacy feature-to-feature attribution patching                               |
+| `top_coact_attr`                      | Legacy feature-to-feature attribution patching                               |
 
 
 The expansion depth for sparse methods is configured per-method with `coact_depth`, e.g. `[32, 16]` = depth-2 BFS with 32 neighbors at hop 1 and 16 at hop 2.

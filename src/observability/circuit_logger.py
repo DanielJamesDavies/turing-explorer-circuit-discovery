@@ -1,7 +1,12 @@
 import os
 import time
 from datetime import datetime
-from utils.observability import obs
+from typing import TYPE_CHECKING
+
+from .tracking import obs
+
+if TYPE_CHECKING:
+    from store.circuits import CircuitNode
 
 
 class CircuitLogger:
@@ -27,6 +32,7 @@ class CircuitLogger:
         self._start_time = time.perf_counter()
         self._last_stage_time = self._start_time
         self._enabled = True
+        self._status = "fail"
         obs.start_attempt()
         
         self._w(f"=== {method_name}  |  comp={seed_comp}  lat={seed_latent} ===")
@@ -97,11 +103,30 @@ class CircuitLogger:
 
     def reject(self, reason: str) -> None:
         """Mark this attempt as rejected and record the reason."""
+        self._status = "fail"
         self._w(f"  REJECTED — {reason}")
 
     def accept(self, n_nodes: int, n_edges: int) -> None:
         """Mark this attempt as accepted."""
+        self._status = "pass"
         self._w(f"  ACCEPTED  nodes={n_nodes}  edges={n_edges}")
+
+    def nodes(self, circuit_nodes: "list[CircuitNode]") -> None:
+        """Log a compact listing of circuit nodes, grouped by role."""
+        if not circuit_nodes:
+            return
+        by_role: dict[str, list[str]] = {}
+        for node in circuit_nodes:
+            role = node.metadata.get("role", "unknown")
+            fid = node.feature_id
+            label = repr(fid) if fid is not None else node.uuid
+            by_role.setdefault(role, []).append(label)
+        self._w("")
+        self._w("  Circuit nodes:")
+        for role, labels in by_role.items():
+            self._w(f"    [{role}] ({len(labels)})")
+            for label in labels:
+                self._w(f"      {label}")
 
     def cancel(self) -> None:
         """Prevents the log from being saved to disk. Use for trivial rejections."""
@@ -124,7 +149,13 @@ class CircuitLogger:
             self._w(f"Average forward time: {total_dt / obs.attempt_forward_passes * 1000:.1f} ms")
         
         try:
-            with open(self.path, "w", encoding="utf-8") as f:
+            subdir = os.path.join(self._LOG_DIR, self._status)
+            os.makedirs(subdir, exist_ok=True)
+            
+            filename = os.path.basename(self.path)
+            final_path = os.path.join(subdir, filename)
+
+            with open(final_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(self._lines) + "\n")
         except Exception:
             pass  # never let logging crash the pipeline

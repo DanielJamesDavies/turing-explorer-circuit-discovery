@@ -33,7 +33,7 @@ from store.latent_stats import latent_stats
 from store.top_coactivation import top_coactivation
 
 from circuit.probe_dataset import ProbeDatasetBuilder
-from circuit.sae_graph import SAEGraphInstrument
+from circuit.instrument.sae_graph import SAEGraphInstrument
 
 from pipeline.component_index import split_component_idx
 

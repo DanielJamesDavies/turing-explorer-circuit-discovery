@@ -12,6 +12,7 @@ def detect_devices() -> List[torch.device]:
     - no CUDA                    -> CPU
     """
     n_gpus = torch.cuda.device_count()
+    print(f"n_gpus: {n_gpus}")
 
     if n_gpus == 0:
         return [torch.device("cpu")]

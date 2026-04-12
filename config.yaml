@@ -3,7 +3,7 @@ weights:
   sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
-  n_shards: 512 # Number of data shards to process
+  n_shards: 256 # Number of data shards to process
   batch_size: 512 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
@@ -32,6 +32,9 @@ latents:
     n_latents_per_latent: 64 # Final number of top co-activating latents stored per target latent
     n_candidates_per_component: 16 # Candidates extracted per component per sequence during dump (36 comps x 16 = 576, reduced to 128 globally)
     freq_alpha: 2.0 # Exponent for frequency adjustment: 1/(log(count+1))^alpha. Higher = suppress frequent latents more
+    mode: "pmi" # "freq_weighted" (default) | "raw" (no freq adjustment) | "pmi" (token-level PMI scoring)
+    pmi_clamp_min: -5.0 # Lower bound for PMI values
+    pmi_clamp_max: 10.0 # Upper bound for PMI values
 discovery:
   n_seeds: 128 # Number of seed latents to select for circuit discovery
   probe_batch_size: 4 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
@@ -42,12 +45,12 @@ discovery:
 
   # Which discovery methods to run for each seed. Results from all methods are stored.
   # Options: "coactivation_statistical", "logit_attribution", "sfc_attribution_patching",
-  #          "neighborhood_expansion", "top_coactivation",
+  #          "neighborhood_expansion", "top_coact_attr",
   #          "attn_top_coact_sparse_expansion", "mlp_top_coact_sparse_expansion", "resid_top_coact_sparse_expansion",
   #          "attn_mlp_top_coact_sparse_expansion", "attn_resid_top_coact_sparse_expansion",
   #          "mlp_resid_top_coact_sparse_expansion", "all_top_coact_sparse_expansion",
-  #          "hard_negative_coact_sparse_expansion",
-  #          "differential_activation"
+  #          "hard_negative_coact_sparse_expansion", "differential_activation",
+  #          "gradient_upstream", "layerwise_gradient_upstream", "counterfactual_gradient"
   methods:
     # - attn_top_coact_sparse_expansion
     # - mlp_top_coact_sparse_expansion
@@ -55,14 +58,17 @@ discovery:
     # - attn_mlp_top_coact_sparse_expansion
     # - attn_resid_top_coact_sparse_expansion
     # - mlp_resid_top_coact_sparse_expansion
-    - all_top_coact_sparse_expansion
-    - hard_negative_coact_sparse_expansion
+    # - all_top_coact_sparse_expansion
+    # - hard_negative_coact_sparse_expansion
     # - differential_activation
     # - coactivation_statistical
     # - logit_attribution
     # - sfc_attribution_patching
     # - neighborhood_expansion
-    # - top_coactivation
+    # - top_coact_attr
+    # - gradient_upstream
+    - layerwise_gradient_upstream
+    # - counterfactual_gradient
 
   # --- Per-method configuration ---
 
@@ -75,6 +81,34 @@ discovery:
     attribution_threshold: 0.01 # min |edge weight| to keep a causal edge
     pruning_threshold: 0.0 # faithfulness drop threshold (0 = disabled)
 
+  gradient_upstream:
+    depth: 36 # number of backward hops from the seed (reduced for faster test)
+    top_k_per_hop: 8 # top-K upstream latents to select per node per hop (reduced for faster test)
+    attribution_threshold: 0.01 # min |score| to include a latent
+    min_active_count: 1 # skip latents below this global firing count
+    max_ctx_sequences: 16 # total ctx sequences to use per node (summed across microbatches)
+    hop_batch_size: 16 # sequences per microbatch in _run_hop (gradient accumulation)
+    absent_inhibitor_top_k: 0 # top-K absent inhibitors per hop (0 = disabled)
+    absent_inhibitor_threshold: 0.01 # min |raw gradient| at near-zero activation to flag absent inhibitor
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning
+    min_faithfulness: 0.2 # minimum faithfulness score for the circuit to be accepted
+
+  # Layerwise variant: sweeps layer-by-layer backwards and attributes against all
+  # upstream layers, not just the direct causal predecessors.
+  layerwise_gradient_upstream:
+    top_k_per_node: 8 # top-K upstream latents per node per pass
+    attribution_threshold: 0.01 # min |score| to include a latent
+    min_active_count: 1 # skip latents below this global firing count
+    max_ctx_sequences: 16 # ctx sequences per node (across microbatches)
+    hop_batch_size: 8 # sequences per microbatch in _run_node
+    absent_inhibitor_top_k: 0 # top-K absent inhibitors per node (0 = disabled)
+    absent_inhibitor_threshold: 0.01
+    max_layers_back: 0 # 0 = go back to layer 0; >0 = cap how many layers back
+    include_same_layer: true # also include within-layer causal predecessors (attn→mlp etc.)
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning
+    min_faithfulness: 0.2 # minimum faithfulness score for circuit acceptance
+    profile_first_node: true # set true once to profile; outputs/profile_layerwise_*.json
+
   hard_negative_coact_sparse_expansion:
     coact_depth: [32, 16] # activator expansion hops
     neg_candidate_limit: 64 # max inhibitor candidates to evaluate via attribution
@@ -82,7 +116,8 @@ discovery:
     pruning_threshold: 0.0 # faithfulness drop threshold (0 = disabled)
 
   coactivation_statistical:
-    coactivation_threshold: 0.1 # Minimum co-activation weight to include a neighbor as a node
+    coactivation_threshold: 0.1 # Minimum co-activation weight to include a neighbor as a node (freq_weighted / raw modes)
+    pmi_coactivation_threshold: 1.0 # Minimum PMI score to include a neighbor (pmi mode only — "1 nat above chance")
     max_neighbors: 32 # Max neighbors to expand per seed
     pruning_threshold: 0.0 # Faithfulness drop threshold for minimality pruning (0 = disabled)
 
@@ -160,8 +195,21 @@ discovery:
     coact_depth: [32, 16] # per-depth top-N all-kind neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
+  # Counterfactual Gradient Discovery: runs gradient attribution on negctx sequences
+  # to discover absent activators (upstream latents that would cause the seed to fire if active)
+  # and present inhibitors (upstream latents that are actively suppressing the seed).
+  counterfactual_gradient:
+    top_k_activators: 8 # Top-K absent activators (positive gradient on negctx)
+    top_k_inhibitors: 8 # Top-K present inhibitors (negative act×grad on negctx)
+    activator_threshold: 0.01 # Min raw gradient magnitude
+    inhibitor_threshold: 0.01 # Min |activation × gradient| for inhibitors
+    min_active_count: 1 # Min global lifetime firing count
+    max_neg_sequences: 4 # Max negctx sequences for the grad-enabled pass
+    pruning_threshold: 0.0 # Faithfulness drop threshold for pruning (0 = disabled)
+    min_faithfulness: 0.2 # Min upstream_faithfulness to accept
+
   # Legacy method — cross-layer attribution now uses identity passthrough (x - x.detach())
-  top_coactivation:
+  top_coact_attr:
     attribution_threshold: 0.01
     max_neighbors: 32
     max_hops: 2

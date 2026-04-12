@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
-from typing import Optional, Any, Iterable
+from typing import Optional, Any, Iterable, Set
 from store.circuits import Circuit
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.patcher import CircuitPatcher
 
 def _calculate_faithfulness_score(
     original_logits: torch.Tensor,
@@ -40,12 +40,14 @@ def _calculate_faithfulness_score(
 
 @torch.no_grad()
 def evaluate_faithfulness(
-    inference: Any, 
-    sae_bank: Any, 
-    avg_acts: torch.Tensor, 
-    circuit: Optional[Circuit], 
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Optional[Circuit],
     tokens: torch.Tensor,
-    pos_argmax: Optional[torch.Tensor] = None
+    pos_argmax: Optional[torch.Tensor] = None,
+    max_layer: Optional[int] = None,
+    circuit_layers: Optional[Set[int]] = None,
 ) -> float:
     """
     Calculates the faithfulness of a circuit on a specific sequence.
@@ -59,6 +61,7 @@ def evaluate_faithfulness(
         circuit: The Circuit object to evaluate (if None, evaluates baseline).
         tokens: The input tokens tensor [batch, seq_len].
         pos_argmax: The position where each sequence peaks for the seed latent.
+        max_layer: Optional layer limit for patching.
         
     Returns:
         float: The faithfulness score (0 to 1 typical range).
@@ -76,7 +79,7 @@ def evaluate_faithfulness(
     )
     
     # 2. Circuit Pass (Intervened Logits)
-    patcher = CircuitPatcher(sae_bank, circuit, avg_acts, pos_argmax=pos_argmax)
+    patcher = CircuitPatcher(sae_bank, circuit, avg_acts, pos_argmax=pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
     _, circuit_logits, _ = inference.forward(
         tokens,
         num_gen=1,
@@ -87,7 +90,7 @@ def evaluate_faithfulness(
     )
 
     # 3. Baseline Pass (Total Ablation)
-    baseline_patcher = CircuitPatcher(sae_bank, None, avg_acts, pos_argmax=pos_argmax)
+    baseline_patcher = CircuitPatcher(sae_bank, None, avg_acts, pos_argmax=pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
     _, baseline_logits, _ = inference.forward(
         tokens,
         num_gen=1,
@@ -109,6 +112,7 @@ def evaluate_kind_local_faithfulness(
     tokens: torch.Tensor,
     target_kinds: Iterable[str],
     pos_argmax: Optional[torch.Tensor] = None,
+    max_layer: Optional[int] = None,
 ) -> float:
     """
     Calculates faithfulness restricted to selected SAE kinds.
@@ -129,7 +133,7 @@ def evaluate_kind_local_faithfulness(
     )
 
     patcher = CircuitPatcher(
-        sae_bank, circuit, avg_acts, pos_argmax=pos_argmax, patch_kinds=kinds
+        sae_bank, circuit, avg_acts, pos_argmax=pos_argmax, patch_kinds=kinds, max_layer=max_layer
     )
     _, circuit_logits, _ = inference.forward(
         tokens,
@@ -141,7 +145,7 @@ def evaluate_kind_local_faithfulness(
     )
 
     baseline_patcher = CircuitPatcher(
-        sae_bank, None, avg_acts, pos_argmax=pos_argmax, patch_kinds=kinds
+        sae_bank, None, avg_acts, pos_argmax=pos_argmax, patch_kinds=kinds, max_layer=max_layer
     )
     _, baseline_logits, _ = inference.forward(
         tokens,

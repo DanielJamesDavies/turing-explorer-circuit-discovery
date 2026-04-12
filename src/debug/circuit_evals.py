@@ -34,8 +34,8 @@ from store.latent_stats import latent_stats
 from store.top_coactivation import top_coactivation
 from store.context import top_ctx, mid_ctx, neg_ctx
 from circuit.probe_dataset import ProbeDatasetBuilder
-from circuit.neg_ctx_baseline import compute_neg_ctx_means
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.neg_ctx_baseline import compute_neg_ctx_means
+from circuit.instrument.patcher import CircuitPatcher
 from eval.faithfulness import _calculate_faithfulness_score
 from config import config
 from pipeline.component_index import split_component_idx

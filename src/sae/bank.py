@@ -1,4 +1,5 @@
 from typing import Dict, List, cast, Optional
+import contextlib
 import os
 import torch
 from contextlib import nullcontext
@@ -66,6 +67,45 @@ class SAEBank:
                 else:
                     sae.remove_decoder_from_vram()
                 self.saes[kind][layer] = sae
+
+    @contextlib.contextmanager
+    def pin_decoders(self):
+        """
+        Context manager that moves every SAE decoder to GPU VRAM for the duration
+        of the block, then restores to CPU if they were not originally in VRAM.
+
+        Use during gradient-enabled discovery passes to avoid the repeated
+        CPU→GPU decoder weight transfers that occur when `load_decoders=False`
+        (i.e. `hardware.memory: "efficient"`).  The cost is a one-time ~2 GB
+        load at the start of the block instead of ~78 MB per (layer, kind) per
+        forward pass.
+
+        Example::
+
+            with sae_bank.pin_decoders():
+                for node in circuit_nodes:
+                    _run_node(node, ...)  # decoder HtoD copies eliminated
+        """
+        if self.load_decoders:
+            yield
+            return
+
+        for kind in self.kinds:
+            for layer_idx in range(self.n_layer):
+                sae = self.saes[kind][layer_idx]
+                if sae is not None:
+                    sae.move_decoder_to_vram()
+
+        try:
+            yield
+        finally:
+            for kind in self.kinds:
+                for layer_idx in range(self.n_layer):
+                    sae = self.saes[kind][layer_idx]
+                    if sae is not None:
+                        sae.remove_decoder_from_vram(empty_cache=False)
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     def _autocast_ctx(self, device: torch.device):
         if device.type != "cuda":

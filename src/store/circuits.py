@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 import torch
-from circuit.feature_id import FeatureID
+from circuit.types.feature_id import FeatureID
 
 @dataclass
 class CircuitNode:

@@ -14,12 +14,13 @@ Key invariants under test:
   top_indices        — always detached (discrete, no gradient through indices)
   output of transform — reconstruction + error == x  (exact identity, not approximate)
   stop_error_grad=False — backward from output reaches x via error = x - full_recon
-  stop_error_grad=True  — error is detached; backward from output cannot reach x
+  stop_error_grad=True  — residual anchor gradient is zeroed; x still receives
+                          gradient via the identity passthrough (x - x.detach())
 """
 import pytest
 import torch
 
-from circuit.sae_graph import FeatureGraph, SAEGraphInstrument
+from circuit.instrument.sae_graph import FeatureGraph, SAEGraphInstrument
 
 # Dimensions shared with conftest constants.
 B, T    = 2, 4
@@ -312,12 +313,13 @@ class TestSAEGraphInstrumentGradients:
             "Gradient should flow through the error term (x - full_recon) to x"
         )
 
-    def test_stop_error_grad_true_blocks_gradient_to_x(self, mock_sae_bank):
+    def test_stop_error_grad_true_zeros_residual_gradient(self, mock_sae_bank):
         """
-        stop_error_grad=True: error is detached before return.
-        output = reconstruction + detached_error
-        reconstruction depends only on acts_grad (leaf), NOT on x.
-        Therefore backward from output cannot reach x.grad.
+        stop_error_grad=True: the residual anchor's gradient is zeroed via
+        register_hook, ensuring causal attribution only flows through SAE
+        features.  However, the identity passthrough (x - x.detach()) still
+        carries gradient back to x for cross-layer connectivity — matching
+        the reference implementation's ``x.grad = x_recon.grad`` (Marks et al.).
         """
         instrument = SAEGraphInstrument(mock_sae_bank, stop_error_grad=True)
         x = torch.randn(B, T, D_MODEL, requires_grad=True)
@@ -326,8 +328,16 @@ class TestSAEGraphInstrumentGradients:
             output = instrument.transform(0, "attn", x)
             output.sum().backward()
 
-        assert x.grad is None, (
-            "Gradient must be blocked when stop_error_grad=True"
+        acts_grad, _, _ = instrument.graph.get_latents(0, "attn")
+        assert acts_grad.res is not None, "res_anchor should exist"
+        assert acts_grad.res.grad is not None, "res_anchor.grad should be populated"
+        assert torch.all(acts_grad.res.grad == 0), (
+            "stop_error_grad=True must zero the residual anchor gradient"
+        )
+
+        assert x.grad is not None, (
+            "x.grad should be non-None: the (x - x.detach()) passthrough "
+            "always carries gradient to x for cross-layer connectivity"
         )
 
     def test_stop_error_grad_false_output_has_grad_fn_through_x(self, mock_sae_bank):

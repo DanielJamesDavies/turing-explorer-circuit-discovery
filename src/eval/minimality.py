@@ -1,16 +1,18 @@
 import torch
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 from store.circuits import Circuit
 from eval.faithfulness import evaluate_faithfulness
 
 @torch.no_grad()
 def evaluate_minimality(
-    inference: Any, 
-    sae_bank: Any, 
-    avg_acts: torch.Tensor, 
-    circuit: Circuit, 
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
     tokens: torch.Tensor,
-    pos_argmax: Optional[torch.Tensor] = None
+    pos_argmax: Optional[torch.Tensor] = None,
+    max_layer: Optional[int] = None,
+    circuit_layers: Optional[Set[int]] = None,
 ) -> Dict[str, float]:
     """
     Checks for "dead weight" in a circuit. 
@@ -26,25 +28,24 @@ def evaluate_minimality(
         circuit: The Circuit object to evaluate.
         tokens: The input tokens tensor [batch, seq_len].
         pos_argmax: The position where each sequence peaks for the seed latent.
+        max_layer: Optional layer limit for patching.
         
     Returns:
         Dict[str, float]: A mapping from node UUIDs to their importance (faithfulness drop).
     """
     # 1. Base faithfulness with the complete circuit
-    base_faithfulness = evaluate_faithfulness(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax)
-    
+    base_faithfulness = evaluate_faithfulness(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
+
     # 2. Leave-One-Out Ablation for each node
     node_importance = {}
     original_nodes = circuit.nodes
-    
+
     for node_uuid in original_nodes:
-        # Temporarily remove node
-        # Create a temporary node list without the current node
         modified_nodes = {k: v for k, v in original_nodes.items() if k != node_uuid}
         circuit.nodes = modified_nodes
-        
+
         # Calculate faithfulness without this node
-        new_faithfulness = evaluate_faithfulness(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax)
+        new_faithfulness = evaluate_faithfulness(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
         
         # Importance = how much faithfulness drops when this node is missing
         node_importance[node_uuid] = base_faithfulness - new_faithfulness
@@ -56,13 +57,15 @@ def evaluate_minimality(
 
 @torch.no_grad()
 def prune_non_minimal_nodes(
-    inference: Any, 
-    sae_bank: Any, 
-    avg_acts: torch.Tensor, 
-    circuit: Circuit, 
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
     tokens: torch.Tensor,
     pos_argmax: Optional[torch.Tensor] = None,
-    threshold: float = 0.01
+    threshold: float = 0.01,
+    max_layer: Optional[int] = None,
+    circuit_layers: Optional[Set[int]] = None,
 ) -> List[str]:
     """
     Identifies and removes nodes that contribute less than a threshold to faithfulness.
@@ -83,6 +86,7 @@ def prune_non_minimal_nodes(
         tokens: The input tokens tensor [batch, seq_len].
         pos_argmax: The position where each sequence peaks for the seed latent.
         threshold: The faithfulness drop threshold to consider a node minimal.
+        max_layer: Optional layer limit for patching.
         
     Returns:
         List[str]: A list of removed node UUIDs.
@@ -92,7 +96,7 @@ def prune_non_minimal_nodes(
     while True:
         # 1. Evaluate current importance for all nodes
         n_eval = len(circuit.nodes)
-        node_importance = evaluate_minimality(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax)
+        node_importance = evaluate_minimality(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
         
         # 2. Filter to find pruning candidates (excluding seed)
         candidates = []

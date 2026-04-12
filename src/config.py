@@ -75,6 +75,17 @@ class TopCoactivationLatentsConfig(BaseModel):
     n_latents_per_latent: int = 64
     n_candidates_per_component: int = 16
     freq_alpha: float = 2.0
+    mode: str = "freq_weighted"  # "freq_weighted" | "raw" | "pmi"
+    pmi_clamp_min: float = -5.0
+    pmi_clamp_max: float = 10.0
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        allowed = ["freq_weighted", "raw", "pmi"]
+        if v not in allowed:
+            raise ValueError(f"mode must be one of {allowed}, got {v}")
+        return v
 
 class LatentsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -87,6 +98,7 @@ class LatentsConfig(BaseModel):
 class CoactivationStatisticalConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     coactivation_threshold: float = 0.1
+    pmi_coactivation_threshold: float = 1.0
     max_neighbors: int = 32
     pruning_threshold: float = 0.0
 
@@ -131,12 +143,51 @@ class DifferentialActivationConfig(BaseModel):
     attribution_threshold: float = 0.01
     pruning_threshold: float = 0.0
 
-class TopCoactivationDiscoveryConfig(BaseModel):
+class GradientUpstreamConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    depth: int = 3                    # number of backward hops from the seed
+    top_k_per_hop: int = 8            # top-K upstream latents to select per node per hop
+    attribution_threshold: float = 0.01  # min |score| to include a latent
+    min_active_count: int = 1         # skip latents below this global firing count
+    max_ctx_sequences: int = 4        # total ctx sequences to use per node across all microbatches
+    hop_batch_size: int = 4           # sequences per microbatch in _run_hop (gradient accumulation)
+    absent_inhibitor_top_k: int = 4   # top-K absent inhibitors to find per hop (0 = disabled)
+    absent_inhibitor_threshold: float = 0.01  # min |raw gradient| to flag an absent inhibitor
+    pruning_threshold: float = 0.0    # faithfulness drop threshold for minimality pruning
+    min_faithfulness: float = 0.2     # minimum faithfulness score for the circuit to be accepted
+
+class LayerwiseGradientUpstreamConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    top_k_per_node: int = 8               # top-K upstream latents per node per pass
+    attribution_threshold: float = 0.01   # min |score| to include a latent
+    min_active_count: int = 1             # skip latents below this global firing count
+    max_ctx_sequences: int = 4            # ctx sequences per node (across microbatches)
+    hop_batch_size: int = 4               # sequences per microbatch in _run_node
+    absent_inhibitor_top_k: int = 4       # top-K absent inhibitors per node (0 = disabled)
+    absent_inhibitor_threshold: float = 0.01
+    max_layers_back: int = 0              # 0 = go back to layer 0; >0 = limit depth
+    include_same_layer: bool = True       # also include within-layer causal predecessors
+    pruning_threshold: float = 0.0        # faithfulness drop threshold for minimality pruning
+    min_faithfulness: float = 0.2         # minimum faithfulness score for circuit acceptance
+    profile_first_node: bool = False      # run torch.profiler on the first node and exit
+
+class TopCoactAttrDiscoveryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     attribution_threshold: float = 0.01
     max_neighbors: int = 32
     max_hops: int = 2
     pruning_threshold: float = 0.01
+
+class CounterfactualGradientConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    top_k_activators: int = 8
+    top_k_inhibitors: int = 8
+    activator_threshold: float = 0.01
+    inhibitor_threshold: float = 0.01
+    min_active_count: int = 1
+    max_neg_sequences: int = 4
+    pruning_threshold: float = 0.0
+    min_faithfulness: float = 0.2
 
 class DiscoveryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -162,8 +213,11 @@ class DiscoveryConfig(BaseModel):
     all_top_coact_sparse_expansion: SparseExpansionConfig = Field(default_factory=SparseExpansionConfig)
     hard_negative_coact_sparse_expansion: HardNegativeCoactSparseExpansionConfig = Field(default_factory=HardNegativeCoactSparseExpansionConfig)
     differential_activation: DifferentialActivationConfig = Field(default_factory=DifferentialActivationConfig)
+    gradient_upstream: GradientUpstreamConfig = Field(default_factory=GradientUpstreamConfig)
+    layerwise_gradient_upstream: LayerwiseGradientUpstreamConfig = Field(default_factory=LayerwiseGradientUpstreamConfig)
+    counterfactual_gradient: CounterfactualGradientConfig = Field(default_factory=CounterfactualGradientConfig)
     
-    top_coactivation: TopCoactivationDiscoveryConfig = Field(default_factory=TopCoactivationDiscoveryConfig)
+    top_coact_attr: TopCoactAttrDiscoveryConfig = Field(default_factory=TopCoactAttrDiscoveryConfig)
 
 class PersistConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')

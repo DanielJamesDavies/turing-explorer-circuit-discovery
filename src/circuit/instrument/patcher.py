@@ -55,32 +55,44 @@ class CircuitPatcher:
         pos_argmax: Optional[torch.Tensor] = None,
         patch_kinds: Optional[Iterable[str]] = None,
         full_circuit: bool = False,
+        max_layer: Optional[int] = None,
+        circuit_layers: Optional[Set[int]] = None,
     ):
         """
         Args:
-            bank:         The SAEBank containing the models.
-            circuit:      The Circuit definition (if None, all nodes are ablated).
-            avg_acts:     Tensor [n_components, d_sae] where n_components = n_layers * len(bank.kinds).
-            inverse:      If True, ablates only the circuit nodes and keeps everything else live.
-                          If False (default), keeps only the circuit nodes live and ablates everything else.
-            pos_argmax:   Optional [B] int tensor.  When provided, the intervention is applied
-                          only at position pos_argmax[b] for each batch item b; all other
-                          positions are returned unchanged (position-selective mode).
-            patch_kinds:  Optional iterable of SAE kinds to patch (e.g. {"mlp"}).
-                          Kinds not listed are passed through unchanged. If None,
-                          all kinds are patched (default, backward-compatible behavior).
-            full_circuit: If True, all latents are treated as circuit members.
-                          When inverse=False the background is zero and the patcher
-                          becomes a mathematical identity (recon + error = x).
-                          When inverse=True (complement pass) the background is
-                          W @ avg_acts, matching the circuit=None baseline patcher —
-                          i.e. the complement of all-features is the empty circuit.
+            bank:           The SAEBank containing the models.
+            circuit:        The Circuit definition (if None, all nodes are ablated).
+            avg_acts:       Tensor [n_components, d_sae] where n_components = n_layers * len(bank.kinds).
+            inverse:        If True, ablates only the circuit nodes and keeps everything else live.
+                            If False (default), keeps only the circuit nodes live and ablates everything else.
+            pos_argmax:     Optional [B] int tensor.  When provided, the intervention is applied
+                            only at position pos_argmax[b] for each batch item b; all other
+                            positions are returned unchanged (position-selective mode).
+            patch_kinds:    Optional iterable of SAE kinds to patch (e.g. {"mlp"}).
+                            Kinds not listed are passed through unchanged. If None,
+                            all kinds are patched (default, backward-compatible behavior).
+            full_circuit:   If True, all latents are treated as circuit members.
+                            When inverse=False the background is zero and the patcher
+                            becomes a mathematical identity (recon + error = x).
+                            When inverse=True (complement pass) the background is
+                            W @ avg_acts, matching the circuit=None baseline patcher —
+                            i.e. the complement of all-features is the empty circuit.
+            max_layer:      Optional int. If provided, the intervention is applied only
+                            at layers <= max_layer. Layers > max_layer are passed through unchanged.
+            circuit_layers: Optional set of layer indices. If provided, the intervention is applied
+                            only at layers in this set. Layers not in the set are passed through
+                            unchanged. Composes with max_layer — both guards must pass.
+                            Prefer this over max_layer when the circuit only occupies specific
+                            layers, e.g. for GradientUpstreamDiscovery where the BFS may not
+                            reach every layer between 0 and the seed.
         """
         self.bank = bank
         self.circuit = circuit
         self.avg_acts = avg_acts
         self.inverse = inverse
         self.full_circuit = full_circuit
+        self.max_layer = max_layer
+        self.circuit_layers = circuit_layers
         # Keep on CPU; moved to target device lazily inside transform().
         self.pos_argmax = pos_argmax.detach().cpu() if pos_argmax is not None else None
         self.patch_kinds: Optional[Set[str]] = set(patch_kinds) if patch_kinds is not None else None
@@ -147,6 +159,12 @@ class CircuitPatcher:
         return multi_patch(model, self.transform)
 
     def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
+        if self.max_layer is not None and layer_idx > self.max_layer:
+            return x
+
+        if self.circuit_layers is not None and layer_idx not in self.circuit_layers:
+            return x
+
         if self.patch_kinds is not None and kind not in self.patch_kinds:
             return x
 

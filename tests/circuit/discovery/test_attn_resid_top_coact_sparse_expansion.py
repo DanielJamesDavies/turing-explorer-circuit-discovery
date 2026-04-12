@@ -165,7 +165,7 @@ class TestAttnResidNodeExpansion:
         assert circuit is not None
         for node in circuit.nodes.values():
             if node.metadata["role"] in ("hop1", "hop2"):
-                assert node.metadata["kind"] in ("attn", "resid")
+                assert node.feature_id.kind in ("attn", "resid")
 
 
 class TestPassthroughNodes:
@@ -176,7 +176,7 @@ class TestPassthroughNodes:
         passthrough = [n for n in circuit.nodes.values() if n.metadata["role"] == "passthrough"]
         assert len(passthrough) > 0
         for node in passthrough:
-            assert node.metadata["kind"] == "mlp"
+            assert node.feature_id.kind == "mlp"
 
     def test_passthrough_nodes_have_no_edges(self, setup):
         algo, _, _ = setup
@@ -213,7 +213,7 @@ class TestActivityFilterAndMetadata:
         assert circuit is not None
 
         hop1_keys = {
-            (n.metadata["layer_idx"], n.metadata["kind"], n.metadata["latent_idx"])
+            (n.feature_id.layer, n.feature_id.kind, n.feature_id.index)
             for n in circuit.nodes.values()
             if n.metadata["role"] == "hop1"
         }

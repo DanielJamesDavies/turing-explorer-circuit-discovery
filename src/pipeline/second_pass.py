@@ -20,7 +20,11 @@ def run_second_pass() -> None:
     assert runtime.bank is not None
 
     top_coactivation.set_device(runtime.device)
-    top_coactivation.set_frequency_factors(latent_stats.active_count.to(runtime.device))
+    
+    if top_coactivation.mode == "freq_weighted":
+        top_coactivation.set_frequency_factors(latent_stats.active_count.to(runtime.device))
+    
+    print(f"Co-activation mode: {top_coactivation.mode}")
 
     top_ctx_sequence_ids = top_ctx.get_all_sequence_ids()
     seq_offsets, seq_targets_global = top_ctx.get_sequence_to_latents_csr(device=runtime.cpu_device)
@@ -83,7 +87,13 @@ def run_second_pass() -> None:
         torch.cuda.empty_cache()
 
     print("Running top co-activation reduction...")
-    top_coactivation.reduce(seq_offsets, seq_targets_global)
+    # seq_len is tokens.shape[1] from the last batch
+    top_coactivation.reduce(
+        seq_offsets, 
+        seq_targets_global, 
+        seq_len=tokens.shape[1], 
+        active_count=latent_stats.active_count
+    )
     top_coactivation.save("outputs/top_coactivation.pt")
     print("  ✓ top_coactivation saved")
     print("")

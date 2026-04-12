@@ -9,14 +9,14 @@ from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
-from circuit.sae_graph import SAEGraphInstrument
-from circuit.attribution import compute_feature_attribution
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
+from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.instrument.attribution import compute_feature_attribution
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import component_idx, split_component_idx
 
 
-class TopCoactivationDiscovery(DiscoveryMethod):
+class TopCoactAttrDiscovery(DiscoveryMethod):
     """
     Discovers circuits by expanding the neighborhood of a seed latent
     using statistical co-activation data, followed by multi-hop causal attribution.
@@ -36,7 +36,7 @@ class TopCoactivationDiscovery(DiscoveryMethod):
         probe_batch_size: Optional[int] = None
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
-        cfg = config.discovery.top_coactivation
+        cfg = config.discovery.top_coact_attr
         self.min_faithfulness = (
             min_faithfulness
             if min_faithfulness is not None
@@ -55,7 +55,7 @@ class TopCoactivationDiscovery(DiscoveryMethod):
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         """Executes the multi-hop causal attribution discovery episode."""
-        logger = CircuitLogger(seed_comp_idx, seed_latent_idx, "top_coactivation")
+        logger = CircuitLogger(seed_comp_idx, seed_latent_idx, "top_coact_attr")
         try:
             return self._discover(seed_comp_idx, seed_latent_idx, logger)
         finally:
@@ -67,7 +67,7 @@ class TopCoactivationDiscovery(DiscoveryMethod):
         seed_latent_idx: int,
         logger: CircuitLogger,
     ) -> Optional[Circuit]:
-        circuit = Circuit(name=f"TopCoact_S{seed_comp_idx}_{seed_latent_idx}")
+        circuit = Circuit(name=f"TopCoactAttr_S{seed_comp_idx}_{seed_latent_idx}")
 
         probe_data = self.build_probe_dataset(seed_comp_idx, seed_latent_idx)
         if probe_data.pos_tokens.shape[0] == 0:
@@ -306,7 +306,7 @@ class TopCoactivationDiscovery(DiscoveryMethod):
                 "hops": hops_completed,
                 "n_nodes": len(circuit.nodes),
                 "n_edges": len(circuit.edges),
-                "discovery_method": "top_coactivation_attribution_bidirectional"
+                "discovery_method": "top_coact_attr"
             })
             logger.accept(len(circuit.nodes), len(circuit.edges))
             return circuit

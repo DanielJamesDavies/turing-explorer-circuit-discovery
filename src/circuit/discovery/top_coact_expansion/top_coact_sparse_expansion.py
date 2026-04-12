@@ -10,9 +10,9 @@ from eval.faithfulness import evaluate_faithfulness, evaluate_kind_local_faithfu
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
-from circuit.sae_graph import SAEGraphInstrument
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
+from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
 
 
 class TopCoactSparseExpansion(DiscoveryMethod):
@@ -332,5 +332,10 @@ class TopCoactSparseExpansion(DiscoveryMethod):
             "coact_depth":        self.coact_depth,
             "n_passthrough":      n_passthrough,
         })
+        specific_nodes = [
+            n for n in circuit.nodes.values()
+            if n.metadata.get("role") != "passthrough"
+        ]
+        logger.nodes(specific_nodes)
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit

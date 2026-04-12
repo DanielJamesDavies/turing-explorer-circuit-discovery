@@ -21,7 +21,7 @@ Notation used in test docstrings:
 import pytest
 import torch
 
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.patcher import CircuitPatcher
 from store.circuits import Circuit, CircuitNode
 
 # Dimensions match conftest constants.
@@ -643,3 +643,111 @@ class TestEdgeCases:
         # Cross-contamination check
         assert not patcher.circuit_masks[(0, "attn")][7].item()
         assert not patcher.circuit_masks[(1, "attn")][3].item()
+
+
+# ---------------------------------------------------------------------------
+# TestCircuitLayersFilter — circuit_layers restricts which layers are patched
+# ---------------------------------------------------------------------------
+
+class TestCircuitLayersFilter:
+    """
+    Verifies the circuit_layers early-return guard in CircuitPatcher.transform.
+
+    contract: if circuit_layers is provided, only layers in the set are
+    intervened on; all other layers return x unchanged regardless of the
+    circuit definition.
+    """
+
+    def test_layer_in_circuit_layers_is_patched(self, mock_sae_bank, avg_acts_zero):
+        """
+        A null circuit (circuit=None) ablates everything at layers in circuit_layers.
+        Layer 0 is in the set → output should differ from x.
+        """
+        layer, kind = 0, "attn"
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            circuit_layers={0},
+        )
+        x = torch.randn(B, T, D_MODEL)
+        result = patcher.transform(layer, kind, x)
+        assert not torch.allclose(result, x, atol=1e-4)
+
+    def test_layer_not_in_circuit_layers_passes_through(self, mock_sae_bank, avg_acts_zero):
+        """
+        Layer 1 is not in circuit_layers={0} → transform must return x unchanged.
+        """
+        layer, kind = 1, "attn"
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            circuit_layers={0},
+        )
+        x = torch.randn(B, T, D_MODEL)
+        result = patcher.transform(layer, kind, x)
+        assert torch.equal(result, x)
+
+    def test_empty_circuit_layers_passes_through_all_layers(self, mock_sae_bank, avg_acts_zero):
+        """
+        An empty circuit_layers set means no layer is in scope → every call
+        passes through unchanged.
+        """
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            circuit_layers=set(),
+        )
+        x = torch.randn(B, T, D_MODEL)
+        for layer in range(mock_sae_bank.n_layer):
+            for kind in KINDS:
+                result = patcher.transform(layer, kind, x)
+                assert torch.equal(result, x), (
+                    f"Expected passthrough for layer {layer} kind {kind} with empty circuit_layers"
+                )
+
+    def test_circuit_layers_none_patches_all_layers(self, mock_sae_bank, avg_acts_zero):
+        """
+        circuit_layers=None (default) is backward compatible: all layers within
+        max_layer are patched.  Layer 0 with a null circuit should differ from x.
+        """
+        layer, kind = 0, "attn"
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            circuit_layers=None,
+        )
+        x = torch.randn(B, T, D_MODEL)
+        result = patcher.transform(layer, kind, x)
+        assert not torch.allclose(result, x, atol=1e-4)
+
+    def test_circuit_layers_composes_with_max_layer(self, mock_sae_bank, avg_acts_zero):
+        """
+        Both guards must pass.  max_layer=0 excludes layer 1; circuit_layers={1}
+        also excludes layer 0.  Net effect: nothing is patched.
+        """
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            max_layer=0,
+            circuit_layers={1},  # layer 1 excluded by max_layer, layer 0 excluded by circuit_layers
+        )
+        x = torch.randn(B, T, D_MODEL)
+        for layer in range(mock_sae_bank.n_layer):
+            for kind in KINDS:
+                result = patcher.transform(layer, kind, x)
+                assert torch.equal(result, x), (
+                    f"Expected passthrough for layer {layer} kind {kind} "
+                    f"with max_layer=0 and circuit_layers={{1}}"
+                )
+
+    def test_circuit_layers_multi_layer_set(self, mock_sae_bank, avg_acts_zero):
+        """
+        With circuit_layers={0, 1}, both layers 0 and 1 are in scope.
+        A null circuit at each should differ from x.
+        """
+        patcher = CircuitPatcher(
+            mock_sae_bank, None, avg_acts_zero,
+            circuit_layers={0, 1},
+        )
+        x = torch.randn(B, T, D_MODEL)
+        for layer in range(mock_sae_bank.n_layer):
+            kind = "attn"
+            result = patcher.transform(layer, kind, x)
+            assert not torch.allclose(result, x, atol=1e-4), (
+                f"Layer {layer} in circuit_layers={{0,1}} should be patched"
+            )

@@ -1,7 +1,7 @@
 import torch
 from typing import Optional, Any, cast, Dict
 from .base import DiscoveryMethod
-from config import config
+from config import config, CoactivationStatisticalConfig
 from store.circuits import Circuit, CircuitNode
 from store.top_coactivation import top_coactivation
 from store.latent_stats import latent_stats
@@ -9,8 +9,8 @@ from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 
 
@@ -48,7 +48,7 @@ class CoactivationStatistical(DiscoveryMethod):
         self.coactivation_threshold = (
             coactivation_threshold
             if coactivation_threshold is not None
-            else cast(float, cfg.coactivation_threshold or 0.1)
+            else self._get_default_threshold(cfg)
         )
         self.max_neighbors = (
             max_neighbors
@@ -61,6 +61,12 @@ class CoactivationStatistical(DiscoveryMethod):
             else cast(int, config.discovery.min_active_count or 50)
         )
         self.pruning_threshold = pruning_threshold if pruning_threshold is not None else cast(float, cfg.pruning_threshold or 0.0)
+
+    def _get_default_threshold(self, cfg: CoactivationStatisticalConfig) -> float:
+        """Returns the appropriate threshold based on the co-activation mode."""
+        if top_coactivation.mode == "pmi":
+            return cast(float, cfg.pmi_coactivation_threshold or 1.0)
+        return cast(float, cfg.coactivation_threshold or 0.1)
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         """Expands seed to co-activation neighbors above threshold, then evaluates faithfulness."""

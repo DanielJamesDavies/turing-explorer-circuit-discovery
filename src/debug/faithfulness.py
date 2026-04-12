@@ -27,8 +27,8 @@ from store.logit_context import logit_ctx
 from circuit.discovery_window import DiscoveryWindow
 from circuit.discovery.sfc_attribution_patching import SFCAttributionPatching
 from circuit.probe_dataset import ProbeDatasetBuilder
-from circuit.patcher import CircuitPatcher
-from circuit.neg_ctx_baseline import compute_neg_ctx_means
+from circuit.instrument.patcher import CircuitPatcher
+from circuit.instrument.neg_ctx_baseline import compute_neg_ctx_means
 from config import config
 from pipeline.component_index import split_component_idx
 
@@ -272,15 +272,29 @@ def main():
         print("\n  SFC returned None — checking why from log file...")
         log_dir = "outputs/discovery_logs"
         if os.path.isdir(log_dir):
-            logs = sorted(
-                [f for f in os.listdir(log_dir) if f.endswith(".txt")],
-                key=lambda f: os.path.getmtime(os.path.join(log_dir, f)),
-                reverse=True,
-            )
-            if logs:
-                latest = os.path.join(log_dir, logs[0])
-                print(f"\n  Latest log ({logs[0]}):")
-                with open(latest) as fh:
+            all_logs = []
+            # Check pass and fail subdirectories
+            for status in ["pass", "fail"]:
+                status_dir = os.path.join(log_dir, status)
+                if os.path.isdir(status_dir):
+                    for f in os.listdir(status_dir):
+                        if f.endswith(".txt"):
+                            all_logs.append(os.path.join(status, f))
+            
+            # Also check the root for any legacy logs
+            for f in os.listdir(log_dir):
+                if f.endswith(".txt"):
+                    all_logs.append(f)
+
+            if all_logs:
+                all_logs.sort(
+                    key=lambda f: os.path.getmtime(os.path.join(log_dir, f)),
+                    reverse=True,
+                )
+                latest_rel = all_logs[0]
+                latest_full = os.path.join(log_dir, latest_rel)
+                print(f"\n  Latest log ({latest_rel}):")
+                with open(latest_full) as fh:
                     print(fh.read())
         print("\n  (Circuit was not returned — MSE denominator diagnostics printed above.)")
         print(f"  neg-ctx  MSE(baseline, orig) = {mse_neg:.8f}")

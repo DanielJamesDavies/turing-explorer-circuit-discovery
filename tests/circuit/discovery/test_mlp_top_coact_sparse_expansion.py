@@ -233,7 +233,7 @@ class TestMlpNodeExpansion:
             n for n in circuit.nodes.values() if n.metadata["role"] == "seed"
         ]
         assert len(seed_nodes) == 1
-        assert seed_nodes[0].metadata["kind"] == "mlp"
+        assert seed_nodes[0].feature_id.kind == "mlp"
 
     def test_hop1_nodes_all_mlp(self, setup):
         algo, _, _, _ = setup
@@ -242,7 +242,7 @@ class TestMlpNodeExpansion:
         hop1 = [n for n in circuit.nodes.values() if n.metadata["role"] == "hop1"]
         assert len(hop1) > 0
         for node in hop1:
-            assert node.metadata["kind"] == "mlp", (
+            assert node.feature_id.kind == "mlp", (
                 f"hop-1 node has non-MLP kind: {node.metadata['kind']}"
             )
 
@@ -273,7 +273,7 @@ class TestMlpNodeExpansion:
         assert circuit is not None
         hop2 = [n for n in circuit.nodes.values() if n.metadata["role"] == "hop2"]
         for node in hop2:
-            assert node.metadata["kind"] == "mlp", (
+            assert node.feature_id.kind == "mlp", (
                 f"hop-2 node has non-MLP kind: {node.metadata['kind']}"
             )
 
@@ -285,9 +285,9 @@ class TestMlpNodeExpansion:
         seen: set = set()
         for node in circuit.nodes.values():
             key = (
-                node.metadata["layer_idx"],
-                node.metadata["kind"],
-                node.metadata["latent_idx"],
+                node.feature_id.layer,
+                node.feature_id.kind,
+                node.feature_id.index,
             )
             assert key not in seen, f"Duplicate node: {key}"
             seen.add(key)
@@ -313,7 +313,7 @@ class TestPassthroughNodes:
         assert circuit is not None
         for node in circuit.nodes.values():
             if node.metadata["role"] == "passthrough":
-                assert node.metadata["kind"] in ("attn", "resid"), (
+                assert node.feature_id.kind in ("attn", "resid"), (
                     f"Passthrough node has unexpected kind: {node.metadata['kind']}"
                 )
 
@@ -327,16 +327,14 @@ class TestPassthroughNodes:
         assert circuit is not None
 
         probe_tokens = torch.zeros(B_TEST, T_TEST, dtype=torch.long)
-        passthrough_map = algo._capture_passthrough_nodes(probe_tokens)
-
-        expected: set = set()
-        for (layer, kind), latent_set in passthrough_map.items():
-            for lat in latent_set:
-                expected.add((layer, kind, lat))
-
-        actual: set = {
-            (n.metadata["layer_idx"], n.metadata["kind"], n.metadata["latent_idx"])
-            for n in circuit.nodes.values()
+        passthrough_fids = algo._capture_passthrough_nodes(probe_tokens)
+        hop_fids = {
+            n.feature_id for n in circuit.nodes.values()
+            if n.metadata["role"] != "passthrough"
+        }
+        expected = passthrough_fids - hop_fids
+        actual = {
+            n.feature_id for n in circuit.nodes.values()
             if n.metadata["role"] == "passthrough"
         }
         assert actual == expected
@@ -347,7 +345,7 @@ class TestPassthroughNodes:
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
         for node in circuit.nodes.values():
-            if node.metadata["kind"] == "mlp":
+            if node.feature_id.kind == "mlp":
                 assert node.metadata["role"] != "passthrough"
 
 
@@ -445,7 +443,7 @@ class TestActivityFilter:
         circuit = algo.discover(SEED_COMP, SEED_LAT)
         assert circuit is not None
         hop1_lats = {
-            n.metadata["latent_idx"]
+            n.feature_id.index
             for n in circuit.nodes.values()
             if n.metadata["role"] == "hop1"
         }
@@ -461,9 +459,9 @@ class TestActivityFilter:
         for node in circuit.nodes.values():
             if node.metadata["role"] not in ("hop1", "hop2"):
                 continue
-            layer    = node.metadata["layer_idx"]
-            lat      = node.metadata["latent_idx"]
-            kind_idx = KINDS.index(node.metadata["kind"])
+            layer    = node.feature_id.layer
+            lat      = node.feature_id.index
+            kind_idx = KINDS.index(node.feature_id.kind)
             comp     = layer * len(KINDS) + kind_idx
             count    = mock_stats.active_count[comp, lat].item()
             assert count >= algo.min_active_count, (

@@ -18,7 +18,7 @@ from circuit.discovery.coactivation_statistical import CoactivationStatistical
 from circuit.discovery.logit_attribution import LogitAttribution
 from circuit.discovery.sfc_attribution_patching import SFCAttributionPatching
 from circuit.discovery.neighborhood_expansion import NeighborhoodExpansion
-from circuit.discovery.top_coactivation import TopCoactivationDiscovery
+from circuit.discovery.top_coact_attr import TopCoactAttrDiscovery
 from circuit.discovery.top_coact_expansion.mlp_top_coact_sparse_expansion import MlpTopCoactSparseExpansion
 from circuit.discovery.top_coact_expansion.attn_top_coact_sparse_expansion import AttnTopCoactSparseExpansion
 from circuit.discovery.top_coact_expansion.resid_top_coact_sparse_expansion import ResidTopCoactSparseExpansion
@@ -28,6 +28,9 @@ from circuit.discovery.top_coact_expansion.mlp_resid_top_coact_sparse_expansion 
 from circuit.discovery.top_coact_expansion.all_top_coact_sparse_expansion import AllTopCoactSparseExpansion
 from circuit.discovery.top_coact_expansion.hard_negative_coact_sparse_expansion import HardNegativeCoactSparseExpansion
 from circuit.discovery.differential_activation import DifferentialActivation
+from circuit.discovery.gradient_upstream import GradientUpstreamDiscovery
+from circuit.discovery.layerwise_gradient_upstream import LayerwiseGradientUpstreamDiscovery
+from circuit.discovery.counterfactual_gradient import CounterfactualGradientDiscovery
 
 
 METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
@@ -35,7 +38,7 @@ METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
     "logit_attribution": LogitAttribution,
     "sfc_attribution_patching": SFCAttributionPatching,
     "neighborhood_expansion": NeighborhoodExpansion,
-    "top_coactivation": TopCoactivationDiscovery,
+    "top_coact_attr": TopCoactAttrDiscovery,
     "mlp_top_coact_sparse_expansion": MlpTopCoactSparseExpansion,
     "attn_top_coact_sparse_expansion": AttnTopCoactSparseExpansion,
     "resid_top_coact_sparse_expansion": ResidTopCoactSparseExpansion,
@@ -45,6 +48,9 @@ METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
     "all_top_coact_sparse_expansion": AllTopCoactSparseExpansion,
     "hard_negative_coact_sparse_expansion": HardNegativeCoactSparseExpansion,
     "differential_activation": DifferentialActivation,
+    "gradient_upstream": GradientUpstreamDiscovery,
+    "layerwise_gradient_upstream": LayerwiseGradientUpstreamDiscovery,
+    "counterfactual_gradient": CounterfactualGradientDiscovery,
 }
 
 
@@ -62,7 +68,7 @@ def _build_methods(
       "logit_attribution"         — two-pass gradient method (recommended)
       "sfc_attribution_patching"  — SFC-style delta×gradient node attribution + Jacobian edges
       "neighborhood_expansion"    — two-hop co-activation neighbourhood expansion (no gradients)
-      "top_coactivation"          — legacy feature-to-feature attribution (broken cross-layer)
+      "top_coact_attr"            — legacy feature-to-feature attribution (broken cross-layer)
       "mlp_top_coact_sparse_expansion"      — MLP-only two-hop expansion + full attn/resid passthrough
       "attn_top_coact_sparse_expansion"     — attn-only two-hop expansion + full MLP/resid passthrough
       "resid_top_coact_sparse_expansion"    — resid-only two-hop expansion + full attn/MLP passthrough
@@ -72,6 +78,9 @@ def _build_methods(
       "all_top_coact_sparse_expansion"      — all-kinds expansion (attn/mlp/resid), no passthrough
       "hard_negative_coact_sparse_expansion" — all-kinds expansion + hard-negative inhibitor search
       "differential_activation"              — pos vs neg differential activation + causal attribution
+      "gradient_upstream"                    — backwards gradient BFS with per-node context switching
+      "layerwise_gradient_upstream"          — layer-by-layer sweep attributing against all upstream layers (not just direct predecessors)
+      "counterfactual_gradient"              — negctx gradient attribution for absent activators and present inhibitors
     """
     enabled_raw = config.discovery.methods
     if isinstance(enabled_raw, list):
@@ -91,7 +100,10 @@ def _build_methods(
             print(f"[DiscoveryWindow] Warning: unknown discovery method '{name}' — skipped.")
             continue
 
-        methods.append(method_cls(inference, bank, avg_acts, probe_builder))
+        kwargs: dict = {}
+        if name == "layerwise_gradient_upstream":
+            kwargs["profile_first_node"] = config.discovery.layerwise_gradient_upstream.profile_first_node
+        methods.append(method_cls(inference, bank, avg_acts, probe_builder, **kwargs))
 
     return methods
 
@@ -148,12 +160,12 @@ class DiscoveryWindow:
             for method in self.methods:
                 m_t0 = time.perf_counter()
                 circuit = method.discover(comp_idx, latent_idx)
-                m_dt = time.perf_counter() - m_t0
+                _m_dt = time.perf_counter() - m_t0
                 
                 # If a method is slow (>1s), log its duration to the console for observability
-                if m_dt > 1.0:
-                    from utils.observability import obs
-                    pbar.write(f"  - {method.method_name}: {m_dt:.2f}s ({obs.attempt_forward_passes} forwards)")
+                # if m_dt > 1.0:
+                #     from observability.tracking import obs
+                #     pbar.write(f"  - {method.method_name}: {m_dt:.2f}s ({obs.attempt_forward_passes} forwards)")
                 
                 if circuit:
                     discovered_count += 1
@@ -165,7 +177,7 @@ class DiscoveryWindow:
 
         self.save_store()
         
-        from utils.observability import obs
+        from observability.tracking import obs
         print(f"Discovery Window complete. Found {discovered_count} faithful circuits.")
         print(f"Total Forward Passes: {obs.forward_passes}")
         print(f"Total Forward Time: {obs.total_forward_time:.2f} s")

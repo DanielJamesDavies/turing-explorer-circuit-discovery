@@ -8,7 +8,7 @@ from contextlib import nullcontext
 from config import config
 from .turingllm import TuringLLM, TuringLLMConfig
 from .hooks import capture_activations
-from utils.observability import obs
+from observability.tracking import obs
 
 
 def _fuse_mlp_projections(state_dict: dict) -> dict:

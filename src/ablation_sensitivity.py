@@ -7,13 +7,12 @@ from data.loader import DataLoader
 from model.inference import Inference
 from sae.bank import SAEBank
 from store.context import top_ctx, mid_ctx, neg_ctx
-from store.logit_context import logit_ctx
 from store.top_coactivation import top_coactivation
 from store.circuits import Circuit, CircuitNode
-from circuit.feature_id import FeatureID
+from circuit.types.feature_id import FeatureID
 from circuit.discovery.sfc_attribution_patching import SFCAttributionPatching
 from circuit.probe_dataset import ProbeDatasetBuilder, ProbeDataset
-from circuit.patcher import CircuitPatcher
+from circuit.instrument.patcher import CircuitPatcher
 from pipeline.component_index import component_idx as build_component_idx, split_component_idx
 from display.display import display
 from rich.console import Console
@@ -56,8 +55,8 @@ class AblationSensitivityTool:
         self.device = device
         
         self.console.print("[bold yellow]Loading stores...[/bold yellow]")
+        top_ctx.set_device(torch.device("cpu"))
         top_ctx.load("outputs/top_ctx.pt")
-        logit_ctx.load("outputs/logit_ctx.pt")
         top_coactivation.load("outputs/top_coactivation.pt")
         _try_load(mid_ctx, "outputs/mid_ctx.pt", "mid_ctx")
         _try_load(neg_ctx, "outputs/neg_ctx.pt", "neg_ctx")

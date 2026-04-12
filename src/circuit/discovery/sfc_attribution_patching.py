@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from typing import Optional, Any, Dict, Tuple, List, cast
 
 from .base import DiscoveryMethod
-from ..sparse_act import SparseAct
+from ..types.sparse_act import SparseAct
 from config import config
 from store.circuits import Circuit, CircuitNode
-from circuit.sae_graph import SAEGraphInstrument
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
+from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
 from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness

@@ -9,10 +9,10 @@ from eval.faithfulness import evaluate_faithfulness
 from eval.sufficiency import evaluate_sufficiency
 from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
-from circuit.sae_graph import SAEGraphInstrument
-from circuit.attribution import compute_logit_attribution, compute_feature_attribution
-from circuit.feature_id import FeatureID
-from circuit.circuit_logger import CircuitLogger
+from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.instrument.attribution import compute_logit_attribution, compute_feature_attribution
+from circuit.types.feature_id import FeatureID
+from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import component_idx, split_component_idx
 
 
