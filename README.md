@@ -15,7 +15,7 @@ This project implements a **circuit discovery** pipeline for transformer interpr
 
 1. Decomposes activations into sparse, interpretable latent features
 2. Mines co-activation statistics across the dataset
-3. Constructs candidate circuits using 12 distinct discovery methods
+3. Constructs candidate circuits using 17 distinct discovery methods
 4. Evaluates each circuit for **faithfulness**, **sufficiency**, **completeness**, and **minimality**
 
 A *circuit* is a minimal sub-network of SAE latents whose activations alone faithfully reproduce the model's original behaviour on a given concept or task.
@@ -55,7 +55,7 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
                              │
                              ▼
   ┌─────────────────────────────────────────────────────────┐
-  │  Circuit discovery — 12 methods per seed                │
+  │  Circuit discovery — 17 methods per seed                │
   │  Gradient · statistical · sparse-expansion families     │
   └──────────────────────────┬──────────────────────────────┘
                              │
@@ -77,20 +77,31 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
 .
 ├── config.yaml                   — master configuration
 ├── requirements.txt
+├── tests/                        — unit + integration tests
 └── src/
-    ├── main.py                   — entry point
+    ├── main.py                   — entry point (full pipeline)
     ├── discover_circuits.py      — standalone discovery CLI
     ├── display_latents.py        — interactive latent inspector
     ├── search_latents.py         — keyword search over latents
+    ├── ablation_sensitivity.py   — ablation sensitivity analysis utility
+    ├── hardware.py               — hardware detection and device helpers
+    ├── config.py                 — config loader and typed access
     ├── model/                    — TuringLLM transformer, inference, hooks, tokenizer
-    ├── sae/                      — SAE bank (36 SAEs), Triton top-K, cublasLt encoder
-    ├── pipeline/                 — pass 1, ANN step, pass 2, discovery orchestration
-    ├── store/                    — latent stats, context stores, co-activation graph
-    ├── circuit/                  — discovery methods, attribution, SAE graph, patching
-    ├── eval/                     — faithfulness, sufficiency, completeness, minimality
-    ├── display/                  — Rich terminal heatmap renderer
-    ├── native/                   — C++/CUDA extensions (Welford, reservoir, co-magnitude)
-    └── tests/                    — unit + integration tests
+    ├── sae/                      — SAE bank (36 SAEs), Triton top-K, cublasLt encoder, fused linear-ReLU
+    ├── pipeline/                 — pass 1, ANN step, pass 2, candidate selection, discovery orchestration, persist
+    ├── store/                    — latent stats, context stores, co-activation graph, circuit store, search cache
+    ├── circuit/
+    │   ├── types/                — FeatureID, SparseAct, fused ops
+    │   ├── instrument/           — SAE graph hooks, attribution, patcher, neg-ctx baseline
+    │   ├── discovery/            — all 17 discovery method implementations + METHODS.md
+    │   ├── probe_dataset.py      — positive/negative probe dataset builder
+    │   ├── discovery_window.py   — per-seed discovery orchestrator
+    │   └── feature_selection.py  — candidate latent filtering
+    ├── eval/                     — faithfulness, upstream faithfulness, sufficiency, completeness, minimality
+    ├── display/                  — Rich terminal heatmap, circuit listing, top-candidate viewer
+    ├── observability/            — timing, progress tracking, circuit logging, console helpers
+    ├── debug/                    — standalone debug and profiling scripts
+    └── native/                   — C++/CUDA extensions (Welford, reservoir, co-magnitude, top-K)
 ```
 
 ---
@@ -229,6 +240,30 @@ python src/discover_circuits.py
 
 Runs only the discovery phase (requires pre-built `outputs/` from a prior pipeline run).
 
+### List discovered circuits
+
+```bash
+./scripts/list_circuits.sh
+```
+
+Prints a sorted summary of all accepted circuits from `outputs/circuits/summary.json`.
+
+### View top candidate latents
+
+```bash
+./scripts/get_top_candidates.sh
+```
+
+Displays the highest-scoring seed latent candidates selected for discovery.
+
+### Run ablation matrix
+
+```bash
+./scripts/ablation_matrix.sh
+```
+
+Sweeps discovery hyperparameters and evaluates circuit quality across the matrix.
+
 ---
 
 ## Configuration Reference
@@ -236,23 +271,47 @@ Runs only the discovery phase (requires pre-built `outputs/` from a prior pipeli
 All settings live in `config.yaml`. The most commonly adjusted keys:
 
 
-| Key                                             | Description                                      | Default     |
-| ----------------------------------------------- | ------------------------------------------------ | ----------- |
-| `weights.model_path`                            | Path to TuringLLM checkpoint                     | —           |
-| `weights.sae_path`                              | Directory of SAE weights                         | —           |
-| `data.dataset_path`                             | Directory of tokenised `.npy` shards             | —           |
-| `data.n_shards`                                 | Number of shards to process                      | `256`       |
-| `data.batch_size`                               | Sequences per inference batch                    | `512`       |
-| `hardware.multi_gpu`                            | Split layers across all GPUs                     | `false`     |
-| `hardware.memory`                               | `efficient` (CPU offload) or `fast` (pin memory) | `efficient` |
-| `hardware.compile`                              | `torch.compile` for model + SAEs                 | `true`      |
-| `latents.top_ctx.n_sequences`                   | Top sequences stored per latent                  | `64`        |
-| `latents.neg_ctx.n_sequences`                   | Negative sequences stored per latent             | `64`        |
-| `latents.top_coactivation.n_latents_per_latent` | Co-activation graph degree                       | `64`        |
-| `discovery.n_seeds`                             | Seed latents to discover from                    | `32`        |
-| `discovery.probe_batch_size`                    | Sequences per instrumented forward pass          | `16`        |
-| `discovery.min_faithfulness`                    | Minimum faithfulness to accept a circuit         | `0.3`       |
-| `discovery.methods`                             | List of discovery methods to run                 | see below   |
+| Key                                                   | Description                                                                                 | Default        |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------- |
+| `weights.model_path`                                  | Path to TuringLLM checkpoint                                                                | —              |
+| `weights.sae_path`                                    | Directory of SAE weights                                                                    | —              |
+| `data.dataset_path`                                   | Directory of tokenised `.npy` shards                                                        | —              |
+| `data.n_shards`                                       | Number of shards to process                                                                 | `256`          |
+| `data.batch_size`                                     | Sequences per inference batch                                                               | `512`          |
+| `hardware.multi_gpu`                                  | Split layers across all GPUs                                                                | `false`        |
+| `hardware.memory`                                     | `efficient` (CPU offload) or `fast` (pin memory)                                            | `efficient`    |
+| `hardware.compile`                                    | `torch.compile` for model + SAEs                                                            | `true`         |
+| `hardware.parallel_kinds`                             | Dispatch attn/mlp/resid SAE encodes on separate CUDA streams                                | `false`        |
+| `hardware.ann_device`                                 | Device for ANN neg-ctx search: `auto`, `gpu`, or `cpu`                                      | `auto`         |
+| `latents.top_ctx.n_sequences`                         | Top sequences stored per latent                                                             | `64`           |
+| `latents.mid_ctx.n_sequences`                         | Reservoir size per latent (mid-band activations)                                            | `64`           |
+| `latents.mid_ctx.band_low_sigma`                      | Lower edge of mid band (mean + N×std)                                                       | `0.5`          |
+| `latents.mid_ctx.band_high_sigma`                     | Upper edge of mid band (mean + N×std)                                                       | `1.5`          |
+| `latents.mid_ctx.warmup_batches`                      | Batches per component before mid-ctx updates begin                                          | `100`          |
+| `latents.neg_ctx.n_sequences`                         | Negative sequences stored per latent                                                        | `64`           |
+| `latents.neg_ctx.n_neighbors`                         | ANN query K per latent (oversampled before pos-ctx filter)                                  | `512`          |
+| `latents.neg_ctx.min_pos_ctx`                         | Minimum pos-ctx sequences required to attempt neg retrieval                                  | `8`            |
+| `latents.neg_ctx.repr_mode`                           | Residual representation mode: `mean_pool` or `last_token`                                   | `mean_pool`    |
+| `latents.neg_ctx.max_repr_seqs`                       | Cap on sequences stored in seq_repr (`null` = all)                                          | `200000`       |
+| `latents.logit_ctx.n_tokens_per_latent`               | Token prediction entries tracked per latent                                                 | `32`           |
+| `latents.logit_ctx.topk_output_tokens`                | Top predicted tokens stored per latent                                                      | `32`           |
+| `latents.top_coactivation.n_latents_per_latent`       | Co-activation graph degree                                                                  | `64`           |
+| `latents.top_coactivation.n_candidates_per_component` | Candidates extracted per component per sequence during dump                                  | `16`           |
+| `latents.top_coactivation.freq_alpha`                 | Exponent for frequency adjustment of co-activation scores                                   | `2.0`          |
+| `latents.top_coactivation.mode`                       | Scoring mode: `pmi`, `freq_weighted`, or `raw`                                              | `pmi`          |
+| `latents.top_coactivation.pmi_clamp_min`              | Lower bound for PMI values                                                                  | `-5.0`         |
+| `latents.top_coactivation.pmi_clamp_max`              | Upper bound for PMI values                                                                  | `10.0`         |
+| `discovery.n_seeds`                                   | Seed latents to discover from                                                               | `128`          |
+| `discovery.probe_batch_size`                          | Sequences per instrumented forward pass                                                     | `4`            |
+| `discovery.neg_ctx_eval_max`                          | Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)     | `16`           |
+| `discovery.min_faithfulness`                          | Minimum faithfulness to accept a circuit                                                    | `0.2`          |
+| `discovery.min_active_count`                          | Minimum lifetime firing count for a latent to be a candidate                                | `1`            |
+| `discovery.max_neighbors`                             | Default max co-activation neighbors per node (fallback for all methods)                     | `32`           |
+| `discovery.methods`                                   | List of discovery methods to run                                                            | see below      |
+| `persist.save_workers`                                | Max parallel `torch.save` threads                                                           | `1`            |
+| `persist.search_cache_enabled`                        | Whether to build the keyword search cache                                                   | `true`         |
+| `persist.search_cache_n_sequences`                    | Sequences stored per latent in the search cache                                             | `8`            |
+| `persist.search_cache_component_chunk`                | Components processed at a time during cache build                                           | `4`            |
 
 
 ---
@@ -260,20 +319,25 @@ All settings live in `config.yaml`. The most commonly adjusted keys:
 ## Discovery Methods
 
 
-| Method                                  | Algorithm                                                                    |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| `attn_top_coact_sparse_expansion`       | Variable-depth BFS over attn co-activation graph; full MLP/resid passthrough |
-| `mlp_top_coact_sparse_expansion`        | Same, MLP-targeted; full attn/resid passthrough                              |
-| `resid_top_coact_sparse_expansion`      | Same, resid-targeted; full attn/MLP passthrough                              |
-| `attn_mlp_top_coact_sparse_expansion`   | BFS over attn+MLP; full resid passthrough                                    |
-| `attn_resid_top_coact_sparse_expansion` | BFS over attn+resid; full MLP passthrough                                    |
-| `mlp_resid_top_coact_sparse_expansion`  | BFS over MLP+resid; full attn passthrough                                    |
-| `all_top_coact_sparse_expansion`        | BFS over all kinds; no passthrough                                           |
-| `coactivation_statistical`              | Threshold-based co-activation edge pruning                                   |
-| `logit_attribution`                     | Two-pass gradient: `activation × gradient` node/edge scoring                 |
-| `sfc_attribution_patching`              | SFC-style `delta × gradient` (Marks et al. 2024), clean vs. neg-ctx baseline |
-| `neighborhood_expansion`                | Two-hop statistical neighbourhood; no gradients                              |
-| `top_coact_attr`                      | Legacy feature-to-feature attribution patching                               |
+| Method                                  | Algorithm                                                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `attn_top_coact_sparse_expansion`       | Variable-depth BFS over attn co-activation graph; full MLP/resid passthrough                        |
+| `mlp_top_coact_sparse_expansion`        | Same, MLP-targeted; full attn/resid passthrough                                                     |
+| `resid_top_coact_sparse_expansion`      | Same, resid-targeted; full attn/MLP passthrough                                                     |
+| `attn_mlp_top_coact_sparse_expansion`   | BFS over attn+MLP; full resid passthrough                                                           |
+| `attn_resid_top_coact_sparse_expansion` | BFS over attn+resid; full MLP passthrough                                                           |
+| `mlp_resid_top_coact_sparse_expansion`  | BFS over MLP+resid; full attn passthrough                                                           |
+| `all_top_coact_sparse_expansion`        | BFS over all kinds; no passthrough                                                                  |
+| `hard_negative_coact_sparse_expansion`  | BFS activators + gradient-validated inhibitors discovered from hard-negative contexts               |
+| `coactivation_statistical`              | Threshold-based co-activation edge pruning                                                          |
+| `logit_attribution`                     | Two-pass gradient: `activation × gradient` node/edge scoring                                        |
+| `sfc_attribution_patching`              | SFC-style integrated-gradient node scores + `delta × gradient` edges (Marks et al. 2024)           |
+| `neighborhood_expansion`                | Two-hop statistical neighbourhood; no gradients                                                     |
+| `top_coact_attr`                        | Legacy multi-hop upstream/downstream attribution patching                                           |
+| `differential_activation`               | Pos/neg contrast scan ranks activators/inhibitors; gradient validates causal edges                  |
+| `gradient_upstream`                     | Multi-hop backward attribution: selects top-K upstream latents per hop via `activation × gradient` |
+| `layerwise_gradient_upstream`           | Layer-by-layer backward sweep; attributes each node against all upstream layers                     |
+| `counterfactual_gradient`               | Gradient attribution on neg-ctx to find absent activators and present inhibitors                    |
 
 
 The expansion depth for sparse methods is configured per-method with `coact_depth`, e.g. `[32, 16]` = depth-2 BFS with 32 neighbors at hop 1 and 16 at hop 2.
@@ -282,24 +346,28 @@ The expansion depth for sparse methods is configured per-method with `coact_dept
 
 ## Evaluation
 
-Each discovered circuit is scored with three forward passes:
+Each discovered circuit is scored with multiple forward passes:
 
 ```
 Faithfulness = 1 − MSE(circuit_logits, original_logits)
                    ─────────────────────────────────────
-                   MSE(zero_ablation_logits, original_logits)
+                   MSE(baseline_logits, original_logits)
 ```
 
-
-| Metric           | Measures                                                              |
-| ---------------- | --------------------------------------------------------------------- |
-| **Faithfulness** | How well the circuit alone reproduces the model's output distribution |
-| **Sufficiency**  | Whether the circuit is sufficient to produce the correct prediction   |
-| **Completeness** | Whether removing the circuit degrades the model                       |
-| **Minimality**   | Leave-one-out pruning of redundant nodes                              |
+The baseline is either zero-ablation or a mean over neg-ctx sequences, controlled by `discovery.neg_ctx_eval_max`.
 
 
-A circuit is accepted if its faithfulness exceeds `discovery.min_faithfulness` (default `0.3`).
+| Metric                    | Measures                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Faithfulness**          | How well the circuit alone reproduces the model's output distribution                                         |
+| **Upstream faithfulness** | Variant used by gradient-based methods: measures how well the circuit recovers the seed latent's activation   |
+| **Kind-local faithfulness** | Faithfulness computed while patching only the target kinds; used as the acceptance gate by the sparse-expansion family and `differential_activation` |
+| **Sufficiency**           | Whether the circuit is sufficient to produce the correct prediction                                           |
+| **Completeness**          | Whether removing the circuit degrades the model                                                               |
+| **Minimality**            | Leave-one-out pruning of redundant nodes                                                                      |
+
+
+A circuit is accepted if its faithfulness exceeds `discovery.min_faithfulness` (default `0.2`). Gradient-based methods (`gradient_upstream`, `layerwise_gradient_upstream`, `counterfactual_gradient`) use upstream faithfulness as their acceptance gate; sparse-expansion methods gate on kind-local faithfulness.
 
 ---
 
@@ -328,7 +396,7 @@ All outputs are written to `outputs/` after a full pipeline run:
 ## Tests
 
 ```bash
-pytest src/tests/
+pytest tests/
 ```
 
 Native extension tests:
