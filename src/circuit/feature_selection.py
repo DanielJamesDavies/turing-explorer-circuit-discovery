@@ -301,7 +301,39 @@ class CandidateSelector:
             all_seeds.append(self._top_k(score, "coactivation_uniqueness"))
 
         # ------------------------------------------------------------------
-        # 20. Stratified Random — uniform sampling across all components
+        # 20. Focal Monosemantic — high cohesion, low coupling
+        #     context_coherence / (n_coact_partners + 1): latents that fire
+        #     strongly and consistently on a focused set of contexts but are
+        #     not broadly entangled with many other latents.
+        # ------------------------------------------------------------------
+        if "focal_monosemantic" in active:
+            cohesion = top_ctx.ctx_seq_val.to(self.device).float().mean(dim=-1)   # [C, D]
+            n_partners = (top_coactivation.top_values.to(self.device) > 0).float().sum(dim=-1)  # [C, D]
+            score = cohesion / (n_partners + 1.0)
+            score = score.masked_fill(latent_stats.seq_count.to(self.device) < 5, -1e9)
+            all_seeds.append(self._top_k(score, "focal_monosemantic"))
+
+        # ------------------------------------------------------------------
+        # 21. Rare Hub — rarity × co-activation connectivity
+        #     Latents that fire rarely but are well-connected to other latents
+        #     when they do. Targets low-frequency latents embedded in the
+        #     co-activation graph rather than peripheral singletons.
+        # ------------------------------------------------------------------
+        if "rare_hub" in active:
+            total_seqs_rh = float(latent_stats.seq_count.max().item()) + 1.0
+            p_fire_rh = (latent_stats.seq_count.to(self.device).float() + 1e-6) / total_seqs_rh
+            rarity_rh = torch.log10(1.0 / p_fire_rh).clamp(1.0, 8.0)
+            conn_rh = top_coactivation.top_values.to(self.device)
+            if top_coactivation.mode == "pmi":
+                conn_rh = conn_rh.clamp(min=0)
+            conn_sum_rh = conn_rh.sum(dim=-1)
+            score = rarity_rh * conn_sum_rh
+            score = score.masked_fill(latent_stats.seq_count.to(self.device) < 2, -1e9)
+            score = score.masked_fill(conn_sum_rh == 0, -1e9)
+            all_seeds.append(self._top_k(score, "rare_hub"))
+
+        # ------------------------------------------------------------------
+        # 22. Stratified Random — uniform sampling across all components
         #     True unsupervised baseline: no signal whatsoever.
         # ------------------------------------------------------------------
         if "stratified_random" in active:
@@ -321,7 +353,7 @@ class CandidateSelector:
             all_seeds.append(sr_seeds)
 
         # ------------------------------------------------------------------
-        # 21. Circuit Yield — empirical score from previous discovery runs
+        # 23. Circuit Yield — empirical score from previous discovery runs
         #     Latents that were productive seeds before (high faithfulness circuits)
         #     are prioritised. Gracefully skipped if no summary.json exists.
         # ------------------------------------------------------------------
@@ -364,6 +396,7 @@ class CandidateSelector:
                 "cross_layer_reach, cross_component_breadth, burstiness, "
                 "mid_ctx_richness, activation_skew, logit_diversity, "
                 "pagerank_centrality, activation_entropy, coactivation_uniqueness, "
+                "focal_monosemantic, rare_hub, "
                 "stratified_random, circuit_yield"
             )
             raise ValueError(

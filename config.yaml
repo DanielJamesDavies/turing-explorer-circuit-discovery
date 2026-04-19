@@ -49,35 +49,40 @@ discovery:
   # Which criteria to use when scoring / shortlisting seed latents.
   # Comment out any entry to ablate that signal source.
   seed_criteria:
-    - surprise
-      # # - stratified_random # uniform random sampling across all components (null baseline)
-      # # --- Supervised (output-task-aware) ---
-      # # - logit_impact         # sum of stored top-k token probabilities
-      # # - logit_specificity    # negative entropy of token predictions (sharp predictors)
-      # # - logit_diversity      # positive entropy of token predictions (polyfunctional nodes)
-      # # - last_token_activity  # firing frequency at the final prediction-position token
-      # # --- Activation statistics ---
-      # # - surprise             # mean_seq * rarity boost — borderline (weights by activation strength)
-      # - context_coherence # mean activation across top stored contexts
-      # - activation_variance # std_seq / mean_seq — discriminative / context-sensitive
-      # - activation_skew # max(top_ctx) − mean(top_ctx) — one dominant context
-      # - burstiness # active_count / seq_count — tokens fired per sequence
-      # # --- Structural / graph ---
-      # - connectivity # sum of co-activation weights (weighted hubs)
-      # - coactivation_diversity # count of distinct non-zero co-activation partners
-      # - cross_layer_reach # distinct layers among co-activation partners
-      # - cross_component_breadth # distinct kinds (attn/mlp/resid) among partners
-      # - pagerank_centrality # eigenvector centrality on the co-activation graph
-      # - coactivation_uniqueness # inverse mean popularity of partners (unique neighbourhood)
-      # # --- Data quality / coverage ---
-      # - top_ctx_saturation # number of stored top-context sequences
-      # - mid_ctx_richness # number of stored mid-band context sequences
-      # # - pos_neg_contrast     # borderline (neg-ctx ANN uses residual representations)
-      # # --- Unsupervised baselines ---
-      # - activation_entropy # binary entropy of per-sequence firing rate (max at p=0.5)
-      # # - stratified_random    # uniform random sampling across all components (null baseline)
-      # # --- Empirical (requires a prior discovery run) ---
-      # # - circuit_yield        # accumulated faithfulness from circuits this latent seeded before
+    - stratified_random
+    # - focal_monosemantic
+    # - rare_hub
+    # # - stratified_random # uniform random sampling across all components (null baseline)
+    # # --- Supervised (output-task-aware) ---
+    # # - logit_impact         # sum of stored top-k token probabilities
+    # # - logit_specificity    # negative entropy of token predictions (sharp predictors)
+    # # - logit_diversity      # positive entropy of token predictions (polyfunctional nodes)
+    # # - last_token_activity  # firing frequency at the final prediction-position token
+    # # --- Activation statistics ---
+    # # - surprise             # mean_seq * rarity boost — borderline (weights by activation strength)
+    # - context_coherence # mean activation across top stored contexts
+    # - activation_variance # std_seq / mean_seq — discriminative / context-sensitive
+    # - activation_skew # max(top_ctx) − mean(top_ctx) — one dominant context
+    # - burstiness # active_count / seq_count — tokens fired per sequence
+    # # --- Structural / graph ---
+    # - connectivity # sum of co-activation weights (weighted hubs)
+    # - coactivation_diversity # count of distinct non-zero co-activation partners
+    # - cross_layer_reach # distinct layers among co-activation partners
+    # - cross_component_breadth # distinct kinds (attn/mlp/resid) among partners
+    # - pagerank_centrality # eigenvector centrality on the co-activation graph
+    # - coactivation_uniqueness # inverse mean popularity of partners (unique neighbourhood)
+    # # --- Data quality / coverage ---
+    # - top_ctx_saturation # number of stored top-context sequences
+    # - mid_ctx_richness # number of stored mid-band context sequences
+    # # - pos_neg_contrast     # borderline (neg-ctx ANN uses residual representations)
+    # # --- Unsupervised baselines ---
+    # - activation_entropy # binary entropy of per-sequence firing rate (max at p=0.5)
+    # # - stratified_random    # uniform random sampling across all components (null baseline)
+    # # --- Concept-targeted ---
+    # - focal_monosemantic # context_coherence / (n_coact_partners + 1) — high cohesion, low coupling
+    # - rare_hub           # rarity × connectivity sum — rare latents well-embedded in the coact graph
+    # # --- Empirical (requires a prior discovery run) ---
+    # # - circuit_yield        # accumulated faithfulness from circuits this latent seeded before
 
   # Restrict which seeds are returned after scoring.
   # Both lists act as allowlists — empty means "accept all".
@@ -244,13 +249,13 @@ discovery:
   #   "random"  — uniformly random token sequences from the vocabulary
   #   "distant" — corpus sequences most distant from posctx in SAE latent space at seed layer
   counterfactual_gradient:
-    neg_mode: "close" # "close" | "random" | "distant"
+    neg_mode: "random" # "close" | "random" | "distant"
     distant_pool_size: 512 # sequences to sample and rank for neg_mode=distant
-    top_k_activators: 4 # Top-K absent activators per scope unit
-    top_k_inhibitors: 0 # Top-K present inhibitors per scope unit
+    top_k_activators: 12 # Top-K absent activators per scope unit
+    top_k_inhibitors: 12 # Top-K present inhibitors per scope unit
     top_k_scope: "layer_kind" # "global" = single ranked list; "layer_kind" = top-K per (layer, kind)
-    activator_threshold: 0.3 # Min raw gradient magnitude
-    inhibitor_threshold: 0.3 # Min |activation × gradient| for inhibitors
+    activator_threshold: 0.01 # Min raw gradient magnitude
+    inhibitor_threshold: 0.01 # Min |activation × gradient| for inhibitors
     min_active_count: 1 # Min global lifetime firing count
     max_neg_sequences: 16 # Max contrast sequences for the grad-enabled pass
     neg_batch_size: 16 # Sequences per grad-enabled microbatch (lower = less VRAM; set equal to max_neg_sequences to disable batching)
