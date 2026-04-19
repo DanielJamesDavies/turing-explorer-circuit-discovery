@@ -35,6 +35,9 @@ latents:
     mode: "pmi" # "freq_weighted" (default) | "raw" (no freq adjustment) | "pmi" (token-level PMI scoring)
     pmi_clamp_min: -5.0 # Lower bound for PMI values
     pmi_clamp_max: 10.0 # Upper bound for PMI values
+  seq_latent_index:
+    enabled: false # Set true to write per-shard (seq_id, latent_id) index files to outputs/seq_latent_index/
+    top_k_per_component: 12 # Top-K latent IDs to store per sequence per (layer, kind) component
 discovery:
   n_seeds: 128 # Number of seed latents to select for circuit discovery
   probe_batch_size: 4 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
@@ -43,14 +46,49 @@ discovery:
   min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
   max_neighbors: 32 # Default max co-activation neighbors per node (used as fallback by all methods)
 
-  # Which discovery methods to run for each seed. Results from all methods are stored.
-  # Options: "coactivation_statistical", "logit_attribution", "sfc_attribution_patching",
-  #          "neighborhood_expansion", "top_coact_attr",
-  #          "attn_top_coact_sparse_expansion", "mlp_top_coact_sparse_expansion", "resid_top_coact_sparse_expansion",
-  #          "attn_mlp_top_coact_sparse_expansion", "attn_resid_top_coact_sparse_expansion",
-  #          "mlp_resid_top_coact_sparse_expansion", "all_top_coact_sparse_expansion",
-  #          "hard_negative_coact_sparse_expansion", "differential_activation",
-  #          "gradient_upstream", "layerwise_gradient_upstream", "counterfactual_gradient"
+  # Which criteria to use when scoring / shortlisting seed latents.
+  # Comment out any entry to ablate that signal source.
+  seed_criteria:
+    - surprise
+      # # - stratified_random # uniform random sampling across all components (null baseline)
+      # # --- Supervised (output-task-aware) ---
+      # # - logit_impact         # sum of stored top-k token probabilities
+      # # - logit_specificity    # negative entropy of token predictions (sharp predictors)
+      # # - logit_diversity      # positive entropy of token predictions (polyfunctional nodes)
+      # # - last_token_activity  # firing frequency at the final prediction-position token
+      # # --- Activation statistics ---
+      # # - surprise             # mean_seq * rarity boost — borderline (weights by activation strength)
+      # - context_coherence # mean activation across top stored contexts
+      # - activation_variance # std_seq / mean_seq — discriminative / context-sensitive
+      # - activation_skew # max(top_ctx) − mean(top_ctx) — one dominant context
+      # - burstiness # active_count / seq_count — tokens fired per sequence
+      # # --- Structural / graph ---
+      # - connectivity # sum of co-activation weights (weighted hubs)
+      # - coactivation_diversity # count of distinct non-zero co-activation partners
+      # - cross_layer_reach # distinct layers among co-activation partners
+      # - cross_component_breadth # distinct kinds (attn/mlp/resid) among partners
+      # - pagerank_centrality # eigenvector centrality on the co-activation graph
+      # - coactivation_uniqueness # inverse mean popularity of partners (unique neighbourhood)
+      # # --- Data quality / coverage ---
+      # - top_ctx_saturation # number of stored top-context sequences
+      # - mid_ctx_richness # number of stored mid-band context sequences
+      # # - pos_neg_contrast     # borderline (neg-ctx ANN uses residual representations)
+      # # --- Unsupervised baselines ---
+      # - activation_entropy # binary entropy of per-sequence firing rate (max at p=0.5)
+      # # - stratified_random    # uniform random sampling across all components (null baseline)
+      # # --- Empirical (requires a prior discovery run) ---
+      # # - circuit_yield        # accumulated faithfulness from circuits this latent seeded before
+
+  # Restrict which seeds are returned after scoring.
+  # Both lists act as allowlists — empty means "accept all".
+  # layers: integer layer indices (0-based). e.g. [4, 5] — only seeds from layers 4 and 5.
+  # kinds:  component kinds — any subset of ["attn", "mlp", "resid"].
+  # Constraints are AND-ed: a seed must satisfy both lists (when non-empty).
+  seed_filter:
+    layers: [] # e.g. [0, 1, 2, 3] — empty = all layers
+    kinds: [] # e.g. ["mlp", "resid"] — empty = all kinds
+
+  # Which discovery methods to run. Results from all methods are stored.
   methods:
     # - attn_top_coact_sparse_expansion
     # - mlp_top_coact_sparse_expansion
@@ -67,8 +105,10 @@ discovery:
     # - neighborhood_expansion
     # - top_coact_attr
     # - gradient_upstream
-    - layerwise_gradient_upstream
-    # - counterfactual_gradient
+    # - layerwise_gradient_upstream
+    - counterfactual_gradient # neg_mode: "close" | "random" | "distant" (set below)
+    # - cluster_contrast
+    # - circuit_tracer_baseline
 
   # --- Per-method configuration ---
 
@@ -107,7 +147,7 @@ discovery:
     include_same_layer: true # also include within-layer causal predecessors (attn→mlp etc.)
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning
     min_faithfulness: 0.2 # minimum faithfulness score for circuit acceptance
-    profile_first_node: true # set true once to profile; outputs/profile_layerwise_*.json
+    profile_first_node: false # set true once to profile; outputs/profile_layerwise_*.json
 
   hard_negative_coact_sparse_expansion:
     coact_depth: [32, 16] # activator expansion hops
@@ -195,18 +235,79 @@ discovery:
     coact_depth: [32, 16] # per-depth top-N all-kind neighbor limits
     pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
 
-  # Counterfactual Gradient Discovery: runs gradient attribution on negctx sequences
-  # to discover absent activators (upstream latents that would cause the seed to fire if active)
-  # and present inhibitors (upstream latents that are actively suppressing the seed).
+  # Counterfactual Gradient Discovery: gradient attribution on contrast sequences to
+  # discover absent activators (upstream latents that would cause the seed to fire if active)
+  # and present inhibitors (upstream latents actively suppressing the seed).
+  #
+  # neg_mode controls the contrast sequence source:
+  #   "close"   — hard negatives from neg_ctx (semantically similar, seed absent)
+  #   "random"  — uniformly random token sequences from the vocabulary
+  #   "distant" — corpus sequences most distant from posctx in SAE latent space at seed layer
   counterfactual_gradient:
-    top_k_activators: 8 # Top-K absent activators (positive gradient on negctx)
-    top_k_inhibitors: 8 # Top-K present inhibitors (negative act×grad on negctx)
-    activator_threshold: 0.01 # Min raw gradient magnitude
-    inhibitor_threshold: 0.01 # Min |activation × gradient| for inhibitors
+    neg_mode: "close" # "close" | "random" | "distant"
+    distant_pool_size: 512 # sequences to sample and rank for neg_mode=distant
+    top_k_activators: 4 # Top-K absent activators per scope unit
+    top_k_inhibitors: 0 # Top-K present inhibitors per scope unit
+    top_k_scope: "layer_kind" # "global" = single ranked list; "layer_kind" = top-K per (layer, kind)
+    activator_threshold: 0.3 # Min raw gradient magnitude
+    inhibitor_threshold: 0.3 # Min |activation × gradient| for inhibitors
     min_active_count: 1 # Min global lifetime firing count
-    max_neg_sequences: 4 # Max negctx sequences for the grad-enabled pass
-    pruning_threshold: 0.0 # Faithfulness drop threshold for pruning (0 = disabled)
+    max_neg_sequences: 16 # Max contrast sequences for the grad-enabled pass
+    neg_batch_size: 16 # Sequences per grad-enabled microbatch (lower = less VRAM; set equal to max_neg_sequences to disable batching)
+    pruning_threshold: 0 # Faithfulness drop threshold for pruning (0 = disabled)
     min_faithfulness: 0.2 # Min upstream_faithfulness to accept
+    node_presence_eval: true # Run posctx node presence/absence eval after circuit acceptance
+
+  # SAE-adapted Circuit Tracing Baseline: builds a prompt-local direct-effects adjacency
+  # matrix over all active SAE latents (attn/mlp/resid), propagates influence from target-token
+  # logit nodes via power iteration (Neumann series), and globally prunes by influence/edge
+  # thresholds. Aligned with Anthropic's Attribution Graphs method adapted for multi-kind SAEs.
+  # Logit targets selected by cumulative softmax probability (desired_logit_prob).
+  # Features ranked by logit-influence before backward passes (max_feature_nodes cap).
+  # Node/edge thresholds are fraction-based (scale-invariant), not absolute.
+  # VRAM strategy: probe_batch_size=1, single retained graph per sequence.
+  circuit_tracer_baseline:
+    probe_batch_size: 1 # sequences per grad-enabled forward (low for VRAM safety)
+    max_sequences: 8 # pos_ctx sequences used to build the adjacency matrix
+    target_chunk_size: 8 # deprecated — no longer used; kept for YAML compatibility
+    logit_top_k: 5 # hard cap on logit target nodes (actual count may be lower per desired_logit_prob)
+    desired_logit_prob: 0.95 # cumulative softmax probability to cover when selecting logit targets
+    influence_max_iter: 1000 # safety cap on iterations; raises RuntimeError on non-convergence (matches original circuit-tracer)
+    node_threshold: 0.8 # fraction of total node-influence to retain (0-1); keeps smallest set covering 80% of influence
+    edge_threshold: 0.98 # fraction of total edge-influence to retain (0-1); keeps smallest set covering 98% of edge influence
+    min_faithfulness: 0.2 # upstream-faithfulness acceptance gate
+    pruning_threshold: 0.0 # minimality pruning drop threshold (0 = disabled)
+    min_active_count: 1 # skip latents below this global lifetime firing count
+    max_feature_nodes: 2048 # cap on feature nodes after logit-influence ranking (0 = unlimited)
+    stop_error_grad: false # true = gradient flows only through SAE features (not error term)
+    include_error_nodes: true # add one error sentinel per (layer, kind) for reconstruction-error attribution
+    online_ranking_interval: 4 # re-rank remaining features every N cycles (matches original update_interval=4); 0 = one-shot ordering
+    feature_batch_size: 32 # features processed per cycle (matches original batch_size=32); 4×32=128 features per ranking update
+    include_token_nodes: false # add T token sentinel nodes for per-position input embedding attribution (default off — confirm gradient routing before enabling)
+
+  # Cluster Contrast Discovery: seed-free method that clusters all neg_ctx sequences by
+  # embedding space, then runs KL-divergence gradient attribution to discover which upstream
+  # SAE latents explain each cluster's characteristic output distribution.
+  # Counterfactual sequences are drawn from the centers of other clusters; the loss is the
+  # KL divergence between the counterfactual sequences' current output and the target cluster's
+  # mean logit distribution.  Set enabled: true to run this during the pipeline.
+  cluster_contrast:
+    n_clusters: 3000 # k-means k (number of embedding-space clusters)
+    top_clusters: 8 # top clusters by size to run discovery on
+    kmeans_iters: 1024 # k-means iterations
+    kmeans_seed: 42 # random seed for centroid initialisation
+    num_pos_seqs: 64 # positive sequences per cluster (top-N closest to centroid, in-cluster)
+    num_neg_seqs: 64 # negative sequences per cluster (top-N closest to centroid, out-of-cluster)
+    batch_size: 1 # sequences per forward pass (pos and neg)
+    eval_position: "last" # token position for KL loss: "last" = final token | "all" = mean over positions
+    top_k_activators: 12 # top-K absent activators per scope unit
+    top_k_inhibitors: 12 # top-K present inhibitors per scope unit
+    top_k_scope: "layer_kind" # "global" = single ranked list | "layer_kind" = top-K per (layer, kind)
+    activator_threshold: 0.01 # min raw gradient magnitude to include an activator
+    inhibitor_threshold: 0.01 # min |activation × gradient| to include an inhibitor
+    min_active_count: 1 # min global lifetime firing count for candidate latents
+    pruning_threshold: 0.0 # faithfulness drop threshold for minimality pruning (0 = disabled)
+    run_eval: true # run KL faithfulness + specificity eval after discovery
 
   # Legacy method — cross-layer attribution now uses identity passthrough (x - x.detach())
   top_coact_attr:
@@ -220,3 +321,16 @@ persist:
   search_cache_enabled: true
   search_cache_n_sequences: 8 # reduce from 16
   search_cache_component_chunk: 4 # components processed at a time
+
+# Post-circuit analysis: runs after each accepted circuit is stored.
+# Each method produces metadata keys merged into circuit.metadata["post_analysis"]
+# and surfaced in outputs/circuits/summary.json.
+analysis:
+  methods:
+    - coactivation_overlap # % circuit nodes in seed's top-K coactivations
+    - layer_distribution # layer_mean, layer_std, layer_min, layer_max
+    - edge_weight_gini # Gini coefficient of edge weights (0=uniform, 1=concentrated)
+    - node_activity # activity_mean, activity_median (lifetime firing counts)
+    - node_rarity # rarity_pct (% nodes below global p10 active_count)
+    - top_token_consistency # top_token_consistency_pct (% nodes sharing seed's top-1 token)
+    - internode_coact_density # internode_coact_density_pct (% mutual coact pairs)

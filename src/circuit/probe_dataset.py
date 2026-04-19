@@ -91,6 +91,51 @@ class ProbeDatasetBuilder:
             }
         )
 
+    def build_pos_tokens(
+        self,
+        comp_idx: int,
+        latent_idx: int,
+        top_ctx: Context,
+        mid_ctx: Context,
+        n_pos: Optional[int] = None,
+    ) -> torch.Tensor:
+        """
+        Returns the positive token tensor ``[N, 64]`` for a seed latent without
+        running any model forward pass (pure data lookup from top_ctx / mid_ctx).
+
+        This is a lightweight alternative to ``build_for_latent`` for callers
+        that only need the raw sequences — e.g. ``evaluate_node_presence``.
+
+        Args:
+            comp_idx:   Component index of the seed latent.
+            latent_idx: Latent index of the seed.
+            top_ctx:    Allocated TopCtx context store.
+            mid_ctx:    Allocated MidCtx context store.
+            n_pos:      Maximum number of sequences to return. Defaults to the
+                        same cap used in ``build_for_latent`` (64).
+
+        Returns:
+            ``[N, 64]`` long tensor on ``self.bank.device``, or an empty
+            ``[0, 64]`` tensor if no positive sequences are available.
+        """
+        if n_pos is None:
+            n_pos = 64
+
+        top_ids = top_ctx.ctx_seq_idx[comp_idx, latent_idx].tolist() if top_ctx._allocated else []
+        mid_ids = mid_ctx.ctx_seq_idx[comp_idx, latent_idx].tolist() if mid_ctx._allocated else []
+
+        pos_ids: List[int] = []
+        seen: set = set()
+        for sid in top_ids + mid_ids:
+            sid_int = int(sid)
+            if sid_int > 0 and sid_int not in seen:
+                pos_ids.append(sid_int)
+                seen.add(sid_int)
+        pos_ids = pos_ids[:n_pos]
+
+        all_tokens = self._load_all_ids(pos_ids, max_length=65)
+        return all_tokens[:, :64]
+
     def _load_all_ids(self, ids: List[int], max_length: int = 64) -> torch.Tensor:
         """Helper to load a list of sequence IDs into a single tensor."""
         if not ids:

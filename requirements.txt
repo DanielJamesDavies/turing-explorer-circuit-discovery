@@ -6,6 +6,7 @@ transformers==5.1.0
 PyYAML==6.0.3
 tqdm==4.67.*
 pandas==3.0.0
+openpyxl
 pyarrow==23.0.0
 rich==14.3.2
 ninja==1.13.0

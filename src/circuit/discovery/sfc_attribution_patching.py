@@ -335,6 +335,7 @@ class SFCAttributionPatching(DiscoveryMethod):
             "patch_mode": self.patch_mode,
             "node_threshold": self.node_threshold, "edge_threshold": self.edge_threshold,
         })
+        logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit
 

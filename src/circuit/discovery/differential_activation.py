@@ -329,6 +329,7 @@ class DifferentialActivation(DiscoveryMethod):
             "n_inhibitors":             n_inhibitors,
             "discovery_method":         self.method_name,
         })
+        logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit
 

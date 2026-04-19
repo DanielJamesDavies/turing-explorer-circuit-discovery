@@ -499,8 +499,7 @@ class TestCounterfactualGradientDiscovery:
         probe_data,
         activator_fids_and_scores,
         inhibitor_fids_and_scores,
-        up_faith=0.8,
-        faith=0.8, suff=0.8, comp=0.8,
+        cf_faith=0.8,
     ):
         """
         Runs `algo.discover(seed_comp=3, seed_latent=0)` with all heavy
@@ -509,7 +508,7 @@ class TestCounterfactualGradientDiscovery:
         - probe_data is returned by build_probe_dataset.
         - _get_posctx_activation returns 1.0.
         - _run_negctx_hop returns (activator_fids_and_scores, inhibitor_fids_and_scores).
-        - All eval functions return the supplied floats.
+        - evaluate_counterfactual_faithfulness returns cf_faith.
         - latent_stats.active_count always passes min_active_count=1.
         - CircuitLogger.save is patched to prevent disk I/O.
         """
@@ -520,14 +519,8 @@ class TestCounterfactualGradientDiscovery:
         mock_active_count = torch.full((N_COMP, D_SAE), 100, dtype=torch.long)
 
         with patch("circuit.discovery.counterfactual_gradient.latent_stats") as mock_ls, \
-             patch("circuit.discovery.counterfactual_gradient.evaluate_upstream_faithfulness",
-                   return_value=up_faith), \
-             patch("circuit.discovery.counterfactual_gradient.evaluate_faithfulness",
-                   return_value=faith), \
-             patch("circuit.discovery.counterfactual_gradient.evaluate_sufficiency",
-                   return_value=suff), \
-             patch("circuit.discovery.counterfactual_gradient.evaluate_completeness",
-                   return_value=comp), \
+             patch("circuit.discovery.counterfactual_gradient.evaluate_counterfactual_faithfulness",
+                   return_value=cf_faith), \
              patch("circuit.discovery.counterfactual_gradient.prune_non_minimal_nodes"), \
              patch("observability.circuit_logger.CircuitLogger.save"):
 
@@ -569,8 +562,8 @@ class TestCounterfactualGradientDiscovery:
                                      inhibitor_fids_and_scores={})
         assert circuit is None
 
-    def test_rejects_below_upstream_faithfulness_threshold(self):
-        """Circuit with good nodes but low upstream_faithfulness is rejected."""
+    def test_rejects_below_counterfactual_faithfulness_threshold(self):
+        """Circuit with good nodes but low counterfactual_faithfulness is rejected."""
         algo = _make_discovery(min_faithfulness=0.5)
         probe_data = _make_probe_data()
 
@@ -579,7 +572,7 @@ class TestCounterfactualGradientDiscovery:
             algo, probe_data,
             activator_fids_and_scores={fid: 0.9},
             inhibitor_fids_and_scores={},
-            up_faith=0.1,   # below threshold
+            cf_faith=0.1,   # below threshold
         )
         assert circuit is None
 
@@ -677,18 +670,17 @@ class TestCounterfactualGradientDiscovery:
             algo, probe_data,
             activator_fids_and_scores={fid: 0.3},
             inhibitor_fids_and_scores={},
-            up_faith=0.9, faith=0.8, suff=0.7, comp=0.6,
+            cf_faith=0.9,
         )
 
         assert circuit is not None
         meta = circuit.metadata
-        for key in ("faithfulness", "sufficiency", "completeness",
-                    "upstream_faithfulness", "seed_comp", "seed_latent",
+        for key in ("counterfactual_faithfulness", "seed_comp", "seed_latent",
                     "n_nodes", "n_edges", "discovery_method"):
             assert key in meta, f"Missing metadata key: {key}"
 
         assert meta["discovery_method"] == "counterfactual_gradient"
-        assert meta["upstream_faithfulness"] == pytest.approx(0.9)
+        assert meta["counterfactual_faithfulness"] == pytest.approx(0.9)
 
     def test_threshold_filtering_blocks_low_score_nodes(self):
         """Nodes with |score| < threshold must not appear in the circuit."""

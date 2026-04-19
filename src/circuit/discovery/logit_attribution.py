@@ -289,6 +289,7 @@ class LogitAttribution(DiscoveryMethod):
                 "logit_threshold": self.logit_threshold,
                 "edge_threshold": self.edge_threshold,
             })
+            logger.nodes(list(circuit.nodes.values()))
             logger.accept(len(circuit.nodes), len(circuit.edges))
             return circuit
 

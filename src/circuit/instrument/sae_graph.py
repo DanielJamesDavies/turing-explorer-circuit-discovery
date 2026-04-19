@@ -135,3 +135,48 @@ class SAEGraphInstrument:
         #    This replaces the old (residual - residual.detach()) which projected
         #    gradients onto the error complement (I - W_dec @ W_enc), losing signal.
         return reconstruction + res_anchor + (x - x.detach())
+
+
+class SAEGraphInstrumentWithEmbedding(SAEGraphInstrument):
+    """
+    Thin subclass of SAEGraphInstrument that captures the input embedding
+    (residual stream at layer 0, before the first SAE hook) as a detached leaf
+    tensor, enabling gradient-based token attribution.
+
+    On the first call to transform(layer=first_layer, kind=first_kind, x), a leaf
+    tensor `emb_anchor` is created from `x.detach().requires_grad_(True)`.  The
+    term `(emb_anchor - emb_anchor.detach())` is numerically zero but provides a
+    clean gradient tap: callers can include `emb_anchor` in torch.autograd.grad
+    anchor lists to obtain ∂(scalar)/∂(emb_anchor) — i.e. the Jacobian of any
+    downstream scalar w.r.t. the embedding at every (batch, position, dimension).
+
+    Token attribution score for position p:
+        score[p] = Σ_{b,d}  emb_anchor[b,p,d] * grad_emb[b,p,d]
+
+    Args:
+        bank:             SAEBank passed through to the parent class.
+        stop_error_grad:  Passed through to the parent class.
+        first_layer:      Layer index of the first SAE hook (typically 0).
+        first_kind:       Kind string of the first SAE hook (e.g. "attn").
+    """
+
+    def __init__(
+        self,
+        bank: "SAEBank",
+        stop_error_grad: bool = False,
+        first_layer: int = 0,
+        first_kind: str = "attn",
+    ):
+        super().__init__(bank, stop_error_grad)
+        self._first_lk: Tuple[int, str] = (first_layer, first_kind)
+        self.emb_anchor: Optional[torch.Tensor] = None  # [B, T, d_model], leaf
+
+    def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
+        out = super().transform(layer_idx, kind, x)
+        if (layer_idx, kind) == self._first_lk and self.emb_anchor is None:
+            # Capture embedding as a detached leaf so callers can attribute to it.
+            # Adding (emb_anchor - emb_anchor.detach()) is numerically zero but
+            # routes ∂out/∂emb_anchor = 1, enabling per-position attribution.
+            self.emb_anchor = x.detach().requires_grad_(True)
+            out = out + (self.emb_anchor - self.emb_anchor.detach())
+        return out

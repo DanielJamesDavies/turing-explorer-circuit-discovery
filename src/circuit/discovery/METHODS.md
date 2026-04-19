@@ -28,6 +28,7 @@ This document is implementation-aligned with the discovery code in this director
 | `DifferentialActivation` | Yes | Yes | High | Explicit activator vs inhibitor analysis |
 | `SFCAttributionPatching` | Optional (depends on `patch_mode`) | Yes | Very high | Most comprehensive node+edge attribution |
 | `TopCoactSparseExpansion` family | `HardNegative...` only | Base family: no, `HardNegative...`: partial | Low to medium | Kind-targeted BFS with optional passthrough |
+| `CircuitTracerBaseline` | No | Yes | Very high | Attribution-Graphs-style global circuit with fraction-based pruning |
 
 ---
 
@@ -201,6 +202,36 @@ Extends `TopCoactSparseExpansion` with inhibitor discovery:
 Like the base family, this method computes global and kind-local faithfulness and gates on kind-local faithfulness.
 
 **Key parameters:** `coact_depth`, `neg_candidate_limit`, `attribution_threshold`, `min_active_count`
+
+---
+
+---
+
+### `CircuitTracerBaseline` — direct-effects matrix + Neumann influence propagation
+
+**File:** `circuit_tracer_baseline.py`
+
+SAE-adapted implementation of Anthropic's Attribution Graphs method
+(transformer-circuits.pub/2025/attribution-graphs/methods.html), aligned with the
+official algorithm across logit selection, probability weighting, convergence, node
+ranking, and scale-invariant pruning.
+
+Unlike BFS-based methods, this method scores **all active latents simultaneously**
+rather than expanding top-K neighbours per hop:
+
+1. **Node discovery:** a no-grad forward via `SAEGraphInstrument` enumerates every active latent across all (layer, kind) pairs on the probe sequences.
+2. **Logit target selection:** tokens are selected by cumulative softmax probability until `desired_logit_prob` (default 0.95) is covered, capped at `logit_top_k`. Logit backward scalars are demeaned (`logit_i − mean_logit`) matching the original's `W_U[i] − W_U.mean(0)` injection.
+3. **Logit ranking passes:** logit backward passes run first against the full feature set. Each feature's one-hop logit influence is computed and the top `max_feature_nodes` features are selected (logit-influence ranking, not activation magnitude).
+4. **Feature backward passes:** one backward pass per selected feature fills the sparse `adj` dict with `acts×grad` direct-effect scores against the same retained computation graph.
+5. **Influence propagation:** `compute_ct_influence` builds a dense N×N matrix, row-normalises by absolute value, then computes `logit_weights @ (A + A² + A³ + …)` (Neumann series). Logit roots are seeded by actual softmax probabilities. Convergence is exact-zero (finite-DAG property); `influence_max_iter` is a safety backstop only.
+6. **Fraction-based pruning:** `_find_threshold` finds the score cutpoint such that the top-scoring nodes/edges cover `node_threshold` / `edge_threshold` fraction of total influence mass (scale-invariant, unlike absolute thresholds). Dead nodes are iteratively removed.
+7. **Evaluation:** same `faithfulness`, `sufficiency`, `completeness`, `upstream_faithfulness` pipeline as all other gradient methods.
+
+**VRAM strategy:** `probe_batch_size=1`, single retained graph per sequence, `empty_cache` + `gc.collect` after freeing each graph.
+
+**Threshold semantics:** `node_threshold` and `edge_threshold` are **fractions** (0–1), not absolute values. Default 0.8 / 0.98 keeps the smallest sets covering 80% / 98% of influence mass.
+
+**Key parameters:** `probe_batch_size`, `max_sequences`, `logit_top_k`, `desired_logit_prob`, `max_feature_nodes`, `node_threshold`, `edge_threshold`, `influence_max_iter`, `min_faithfulness`
 
 ---
 

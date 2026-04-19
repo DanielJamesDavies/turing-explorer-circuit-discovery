@@ -256,6 +256,7 @@ class HardNegativeCoactSparseExpansion(TopCoactSparseExpansion):
             "discovery_method":   self.method_name,
             "coact_depth":        self.coact_depth,
         })
+        logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit
 

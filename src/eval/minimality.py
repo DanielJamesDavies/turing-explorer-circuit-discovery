@@ -2,6 +2,7 @@ import torch
 from typing import Dict, Any, List, Optional, Set
 from store.circuits import Circuit
 from eval.faithfulness import evaluate_faithfulness
+from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 
 @torch.no_grad()
 def evaluate_minimality(
@@ -131,4 +132,118 @@ def prune_non_minimal_nodes(
             # Even the least important node is above threshold
             break
             
+    return removed_nodes
+
+
+@torch.no_grad()
+def prune_non_minimal_nodes_cf(
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
+    neg_tokens: torch.Tensor,
+    pos_tokens: torch.Tensor,
+    seed_layer: int,
+    seed_kind: str,
+    seed_latent_idx: int,
+    pos_argmax: Optional[torch.Tensor] = None,
+    threshold: float = 0.05,
+    circuit_layers: Optional[Set[int]] = None,
+    max_candidates_per_iter: int = 32,
+    max_iterations: int = 50,
+) -> List[str]:
+    """
+    Counterfactual-faithfulness variant of iterative minimality pruning.
+
+    Identical logic to ``prune_non_minimal_nodes`` but uses
+    ``evaluate_counterfactual_faithfulness`` (cf_faith score) as the LOO
+    signal instead of logit-level faithfulness.  This keeps the pruning
+    objective aligned with how ``CounterfactualGradientDiscovery`` scores
+    circuits: nodes are retained only if removing them meaningfully reduces
+    the ability to activate the seed on contrast sequences.
+
+    To keep the cost tractable for large circuits, each iteration only
+    evaluates the ``max_candidates_per_iter`` weakest nodes (ranked by
+    their stored ``attribution_score``, ascending).  Nodes with no score
+    are treated as having score 0 and placed at the front of the queue.
+    The loop is also capped at ``max_iterations`` rounds.
+
+    Args:
+        neg_tokens:              Contrast token sequences [B_neg, T].
+        pos_tokens:              Positive-context token sequences [B_pos, T].
+        seed_layer:              Layer index of the seed latent.
+        seed_kind:               Kind string of the seed latent (e.g. "mlp").
+        seed_latent_idx:         Index of the seed latent within its SAE.
+        threshold:               Remove a node if its absence drops cf_faith
+                                 by less than this value.
+        circuit_layers:          Layers at which to apply CF interventions.
+        max_candidates_per_iter: Max LOO evals per iteration (default 32).
+                                 Prevents O(N²) cost on large circuits.
+        max_iterations:          Hard cap on pruning rounds (default 50).
+
+    Returns:
+        List of removed node UUIDs.
+    """
+    removed_nodes: List[str] = []
+
+    for _iter in range(max_iterations):
+        base_cf_faith, _ = evaluate_counterfactual_faithfulness(
+            inference, sae_bank, avg_acts, circuit,
+            neg_tokens=neg_tokens,
+            pos_tokens=pos_tokens,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            pos_argmax=pos_argmax,
+            circuit_layers=circuit_layers,
+        )
+
+        # Collect non-seed candidates, sorted by attribution_score ascending
+        # (weakest nodes first — most likely to be prunable).
+        candidates: List[tuple] = []
+        for node_uuid, node in circuit.nodes.items():
+            if node.metadata.get("role") == "seed":
+                continue
+            score = float(node.metadata.get("attribution_score") or 0.0)
+            candidates.append((score, node_uuid))
+
+        if not candidates:
+            break
+
+        candidates.sort(key=lambda x: x[0])
+        eval_candidates = [uuid for _, uuid in candidates[:max_candidates_per_iter]]
+
+        # LOO: find the node among eval_candidates whose removal costs least
+        loo_scores: Dict[str, float] = {}
+        original_nodes = circuit.nodes
+        for node_uuid in eval_candidates:
+            circuit.nodes = {k: v for k, v in original_nodes.items() if k != node_uuid}
+            loo_cf, _ = evaluate_counterfactual_faithfulness(
+                inference, sae_bank, avg_acts, circuit,
+                neg_tokens=neg_tokens,
+                pos_tokens=pos_tokens,
+                seed_layer=seed_layer,
+                seed_kind=seed_kind,
+                seed_latent_idx=seed_latent_idx,
+                pos_argmax=pos_argmax,
+                circuit_layers=circuit_layers,
+            )
+            loo_scores[node_uuid] = base_cf_faith - loo_cf
+            circuit.nodes = original_nodes
+
+        least_uuid = min(loo_scores, key=lambda u: loo_scores[u])
+        least_drop = loo_scores[least_uuid]
+
+        if least_drop < threshold:
+            circuit.nodes.pop(least_uuid)
+            circuit.edges = [
+                e for e in circuit.edges
+                if e.source_uuid != least_uuid and e.target_uuid != least_uuid
+            ]
+            removed_nodes.append(least_uuid)
+        else:
+            # The weakest candidate among the evaluated set is above threshold —
+            # remaining nodes are strong enough to keep.
+            break
+
     return removed_nodes

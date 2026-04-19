@@ -203,6 +203,7 @@ class CoactivationStatistical(DiscoveryMethod):
                 "discovery_method": "coactivation_statistical",
                 "coactivation_threshold": self.coactivation_threshold,
             })
+            logger.nodes(list(circuit.nodes.values()))
             logger.accept(len(circuit.nodes), len(circuit.edges))
             return circuit
 

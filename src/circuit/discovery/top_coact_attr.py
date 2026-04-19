@@ -308,6 +308,7 @@ class TopCoactAttrDiscovery(DiscoveryMethod):
                 "n_edges": len(circuit.edges),
                 "discovery_method": "top_coact_attr"
             })
+            logger.nodes(list(circuit.nodes.values()))
             logger.accept(len(circuit.nodes), len(circuit.edges))
             return circuit
 

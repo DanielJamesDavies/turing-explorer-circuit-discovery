@@ -312,5 +312,6 @@ class NeighborhoodExpansion(DiscoveryMethod):
             "n_expand": self.n_expand,
             "m_neighbors": self.m_neighbors,
         })
+        logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit

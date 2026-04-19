@@ -9,8 +9,9 @@ def run() -> None:
         reload_model_and_sae,
         save_results,
     )
-    from .runtime import initialize_resources, initialize_runtime
+    from .runtime import get_runtime, initialize_resources, initialize_runtime
     from .second_pass import run_second_pass
+    from config import config
 
     print("")
     initialize_runtime()
@@ -33,6 +34,15 @@ def run() -> None:
     # Discovery: select candidate seeds then grow circuits
     candidates = run_candidate_selection()
     run_discovery(candidates)
+
+    # Cluster contrast discovery (opt-in via "cluster_contrast" in config.discovery.methods)
+    if "cluster_contrast" in list(config.discovery.methods):
+        from .cluster_discovery import run_cluster_contrast_discovery
+        runtime = get_runtime()
+        assert runtime.model is not None
+        assert runtime.bank is not None
+        assert runtime.loader is not None
+        run_cluster_contrast_discovery(runtime.model, runtime.bank, runtime.loader)
 
     print("Pipeline completed successfully!")
     print("")

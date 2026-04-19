@@ -70,6 +70,11 @@ class LogitCtxConfig(BaseModel):
     n_tokens_per_latent: int = 32
     topk_output_tokens: int = 32
 
+class SeqLatentIndexConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    enabled: bool = False
+    top_k_per_component: int = 12
+
 class TopCoactivationLatentsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_latents_per_latent: int = 64
@@ -94,6 +99,7 @@ class LatentsConfig(BaseModel):
     neg_ctx: NegCtxConfig = Field(default_factory=NegCtxConfig)
     logit_ctx: LogitCtxConfig = Field(default_factory=LogitCtxConfig)
     top_coactivation: TopCoactivationLatentsConfig = Field(default_factory=TopCoactivationLatentsConfig)
+    seq_latent_index: SeqLatentIndexConfig = Field(default_factory=SeqLatentIndexConfig)
 
 class CoactivationStatisticalConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -180,14 +186,108 @@ class TopCoactAttrDiscoveryConfig(BaseModel):
 
 class CounterfactualGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    neg_mode: str = "close"        # "close" | "random" | "distant"
+    distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_activators: int = 8
     top_k_inhibitors: int = 8
+    top_k_scope: str = "global"   # "global" | "layer_kind"
     activator_threshold: float = 0.01
     inhibitor_threshold: float = 0.01
     min_active_count: int = 1
     max_neg_sequences: int = 4
+    neg_batch_size: int = 4           # sequences per grad-enabled contrast pass (lower = less VRAM)
     pruning_threshold: float = 0.0
     min_faithfulness: float = 0.2
+    node_presence_eval: bool = True
+
+    @field_validator("neg_mode")
+    @classmethod
+    def validate_neg_mode(cls, v: str) -> str:
+        allowed = ["close", "random", "distant"]
+        if v not in allowed:
+            raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
+        return v
+
+class CircuitTracerBaselineConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    probe_batch_size: int = 1        # sequences per forward pass (keep low for 16 GB VRAM)
+    max_sequences: int = 8           # pos_ctx sequences used to build the matrix
+    target_chunk_size: int = 8       # deprecated — no longer used; retained for YAML compat
+    logit_top_k: int = 5             # maximum number of logit target nodes
+    desired_logit_prob: float = 0.95 # cumulative softmax probability to cover when selecting logit targets
+    influence_max_iter: int = 1000   # power-iteration safety cap; raises RuntimeError on non-convergence (matches original circuit-tracer)
+    node_threshold: float = 0.8      # fraction of total node-influence to retain (0–1); scale-invariant
+    edge_threshold: float = 0.98     # fraction of total edge-influence to retain (0–1); scale-invariant
+    min_faithfulness: float = 0.2    # upstream-faithfulness acceptance gate
+    pruning_threshold: float = 0.0   # minimality pruning drop threshold (0 = disabled)
+    min_active_count: int = 1        # skip latents below this global lifetime firing count
+    max_feature_nodes: int = 2048    # cap on feature nodes; top-N by logit-influence ranking (or peak activation when logit_top_k=0)
+    stop_error_grad: bool = False    # if True, gradient flows only through SAE features (not error term)
+    include_error_nodes: bool = True # if True, add one error sentinel node per (layer, kind) for reconstruction-error attribution
+    online_ranking_interval: int = 4   # re-rank remaining features every N cycles (matches original update_interval=4); 0 = one-shot ordering
+    feature_batch_size: int = 32       # features processed per cycle (matches original batch_size=32); 4×32=128 features per ranking update
+    include_token_nodes: bool = False # if True, add T token sentinel nodes (one per input position) enabling per-position embedding attribution
+
+class ClusterContrastConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    n_clusters: int = 3000
+    top_clusters: int = 8
+    kmeans_iters: int = 40
+    kmeans_seed: int = 42
+    num_pos_seqs: int = 64              # positive sequences per cluster (top-N in-cluster, near centroid)
+    num_neg_seqs: int = 64              # negative sequences per cluster (top-N out-of-cluster, near centroid)
+    batch_size: int = 8                 # sequences per forward pass
+    eval_position: str = "last"         # "last" | "all"
+    top_k_activators: int = 12
+    top_k_inhibitors: int = 12
+    top_k_scope: str = "layer_kind"     # "global" | "layer_kind"
+    activator_threshold: float = 0.01
+    inhibitor_threshold: float = 0.01
+    min_active_count: int = 1
+    pruning_threshold: float = 0.0
+    run_eval: bool = True
+
+    @field_validator("eval_position")
+    @classmethod
+    def validate_eval_position(cls, v: str) -> str:
+        allowed = ["last", "all"]
+        if v not in allowed:
+            raise ValueError(f"eval_position must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("top_k_scope")
+    @classmethod
+    def validate_top_k_scope(cls, v: str) -> str:
+        allowed = ["global", "layer_kind"]
+        if v not in allowed:
+            raise ValueError(f"top_k_scope must be one of {allowed}, got {v!r}")
+        return v
+
+class SeedFilterConfig(BaseModel):
+    """Constrains which seeds CandidateSelector returns by layer and/or kind.
+
+    Both fields default to empty lists, which means no filtering (all layers
+    and all kinds are allowed). Any non-empty list acts as an allowlist.
+
+    Example — only MLP and residual seeds from the first four layers:
+        layers: [0, 1, 2, 3]
+        kinds:  ["mlp", "resid"]
+    """
+    model_config = ConfigDict(extra='forbid')
+    layers: List[int] = Field(default_factory=list)
+    kinds: List[str] = Field(default_factory=list)
+
+    @field_validator("kinds")
+    @classmethod
+    def validate_kinds(cls, v: List[str]) -> List[str]:
+        allowed = {"attn", "mlp", "resid"}
+        for k in v:
+            if k not in allowed:
+                raise ValueError(
+                    f"seed_filter.kinds entries must be one of {sorted(allowed)}, got {k!r}"
+                )
+        return v
+
 
 class DiscoveryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -198,7 +298,25 @@ class DiscoveryConfig(BaseModel):
     min_active_count: int = 1
     max_neighbors: int = 32
     methods: List[str] = Field(default_factory=lambda: ["coactivation_statistical", "logit_attribution"])
-    
+    # Which scoring criteria to use when shortlisting seed latents.
+    # Available: "logit_impact", "connectivity", "surprise", "context_coherence",
+    #            "activation_variance", "logit_specificity", "coactivation_diversity",
+    #            "last_token_activity", "top_ctx_saturation",
+    #            "pos_neg_contrast", "cross_layer_reach", "cross_component_breadth",
+    #            "burstiness", "mid_ctx_richness", "activation_skew", "logit_diversity",
+    #            "pagerank_centrality", "activation_entropy", "coactivation_uniqueness",
+    #            "stratified_random", "circuit_yield"
+    seed_criteria: List[str] = Field(default_factory=lambda: [
+        "logit_impact", "connectivity", "surprise", "context_coherence",
+        "activation_variance", "logit_specificity", "coactivation_diversity",
+        "last_token_activity", "top_ctx_saturation",
+        "pos_neg_contrast", "cross_layer_reach", "cross_component_breadth",
+        "burstiness", "mid_ctx_richness", "activation_skew", "logit_diversity",
+        "pagerank_centrality", "activation_entropy", "coactivation_uniqueness",
+        "stratified_random", "circuit_yield",
+    ])
+    seed_filter: SeedFilterConfig = Field(default_factory=SeedFilterConfig)
+
     coactivation_statistical: CoactivationStatisticalConfig = Field(default_factory=CoactivationStatisticalConfig)
     logit_attribution: LogitAttributionConfig = Field(default_factory=LogitAttributionConfig)
     sfc_attribution_patching: SFCAttributionPatchingConfig = Field(default_factory=SFCAttributionPatchingConfig)
@@ -216,7 +334,9 @@ class DiscoveryConfig(BaseModel):
     gradient_upstream: GradientUpstreamConfig = Field(default_factory=GradientUpstreamConfig)
     layerwise_gradient_upstream: LayerwiseGradientUpstreamConfig = Field(default_factory=LayerwiseGradientUpstreamConfig)
     counterfactual_gradient: CounterfactualGradientConfig = Field(default_factory=CounterfactualGradientConfig)
-    
+    circuit_tracer_baseline: CircuitTracerBaselineConfig = Field(default_factory=CircuitTracerBaselineConfig)
+    cluster_contrast: ClusterContrastConfig = Field(default_factory=ClusterContrastConfig)
+
     top_coact_attr: TopCoactAttrDiscoveryConfig = Field(default_factory=TopCoactAttrDiscoveryConfig)
 
 class PersistConfig(BaseModel):
@@ -226,6 +346,10 @@ class PersistConfig(BaseModel):
     search_cache_n_sequences: int = 8
     search_cache_component_chunk: int = 4
 
+class AnalysisConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    methods: List[str] = Field(default_factory=lambda: ["coactivation_overlap"])
+
 class RootConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     weights: WeightsConfig
@@ -234,6 +358,7 @@ class RootConfig(BaseModel):
     latents: LatentsConfig = Field(default_factory=LatentsConfig)
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     persist: PersistConfig = Field(default_factory=PersistConfig)
+    analysis: AnalysisConfig = Field(default_factory=AnalysisConfig)
 
 def load_config() -> RootConfig:
     data = {}

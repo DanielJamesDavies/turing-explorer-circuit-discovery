@@ -89,6 +89,9 @@ def save_results() -> None:
     # Phase 2: Build search cache after heavy tensor saves are finished
     gc.collect()
     
+    if config.latents.seq_latent_index.enabled:
+        print("  ✓ seq_latent_index shards written to outputs/seq_latent_index/")
+
     search_cache_enabled = config.persist.search_cache_enabled
     if search_cache_enabled is not False:
         print("Building search cache...")

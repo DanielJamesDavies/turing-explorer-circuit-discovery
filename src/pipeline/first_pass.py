@@ -1,10 +1,12 @@
-from typing import Dict, Tuple, cast
+from typing import Dict, Optional, Tuple, cast
 
 import torch
 from tqdm import tqdm
 
+from config import config
 from .runtime import get_runtime
 from .encoding import encode_layer_components
+from .seq_latent_index import SeqLatentIndexAccumulator
 from sae.async_encode import PendingEncode
 from store.context import mid_ctx, top_ctx
 from store.latent_stats import latent_stats
@@ -46,6 +48,16 @@ def run_first_pass() -> None:
     pending_encodes: list[tuple[PendingEncode, torch.Tensor]] = []
     current_batch_last_latents: Dict[int, torch.Tensor] = {}
 
+    seq_idx_cfg = config.latents.seq_latent_index
+    accumulator: Optional[SeqLatentIndexAccumulator] = None
+    if seq_idx_cfg.enabled:
+        accumulator = SeqLatentIndexAccumulator(
+            shard_id_ranges=runtime.loader.shard_id_ranges,
+            top_k_per_component=seq_idx_cfg.top_k_per_component,
+            output_dir="outputs/seq_latent_index",
+        )
+        print(f"  seq_latent_index enabled: top_k_per_component={seq_idx_cfg.top_k_per_component}")
+
     def activations_callback(
         layer_idx: int,
         sequence_ids: torch.Tensor,
@@ -71,6 +83,8 @@ def run_first_pass() -> None:
 
         for comp_idx, latents in cast(Dict[int, Tuple[torch.Tensor, torch.Tensor]], encoded).items():
             _update_stores(runtime.mid_ctx_warmup, current_batch_last_latents, comp_idx, sequence_ids, latents)
+            if accumulator is not None:
+                accumulator.update(comp_idx, sequence_ids, latents)
 
     for batch_ids, batch_tokens in tqdm(runtime.loader.get_batches(), total=len(runtime.loader), desc="Latent Stats & Ctx"):
         current_batch_last_latents.clear()
@@ -91,10 +105,19 @@ def run_first_pass() -> None:
                     results = pending.synchronize()
                     for comp_idx, latents in results.items():
                         _update_stores(runtime.mid_ctx_warmup, current_batch_last_latents, comp_idx, seq_ids, latents)
+                        if accumulator is not None:
+                            accumulator.update(comp_idx, seq_ids, latents)
 
         if last_logits is not None:
             probs = torch.softmax(last_logits[:, -1, :], dim=-1)
             logit_ctx.update(current_batch_last_latents, probs)
+
+        if accumulator is not None:
+            accumulator.on_batch_complete(int(batch_ids.max().item()))
+
+    if accumulator is not None:
+        accumulator.flush_all()
+        print("  seq_latent_index: all shards written")
 
     runtime.seq_repr.print_stats()
     print("")
