@@ -1,0 +1,118 @@
+# 8x H100 current-runtime benchmark config.
+#
+# This is not the future distributed controller/worker runtime. It keeps the
+# existing single-process pipeline and enables the validated opt-in H100-facing
+# modes for negative context and target-sharded top-coactivation reduction.
+#
+# For the first single-H100 control run, change:
+#   hardware.multi_gpu: false
+#   hardware.memory: "efficient"
+#   hardware.keep_model_loaded_for_neg_ctx: false
+#   latents.neg_ctx.backend: "single_gpu_exact"
+#   latents.neg_ctx.devices: []
+#   latents.top_coactivation.reduce_backend: "single_process"
+#   latents.top_coactivation.reduce_shards: 1
+#   latents.top_coactivation.reduce_shard_output_dir: null
+
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt"
+  sae_path: "models/TuringLLM/SAE"
+
+data:
+  dataset_path: "data"
+  n_shards: 256
+  batch_size: 512
+
+hardware:
+  multi_gpu: true
+  memory: "fast"
+  compile: true
+  parallel_kinds: false
+  ann_device: "cuda:0"
+  keep_model_loaded_for_neg_ctx: true
+
+latents:
+  top_ctx:
+    n_sequences: 64
+  mid_ctx:
+    n_sequences: 64
+    mode: "reservoir_cpu"
+    band_low_sigma: 0.5
+    band_high_sigma: 1.5
+    warmup_batches: 100
+  neg_ctx:
+    n_sequences: 64
+    n_neighbors: 512
+    min_pos_ctx: 8
+    backend: "multi_gpu_exact"
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    repr_mode: "mean_pool"
+    max_repr_seqs: 200000
+  logit_ctx:
+    n_tokens_per_latent: 32
+    topk_output_tokens: 32
+  top_coactivation:
+    n_latents_per_latent: 64
+    n_candidates_per_component: 16
+    freq_alpha: 2.0
+    mode: "pmi"
+    pmi_clamp_min: -5.0
+    pmi_clamp_max: 10.0
+    dump_device: "gpu"
+    dump_profile: true
+    reduce_backend: "target_sharded"
+    reduce_shards: 8
+    reduce_shard_output_dir: "outputs/top_coactivation_reduce_shards/h100_8x"
+    reduce_omp_threads: null
+    reduce_schedule_chunk: 256
+  seq_latent_index:
+    enabled: true
+    top_k_per_component: 12
+
+discovery:
+  n_seeds: 16
+  probe_batch_size: 4
+  neg_ctx_eval_max: 16
+  min_faithfulness: 0.2
+  min_active_count: 1
+  max_neighbors: 32
+  focal_monosemantic_min_partners: 4
+  seed_criteria:
+    - stratified_random
+  seed_filter:
+    layers: []
+    kinds: []
+  methods:
+    - counterfactual_gradient
+  counterfactual_gradient:
+    neg_mode: "random"
+    distant_pool_size: 512
+    top_k_activators: 12
+    top_k_inhibitors: 12
+    top_k_scope: "layer_kind"
+    activator_threshold: 0.01
+    inhibitor_threshold: 0.01
+    min_active_count: 1
+    max_neg_sequences: 16
+    neg_batch_size: 16
+    pruning_threshold: 0
+    min_faithfulness: 0.2
+    node_presence_eval: true
+
+persist:
+  save_workers: 1
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false
+  atomic_saves: true
+  search_cache_n_sequences: 8
+  search_cache_component_chunk: 4
+
+analysis:
+  methods:
+    - coactivation_overlap
+    - layer_distribution
+    - edge_weight_gini
+    - node_activity
+    - node_rarity
+    - top_token_consistency
+    - internode_coact_density

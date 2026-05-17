@@ -1,4 +1,5 @@
 def run() -> None:
+    from observability.timing import phase_timer
     from .candidate_selection import run_candidate_selection
     from .discovery import run_discovery
     from .first_pass import run_first_pass
@@ -7,6 +8,7 @@ def run() -> None:
         offload_model_and_sae,
         offload_to_cpu,
         reload_model_and_sae,
+        build_search_cache_if_enabled,
         save_results,
     )
     from .runtime import get_runtime, initialize_resources, initialize_runtime
@@ -14,26 +16,37 @@ def run() -> None:
     from config import config
 
     print("")
-    initialize_runtime()
+    with phase_timer("initialize runtime"):
+        initialize_runtime()
 
-    initialize_resources()
+    with phase_timer("initialize resources / data loading"):
+        initialize_resources()
 
     # First pass: latent stats + context stores
-    run_first_pass()
-    save_results()
+    with phase_timer("first pass: latent stats and contexts"):
+        run_first_pass()
+    with phase_timer("persistence: first-pass outputs"):
+        save_results()
 
     # ANN step: build negative contexts
-    offload_to_cpu()
-    offload_model_and_sae()
-    build_negative_contexts()
-    reload_model_and_sae()
+    with phase_timer("offload stores to CPU"):
+        offload_to_cpu()
+    with phase_timer("offload model and SAE"):
+        offload_model_and_sae()
+    with phase_timer("negative context build"):
+        build_negative_contexts()
+    with phase_timer("reload model and SAE"):
+        reload_model_and_sae()
 
     # Second pass: top co-activation
-    run_second_pass()
+    with phase_timer("second pass: top coactivation"):
+        run_second_pass()
 
     # Discovery: select candidate seeds then grow circuits
-    candidates = run_candidate_selection()
-    run_discovery(candidates)
+    with phase_timer("candidate selection"):
+        candidates = run_candidate_selection()
+    with phase_timer("discovery"):
+        run_discovery(candidates)
 
     # Cluster contrast discovery (opt-in via "cluster_contrast" in config.discovery.methods)
     if "cluster_contrast" in list(config.discovery.methods):
@@ -42,7 +55,22 @@ def run() -> None:
         assert runtime.model is not None
         assert runtime.bank is not None
         assert runtime.loader is not None
-        run_cluster_contrast_discovery(runtime.model, runtime.bank, runtime.loader)
+        with phase_timer("cluster contrast discovery"):
+            run_cluster_contrast_discovery(runtime.model, runtime.bank, runtime.loader)
+
+    runtime = get_runtime()
+    if config.persist.search_cache_enabled and config.persist.build_search_cache_after_pipeline:
+        assert runtime.bank is not None
+        assert runtime.loader is not None
+        from store.context import top_ctx
+
+        with phase_timer("search cache build"):
+            build_search_cache_if_enabled(
+                top_ctx,
+                runtime.bank,
+                runtime.loader,
+                output_path="outputs/search_cache.parquet",
+            )
 
     print("Pipeline completed successfully!")
     print("")

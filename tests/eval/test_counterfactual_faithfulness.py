@@ -10,7 +10,7 @@ Part 1  TestCounterfactualInterventionPatcher
 
 Part 2  TestEvaluateCounterfactualFaithfulness
             Tests the score formula and call protocol using a stateful ControlledSAEBank
-            and a StubInference that drives all three forward passes.  No real model
+            and a StubInference that drives all four forward passes.  No real model
             runs; the stub calls activations_callback / patcher.transform directly at
             the seed layer.
 
@@ -89,10 +89,11 @@ class ControlledSAEBank:
 # ---------------------------------------------------------------------------
 # Stub inference
 #
-# Drives the three forward passes expected by evaluate_counterfactual_faithfulness:
+# Drives the four forward passes expected by evaluate_counterfactual_faithfulness:
 #   call 1 → posctx  (activations_callback)
 #   call 2 → baseline negctx (activations_callback)
 #   call 3 → intervened negctx (patcher)
+#   call 4 → intervened posctx (patcher)
 #
 # Before each pass the bank's current_seed_act is updated so that encode returns
 # the desired activation level for that pass.
@@ -100,7 +101,8 @@ class ControlledSAEBank:
 
 def _make_stub_inference(bank: ControlledSAEBank, pass_acts: tuple, seed_layer: int = SEED_LAYER):
     """
-    pass_acts: (posctx_seed_act, baseline_seed_act, intervened_seed_act)
+    pass_acts: (posctx_seed_act, baseline_seed_act, intervened_neg_seed_act,
+                intervened_pos_seed_act)
     Returns (mock_inference, call_counter_list).
     """
     call_num = [0]
@@ -285,13 +287,16 @@ class TestEvaluateCounterfactualFaithfulness:
         baseline_act = None,
         intervened_act = None,
         pos_argmax   = None,
-    ) -> float:
+    ) -> tuple[float, float]:
         posctx_act    = self.POSCTX_ACT   if posctx_act    is None else posctx_act
         baseline_act  = self.BASELINE_ACT if baseline_act  is None else baseline_act
         intervened_act = posctx_act       if intervened_act is None else intervened_act
 
         bank = ControlledSAEBank()
-        inf, _ = _make_stub_inference(bank, (posctx_act, baseline_act, intervened_act))
+        inf, _ = _make_stub_inference(
+            bank,
+            (posctx_act, baseline_act, intervened_act, baseline_act),
+        )
 
         pos_tokens = torch.zeros(B, T, dtype=torch.long)
         neg_tokens = torch.zeros(B, T, dtype=torch.long)
@@ -314,12 +319,14 @@ class TestEvaluateCounterfactualFaithfulness:
         """(a_intervened == a_posctx) → score = 1.0."""
         score = self._run(self._default_circuit(),
                           posctx_act=2.0, baseline_act=0.0, intervened_act=2.0)
+        score, _ = score
         assert score == pytest.approx(1.0, abs=1e-5)
 
     def test_score_is_zero_when_intervention_has_no_effect(self):
         """(a_intervened == a_baseline) → score = 0.0."""
         score = self._run(self._default_circuit(),
                           posctx_act=2.0, baseline_act=0.0, intervened_act=0.0)
+        score, _ = score
         assert score == pytest.approx(0.0, abs=1e-5)
 
     def test_score_is_half_when_halfway_recovered(self):
@@ -327,6 +334,7 @@ class TestEvaluateCounterfactualFaithfulness:
         # (2 - 0) / (4 - 0) = 0.5
         score = self._run(self._default_circuit(),
                           posctx_act=4.0, baseline_act=0.0, intervened_act=2.0)
+        score, _ = score
         assert score == pytest.approx(0.5, abs=1e-5)
 
     def test_score_is_negative_when_intervention_worsens_activation(self):
@@ -334,6 +342,7 @@ class TestEvaluateCounterfactualFaithfulness:
         # (0 - 1) / (2 - 1) = -1.0
         score = self._run(self._default_circuit(),
                           posctx_act=2.0, baseline_act=1.0, intervened_act=0.0)
+        score, _ = score
         assert score < 0.0
 
     def test_score_above_one_when_intervention_overshoots(self):
@@ -341,6 +350,7 @@ class TestEvaluateCounterfactualFaithfulness:
         # (3 - 0) / (2 - 0) = 1.5
         score = self._run(self._default_circuit(),
                           posctx_act=2.0, baseline_act=0.0, intervened_act=3.0)
+        score, _ = score
         assert score > 1.0
 
     # ── Empty circuit ────────────────────────────────────────────────────────
@@ -360,7 +370,7 @@ class TestEvaluateCounterfactualFaithfulness:
             seed_latent_idx=SEED_LATENT,
         )
 
-        assert score == pytest.approx(0.0, abs=1e-5)
+        assert score == pytest.approx((0.0, 0.0), abs=1e-5)
         inf.forward.assert_not_called()
 
     # ── Small-denominator guard ───────────────────────────────────────────────
@@ -372,6 +382,7 @@ class TestEvaluateCounterfactualFaithfulness:
         eps   = 1e-12
         score = self._run(self._default_circuit(),
                           posctx_act=eps, baseline_act=0.0, intervened_act=eps)
+        score, _ = score
         assert score == pytest.approx(1.0, abs=1e-5)
 
     def test_small_denom_nonmatching_intervened_returns_zero(self):
@@ -380,14 +391,15 @@ class TestEvaluateCounterfactualFaithfulness:
         """
         score = self._run(self._default_circuit(),
                           posctx_act=0.0, baseline_act=0.0, intervened_act=1.0)
+        score, _ = score
         assert score == pytest.approx(0.0, abs=1e-5)
 
     # ── Call protocol ────────────────────────────────────────────────────────
 
-    def test_exactly_three_forward_passes(self):
-        """evaluate_counterfactual_faithfulness must call inference.forward exactly 3 times."""
+    def test_exactly_four_forward_passes(self):
+        """evaluate_counterfactual_faithfulness must call inference.forward exactly 4 times."""
         bank = ControlledSAEBank()
-        inf, counter = _make_stub_inference(bank, (2.0, 0.0, 1.5))
+        inf, counter = _make_stub_inference(bank, (2.0, 0.0, 1.5, 0.5))
 
         evaluate_counterfactual_faithfulness(
             inf, bank, _avg_acts(), self._default_circuit(),
@@ -399,9 +411,11 @@ class TestEvaluateCounterfactualFaithfulness:
             pos_argmax=torch.zeros(B, dtype=torch.long),
         )
 
-        assert counter[0] == 3
+        assert counter[0] == 4
 
-    def test_return_type_is_float(self):
-        """evaluate_counterfactual_faithfulness must return a Python float."""
+    def test_return_type_is_float_pair(self):
+        """evaluate_counterfactual_faithfulness must return a pair of Python floats."""
         score = self._run(self._default_circuit())
-        assert isinstance(score, float)
+        assert isinstance(score, tuple)
+        assert len(score) == 2
+        assert all(isinstance(v, float) for v in score)

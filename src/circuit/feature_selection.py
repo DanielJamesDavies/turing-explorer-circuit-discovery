@@ -307,10 +307,13 @@ class CandidateSelector:
         #     not broadly entangled with many other latents.
         # ------------------------------------------------------------------
         if "focal_monosemantic" in active:
-            cohesion = top_ctx.ctx_seq_val.to(self.device).float().mean(dim=-1)   # [C, D]
+            v = top_ctx.ctx_seq_val.to(self.device).float()              # [C, D, N]
+            filled = (v > 0).float()
+            cohesion = (v * filled).sum(dim=-1) / filled.sum(dim=-1).clamp(min=1.0)  # [C, D]
             n_partners = (top_coactivation.top_values.to(self.device) > 0).float().sum(dim=-1)  # [C, D]
             score = cohesion / (n_partners + 1.0)
             score = score.masked_fill(latent_stats.seq_count.to(self.device) < 5, -1e9)
+            score = score.masked_fill(n_partners < config.discovery.focal_monosemantic_min_partners, -1e9)
             all_seeds.append(self._top_k(score, "focal_monosemantic"))
 
         # ------------------------------------------------------------------

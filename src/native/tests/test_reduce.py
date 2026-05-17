@@ -17,6 +17,41 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import top_coactivation_reduce
 
 
+def reshape_reduce(top_ids, top_vals, num_components, d_sae, K):
+    return top_ids.reshape(num_components, d_sae, K), top_vals.reshape(num_components, d_sae, K)
+
+
+def python_reduce_topk(candidate_ids, candidate_vals, seq_offsets, seq_targets, sid_to_row, num_components, d_sae, K):
+    """Small deterministic reference implementation for reducer unit tests."""
+    n_targets = num_components * d_sae
+    top_ids = torch.zeros((num_components, d_sae, K), dtype=torch.int32)
+    top_vals = torch.zeros((num_components, d_sae, K), dtype=torch.float32)
+
+    for g in range(n_targets):
+        scores = {}
+        for sid in range(1, seq_offsets.numel()):
+            start = int(seq_offsets[sid - 1])
+            end = int(seq_offsets[sid])
+            if not (seq_targets[start:end] == g).any():
+                continue
+            row = int(sid_to_row[sid])
+            if row < 0:
+                continue
+            for cand_id, cand_val in zip(candidate_ids[row].tolist(), candidate_vals[row].tolist()):
+                if cand_id == g or cand_val <= 0.0:
+                    continue
+                scores[cand_id] = scores.get(cand_id, 0.0) + float(cand_val)
+
+        ordered = sorted(scores.items(), key=lambda item: (-item[1], item[0]))[:K]
+        c = g // d_sae
+        l = g % d_sae
+        for i, (cand_id, cand_val) in enumerate(ordered):
+            top_ids[c, l, i] = cand_id
+            top_vals[c, l, i] = cand_val
+
+    return top_ids, top_vals
+
+
 def test_basic_correctness():
     """
     Tiny example:
@@ -56,6 +91,7 @@ def test_basic_correctness():
         candidate_ids, candidate_vals, seq_offsets, seq_targets,
         sid_to_row, num_components, d_sae, K
     )
+    top_ids, top_vals = reshape_reduce(top_ids, top_vals, num_components, d_sae, K)
 
     assert top_ids.shape == (num_components, d_sae, K)
     assert top_vals.shape == (num_components, d_sae, K)
@@ -107,6 +143,7 @@ def test_self_filtering():
         candidate_ids, candidate_vals, seq_offsets, seq_targets,
         sid_to_row, num_components, d_sae, K
     )
+    top_ids, top_vals = reshape_reduce(top_ids, top_vals, num_components, d_sae, K)
 
     t2_ids = top_ids[0, 2].tolist()
     assert 2 not in t2_ids, f"Self-ID 2 should be filtered, got {t2_ids}"
@@ -143,11 +180,175 @@ def test_sum_aggregation():
         candidate_ids, candidate_vals, seq_offsets, seq_targets,
         sid_to_row, num_components, d_sae, K
     )
+    top_ids, top_vals = reshape_reduce(top_ids, top_vals, num_components, d_sae, K)
 
     assert top_ids[0, 0, 0].item() == 1, f"Expected id=1, got {top_ids[0, 0, 0].item()}"
     assert abs(top_vals[0, 0, 0].item() - 7.0) < 1e-5, f"Expected summed value 7.0, got {top_vals[0, 0, 0].item()}"
 
     print("PASS: test_sum_aggregation")
+
+
+def test_reference_equivalence_small():
+    """Compare native reducer against a Python reference on a small deterministic case."""
+    num_components = 2
+    d_sae = 5
+    K = 3
+    M = 4
+    S = 6
+    n_targets = num_components * d_sae
+
+    candidate_ids = torch.tensor([
+        [1, 2, 3, 4],
+        [2, 3, 4, 5],
+        [0, 2, 5, 6],
+        [1, 7, 8, 9],
+        [3, 4, 8, 9],
+        [0, 1, 5, 7],
+    ], dtype=torch.int32)
+    candidate_vals = torch.tensor([
+        [1.0, 2.0, 0.0, 4.0],
+        [2.0, 1.0, 3.0, 4.0],
+        [5.0, 1.0, 2.0, 3.0],
+        [1.5, 2.5, 3.5, 4.5],
+        [4.0, 3.0, 2.0, 1.0],
+        [0.5, 1.5, 2.5, 3.5],
+    ], dtype=torch.float32)
+
+    # sid 1 -> targets 0, 1; sid 2 -> targets 0, 5; etc.
+    per_sid_targets = {
+        1: [0, 1],
+        2: [0, 5],
+        3: [2, 5, 8],
+        4: [3],
+        5: [4, 8],
+        6: [9],
+    }
+    seq_targets_list = []
+    offsets = [0]
+    for sid in range(1, S + 1):
+        seq_targets_list.extend(per_sid_targets[sid])
+        offsets.append(len(seq_targets_list))
+
+    seq_offsets = torch.tensor(offsets, dtype=torch.int64)
+    seq_targets = torch.tensor(seq_targets_list, dtype=torch.int64)
+    sid_to_row = torch.tensor([-1, 0, 1, 2, 3, 4, 5], dtype=torch.int64)
+
+    native_ids, native_vals = top_coactivation_reduce.reduce_topk(
+        candidate_ids,
+        candidate_vals,
+        seq_offsets,
+        seq_targets,
+        sid_to_row,
+        num_components,
+        d_sae,
+        K,
+        print_timings=False,
+    )
+    native_ids, native_vals = reshape_reduce(native_ids, native_vals, num_components, d_sae, K)
+    ref_ids, ref_vals = python_reduce_topk(
+        candidate_ids,
+        candidate_vals,
+        seq_offsets,
+        seq_targets,
+        sid_to_row,
+        num_components,
+        d_sae,
+        K,
+    )
+
+    assert native_vals.shape == ref_vals.shape
+    for g in range(n_targets):
+        c = g // d_sae
+        l = g % d_sae
+        native_pairs = [(int(i), round(float(v), 5)) for i, v in zip(native_ids[c, l], native_vals[c, l]) if v > 0]
+        ref_pairs = [(int(i), round(float(v), 5)) for i, v in zip(ref_ids[c, l], ref_vals[c, l]) if v > 0]
+        ref_scores = {}
+        for sid in range(1, seq_offsets.numel()):
+            start = int(seq_offsets[sid - 1])
+            end = int(seq_offsets[sid])
+            if not (seq_targets[start:end] == g).any():
+                continue
+            row = int(sid_to_row[sid])
+            if row < 0:
+                continue
+            for cand_id, cand_val in zip(candidate_ids[row].tolist(), candidate_vals[row].tolist()):
+                if cand_id == g or cand_val <= 0.0:
+                    continue
+                ref_scores[cand_id] = round(ref_scores.get(cand_id, 0.0) + float(cand_val), 5)
+
+        assert [v for _, v in native_pairs] == [v for _, v in ref_pairs], (
+            f"target {g}: native values={native_pairs}, ref values={ref_pairs}"
+        )
+        for cand_id, cand_val in native_pairs:
+            assert ref_scores.get(cand_id) == cand_val, (
+                f"target {g}: native candidate {(cand_id, cand_val)} not in reference scores {ref_scores}"
+            )
+
+    print("PASS: test_reference_equivalence_small")
+
+
+def test_target_range_equivalence_small():
+    """Reducing target ranges and stitching them must equal a full reduction."""
+    num_components = 2
+    d_sae = 5
+    K = 3
+    candidate_ids = torch.tensor([
+        [1, 2, 3, 4],
+        [2, 3, 4, 5],
+        [0, 2, 5, 6],
+        [1, 7, 8, 9],
+        [3, 4, 8, 9],
+        [0, 1, 5, 7],
+    ], dtype=torch.int32)
+    candidate_vals = torch.tensor([
+        [1.0, 2.0, 0.0, 4.0],
+        [2.0, 1.0, 3.0, 4.0],
+        [5.0, 1.0, 2.0, 3.0],
+        [1.5, 2.5, 3.5, 4.5],
+        [4.0, 3.0, 2.0, 1.0],
+        [0.5, 1.5, 2.5, 3.5],
+    ], dtype=torch.float32)
+    seq_offsets = torch.tensor([0, 2, 4, 7, 8, 10, 11], dtype=torch.int64)
+    seq_targets = torch.tensor([0, 1, 0, 5, 2, 5, 8, 3, 4, 8, 9], dtype=torch.int64)
+    sid_to_row = torch.tensor([-1, 0, 1, 2, 3, 4, 5], dtype=torch.int64)
+    n_targets = num_components * d_sae
+
+    full_ids, full_vals = top_coactivation_reduce.reduce_topk(
+        candidate_ids,
+        candidate_vals,
+        seq_offsets,
+        seq_targets,
+        sid_to_row,
+        num_components,
+        d_sae,
+        K,
+        print_timings=False,
+    )
+
+    stitched_ids = torch.empty_like(full_ids)
+    stitched_vals = torch.empty_like(full_vals)
+    ranges = [(0, 3), (3, 7), (7, n_targets)]
+    for start, end in ranges:
+        part_ids, part_vals = top_coactivation_reduce.reduce_topk(
+            candidate_ids,
+            candidate_vals,
+            seq_offsets,
+            seq_targets,
+            sid_to_row,
+            num_components,
+            d_sae,
+            K,
+            print_timings=False,
+            target_start=start,
+            target_end=end,
+        )
+        assert part_ids.shape == (end - start, K)
+        stitched_ids[start:end] = part_ids
+        stitched_vals[start:end] = part_vals
+
+    assert torch.equal(stitched_ids, full_ids)
+    assert torch.allclose(stitched_vals, full_vals)
+    print("PASS: test_target_range_equivalence_small")
 
 
 def test_scaling():
@@ -201,6 +402,7 @@ def test_scaling():
         candidate_ids, candidate_vals, seq_offsets, target_sorted,
         sid_to_row, num_components, d_sae, K
     )
+    top_ids, top_vals = reshape_reduce(top_ids, top_vals, num_components, d_sae, K)
     elapsed = time.perf_counter() - t0
 
     assert top_ids.shape == (num_components, d_sae, K)
@@ -221,7 +423,7 @@ def test_scaling():
     print("PASS: test_scaling")
 
 
-def test_full_scale():
+def benchmark_full_scale():
     """
     Full-scale dimensions: 36 components, d_sae=40960, K=32, M=128, S=50000
     With ~64 sequences per target → 94.4M CSR entries.
@@ -273,6 +475,7 @@ def test_full_scale():
         candidate_ids, candidate_vals, seq_offsets, target_sorted,
         sid_to_row, num_components, d_sae, K
     )
+    top_ids, top_vals = reshape_reduce(top_ids, top_vals, num_components, d_sae, K)
     elapsed = time.perf_counter() - t0
 
     n_nonempty = (top_vals.sum(dim=-1) > 0).sum().item()
@@ -287,6 +490,9 @@ if __name__ == "__main__":
     test_basic_correctness()
     test_self_filtering()
     test_sum_aggregation()
+    test_reference_equivalence_small()
+    test_target_range_equivalence_small()
     test_scaling()
-    test_full_scale()
+    if os.environ.get("RUN_FULL_SCALE_REDUCE_BENCHMARK") == "1":
+        benchmark_full_scale()
     print("\nAll tests passed!")

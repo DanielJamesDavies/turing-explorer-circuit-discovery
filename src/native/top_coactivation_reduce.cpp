@@ -5,6 +5,7 @@
 #include <cstring>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -14,6 +15,13 @@ struct Pair {
     int32_t id;
     float val;
 };
+
+static bool pair_better(const Pair& a, const Pair& b) {
+    if (a.val != b.val) {
+        return a.val > b.val;
+    }
+    return a.id < b.id;
+}
 
 /*
  * Open-addressing hash table for O(n) dedup+sum.
@@ -117,11 +125,9 @@ static void process_target(
 
     int actual_k = std::min(K, unique_count);
 
-    std::nth_element(buf, buf + actual_k, buf + unique_count,
-                     [](const Pair& a, const Pair& b) { return a.val > b.val; });
+    std::nth_element(buf, buf + actual_k, buf + unique_count, pair_better);
 
-    std::sort(buf, buf + actual_k,
-              [](const Pair& a, const Pair& b) { return a.val > b.val; });
+    std::sort(buf, buf + actual_k, pair_better);
 
     for (int i = 0; i < actual_k; i++) {
         out_ids[i]  = buf[i].id;
@@ -145,7 +151,12 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
     torch::Tensor sid_to_row,
     int64_t num_components,
     int64_t d_sae,
-    int64_t K
+    int64_t K,
+    int64_t omp_threads = 0,
+    int64_t schedule_chunk = 256,
+    bool print_timings = true,
+    int64_t target_start = 0,
+    int64_t target_end = -1
 ) {
     TORCH_CHECK(candidate_ids.dtype() == torch::kInt32, "candidate_ids must be int32");
     TORCH_CHECK(candidate_vals.dtype() == torch::kFloat32, "candidate_vals must be float32");
@@ -159,34 +170,55 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
     const int64_t max_sid = seq_offsets.size(0) - 1;
     const int64_t n_targets = num_components * d_sae;
     const int64_t total_entries = seq_targets.size(0);
+    if (target_end < 0 || target_end > n_targets) {
+        target_end = n_targets;
+    }
+    target_start = std::max<int64_t>(0, target_start);
+    TORCH_CHECK(target_start <= target_end, "target_start must be <= target_end");
+    TORCH_CHECK(target_end <= n_targets, "target_end must be <= num_components * d_sae");
+    const int64_t out_targets = target_end - target_start;
 
     const auto* cand_ids_ptr  = candidate_ids.data_ptr<int32_t>();
     const auto* cand_vals_ptr = candidate_vals.data_ptr<float>();
     const auto* offsets_ptr   = seq_offsets.data_ptr<int64_t>();
     const auto* targets_ptr   = seq_targets.data_ptr<int64_t>();
     const auto* sid_row_ptr   = sid_to_row.data_ptr<int64_t>();
+    const int sched_chunk = static_cast<int>(std::max<int64_t>(1, schedule_chunk));
+
+    #ifdef _OPENMP
+    if (omp_threads > 0) {
+        omp_set_num_threads(static_cast<int>(omp_threads));
+    }
+    #endif
 
     auto t0 = std::chrono::high_resolution_clock::now();
 
     // --- Build inverted index: target_global_id -> list of sequence rows ---
 
-    std::vector<int> target_counts(n_targets, 0);
+    std::vector<int64_t> target_counts(n_targets, 0);
+    auto t_count0 = std::chrono::high_resolution_clock::now();
+
+    #pragma omp parallel for schedule(static)
     for (int64_t i = 0; i < total_entries; i++) {
         int64_t g = targets_ptr[i];
         if (g >= 0 && g < n_targets) {
+            #pragma omp atomic update
             target_counts[g]++;
         }
     }
+    auto t_count1 = std::chrono::high_resolution_clock::now();
 
     std::vector<int64_t> inv_offsets(n_targets + 1, 0);
     for (int64_t g = 0; g < n_targets; g++) {
         inv_offsets[g + 1] = inv_offsets[g] + target_counts[g];
     }
+    auto t_prefix = std::chrono::high_resolution_clock::now();
 
     int64_t inv_total = inv_offsets[n_targets];
     std::vector<int64_t> inv_seq_rows(inv_total);
 
-    std::vector<int> write_pos(n_targets, 0);
+    std::vector<int64_t> write_pos(n_targets, 0);
+    #pragma omp parallel for schedule(static)
     for (int64_t sid = 1; sid <= max_sid; sid++) {
         int64_t start = offsets_ptr[sid - 1];
         int64_t end   = offsets_ptr[sid];
@@ -194,7 +226,10 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
         for (int64_t j = start; j < end; j++) {
             int64_t g = targets_ptr[j];
             if (g >= 0 && g < n_targets) {
-                int64_t pos = inv_offsets[g] + write_pos[g]++;
+                int64_t offset = 0;
+                #pragma omp atomic capture
+                offset = write_pos[g]++;
+                int64_t pos = inv_offsets[g] + offset;
                 inv_seq_rows[pos] = row;
             }
         }
@@ -205,13 +240,13 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
     // Find max sequences any single target has (for buffer sizing)
     int max_seqs = 0;
     for (int64_t g = 0; g < n_targets; g++) {
-        int c = target_counts[g];
+        int c = static_cast<int>(target_counts[g]);
         if (c > max_seqs) max_seqs = c;
     }
 
     // --- Allocate output ---
-    auto top_ids  = torch::zeros({num_components, d_sae, K}, torch::kInt32);
-    auto top_vals = torch::zeros({num_components, d_sae, K}, torch::kFloat32);
+    auto top_ids  = torch::zeros({out_targets, K}, torch::kInt32);
+    auto top_vals = torch::zeros({out_targets, K}, torch::kFloat32);
     auto* out_ids_ptr  = top_ids.data_ptr<int32_t>();
     auto* out_vals_ptr = top_vals.data_ptr<float>();
 
@@ -230,15 +265,16 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
         thread_bufs[t].resize(buf_capacity);
     }
 
-    #pragma omp parallel for schedule(dynamic, 256)
-    for (int64_t g = 0; g < n_targets; g++) {
+    #pragma omp parallel for schedule(dynamic, sched_chunk)
+    for (int64_t g = target_start; g < target_end; g++) {
         int64_t inv_start = inv_offsets[g];
         int64_t inv_end   = inv_offsets[g + 1];
         int n_seqs = static_cast<int>(inv_end - inv_start);
+        int64_t out_g = g - target_start;
 
         if (n_seqs == 0) {
-            std::memset(out_ids_ptr + g * K, 0, K * sizeof(int32_t));
-            std::memset(out_vals_ptr + g * K, 0, K * sizeof(float));
+            std::memset(out_ids_ptr + out_g * K, 0, K * sizeof(int32_t));
+            std::memset(out_vals_ptr + out_g * K, 0, K * sizeof(float));
             continue;
         }
 
@@ -256,8 +292,8 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
             n_seqs,
             M,
             static_cast<int32_t>(g),
-            out_ids_ptr  + g * K,
-            out_vals_ptr + g * K,
+            out_ids_ptr  + out_g * K,
+            out_vals_ptr + out_g * K,
             static_cast<int>(K)
         );
     }
@@ -267,10 +303,24 @@ std::tuple<torch::Tensor, torch::Tensor> reduce_topk(
     auto ms = [](auto a, auto b) {
         return std::chrono::duration<double, std::milli>(b - a).count();
     };
-    std::printf("  [C++] Inverted index build: %.1f ms\n", ms(t0, t1));
-    std::printf("  [C++] Output alloc:         %.1f ms\n", ms(t1, t2));
-    std::printf("  [C++] Parallel reduce:      %.1f ms  (%d threads)\n", ms(t2, t3), num_threads);
-    std::printf("  [C++] Total:                %.1f ms\n", ms(t0, t3));
+    if (print_timings) {
+        #ifdef _OPENMP
+        const char* omp_status = "enabled";
+        #else
+        const char* omp_status = "disabled";
+        #endif
+        std::printf("  [C++] OpenMP:              %s | threads=%d | schedule=dynamic,%d\n",
+                    omp_status, num_threads, sched_chunk);
+        std::printf("  [C++] Target range:        [%ld, %ld) of %ld\n",
+                    static_cast<long>(target_start), static_cast<long>(target_end), static_cast<long>(n_targets));
+        std::printf("  [C++] Inverted index build: %.1f ms\n", ms(t0, t1));
+        std::printf("        count targets:        %.1f ms\n", ms(t_count0, t_count1));
+        std::printf("        prefix offsets:       %.1f ms\n", ms(t_count1, t_prefix));
+        std::printf("        fill rows:            %.1f ms\n", ms(t_prefix, t1));
+        std::printf("  [C++] Output alloc:         %.1f ms\n", ms(t1, t2));
+        std::printf("  [C++] Parallel reduce:      %.1f ms  (%d threads)\n", ms(t2, t3), num_threads);
+        std::printf("  [C++] Total:                %.1f ms\n", ms(t0, t3));
+    }
 
     return {top_ids, top_vals};
 }
@@ -305,9 +355,14 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           "  num_components: int - number of SAE components (36)\n"
           "  d_sae:          int - SAE dictionary size (40960)\n"
           "  K:              int - number of top co-occurring latents to keep (32)\n"
+          "  omp_threads:    int - optional OpenMP thread override, 0 uses environment/default\n"
+          "  schedule_chunk: int - OpenMP dynamic schedule chunk size\n"
+          "  print_timings:  bool - print reducer timing breakdown\n"
+          "  target_start:   int - first flattened target ID to reduce\n"
+          "  target_end:     int - exclusive flattened target ID to reduce, -1 = all\n"
           "\n"
           "Returns:\n"
-          "  (top_ids, top_vals): each [num_components, d_sae, K]\n",
+          "  (top_ids, top_vals): each [target_end - target_start, K]\n",
           py::arg("candidate_ids"),
           py::arg("candidate_vals"),
           py::arg("seq_offsets"),
@@ -315,6 +370,11 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           py::arg("sid_to_row"),
           py::arg("num_components"),
           py::arg("d_sae"),
-          py::arg("K")
+          py::arg("K"),
+          py::arg("omp_threads") = 0,
+          py::arg("schedule_chunk") = 256,
+          py::arg("print_timings") = true,
+          py::arg("target_start") = 0,
+          py::arg("target_end") = -1
     );
 }

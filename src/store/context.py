@@ -71,18 +71,21 @@ class Context:
         if ctx_type == "mid":
             self.device = torch.device("cpu")
             self.num_ctx_sequences = cast(int, config.latents.mid_ctx.n_sequences or 64)
+            self.mid_mode = cast(str, config.latents.mid_ctx.mode or "reservoir_cpu")
             self._band_low  = cast(float, config.latents.mid_ctx.band_low_sigma  or 0.5)
             self._band_high = cast(float, config.latents.mid_ctx.band_high_sigma or 1.5)
             self.val_dtype = torch.float32
         elif ctx_type == "neg":
             self.device = torch.device("cpu")
             self.num_ctx_sequences = cast(int, config.latents.neg_ctx.n_sequences or 64)
+            self.mid_mode = ""
             self.val_dtype = torch.float32
         else:
             self.device = device if device is not None else torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu"
             )
             self.num_ctx_sequences = cast(int, config.latents.top_ctx.n_sequences)
+            self.mid_mode = ""
             self.val_dtype = torch.bfloat16
 
         self._allocated = False
@@ -93,7 +96,8 @@ class Context:
                 self.set_device(device)
             return
 
-        # mid_ctx and neg_ctx always live on CPU (they use a CPU C++ extension).
+        # mid_ctx and neg_ctx stores stay on CPU so downstream readers and neg_ctx
+        # can use one artifact shape regardless of update backend.
         if self.ctx_type in ("mid", "neg"):
             device = None
 
@@ -147,7 +151,10 @@ class Context:
                 raise ValueError(
                     "mid_ctx.update_component requires latent_mean_seq and latent_std_seq"
                 )
-            self._update_mid(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
+            if self.mid_mode == "gpu_topk_mid":
+                self._update_mid_gpu_topk(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
+            else:
+                self._update_mid_reservoir(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
         else:
             raise ValueError(f"Invalid context type: {self.ctx_type}")
 
@@ -180,7 +187,20 @@ class Context:
     # Mid context (reservoir-sampled sequences in the mid activation band)
     # ------------------------------------------------------------------
 
-    def _update_mid(
+    def _mid_band_bounds(
+        self,
+        latent_mean_seq: torch.Tensor,
+        latent_std_seq: torch.Tensor,
+        device: torch.device,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        mean_seq = latent_mean_seq.to(device)
+        std_seq = latent_std_seq.to(device).clamp(min=1e-6)
+        low = mean_seq + self._band_low * std_seq
+        high = mean_seq + self._band_high * std_seq
+        midpoint = mean_seq + ((self._band_low + self._band_high) * 0.5) * std_seq
+        return low, high, midpoint
+
+    def _update_mid_reservoir(
         self,
         component_idx: int,
         sequence_indices: torch.Tensor,
@@ -201,10 +221,7 @@ class Context:
             # mean_seq / std_seq come from LatentStats.mean_seq / std_seq, which track
             # the distribution of compute_seq_scores() values — the same space as scores.
             # A floor on std prevents a degenerate zero-width band during warmup.
-            mean_seq = latent_mean_seq.to(compute_device)
-            std_seq  = latent_std_seq.to(compute_device).clamp(min=1e-6)
-            low  = mean_seq + self._band_low  * std_seq  # [d_sae]
-            high = mean_seq + self._band_high * std_seq  # [d_sae]
+            low, high, _midpoint = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
 
             # In-band mask: only positions where the latent fired with a
             # mean score in the mid band (score == 0 means the latent did
@@ -237,6 +254,56 @@ class Context:
                 self.num_ctx_sequences,
             )
 
+    def _update_mid_gpu_topk(
+        self,
+        component_idx: int,
+        sequence_indices: torch.Tensor,
+        latents: tuple[torch.Tensor, torch.Tensor],
+        latent_mean_seq: torch.Tensor,
+        latent_std_seq: torch.Tensor,
+    ) -> None:
+        with torch.no_grad():
+            top_acts, top_indices = latents
+            compute_device = top_acts.device
+            scores = compute_seq_scores(top_acts, top_indices, self.d_sae)  # [d_sae, B]
+            low, high, midpoint = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
+
+            existing_idx = self.ctx_seq_idx[component_idx].to(compute_device)
+            existing_val = self.ctx_seq_val[component_idx].to(compute_device).float()
+            existing_valid = (
+                (existing_idx != 0)
+                & (existing_val > low.unsqueeze(1))
+                & (existing_val < high.unsqueeze(1))
+            )
+
+            new_idx = sequence_indices.to(compute_device).unsqueeze(0).expand(self.d_sae, -1)
+            new_valid = (scores > low.unsqueeze(1)) & (scores < high.unsqueeze(1))
+
+            candidate_idx = torch.cat([existing_idx, new_idx], dim=1)
+            candidate_val = torch.cat([existing_val, scores], dim=1)
+            candidate_valid = torch.cat([existing_valid, new_valid], dim=1)
+
+            distance = (candidate_val - midpoint.unsqueeze(1)).abs()
+            distance = distance.masked_fill(~candidate_valid, float("inf"))
+            selected_distance, selected_pos = torch.topk(
+                -distance,
+                k=self.num_ctx_sequences,
+                dim=1,
+                largest=True,
+                sorted=True,
+            )
+            selected_valid = torch.isfinite(-selected_distance)
+            selected_idx = candidate_idx.gather(1, selected_pos).to(torch.int32)
+            selected_val = candidate_val.gather(1, selected_pos).to(torch.float32)
+
+            selected_idx = selected_idx.masked_fill(~selected_valid, 0)
+            selected_val = selected_val.masked_fill(~selected_valid, 0.0)
+
+            self.ctx_seq_idx[component_idx].copy_(selected_idx.cpu())
+            self.ctx_seq_val[component_idx].copy_(selected_val.cpu().to(self.ctx_seq_val.dtype))
+            self.reservoir_fill[component_idx].copy_(selected_valid.sum(dim=1).cpu().to(torch.int32))
+            self.reservoir_n[component_idx] += new_valid.sum(dim=1).cpu().to(torch.int64)
+
     # ------------------------------------------------------------------
     # Persistence
     # ------------------------------------------------------------------
@@ -247,8 +314,13 @@ class Context:
         checkpoint: dict = {
             "ctx_seq_idx": self.ctx_seq_idx,
             "ctx_seq_val": self.ctx_seq_val,
+            "ctx_type": self.ctx_type,
         }
         if self.ctx_type == "mid":
+            checkpoint["mode"] = self.mid_mode
+            checkpoint["band_low_sigma"] = self._band_low
+            checkpoint["band_high_sigma"] = self._band_high
+            checkpoint["num_ctx_sequences"] = self.num_ctx_sequences
             checkpoint["reservoir_fill"] = self.reservoir_fill
             checkpoint["reservoir_n"]    = self.reservoir_n
         torch.save(checkpoint, path)

@@ -18,6 +18,7 @@ is mocked out so the test suite runs without a real model or GPU.
 
 import pytest
 import torch
+from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
 
 from pipeline.component_index import (
@@ -163,6 +164,9 @@ class _MockSAEBankForDiscovery:
 
     def decode(self, latents, kind, layer):
         return torch.zeros(*latents.shape[:-1], D_MODEL)
+
+    def pin_decoders(self):
+        return nullcontext()
 
 
 def _make_probe_data(n_pos=4, seq_len=T):

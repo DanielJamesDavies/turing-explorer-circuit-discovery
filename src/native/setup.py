@@ -1,12 +1,15 @@
 import sys
+import os
 from setuptools import setup
 from torch.utils.cpp_extension import CppExtension, BuildExtension
 
 try:
     from torch.utils.cpp_extension import CUDAExtension
     import torch
-    _CUDA_AVAILABLE = torch.cuda.is_available()
+    _CPU_ONLY = os.environ.get("TURING_NATIVE_CPU_ONLY", "0") == "1"
+    _CUDA_AVAILABLE = torch.cuda.is_available() and not _CPU_ONLY
 except Exception:
+    _CPU_ONLY = False
     _CUDA_AVAILABLE = False
 
 if sys.platform == "win32":
@@ -50,7 +53,8 @@ if _CUDA_AVAILABLE:
         )
     )
 else:
-    print("WARNING: CUDA not available — latent_stats_cuda and linear_relu_ext will not be built.")
+    reason = "TURING_NATIVE_CPU_ONLY=1" if _CPU_ONLY else "CUDA not available"
+    print(f"WARNING: {reason} - latent_stats_cuda and linear_relu_ext will not be built.")
 
 setup(
     name="native_extensions",

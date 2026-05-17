@@ -3,7 +3,7 @@ weights:
   sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
-  n_shards: 256 # Number of data shards to process
+  n_shards: 4 # Number of data shards to process
   batch_size: 512 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
@@ -11,11 +11,13 @@ hardware:
   compile: true # torch.compile for model + SAEs (recommended for Hopper/Blackwell GPUs)
   parallel_kinds: false # true = dispatch attn/mlp/resid SAE encodes on separate CUDA streams for potential overlap
   ann_device: "auto" # ANN search device for neg_ctx: "auto" (GPU if CUDA available, else CPU) | "gpu" | "cpu"
+  keep_model_loaded_for_neg_ctx: false # high-VRAM mode: skip model/SAE offload + reload around neg_ctx
 latents:
   top_ctx:
     n_sequences: 64 # Top sequences to store per latent (ranked by mean activation)
   mid_ctx:
     n_sequences: 64 # Reservoir size per latent
+    mode: "reservoir_cpu" # "reservoir_cpu" | "gpu_topk_mid"
     band_low_sigma: 0.5 # Lower edge of mid band: mean_seq + band_low_sigma * std_seq
     band_high_sigma: 1.5 # Upper edge of mid band: mean_seq + band_high_sigma * std_seq
     warmup_batches: 100 # Batches per component before mid_ctx updates begin (lets Welford stats stabilise)
@@ -23,6 +25,8 @@ latents:
     n_sequences: 64 # Negatives to store per latent
     n_neighbors: 512 # ANN query K per latent (oversamples before PosCtx filter)
     min_pos_ctx: 8 # Minimum PosCtx sequences required to attempt neg retrieval
+    backend: "single_gpu_exact" # "single_gpu_exact" | "multi_gpu_exact"
+    devices: [] # multi_gpu_exact devices; empty = all visible CUDA devices
     repr_mode: "mean_pool" # "mean_pool" (average residual over all token positions) | "last_token"
     max_repr_seqs: 200000 # Max sequences stored in seq_repr (null = store all). Set e.g. 200000 for large datasets to cap memory and ANN cost.
   logit_ctx:
@@ -35,16 +39,24 @@ latents:
     mode: "pmi" # "freq_weighted" (default) | "raw" (no freq adjustment) | "pmi" (token-level PMI scoring)
     pmi_clamp_min: -5.0 # Lower bound for PMI values
     pmi_clamp_max: 10.0 # Upper bound for PMI values
+    dump_device: "gpu" # "cpu" = legacy per-batch CPU dump | "gpu" = keep dump on GPU and copy once before reduction
+    dump_profile: true # Print aggregate timing breakdown for second-pass dump/update_batch
+    reduce_backend: "single_process" # "single_process" | "target_sharded"
+    reduce_shards: 1 # Number of target ranges for target_sharded reduction
+    reduce_shard_output_dir: null # Optional directory for target_sharded partial reducer files before merge
+    reduce_omp_threads: null # null uses OMP_NUM_THREADS / OpenMP default; set an int to override inside reducer
+    reduce_schedule_chunk: 256 # OpenMP dynamic schedule chunk size for native reducer targets
   seq_latent_index:
-    enabled: false # Set true to write per-shard (seq_id, latent_id) index files to outputs/seq_latent_index/
+    enabled: true # Write per-shard (seq_id, latent_id) index files to outputs/seq_latent_index/
     top_k_per_component: 12 # Top-K latent IDs to store per sequence per (layer, kind) component
 discovery:
-  n_seeds: 128 # Number of seed latents to select for circuit discovery
+  n_seeds: 16 # Number of seed latents to select for circuit discovery
   probe_batch_size: 4 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
   neg_ctx_eval_max: 16 # Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)
   min_faithfulness: 0.2 # Minimum faithfulness score for a circuit to be accepted
   min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
   max_neighbors: 32 # Default max co-activation neighbors per node (used as fallback by all methods)
+  focal_monosemantic_min_partners: 4 # Min observed coact partners before focal_monosemantic criterion applies (avoids under-sampled latents)
 
   # Which criteria to use when scoring / shortlisting seed latents.
   # Comment out any entry to ablate that signal source.
@@ -323,7 +335,9 @@ discovery:
 
 persist:
   save_workers: 1 # max parallel torch.save threads (1 = sequential)
-  search_cache_enabled: true
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false # false = defer to scripts/build_search_cache.sh
+  atomic_saves: true
   search_cache_n_sequences: 8 # reduce from 16
   search_cache_component_chunk: 4 # components processed at a time
 

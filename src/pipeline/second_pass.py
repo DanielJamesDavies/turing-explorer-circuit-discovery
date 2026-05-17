@@ -1,4 +1,5 @@
 import math
+import time
 from typing import Dict, Tuple, cast
 
 import torch
@@ -6,6 +7,7 @@ from tqdm import tqdm
 
 from .runtime import get_runtime
 from .encoding import encode_layer_components
+from config import config
 from sae.async_encode import PendingEncode
 from store.context import top_ctx
 from store.latent_stats import latent_stats
@@ -51,6 +53,8 @@ def run_second_pass() -> None:
             current_batch_latents[comp_idx] = (latents[0].detach(), latents[1].detach().to(torch.int32))
 
     total_batches = math.ceil(len(top_ctx_sequence_ids) / runtime.loader.batch_size)
+    dump_t0 = time.perf_counter()
+    dump_row_start = 0
     for batch_ids, batch_tokens in tqdm(
         runtime.loader.get_batches_by_ids(top_ctx_sequence_ids),
         total=total_batches,
@@ -78,7 +82,11 @@ def run_second_pass() -> None:
                             latents[1].detach().to(torch.int32),
                         )
 
-        top_coactivation.update_batch(batch_ids, current_batch_latents)
+        top_coactivation.update_batch(batch_ids, current_batch_latents, dump_row_start=dump_row_start)
+        dump_row_start += int(batch_ids.shape[0])
+    print(f"  [timing] top_coactivation dump: {time.perf_counter() - dump_t0:.2f} s")
+    if bool(getattr(config.latents.top_coactivation, "dump_profile", True)):
+        print(top_coactivation.dump_timing_summary())
 
     if not runtime.fast:
         print("Freeing model and SAE bank for reduction...")
@@ -87,6 +95,7 @@ def run_second_pass() -> None:
         torch.cuda.empty_cache()
 
     print("Running top co-activation reduction...")
+    reduce_t0 = time.perf_counter()
     # seq_len is tokens.shape[1] from the last batch
     top_coactivation.reduce(
         seq_offsets, 
@@ -94,6 +103,8 @@ def run_second_pass() -> None:
         seq_len=tokens.shape[1], 
         active_count=latent_stats.active_count
     )
+    print(f"  [timing] top_coactivation reduce+postprocess: {time.perf_counter() - reduce_t0:.2f} s")
+    save_t0 = time.perf_counter()
     top_coactivation.save("outputs/top_coactivation.pt")
-    print("  ✓ top_coactivation saved")
+    print(f"  top_coactivation saved ({time.perf_counter() - save_t0:.2f} s)")
     print("")

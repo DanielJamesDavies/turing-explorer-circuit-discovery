@@ -1,7 +1,8 @@
 import os
 import gc
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import cast
+from typing import Callable, cast
 
 import torch
 
@@ -12,6 +13,72 @@ from store.logit_context import logit_ctx
 from store.search_cache import generate_search_cache
 from store.seq_repr import SeqRepr
 from config import config
+from observability.timing import format_duration
+
+
+def _atomic_save_path(path: str) -> str:
+    return f"{path}.tmp"
+
+
+def _save_artifact(path: str, save_fn: Callable[[str], None]) -> None:
+    """Save an artifact, optionally through a temporary path and atomic rename."""
+    if bool(config.persist.atomic_saves):
+        tmp_path = _atomic_save_path(path)
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        save_fn(tmp_path)
+        if os.path.exists(tmp_path):
+            os.replace(tmp_path, path)
+        return
+    save_fn(path)
+
+
+def search_cache_build_mode() -> str:
+    if config.persist.search_cache_enabled is False:
+        return "disabled"
+    if config.persist.build_search_cache_after_pipeline is False:
+        return "deferred"
+    return "pipeline_end"
+
+
+def build_search_cache_artifact(
+    top_ctx_store,
+    bank,
+    loader,
+    output_path: str = "outputs/search_cache.parquet",
+) -> None:
+    search_t0 = time.perf_counter()
+    generate_search_cache(
+        top_ctx_store,
+        bank,
+        loader,
+        output_path=output_path,
+    )
+    print(f"  [timing] search_cache build: {format_duration(time.perf_counter() - search_t0)}")
+
+
+def build_search_cache_if_enabled(
+    top_ctx_store,
+    bank,
+    loader,
+    output_path: str = "outputs/search_cache.parquet",
+) -> bool:
+    mode = search_cache_build_mode()
+    if mode == "disabled":
+        print("  [search_cache] skipped (disabled in config)")
+        return False
+    if mode == "deferred":
+        print("  [search_cache] deferred; run scripts/build_search_cache.sh after the pipeline")
+        return False
+
+    print("Building search cache...")
+    try:
+        build_search_cache_artifact(top_ctx_store, bank, loader, output_path=output_path)
+        return True
+    except Exception as error:
+        print(f"  ✗ search_cache failed: {error}")
+        # We don't raise here to allow the pipeline to continue even if cache build fails
+        return False
 
 
 def offload_to_cpu() -> None:
@@ -31,6 +98,9 @@ def offload_to_cpu() -> None:
 def offload_model_and_sae() -> None:
     """Release model/SAE GPU memory before ANN-heavy negative-context build."""
     runtime = get_runtime()
+    if bool(config.hardware.keep_model_loaded_for_neg_ctx):
+        print("Keeping model and SAE bank loaded for neg_ctx (hardware.keep_model_loaded_for_neg_ctx=true).")
+        return
     if runtime.model is None and runtime.bank is None:
         return
 
@@ -68,19 +138,25 @@ def save_results() -> None:
     print(f"Saving outputs (workers={save_workers})...")
     
     tasks = {
-        "latent_stats": lambda: latent_stats.save("outputs/latent_stats.pt"),
-        "top_ctx": lambda: top_ctx.save("outputs/top_ctx.pt"),
-        "mid_ctx": lambda: mid_ctx.save("outputs/mid_ctx.pt"),
-        "seq_repr": lambda: cast(SeqRepr, runtime.seq_repr).save("outputs/seq_repr.pt"),
-        "logit_ctx": lambda: logit_ctx.save("outputs/logit_ctx.pt"),
+        "latent_stats": lambda: _save_artifact("outputs/latent_stats.pt", latent_stats.save),
+        "top_ctx": lambda: _save_artifact("outputs/top_ctx.pt", top_ctx.save),
+        "mid_ctx": lambda: _save_artifact("outputs/mid_ctx.pt", mid_ctx.save),
+        "seq_repr": lambda: _save_artifact("outputs/seq_repr.pt", cast(SeqRepr, runtime.seq_repr).save),
+        "logit_ctx": lambda: _save_artifact("outputs/logit_ctx.pt", logit_ctx.save),
     }
 
+    def timed_save(fn):
+        t0 = time.perf_counter()
+        fn()
+        return time.perf_counter() - t0
+
     with ThreadPoolExecutor(max_workers=save_workers) as executor:
-        futures = {executor.submit(fn): name for name, fn in tasks.items()}
+        futures = {executor.submit(timed_save, fn): name for name, fn in tasks.items()}
         for future in as_completed(futures):
             name = futures[future]
             try:
-                future.result()
+                elapsed = future.result()
+                print(f"  [timing] {name} save: {format_duration(elapsed)}")
                 print(f"  ✓ {name} saved")
             except Exception as error:
                 print(f"  ✗ {name} failed: {error}")
@@ -92,18 +168,10 @@ def save_results() -> None:
     if config.latents.seq_latent_index.enabled:
         print("  ✓ seq_latent_index shards written to outputs/seq_latent_index/")
 
-    search_cache_enabled = config.persist.search_cache_enabled
-    if search_cache_enabled is not False:
-        print("Building search cache...")
-        try:
-            generate_search_cache(
-                top_ctx,
-                runtime.bank,
-                runtime.loader,
-                output_path="outputs/search_cache.parquet"
-            )
-        except Exception as error:
-            print(f"  ✗ search_cache failed: {error}")
-            # We don't raise here to allow the pipeline to continue even if cache build fails
-    else:
+    mode = search_cache_build_mode()
+    if mode == "disabled":
         print("  [search_cache] skipped (disabled in config)")
+    elif mode == "deferred":
+        print("  [search_cache] deferred; run scripts/build_search_cache.sh after the pipeline")
+    else:
+        print("  [search_cache] scheduled for pipeline end")

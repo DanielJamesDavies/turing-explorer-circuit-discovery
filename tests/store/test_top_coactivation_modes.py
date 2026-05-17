@@ -3,6 +3,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 import os
+import tempfile
+from pathlib import Path
 
 # Mock the C++ extension before importing TopCoactivation
 mock_reduce = MagicMock()
@@ -18,6 +20,13 @@ class MockTopCoactivationLatentsConfig(BaseModel):
     mode: str = "freq_weighted"
     pmi_clamp_min: float = -5.0
     pmi_clamp_max: float = 10.0
+    dump_device: str = "cpu"
+    dump_profile: bool = True
+    reduce_backend: str = "single_process"
+    reduce_shards: int = 1
+    reduce_shard_output_dir: str | None = None
+    reduce_omp_threads: int | None = None
+    reduce_schedule_chunk: int = 256
 
 class MockLatentsConfig(BaseModel):
     top_coactivation: MockTopCoactivationLatentsConfig = MockTopCoactivationLatentsConfig()
@@ -192,6 +201,125 @@ class TestTopCoactivationModes(unittest.TestCase):
             
         if os.path.exists(path):
             os.remove(path)
+
+    def test_target_sharded_reduce_stitches_flat_ranges(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+
+        flat_total = self.tc.num_components * self.tc.d_sae
+
+        def fake_reduce_topk(*args, **kwargs):
+            start = kwargs.get("target_start", 0)
+            end = kwargs.get("target_end", flat_total)
+            rows = end - start
+            ids = torch.arange(start, end, dtype=torch.int32).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            vals = torch.arange(start, end, dtype=torch.float32).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            return ids, vals
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with patch('store.top_coactivation.config') as mock_c:
+            mock_c.latents.top_coactivation.reduce_backend = "target_sharded"
+            mock_c.latents.top_coactivation.reduce_shards = 5
+            mock_c.latents.top_coactivation.reduce_shard_output_dir = None
+            mock_c.latents.top_coactivation.reduce_omp_threads = None
+            mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+            self.tc.reduce(
+                seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                active_count=None,
+            )
+
+        self.assertEqual(self.tc.top_indices.shape, (3, 4, 2))
+        flat_ids = self.tc.top_indices.reshape(flat_total, self.tc.n_latents_per_latent)
+        self.assertTrue(torch.equal(flat_ids[:, 0], torch.arange(flat_total, dtype=torch.int32)))
+        self.assertEqual(mock_reduce.reduce_topk.call_count, 5)
+
+    def test_target_sharded_reduce_can_write_and_merge_partial_files(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+
+        flat_total = self.tc.num_components * self.tc.d_sae
+
+        def fake_reduce_topk(*args, **kwargs):
+            start = kwargs.get("target_start", 0)
+            end = kwargs.get("target_end", flat_total)
+            rows = end - start
+            ids = torch.arange(start, end, dtype=torch.int32).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            vals = (torch.arange(start, end, dtype=torch.float32) + 0.5).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            return ids, vals
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('store.top_coactivation.config') as mock_c:
+                mock_c.latents.top_coactivation.reduce_backend = "target_sharded"
+                mock_c.latents.top_coactivation.reduce_shards = 3
+                mock_c.latents.top_coactivation.reduce_shard_output_dir = tmpdir
+                mock_c.latents.top_coactivation.reduce_omp_threads = None
+                mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+                self.tc.reduce(
+                    seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                    seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                    active_count=None,
+                )
+
+            shard_files = sorted(Path(tmpdir).glob("shard_*.pt"))
+            self.assertEqual(len(shard_files), 3)
+            payload = torch.load(shard_files[0], map_location="cpu", weights_only=False)
+            self.assertEqual(payload["schema"], "top_coactivation_reduce_shard_v1")
+            self.assertEqual(payload["target_start"], 0)
+            self.assertEqual(payload["n_latents_per_latent"], 2)
+
+        flat_ids = self.tc.top_indices.reshape(flat_total, self.tc.n_latents_per_latent)
+        flat_vals = self.tc.top_values.reshape(flat_total, self.tc.n_latents_per_latent)
+        self.assertTrue(torch.equal(flat_ids[:, 0], torch.arange(flat_total, dtype=torch.int32)))
+        self.assertTrue(torch.equal(flat_vals[:, 0], torch.arange(flat_total, dtype=torch.float32) + 0.5))
+        self.assertEqual(mock_reduce.reduce_topk.call_count, 3)
+
+    def test_target_sharded_reduce_cleans_current_partial_files_on_failure(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+
+        flat_total = self.tc.num_components * self.tc.d_sae
+
+        def fake_reduce_topk(*args, **kwargs):
+            start = kwargs.get("target_start", 0)
+            if start > 0:
+                raise RuntimeError("synthetic shard failure")
+            end = kwargs.get("target_end", flat_total)
+            rows = end - start
+            ids = torch.arange(start, end, dtype=torch.int32).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            vals = torch.arange(start, end, dtype=torch.float32).view(rows, 1).repeat(1, self.tc.n_latents_per_latent)
+            return ids, vals
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with tempfile.TemporaryDirectory() as tmpdir:
+            unrelated = Path(tmpdir) / "keep_me.txt"
+            unrelated.write_text("not a reducer shard")
+            with patch('store.top_coactivation.config') as mock_c:
+                mock_c.latents.top_coactivation.reduce_backend = "target_sharded"
+                mock_c.latents.top_coactivation.reduce_shards = 3
+                mock_c.latents.top_coactivation.reduce_shard_output_dir = tmpdir
+                mock_c.latents.top_coactivation.reduce_omp_threads = None
+                mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+                with self.assertRaises(RuntimeError):
+                    self.tc.reduce(
+                        seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                        seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                        active_count=None,
+                    )
+
+            self.assertEqual(sorted(Path(tmpdir).glob("shard_*.pt")), [])
+            self.assertEqual(sorted(Path(tmpdir).glob(".shard_*.pt.tmp")), [])
+            self.assertTrue(unrelated.exists())
 
 if __name__ == '__main__':
     unittest.main()

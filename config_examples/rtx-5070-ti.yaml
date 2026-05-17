@@ -1,0 +1,108 @@
+# Local RTX 5070 Ti reduced-run config.
+#
+# This captures the current local benchmarking shape: 4 shards, conservative
+# memory mode, single-GPU negative context, GPU candidate dump, and deferred
+# search-cache generation.
+
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt"
+  sae_path: "models/TuringLLM/SAE"
+
+data:
+  dataset_path: "data"
+  n_shards: 4
+  batch_size: 512
+
+hardware:
+  multi_gpu: false
+  memory: "efficient"
+  compile: true
+  parallel_kinds: false
+  ann_device: "auto"
+  keep_model_loaded_for_neg_ctx: false
+
+latents:
+  top_ctx:
+    n_sequences: 64
+  mid_ctx:
+    n_sequences: 64
+    mode: "reservoir_cpu"
+    band_low_sigma: 0.5
+    band_high_sigma: 1.5
+    warmup_batches: 100
+  neg_ctx:
+    n_sequences: 64
+    n_neighbors: 512
+    min_pos_ctx: 8
+    backend: "single_gpu_exact"
+    devices: []
+    repr_mode: "mean_pool"
+    max_repr_seqs: 200000
+  logit_ctx:
+    n_tokens_per_latent: 32
+    topk_output_tokens: 32
+  top_coactivation:
+    n_latents_per_latent: 64
+    n_candidates_per_component: 16
+    freq_alpha: 2.0
+    mode: "pmi"
+    pmi_clamp_min: -5.0
+    pmi_clamp_max: 10.0
+    dump_device: "gpu"
+    dump_profile: true
+    reduce_backend: "single_process"
+    reduce_shards: 1
+    reduce_shard_output_dir: null
+    reduce_omp_threads: null
+    reduce_schedule_chunk: 256
+  seq_latent_index:
+    enabled: true
+    top_k_per_component: 12
+
+discovery:
+  n_seeds: 16
+  probe_batch_size: 4
+  neg_ctx_eval_max: 16
+  min_faithfulness: 0.2
+  min_active_count: 1
+  max_neighbors: 32
+  focal_monosemantic_min_partners: 4
+  seed_criteria:
+    - stratified_random
+  seed_filter:
+    layers: []
+    kinds: []
+  methods:
+    - counterfactual_gradient
+  counterfactual_gradient:
+    neg_mode: "random"
+    distant_pool_size: 512
+    top_k_activators: 12
+    top_k_inhibitors: 12
+    top_k_scope: "layer_kind"
+    activator_threshold: 0.01
+    inhibitor_threshold: 0.01
+    min_active_count: 1
+    max_neg_sequences: 16
+    neg_batch_size: 16
+    pruning_threshold: 0
+    min_faithfulness: 0.2
+    node_presence_eval: true
+
+persist:
+  save_workers: 1
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false
+  atomic_saves: true
+  search_cache_n_sequences: 8
+  search_cache_component_chunk: 4
+
+analysis:
+  methods:
+    - coactivation_overlap
+    - layer_distribution
+    - edge_weight_gini
+    - node_activity
+    - node_rarity
+    - top_token_consistency
+    - internode_coact_density

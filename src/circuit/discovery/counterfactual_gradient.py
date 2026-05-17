@@ -204,7 +204,17 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         target_act_pos = self._get_posctx_activation(
             seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval
         )
-        logger.note(f"target_act_pos (mean seed act on posctx): {target_act_pos:.4f}")
+        # Scale thresholds by target_act_pos so focal seeds (lower a_posctx) are not
+        # disproportionately penalised. Gradient scores ≈ 2·a_posctx·(alignment), so
+        # an absolute threshold is ~4× stricter for a seed with a_posctx=1 vs a_posctx=4.
+        act_scale = max(target_act_pos, 0.1)
+        effective_activator_threshold = self.activator_threshold * act_scale
+        effective_inhibitor_threshold = self.inhibitor_threshold * act_scale
+        logger.note(
+            f"target_act_pos: {target_act_pos:.4f} | "
+            f"effective thresholds — activator: {effective_activator_threshold:.4f}, "
+            f"inhibitor: {effective_inhibitor_threshold:.4f}"
+        )
 
         # 6. Contrast-sequence gradient pass
         activator_scores, inhibitor_scores = self._run_contrast_hop(
@@ -222,7 +232,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         # 7. Add absent activators
         n_activators = 0
         for upstream_fid, score in activator_scores.items():
-            if score < self.activator_threshold:
+            if score < effective_activator_threshold:
                 continue
             upstream_comp, upstream_latent = upstream_fid.to_component_id(n_kinds, kinds)
             if latent_stats.active_count[upstream_comp, upstream_latent] < self.min_active_count:
@@ -241,7 +251,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         # 8. Add present inhibitors
         n_inhibitors = 0
         for upstream_fid, score in inhibitor_scores.items():
-            if abs(score) < self.inhibitor_threshold:
+            if abs(score) < effective_inhibitor_threshold:
                 continue
             upstream_comp, upstream_latent = upstream_fid.to_component_id(n_kinds, kinds)
             if latent_stats.active_count[upstream_comp, upstream_latent] < self.min_active_count:

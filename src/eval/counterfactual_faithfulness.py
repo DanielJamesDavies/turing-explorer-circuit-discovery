@@ -226,9 +226,9 @@ def evaluate_counterfactual_faithfulness(
     n_inh = sum(len(v) for v in inhibitor_fids.values())
 
     if n_act == 0 and n_inh == 0:
-        print("  [CFaithfulness] No activator or inhibitor nodes — returning 0.0")
+        print("  [CFaithfulness] No activator or inhibitor nodes — returning (0.0, 0.0)")
         sys.stdout.flush()
-        return 0.0
+        return 0.0, 0.0
 
     print(
         f"  [CFaithfulness] Seed L{seed_layer} {seed_kind} idx {seed_latent_idx} | "

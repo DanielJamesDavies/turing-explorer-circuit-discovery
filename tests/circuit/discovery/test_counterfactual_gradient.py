@@ -507,27 +507,28 @@ class TestCounterfactualGradientDiscovery:
 
         - probe_data is returned by build_probe_dataset.
         - _get_posctx_activation returns 1.0.
-        - _run_negctx_hop returns (activator_fids_and_scores, inhibitor_fids_and_scores).
-        - evaluate_counterfactual_faithfulness returns cf_faith.
+        - _run_contrast_hop returns (activator_fids_and_scores, inhibitor_fids_and_scores).
+        - evaluate_counterfactual_faithfulness returns (cf_faith, suppression_score).
         - latent_stats.active_count always passes min_active_count=1.
         - CircuitLogger.save is patched to prevent disk I/O.
         """
         SEED_COMP, SEED_LAT = 3, 0  # layer 1, kind "resid"
 
         algo.build_probe_dataset = MagicMock(return_value=probe_data)
+        algo.neg_mode = "close"
 
         mock_active_count = torch.full((N_COMP, D_SAE), 100, dtype=torch.long)
 
         with patch("circuit.discovery.counterfactual_gradient.latent_stats") as mock_ls, \
              patch("circuit.discovery.counterfactual_gradient.evaluate_counterfactual_faithfulness",
-                   return_value=cf_faith), \
-             patch("circuit.discovery.counterfactual_gradient.prune_non_minimal_nodes"), \
+                   return_value=(cf_faith, 0.25)), \
+             patch("circuit.discovery.counterfactual_gradient.prune_non_minimal_nodes_cf"), \
              patch("observability.circuit_logger.CircuitLogger.save"):
 
             mock_ls.active_count = mock_active_count
 
             algo._get_posctx_activation = MagicMock(return_value=1.0)
-            algo._run_negctx_hop = MagicMock(
+            algo._run_contrast_hop = MagicMock(
                 return_value=(activator_fids_and_scores, inhibitor_fids_and_scores)
             )
 
@@ -554,7 +555,7 @@ class TestCounterfactualGradientDiscovery:
         assert circuit is None
 
     def test_rejects_no_activators_or_inhibitors(self):
-        """Empty score dicts from _run_negctx_hop → circuit has only seed → rejected."""
+        """Empty score dicts from _run_contrast_hop → circuit has only seed → rejected."""
         algo = _make_discovery()
         probe_data = _make_probe_data()
 

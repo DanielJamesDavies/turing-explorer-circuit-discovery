@@ -7,6 +7,7 @@ from config import config
 from data.loader import DataLoader
 from hardware import detect_devices, is_fast_memory, should_compile
 from model.inference import Inference
+from observability.timing import format_duration, timer
 from sae.bank import SAEBank
 from store.seq_repr import SeqRepr
 
@@ -60,14 +61,16 @@ def build_runtime() -> PipelineRuntime:
         device=devices[0],
         cpu_device=torch.device("cpu"),
         multi_gpu=len(devices) > 1,
-        mid_ctx_warmup=cast(int, config.latents.mid_ctx.warmup_batches or 100),
+        mid_ctx_warmup=cast(int, config.latents.mid_ctx.warmup_batches),
     )
 
 
 def initialize_resources() -> None:
     runtime = get_runtime()
     print("Initializing DataLoader...")
-    runtime.loader = DataLoader(device=runtime.device, pin_memory=runtime.fast)
+    with timer() as loader_timer:
+        runtime.loader = DataLoader(device=runtime.device, pin_memory=runtime.fast)
+    print(f"DataLoader initialized in {format_duration(loader_timer.elapsed_s)}")
 
     n_seqs = sum(runtime.loader._shard_sequence_counts)
     runtime.seq_repr = SeqRepr(n_seqs=n_seqs)
@@ -77,8 +80,12 @@ def initialize_resources() -> None:
     )
 
     print("Initializing Model...")
-    runtime.model = Inference(device=runtime.device, compile=runtime.compile)
+    with timer() as model_timer:
+        runtime.model = Inference(device=runtime.device, compile=runtime.compile)
+    print(f"Model initialized in {format_duration(model_timer.elapsed_s)}")
 
     print(f"Initializing SAE Bank ({len(runtime.devices)} device{'s' if len(runtime.devices) > 1 else ''})...")
-    runtime.bank = SAEBank(devices=runtime.devices, load_decoders=runtime.fast, compile=runtime.compile)
+    with timer() as sae_timer:
+        runtime.bank = SAEBank(devices=runtime.devices, load_decoders=runtime.fast, compile=runtime.compile)
+    print(f"SAE Bank initialized in {format_duration(sae_timer.elapsed_s)}")
     print("")

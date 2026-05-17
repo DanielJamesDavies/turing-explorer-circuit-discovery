@@ -11,5 +11,6 @@ pyarrow==23.0.0
 rich==14.3.2
 ninja==1.13.0
 pydantic==2.12.5
+pytest==9.0.3
 fastapi==0.135.2
 uvicorn[standard]==0.42.0

@@ -27,7 +27,8 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, cast
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import TYPE_CHECKING, Iterable, List, Sequence, cast
 
 import numpy as np
 import torch
@@ -53,6 +54,8 @@ class NegCtxStats:
     n_latents_populated:       int = 0
     n_latents_zero_negatives:  int = 0
     fill_counts: List[int] = field(default_factory=list)
+    backend: str = "single_gpu_exact"
+    devices: List[str] = field(default_factory=list)
 
     t_index_build: float = 0.0
     t_pos_collect: float = 0.0   # active detection + pair gather
@@ -80,6 +83,10 @@ class NegCtxStats:
 
     def print_summary(self, n_sequences: int) -> None:
         print(f"  [neg_ctx] Latents attempted:       {self.n_latents_attempted:,}")
+        if self.backend:
+            print(f"  [neg_ctx] Backend:                 {self.backend}")
+        if self.devices:
+            print(f"  [neg_ctx] Devices:                 {', '.join(self.devices)}")
         print(f"  [neg_ctx] Skipped (low PosCtx):    {self.n_latents_skipped_low_pos:,}")
         print(f"  [neg_ctx] Populated:               {self.n_latents_populated:,}")
         print(f"  [neg_ctx] Zero negatives found:    {self.n_latents_zero_negatives:,}")
@@ -106,6 +113,8 @@ class NegCtxStats:
             "n_latents_skipped_low_pos": self.n_latents_skipped_low_pos,
             "n_latents_populated":       self.n_latents_populated,
             "n_latents_zero_negatives":  self.n_latents_zero_negatives,
+            "backend":                   self.backend,
+            "devices":                   self.devices,
             "fill_rate_mean": round(self.fill_rate_mean, 2),
             "fill_rate_p10":  round(self.fill_rate_p10,  2),
             "fill_rate_p50":  round(self.fill_rate_p50,  2),
@@ -122,6 +131,19 @@ class NegCtxStats:
         }
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
+
+    def merge_from(self, other: "NegCtxStats") -> None:
+        self.n_latents_attempted += other.n_latents_attempted
+        self.n_latents_skipped_low_pos += other.n_latents_skipped_low_pos
+        self.n_latents_populated += other.n_latents_populated
+        self.n_latents_zero_negatives += other.n_latents_zero_negatives
+        self.fill_counts.extend(other.fill_counts)
+        self.t_index_build += other.t_index_build
+        self.t_pos_collect += other.t_pos_collect
+        self.t_qmat_build += other.t_qmat_build
+        self.t_query += other.t_query
+        self.t_filter += other.t_filter
+        self.t_write += other.t_write
 
 
 # ---------------------------------------------------------------------------
@@ -194,13 +216,79 @@ class TorchANNIndex:
 
 def _ann_device() -> torch.device:
     cfg = cast(str, config.hardware.ann_device or "auto")
-    if cfg == "gpu":
+    if cfg in ("gpu", "cuda"):
         if not torch.cuda.is_available():
             raise RuntimeError("hardware.ann_device = 'gpu' but CUDA is not available.")
         return torch.device("cuda")
     if cfg == "cpu":
         return torch.device("cpu")
+    if cfg.startswith("cuda:"):
+        if not torch.cuda.is_available():
+            raise RuntimeError(f"hardware.ann_device = {cfg!r} but CUDA is not available.")
+        return torch.device(cfg)
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def parse_neg_ctx_devices(
+    configured_devices: Sequence[int | str],
+    cuda_count: int | None = None,
+) -> list[torch.device]:
+    if cuda_count is None:
+        cuda_count = torch.cuda.device_count() if torch.cuda.is_available() else 0
+
+    if not configured_devices:
+        return [torch.device(f"cuda:{idx}") for idx in range(cuda_count)]
+
+    devices: list[torch.device] = []
+    for raw in configured_devices:
+        if isinstance(raw, int):
+            devices.append(torch.device(f"cuda:{raw}"))
+            continue
+        text = str(raw)
+        if text.isdigit():
+            devices.append(torch.device(f"cuda:{text}"))
+        elif text == "cuda":
+            devices.append(torch.device("cuda:0"))
+        elif text.startswith("cuda:"):
+            devices.append(torch.device(text))
+        else:
+            raise ValueError(f"Invalid neg_ctx device {raw!r}; use CUDA ids like 0 or 'cuda:0'.")
+
+    seen: set[str] = set()
+    deduped: list[torch.device] = []
+    for device in devices:
+        key = str(device)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(device)
+    return deduped
+
+
+def partition_components(n_components: int, devices: Sequence[torch.device]) -> dict[str, list[int]]:
+    if not devices:
+        raise ValueError("At least one device is required for component partitioning.")
+    result = {str(device): [] for device in devices}
+    for comp_idx in range(n_components):
+        result[str(devices[comp_idx % len(devices)])].append(comp_idx)
+    return result
+
+
+def _validate_cuda_devices(devices: Sequence[torch.device]) -> None:
+    if not devices:
+        raise RuntimeError(
+            "latents.neg_ctx.backend='multi_gpu_exact' requires at least one CUDA device."
+        )
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "latents.neg_ctx.backend='multi_gpu_exact' requires CUDA, but CUDA is not available."
+        )
+    cuda_count = torch.cuda.device_count()
+    for device in devices:
+        if device.type != "cuda":
+            raise RuntimeError(f"multi_gpu_exact only supports CUDA devices, got {device}.")
+        idx = device.index if device.index is not None else 0
+        if idx < 0 or idx >= cuda_count:
+            raise RuntimeError(f"Configured CUDA device {device} is outside visible range 0..{cuda_count - 1}.")
 
 
 # ---------------------------------------------------------------------------
@@ -370,11 +458,8 @@ def _process_component(
     stats.n_latents_zero_negatives += int((n_found_cpu == 0).sum().item())
     stats.n_latents_populated      += int((n_found_cpu >  0).sum().item())
 
-    # Build full [d_sae, n_neg] output tensors on the compute device, then
-    # transfer as a single contiguous block to CPU — avoids scattered CPU writes.
-    full_ids  = torch.zeros(d_sae, n_neg, dtype=torch.int32,   device=device)
-    full_sims = torch.zeros(d_sae, n_neg, dtype=torch.float32, device=device)
-
+    # Build selected active rows on the compute device, then transfer only
+    # those rows back to the CPU store.
     # Fast path: all rows filled to exactly n_neg (virtually always true when K >> n_neg).
     if bool((n_found_cpu == n_neg).all().item()):
         q_ids  = nn_seq_ids[selected].reshape(Q, n_neg).to(torch.int32)   # [Q, n_neg]
@@ -391,13 +476,14 @@ def _process_component(
             q_ids[qi,  :nf] = nn_seq_ids[qi, sel_pos].to(torch.int32)
             q_sims[qi, :nf] = nn_sims[qi, sel_pos]
 
-    # Scatter Q active-latent rows into the full d_sae output (GPU-side).
-    full_ids[active_js]  = q_ids
-    full_sims[active_js] = q_sims
+    comp_ids = neg_ctx.ctx_seq_idx[comp_idx]
+    comp_vals = neg_ctx.ctx_seq_val[comp_idx]
+    comp_ids.zero_()
+    comp_vals.zero_()
 
-    # Single contiguous GPU→CPU transfer per component (~10 MB each).
-    neg_ctx.ctx_seq_idx[comp_idx] = full_ids.cpu()
-    neg_ctx.ctx_seq_val[comp_idx] = full_sims.cpu()
+    active_js_cpu = active_js.cpu()
+    comp_ids[active_js_cpu] = q_ids.cpu()
+    comp_vals[active_js_cpu] = q_sims.cpu()
 
     timing["write"] = time.perf_counter() - t0
     return timing
@@ -421,13 +507,17 @@ def build_neg_ctx(
 
     Returns a NegCtxStats instance with fill-rate distribution and timing.
     """
+    backend = cast(str, config.latents.neg_ctx.backend or "single_gpu_exact")
+    if backend == "multi_gpu_exact":
+        return build_neg_ctx_multi_gpu(seq_repr, top_ctx, mid_ctx, neg_ctx)
+
     llm_cfg = TuringLLMConfig()
     n_comp      = llm_cfg.n_layer * 3
     n_neg       = neg_ctx.num_ctx_sequences
     n_neighbors = cast(int, config.latents.neg_ctx.n_neighbors or 500)
     min_pos_ctx = cast(int, config.latents.neg_ctx.min_pos_ctx  or 8)
 
-    stats   = NegCtxStats()
+    stats   = NegCtxStats(backend="single_gpu_exact")
     t_start = time.perf_counter()
 
     # ------------------------------------------------------------------ #
@@ -438,6 +528,7 @@ def build_neg_ctx(
     total_n_seqs = seq_repr.n_seqs     # full dataset count (for stride + valid filter)
     n_stored     = seq_repr.n_stored   # actual ANN index size (≤ total_n_seqs)
     device       = _ann_device()
+    stats.devices = [str(device)]
 
     raw_vecs = seq_repr.repr_buf[1:n_stored + 1].float()   # [n_stored, D] float32, CPU
     index    = TorchANNIndex(raw_vecs, device=device)
@@ -488,3 +579,92 @@ def build_neg_ctx(
     pbar.close()
     stats.t_total = time.perf_counter() - t_start
     return stats
+
+
+def build_neg_ctx_multi_gpu(
+    seq_repr: "SeqRepr",
+    top_ctx:  "Context",
+    mid_ctx:  "Context",
+    neg_ctx:  "Context",
+) -> NegCtxStats:
+    """
+    Component-parallel exact backend.
+
+    Each selected GPU builds its own exact ANN index and owns a disjoint subset
+    of SAE components. Component writes target disjoint neg_ctx slices, so the
+    final artifact shape and semantics match the single-device backend.
+    """
+    llm_cfg = TuringLLMConfig()
+    n_comp      = llm_cfg.n_layer * 3
+    n_neg       = neg_ctx.num_ctx_sequences
+    n_neighbors = cast(int, config.latents.neg_ctx.n_neighbors or 500)
+    min_pos_ctx = cast(int, config.latents.neg_ctx.min_pos_ctx  or 8)
+
+    devices = parse_neg_ctx_devices(config.latents.neg_ctx.devices)
+    _validate_cuda_devices(devices)
+    assignments = partition_components(n_comp, devices)
+
+    print("  [neg_ctx] backend=multi_gpu_exact")
+    for device in devices:
+        comps = assignments[str(device)]
+        if comps:
+            print(f"  [neg_ctx] {device}: {len(comps)} components ({comps[0]}..{comps[-1]})")
+        else:
+            print(f"  [neg_ctx] {device}: 0 components")
+
+    total_n_seqs = seq_repr.n_seqs
+    n_stored     = seq_repr.n_stored
+    raw_vecs     = seq_repr.repr_buf[1:n_stored + 1].float()
+    K            = min(n_neighbors, n_stored)
+
+    final_stats = NegCtxStats(
+        backend="multi_gpu_exact",
+        devices=[str(device) for device in devices],
+    )
+    t_start = time.perf_counter()
+
+    def worker(device: torch.device, component_indices: list[int]) -> NegCtxStats:
+        torch.cuda.set_device(device)
+        worker_stats = NegCtxStats(
+            backend="multi_gpu_exact",
+            devices=[str(device)],
+        )
+
+        t0 = time.perf_counter()
+        index = TorchANNIndex(raw_vecs, device=device)
+        worker_stats.t_index_build = time.perf_counter() - t0
+
+        if seq_repr.is_capped and seq_repr.slot_to_id is not None and seq_repr.id_to_slot is not None:
+            slot_to_id_d: torch.Tensor | None = seq_repr.slot_to_id.to(device)
+            id_to_slot_d:  torch.Tensor | None = seq_repr.id_to_slot.to(device)
+        else:
+            slot_to_id_d = None
+            id_to_slot_d = None
+
+        for comp_idx in component_indices:
+            tc0 = time.perf_counter()
+            timing = _process_component(
+                comp_idx, top_ctx, mid_ctx, neg_ctx,
+                index, K, n_neg, min_pos_ctx, worker_stats,
+                total_n_seqs, slot_to_id_d, id_to_slot_d,
+            )
+            comp_s = time.perf_counter() - tc0
+            worker_stats.t_pos_collect += timing.get("pos",    0.0)
+            worker_stats.t_qmat_build  += timing.get("qmat",   0.0)
+            worker_stats.t_query       += timing.get("query",  0.0)
+            worker_stats.t_filter      += timing.get("filter", 0.0)
+            worker_stats.t_write       += timing.get("write",  0.0)
+            print(f"  [neg_ctx:{device}] comp={comp_idx} {comp_s * 1000:.0f} ms")
+        return worker_stats
+
+    with ThreadPoolExecutor(max_workers=len(devices)) as executor:
+        futures = [
+            executor.submit(worker, device, assignments[str(device)])
+            for device in devices
+            if assignments[str(device)]
+        ]
+        for future in as_completed(futures):
+            final_stats.merge_from(future.result())
+
+    final_stats.t_total = time.perf_counter() - t_start
+    return final_stats

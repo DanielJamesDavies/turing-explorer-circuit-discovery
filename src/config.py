@@ -45,6 +45,7 @@ class HardwareConfig(BaseModel):
     compile: bool = True
     parallel_kinds: bool = False
     ann_device: str = "auto"
+    keep_model_loaded_for_neg_ctx: bool = False
 
 class TopCtxConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -53,9 +54,18 @@ class TopCtxConfig(BaseModel):
 class MidCtxConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_sequences: int = 64
+    mode: str = "reservoir_cpu"
     band_low_sigma: float = 0.5
     band_high_sigma: float = 1.5
     warmup_batches: int = 100
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        allowed = ["reservoir_cpu", "gpu_topk_mid"]
+        if v not in allowed:
+            raise ValueError(f"mode must be one of {allowed}, got {v!r}")
+        return v
 
 class NegCtxConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -64,6 +74,16 @@ class NegCtxConfig(BaseModel):
     min_pos_ctx: int = 8
     repr_mode: str = "mean_pool"
     max_repr_seqs: Optional[int] = 200000
+    backend: str = "single_gpu_exact"
+    devices: List[Union[int, str]] = Field(default_factory=list)
+
+    @field_validator("backend")
+    @classmethod
+    def validate_backend(cls, v: str) -> str:
+        allowed = ["single_gpu_exact", "multi_gpu_exact"]
+        if v not in allowed:
+            raise ValueError(f"backend must be one of {allowed}, got {v!r}")
+        return v
 
 class LogitCtxConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -83,6 +103,13 @@ class TopCoactivationLatentsConfig(BaseModel):
     mode: str = "freq_weighted"  # "freq_weighted" | "raw" | "pmi"
     pmi_clamp_min: float = -5.0
     pmi_clamp_max: float = 10.0
+    dump_device: str = "cpu"
+    dump_profile: bool = True
+    reduce_backend: str = "single_process"
+    reduce_shards: int = 1
+    reduce_shard_output_dir: Optional[str] = None
+    reduce_omp_threads: Optional[int] = None
+    reduce_schedule_chunk: int = 256
 
     @field_validator("mode")
     @classmethod
@@ -90,6 +117,43 @@ class TopCoactivationLatentsConfig(BaseModel):
         allowed = ["freq_weighted", "raw", "pmi"]
         if v not in allowed:
             raise ValueError(f"mode must be one of {allowed}, got {v}")
+        return v
+
+    @field_validator("dump_device")
+    @classmethod
+    def validate_dump_device(cls, v: str) -> str:
+        allowed = ["cpu", "gpu"]
+        if v not in allowed:
+            raise ValueError(f"dump_device must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("reduce_backend")
+    @classmethod
+    def validate_reduce_backend(cls, v: str) -> str:
+        allowed = ["single_process", "target_sharded"]
+        if v not in allowed:
+            raise ValueError(f"reduce_backend must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("reduce_shards")
+    @classmethod
+    def validate_reduce_shards(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("reduce_shards must be >= 1")
+        return v
+
+    @field_validator("reduce_omp_threads")
+    @classmethod
+    def validate_reduce_omp_threads(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("reduce_omp_threads must be null or >= 1")
+        return v
+
+    @field_validator("reduce_schedule_chunk")
+    @classmethod
+    def validate_reduce_schedule_chunk(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("reduce_schedule_chunk must be >= 1")
         return v
 
 class LatentsConfig(BaseModel):
@@ -297,6 +361,7 @@ class DiscoveryConfig(BaseModel):
     min_faithfulness: float = 0.2
     min_active_count: int = 1
     max_neighbors: int = 32
+    focal_monosemantic_min_partners: int = 4  # min observed coact partners for focal_monosemantic criterion
     methods: List[str] = Field(default_factory=lambda: ["coactivation_statistical", "logit_attribution"])
     # Which scoring criteria to use when shortlisting seed latents.
     # Available: "logit_impact", "connectivity", "surprise", "context_coherence",
@@ -343,6 +408,8 @@ class PersistConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     save_workers: int = 1
     search_cache_enabled: bool = True
+    build_search_cache_after_pipeline: bool = True
+    atomic_saves: bool = True
     search_cache_n_sequences: int = 8
     search_cache_component_chunk: int = 4
 
