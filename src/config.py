@@ -157,6 +157,8 @@ class TopCoactivationLatentsConfig(BaseModel):
     pmi_clamp_max: float = 10.0
     dump_device: str = "cpu"
     dump_profile: bool = True
+    dump_memory_guardrail_bytes: Optional[int] = None
+    fail_on_dump_memory_guardrail: bool = True
     reduce_backend: str = "single_process"
     reduce_shards: int = 1
     reduce_shard_output_dir: Optional[str] = None
@@ -177,6 +179,13 @@ class TopCoactivationLatentsConfig(BaseModel):
         allowed = ["cpu", "gpu"]
         if v not in allowed:
             raise ValueError(f"dump_device must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("dump_memory_guardrail_bytes")
+    @classmethod
+    def validate_dump_memory_guardrail_bytes(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("dump_memory_guardrail_bytes must be null or >= 1")
         return v
 
     @field_validator("reduce_backend")

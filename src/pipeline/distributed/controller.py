@@ -27,6 +27,7 @@ from .manifest import (
     generate_run_id,
     save_manifest,
 )
+from .pass2_benchmark import build_pass2_benchmark_estimate, format_pass2_benchmark_estimate
 from .shard_table import ShardRecord, build_shard_table
 
 
@@ -173,7 +174,12 @@ def plan_distributed_run(
         layout=layout,
         preflight=preflight,
         worker_commands=worker_commands,
-        dry_run_text=format_dry_run(manifest, preflight, worker_commands),
+        dry_run_text=format_dry_run(
+            manifest,
+            preflight,
+            worker_commands,
+            pass2_dump_m=_candidate_dump_m_from_config(normalized_config),
+        ),
     )
 
 
@@ -340,6 +346,8 @@ def format_dry_run(
     manifest: DistributedRunManifest,
     preflight: PreflightReport,
     worker_commands: Sequence[WorkerCommand],
+    *,
+    pass2_dump_m: Optional[int] = None,
 ) -> str:
     lines = [
         f"run_id: {manifest.run_id}",
@@ -358,6 +366,12 @@ def format_dry_run(
             f"logical={assignment.logical_id} shards={shard_ids}"
         )
         lines.append(f"    {env} {' '.join(command.command)}")
+    if manifest.work_assignments.pass2_sequence_ids and pass2_dump_m is not None:
+        lines.append(
+            format_pass2_benchmark_estimate(
+                build_pass2_benchmark_estimate(manifest, m=pass2_dump_m)
+            )
+        )
     return "\n".join(lines)
 
 
@@ -425,6 +439,31 @@ def _worker_pythonpath(project_root: Path) -> str:
     if existing:
         return os.pathsep.join([src_path, existing])
     return src_path
+
+
+def _candidate_dump_m_from_config(normalized_config: Dict[str, object]) -> int:
+    latents = normalized_config.get("latents", {})
+    top_coactivation = (
+        latents.get("top_coactivation", {})
+        if isinstance(latents, dict)
+        else {}
+    )
+    n_latents_per_latent = int(
+        top_coactivation.get("n_latents_per_latent", 64)
+        if isinstance(top_coactivation, dict)
+        else 64
+    )
+    n_candidates_per_component = int(
+        top_coactivation.get("n_candidates_per_component", 16)
+        if isinstance(top_coactivation, dict)
+        else 16
+    )
+    # The model config currently defaults to 12 layers with three SAE components per layer.
+    default_num_components = 36
+    return min(
+        n_latents_per_latent * 4,
+        default_num_components * n_candidates_per_component,
+    )
 
 
 def _visible_cuda_device_count() -> int:

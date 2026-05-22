@@ -108,6 +108,8 @@ class WorkAssignments(BaseModel):
     pass1_shards: Dict[str, List[int]] = Field(default_factory=dict)
     pass1_sequence_totals: Dict[str, int] = Field(default_factory=dict)
     pass2_sequence_ids: Dict[str, List[int]] = Field(default_factory=dict)
+    pass2_replay_sequence_count: Optional[int] = None
+    pass2_replay_sequence_hash: Optional[str] = None
     discovery_seed_ids: Dict[str, List[int]] = Field(default_factory=dict)
 
     @field_validator("pass1_sequence_totals")
@@ -119,6 +121,26 @@ class WorkAssignments(BaseModel):
         for total in value.values():
             if total < 0:
                 raise ValueError("pass1 sequence totals must be >= 0")
+        return value
+
+    @field_validator("pass2_replay_sequence_count")
+    @classmethod
+    def pass2_replay_count_is_non_negative(
+        cls,
+        value: Optional[int],
+    ) -> Optional[int]:
+        if value is not None and value < 0:
+            raise ValueError("pass2 replay sequence count must be >= 0")
+        return value
+
+    @field_validator("pass2_replay_sequence_hash")
+    @classmethod
+    def pass2_replay_hash_is_sha256(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        if value is not None and not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise ValueError("pass2 replay sequence hash must be a lowercase SHA-256 hex digest")
         return value
 
 
@@ -301,6 +323,11 @@ class DistributedRunManifest(BaseModel):
                     seen_sequence_ids.add(sequence_id)
                     if not contains_sequence_id(self.shard_table, sequence_id):
                         raise ValueError("assigned sequence ID out of range")
+            if (
+                self.work_assignments.pass2_replay_sequence_count is not None
+                and self.work_assignments.pass2_replay_sequence_count != len(seen_sequence_ids)
+            ):
+                raise ValueError("pass2 replay sequence count does not match assigned sequences")
 
         return self
 

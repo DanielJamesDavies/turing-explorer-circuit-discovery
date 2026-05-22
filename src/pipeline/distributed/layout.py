@@ -70,6 +70,9 @@ class WorkerMarker(BaseModel):
     shard_ranges: List[Dict[str, int]] = Field(default_factory=list)
     batch_count: int = 0
     sequence_count: int = 0
+    sequence_id_min: Optional[int] = None
+    sequence_id_max: Optional[int] = None
+    replay_sequence_hash: Optional[str] = None
     seed_count: int = 0
     peak_cpu_ram_bytes: Optional[int] = None
     peak_cuda_memory_bytes: Optional[int] = None
@@ -88,6 +91,13 @@ class WorkerMarker(BaseModel):
     def non_negative_counts(cls, value: int) -> int:
         if value < 0:
             raise ValueError("worker marker counts must be >= 0")
+        return value
+
+    @field_validator("sequence_id_min", "sequence_id_max")
+    @classmethod
+    def sequence_bounds_are_positive(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value < 1:
+            raise ValueError("worker marker sequence bounds must be >= 1")
         return value
 
     @field_validator("duration_s")
@@ -198,6 +208,9 @@ def build_worker_marker(
     duration_s: Optional[float] = None,
     batch_count: int = 0,
     sequence_count: int = 0,
+    sequence_id_min: Optional[int] = None,
+    sequence_id_max: Optional[int] = None,
+    replay_sequence_hash: Optional[str] = None,
     seed_count: int = 0,
     peak_cpu_ram_bytes: Optional[int] = None,
     peak_cuda_memory_bytes: Optional[int] = None,
@@ -207,6 +220,12 @@ def build_worker_marker(
     assignment = _device_for_worker(manifest, worker_id)
     shard_ids = manifest.work_assignments.pass1_shards.get(str(worker_id), [])
     shard_ranges = _shard_ranges_for_worker(manifest, shard_ids)
+    if phase == "pass2":
+        sequence_ids = manifest.work_assignments.pass2_sequence_ids.get(str(worker_id), [])
+        sequence_count = len(sequence_ids)
+        sequence_id_min = min(sequence_ids) if sequence_ids else None
+        sequence_id_max = max(sequence_ids) if sequence_ids else None
+        replay_sequence_hash = manifest.work_assignments.pass2_replay_sequence_hash
     return WorkerMarker(
         run_id=manifest.run_id,
         worker_id=worker_id,
@@ -221,6 +240,9 @@ def build_worker_marker(
         shard_ranges=shard_ranges,
         batch_count=batch_count,
         sequence_count=sequence_count,
+        sequence_id_min=sequence_id_min,
+        sequence_id_max=sequence_id_max,
+        replay_sequence_hash=replay_sequence_hash,
         seed_count=seed_count,
         peak_cpu_ram_bytes=peak_cpu_ram_bytes,
         peak_cuda_memory_bytes=peak_cuda_memory_bytes,

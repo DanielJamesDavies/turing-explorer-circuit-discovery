@@ -146,6 +146,28 @@ def test_controller_prints_worker_commands_with_cuda_visible_devices(
     assert "--manifest" in plan.worker_commands[0].command
 
 
+def test_controller_dry_run_includes_pass2_dump_estimate(tmp_path, monkeypatch):
+    dataset_path = tmp_path / "data"
+    _write_shards(dataset_path)
+    config_path = _write_config(tmp_path, dataset_path)
+    monkeypatch.setattr(controller, "_visible_cuda_device_count", lambda: 2)
+
+    plan = plan_distributed_run(
+        config_path=config_path,
+        project_root=tmp_path,
+        output_base=tmp_path / "outputs",
+        worker_count=2,
+        physical_ids=[0, 1],
+        pass2_sequence_ids=[1, 2, 3],
+        create_layout=False,
+        timestamp=_timestamp(),
+    )
+
+    assert "pass2 candidate dump estimate:" in plan.dry_run_text
+    assert "total_dump_bytes: 6144" in plan.dry_run_text
+    assert "worker_001: sequences=1 dump_bytes=2048" in plan.dry_run_text
+
+
 def test_controller_h100_style_8_worker_dry_run_has_stable_assignments(
     tmp_path,
     monkeypatch,

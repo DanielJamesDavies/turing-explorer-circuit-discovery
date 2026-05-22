@@ -2,12 +2,20 @@ import os
 import sys
 import time
 import torch
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, cast, Dict, Tuple, List
 from config import config
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
 from store.utils import _AutoAllocTensor
+
+
+@dataclass(frozen=True)
+class CandidateProfile:
+    candidate_ids: torch.Tensor
+    candidate_vals: torch.Tensor
+    token_count: int
 
 
 class TopCoactivation:
@@ -180,6 +188,104 @@ class TopCoactivation:
         """Return the mean activations without any frequency adjustment."""
         return dense
 
+    @torch.no_grad()
+    def compute_candidate_profile(
+        self,
+        batch_size: int,
+        component_latents: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
+        *,
+        record_timing: bool = False,
+    ) -> CandidateProfile:
+        """
+        Compute per-sequence candidate profiles without writing to dump buffers.
+
+        Distributed pass-2 workers use this as the shared scoring contract, while
+        update_batch() remains responsible for row lookup and buffer writes.
+        """
+
+        device = self.device
+        n_candidates = self.n_candidates_per_component
+        mode = self.mode
+        all_vals: list[torch.Tensor] = []
+        all_ids: list[torch.Tensor] = []
+        last_token_count: Optional[int] = None
+
+        def add_time(key: str, started_at: float) -> None:
+            if record_timing:
+                self._add_dump_time(key, time.perf_counter() - started_at)
+
+        for comp_idx in range(self.num_components):
+            if comp_idx not in component_latents:
+                continue
+            top_acts, top_indices = component_latents[comp_idx]
+            token_count = int(top_acts.shape[1])
+            last_token_count = token_count
+
+            t0 = time.perf_counter()
+            dense = torch.zeros(batch_size, self.d_sae, device=device, dtype=torch.float32)
+            add_time("dense_zero", t0)
+
+            t0 = time.perf_counter()
+            if mode == "pmi":
+                # Binary presence count: how many tokens in the sequence fired.
+                dense.scatter_add_(
+                    1,
+                    top_indices.reshape(batch_size, -1).long(),
+                    (top_acts.reshape(batch_size, -1) > 0).float(),
+                )
+            else:
+                dense.scatter_add_(
+                    1,
+                    top_indices.reshape(batch_size, -1).long(),
+                    top_acts.reshape(batch_size, -1).float(),
+                )
+                dense /= token_count
+            add_time("scatter", t0)
+
+            t0 = time.perf_counter()
+            if mode == "freq_weighted":
+                dense = self._score_freq_weighted(dense, comp_idx)
+            elif mode == "raw":
+                dense = self._score_raw(dense)
+            elif mode == "pmi":
+                # No frequency adjustment in PMI dump mode.
+                pass
+            add_time("score", t0)
+
+            n_cand = min(n_candidates, dense.shape[1])
+            t0 = time.perf_counter()
+            vals, ids = dense.topk(n_cand, dim=1)
+            add_time("component_topk", t0)
+            all_vals.append(vals)
+            all_ids.append(ids + comp_idx * self.d_sae)
+            if record_timing:
+                self.dump_components += 1
+
+        if not all_vals:
+            empty_ids = torch.empty(batch_size, 0, dtype=torch.int32, device=device)
+            empty_vals = torch.empty(batch_size, 0, dtype=torch.float32, device=device)
+            return CandidateProfile(
+                candidate_ids=empty_ids,
+                candidate_vals=empty_vals,
+                token_count=0,
+            )
+
+        t0 = time.perf_counter()
+        cand_vals = torch.cat(all_vals, dim=1)
+        cand_ids = torch.cat(all_ids, dim=1)
+
+        m_actual = min(self.M, cand_vals.shape[1])
+        top_vals, top_pos = cand_vals.topk(m_actual, dim=1)
+        top_ids = cand_ids.gather(1, top_pos).to(torch.int32)
+        add_time("concat_global_topk", t0)
+
+        profile_token_count = batch_size * int(last_token_count or 0)
+        return CandidateProfile(
+            candidate_ids=top_ids,
+            candidate_vals=top_vals.to(torch.float32),
+            token_count=profile_token_count,
+        )
+
     def _target_shard_ranges(self, n_targets: int, n_shards: int) -> List[Tuple[int, int]]:
         n_shards = max(1, min(n_shards, n_targets))
         base = n_targets // n_shards
@@ -286,83 +392,22 @@ class TopCoactivation:
         assert cand_ids_buf is not None and cand_vals_buf is not None, \
             "Call prepare_dump() before update_batch()"
         B = batch_ids.shape[0]
-        device = self.device
-        N = self.n_candidates_per_component
         mode = self.mode
+        profile = self.compute_candidate_profile(
+            B,
+            component_latents,
+            record_timing=True,
+        )
+        top_ids = profile.candidate_ids
+        top_vals = profile.candidate_vals
 
-        all_vals: list[torch.Tensor] = []
-        all_ids: list[torch.Tensor] = []
-        last_T: Optional[int] = None
+        if mode == "pmi" and profile.token_count > 0:
+            self.total_tokens_processed += profile.token_count
 
-        for comp_idx in range(self.num_components):
-            if comp_idx not in component_latents:
-                continue
-            top_acts, top_indices = component_latents[comp_idx]
-            T = top_acts.shape[1]
-            last_T = T
-
-            t0 = time.perf_counter()
-            dense = torch.zeros(B, self.d_sae, device=device, dtype=torch.float32)
-            self._add_dump_time("dense_zero", time.perf_counter() - t0)
-            
-            t0 = time.perf_counter()
-            if mode == "pmi":
-                # Binary presence count (how many tokens in the sequence did this fire at?)
-                dense.scatter_add_(
-                    1,
-                    top_indices.reshape(B, -1).long(),
-                    (top_acts.reshape(B, -1) > 0).float(),
-                )
-                # No division by T - we want the absolute count of tokens for PMI
-            else:
-                # Magnitude sum
-                dense.scatter_add_(
-                    1,
-                    top_indices.reshape(B, -1).long(),
-                    top_acts.reshape(B, -1).float(),
-                )
-                dense /= T
-            self._add_dump_time("scatter", time.perf_counter() - t0)
-
-            # Route to scoring method
-            t0 = time.perf_counter()
-            if mode == "freq_weighted":
-                dense = self._score_freq_weighted(dense, comp_idx)
-            elif mode == "raw":
-                dense = self._score_raw(dense)
-            elif mode == "pmi":
-                # No frequency adjustment in pmi mode dump
-                pass
-            self._add_dump_time("score", time.perf_counter() - t0)
-
-            n_cand = min(N, dense.shape[1])
-            t0 = time.perf_counter()
-            vals, ids = dense.topk(n_cand, dim=1)
-            self._add_dump_time("component_topk", time.perf_counter() - t0)
-            all_vals.append(vals)
-            all_ids.append(ids + comp_idx * self.d_sae)
-            self.dump_components += 1
-
-        if mode == "pmi" and last_T is not None:
-            # Increment total tokens processed across all batches
-            # (used for the global rate in PMI post-processing)
-            # Assuming all components are present in the batch, T is consistent
-            # We pick T from the last component processed
-            self.total_tokens_processed += B * last_T
-
-        if not all_vals:
+        if top_ids.shape[1] == 0:
             self.dump_batches += 1
             self._add_dump_time("total_update", time.perf_counter() - total_t0)
             return
-
-        t0 = time.perf_counter()
-        cand_vals = torch.cat(all_vals, dim=1)
-        cand_ids = torch.cat(all_ids, dim=1)
-
-        M_actual = min(self.M, cand_vals.shape[1])
-        top_vals, top_pos = cand_vals.topk(M_actual, dim=1)
-        top_ids = cand_ids.gather(1, top_pos)
-        self._add_dump_time("concat_global_topk", time.perf_counter() - t0)
 
         if dump_row_start is not None:
             t0 = time.perf_counter()

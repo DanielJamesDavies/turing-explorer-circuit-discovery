@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import numpy as np
@@ -15,14 +16,24 @@ from pipeline.distributed.manifest import (
 )
 from pipeline.distributed.worker import (
     PASS1_PARTIAL_FILENAMES,
+    PASS2_PARTIAL_FILENAMES,
     configure_mid_ctx_candidate_pool,
     initialize_pass1_worker_resources,
+    initialize_pass2_worker_resources,
+    load_pass2_global_artifacts,
     run_pass1_worker,
+    run_pass2_worker,
+    run_worker,
     save_pass1_partials,
+    save_pass2_candidate_dump,
     validate_pass1_worker_inputs,
+    validate_pass2_worker_inputs,
 )
 from pipeline.distributed.pass1_partials import load_pass1_partial
+from pipeline.distributed.pass2_partials import load_candidate_dump_partial
+from pipeline.distributed.pass2_replay import hash_replay_sequence_ids
 from pipeline.distributed.shard_table import build_shard_table
+from pipeline.second_pass import SecondPassDumpResult
 from pipeline.runtime import clear_runtime, get_runtime
 
 
@@ -94,6 +105,27 @@ def _manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
     )
 
 
+def _pass2_manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
+    manifest = _manifest(tmp_path, worker_count=worker_count)
+    if worker_count == 1:
+        pass2_sequence_ids = {"0": [1, 3, 5]}
+        replay_ids = [1, 3, 5]
+    else:
+        pass2_sequence_ids = {"0": [1, 3], "1": [4, 5]}
+        replay_ids = [1, 3, 4, 5]
+    return manifest.model_copy(
+        update={
+            "work_assignments": WorkAssignments(
+                pass1_shards=manifest.work_assignments.pass1_shards,
+                pass1_sequence_totals=manifest.work_assignments.pass1_sequence_totals,
+                pass2_sequence_ids=pass2_sequence_ids,
+                pass2_replay_sequence_count=len(replay_ids),
+                pass2_replay_sequence_hash=hash_replay_sequence_ids(replay_ids),
+            )
+        }
+    )
+
+
 def _write_shards(dataset_path: Path) -> None:
     dataset_path.mkdir(parents=True, exist_ok=True)
     np.save(dataset_path / "shard_0.npy", np.asarray([1, 2, 3, -1, 4, 5, 6], dtype=np.int64))
@@ -162,6 +194,115 @@ def test_run_pass1_worker_uses_assigned_shards_and_writes_markers(tmp_path):
         }
     ]
     assert completed.artifacts == artifacts
+
+
+def test_run_pass2_worker_replays_assigned_sequences_and_writes_markers(tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+    seen = {}
+
+    def fake_load(observed_manifest):
+        seen["load"] = observed_manifest.run_id
+
+    def fake_initialize(observed_manifest, worker_id):
+        seen["initialize"] = (observed_manifest.run_id, worker_id)
+
+    def fake_run_dump(sequence_ids):
+        seen["sequence_ids"] = sequence_ids
+        return SecondPassDumpResult(
+            sequence_count=len(sequence_ids),
+            batch_count=2,
+            seq_len=64,
+            elapsed_s=0.1,
+        )
+
+    def fake_save_dump(observed_manifest, worker_id, dump_result):
+        path = build_run_layout(observed_manifest).workers[worker_id].pass2_dir / "candidate_dump.partial.pt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("candidate_dump", encoding="utf-8")
+        seen["save_dump"] = (worker_id, dump_result.batch_count)
+        return {"candidate_dump": str(path)}
+
+    artifacts = run_pass2_worker(
+        manifest,
+        1,
+        validate_inputs_fn=lambda _manifest, _worker_id: None,
+        load_artifacts_fn=fake_load,
+        initialize_fn=fake_initialize,
+        run_dump_fn=fake_run_dump,
+        save_dump_fn=fake_save_dump,
+    )
+
+    worker_layout = build_run_layout(manifest).workers[1]
+    completed = read_worker_marker(worker_layout.completed_marker)
+    started = read_worker_marker(worker_layout.started_marker)
+    assert artifacts == {"candidate_dump": str(worker_layout.pass2_dir / "candidate_dump.partial.pt")}
+    assert seen["load"] == manifest.run_id
+    assert seen["initialize"] == (manifest.run_id, 1)
+    assert seen["sequence_ids"] == [4, 5]
+    assert started.status == "started"
+    assert started.phase == "pass2"
+    assert completed.status == "completed"
+    assert completed.phase == "pass2"
+    assert completed.sequence_count == 2
+    assert completed.sequence_id_min == 4
+    assert completed.sequence_id_max == 5
+    assert completed.replay_sequence_hash == hash_replay_sequence_ids([1, 3, 4, 5])
+    assert completed.batch_count == 2
+    assert completed.artifacts == artifacts
+    assert seen["save_dump"] == (1, 2)
+
+
+def test_run_pass2_worker_checks_dump_memory_before_model_init(monkeypatch, tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+    seen = {}
+
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.top_coactivation.M",
+        3,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.config.latents.top_coactivation.dump_memory_guardrail_bytes",
+        1,
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.config.latents.top_coactivation.fail_on_dump_memory_guardrail",
+        True,
+    )
+
+    def should_not_initialize(_manifest, _worker_id):
+        seen["initialized"] = True
+
+    with pytest.raises(MemoryError, match="exceeds guardrail"):
+        run_pass2_worker(
+            manifest,
+            1,
+            validate_inputs_fn=lambda _manifest, _worker_id: None,
+            load_artifacts_fn=lambda _manifest: None,
+            initialize_fn=should_not_initialize,
+            run_dump_fn=lambda _sequence_ids: SecondPassDumpResult(2, 1, 64, 0.1),
+            save_dump_fn=lambda _manifest, _worker_id, _dump_result: {},
+        )
+
+    assert "initialized" not in seen
+
+
+def test_run_worker_dispatches_pass2_phase(monkeypatch, tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+    manifest_path = Path(manifest.manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(manifest.model_dump_json(), encoding="utf-8")
+    seen = {}
+
+    def fake_run_pass2(observed_manifest, worker_id):
+        seen["pass2"] = (observed_manifest.run_id, worker_id)
+        return {}
+
+    monkeypatch.setattr("pipeline.distributed.worker.run_pass2_worker", fake_run_pass2)
+
+    run_worker(manifest_path, 0, phase="pass2")
+
+    assert seen["pass2"] == (manifest.run_id, 0)
 
 
 def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, tmp_path):
@@ -303,6 +444,168 @@ def test_initialize_pass1_worker_resources_uses_manifest_total_sequences(
     assert "slot_to_id" in seen["seq_repr_kwargs"]
     assert "id_to_slot" in seen["seq_repr_kwargs"]
     assert seen["sae_devices"] == [torch.device("cuda:0")]
+
+
+def test_initialize_pass2_worker_resources_uses_single_worker_device(monkeypatch, tmp_path):
+    manifest = _pass2_manifest(tmp_path, worker_count=1).model_copy(
+        update={"devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")]}
+    )
+    seen = {}
+
+    class FakeDataLoader:
+        def __init__(self, device, pin_memory):
+            seen["loader"] = (device, pin_memory)
+
+    class FakeInference:
+        def __init__(self, device, compile):
+            seen["model"] = (device, compile)
+
+    class FakeSAEBank:
+        def __init__(self, devices, load_decoders, compile):
+            seen["sae_devices"] = devices
+
+    monkeypatch.setattr("pipeline.distributed.worker.DataLoader", FakeDataLoader)
+    monkeypatch.setattr("pipeline.distributed.worker.Inference", FakeInference)
+    monkeypatch.setattr("pipeline.distributed.worker.SAEBank", FakeSAEBank)
+
+    try:
+        initialize_pass2_worker_resources(manifest, 0)
+        runtime = get_runtime()
+    finally:
+        clear_runtime()
+
+    assert runtime.devices == [torch.device("cuda:0")]
+    assert runtime.multi_gpu is False
+    assert seen["loader"][0] == torch.device("cuda:0")
+    assert seen["model"][0] == torch.device("cuda:0")
+    assert seen["sae_devices"] == [torch.device("cuda:0")]
+
+
+def test_validate_pass2_worker_inputs_requires_global_artifacts(tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="missing pass2 input artifacts"):
+        validate_pass2_worker_inputs(manifest, 0, validate_on_disk=False)
+
+    output_root = Path(manifest.output_root)
+    output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "top_ctx.pt").write_text("top", encoding="utf-8")
+    (output_root / "latent_stats.pt").write_text("stats", encoding="utf-8")
+
+    validate_pass2_worker_inputs(manifest, 0, validate_on_disk=False)
+
+
+def test_load_pass2_global_artifacts_loads_top_ctx_and_latent_stats(monkeypatch, tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+    seen = {}
+
+    class FakeStore:
+        def __init__(self, key):
+            self.key = key
+
+        def load(self, path):
+            seen[self.key] = Path(path)
+
+    monkeypatch.setattr("pipeline.distributed.worker.top_ctx", FakeStore("top_ctx"))
+    monkeypatch.setattr("pipeline.distributed.worker.latent_stats", FakeStore("latent_stats"))
+
+    load_pass2_global_artifacts(manifest)
+
+    assert seen["top_ctx"] == Path(manifest.output_root) / "top_ctx.pt"
+    assert seen["latent_stats"] == Path(manifest.output_root) / "latent_stats.pt"
+
+
+def test_save_pass2_candidate_dump_writes_expected_partial(monkeypatch, tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+
+    class FakeTopCoactivation:
+        mode = "raw"
+        M = 3
+        n_candidates_per_component = 2
+        n_latents_per_latent = 4
+        num_components = 2
+        d_sae = 8
+        total_tokens_processed = 128
+        candidate_ids = torch.tensor(
+            [
+                [1, 2, 0],
+                [4, 5, 0],
+            ],
+            dtype=torch.int32,
+        )
+        candidate_vals = torch.tensor(
+            [
+                [1.5, 0.5, 0.0],
+                [2.5, 0.25, 0.0],
+            ],
+            dtype=torch.float32,
+        )
+
+    monkeypatch.setattr("pipeline.distributed.worker.top_coactivation", FakeTopCoactivation())
+    dump_result = SecondPassDumpResult(
+        sequence_count=2,
+        batch_count=1,
+        seq_len=64,
+        elapsed_s=0.1,
+    )
+
+    artifacts = save_pass2_candidate_dump(manifest, 1, dump_result)
+
+    expected_path = (
+        build_run_layout(manifest).workers[1].pass2_dir
+        / PASS2_PARTIAL_FILENAMES["candidate_dump"]
+    )
+    summary_path = (
+        build_run_layout(manifest).workers[1].pass2_dir
+        / PASS2_PARTIAL_FILENAMES["pass2_summary"]
+    )
+    assert artifacts == {
+        "candidate_dump": str(expected_path),
+        "pass2_summary": str(summary_path),
+    }
+    metadata, payload = load_candidate_dump_partial(
+        expected_path,
+        expected_config_hash=manifest.normalized_config_hash,
+    )
+    assert metadata.worker_id == 1
+    assert metadata.mode == "raw"
+    assert metadata.sequence_count == 2
+    assert metadata.sequence_id_min == 4
+    assert metadata.sequence_id_max == 5
+    assert metadata.token_count == 128
+    assert payload["sequence_ids"].tolist() == [4, 5]
+    assert torch.equal(payload["candidate_ids"], FakeTopCoactivation.candidate_ids)
+    assert torch.allclose(payload["candidate_vals"], FakeTopCoactivation.candidate_vals)
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["sequence_count"] == 2
+    assert summary["batch_count"] == 1
+    assert summary["artifact_size_bytes"] > 0
+    assert summary["timing_available"]["save"] is True
+
+
+def test_run_pass2_worker_marks_failed_when_dump_validation_fails(tmp_path):
+    manifest = _pass2_manifest(tmp_path)
+
+    def bad_save_dump(_manifest, _worker_id, _dump_result):
+        raise ValueError("invalid candidate dump")
+
+    with pytest.raises(ValueError, match="invalid candidate dump"):
+        run_pass2_worker(
+            manifest,
+            1,
+            validate_inputs_fn=lambda _manifest, _worker_id: None,
+            load_artifacts_fn=lambda _manifest: None,
+            initialize_fn=lambda _manifest, _worker_id: None,
+            run_dump_fn=lambda _sequence_ids: SecondPassDumpResult(2, 1, 64, 0.1),
+            save_dump_fn=bad_save_dump,
+        )
+
+    worker_layout = build_run_layout(manifest).workers[1]
+    failed = read_worker_marker(worker_layout.failed_marker)
+    assert failed.status == "failed"
+    assert failed.phase == "pass2"
+    assert failed.error == "invalid candidate dump"
+    assert not worker_layout.completed_marker.exists()
 
 
 def test_configure_mid_ctx_candidate_pool_widens_band_and_capacity(monkeypatch, tmp_path):

@@ -138,6 +138,106 @@ class TestTopCoactivationModes(unittest.TestCase):
         self.assertAlmostEqual(self.tc.candidate_vals[0, 0].item(), 3.0)
         self.assertEqual(self.tc.total_tokens_processed, 4)
 
+    def test_candidate_profile_matches_update_batch_raw_mode(self):
+        self.tc._mode = "raw"
+        self.tc.allocate()
+        self.tc.prepare_dump([10, 11])
+
+        batch_ids = torch.tensor([10, 11])
+        component_latents = {
+            0: (
+                torch.tensor([
+                    [10.0, 20.0],
+                    [1.0, 3.0],
+                ]),
+                torch.tensor([
+                    [1, 1],
+                    [2, 2],
+                ]),
+            ),
+            1: (
+                torch.tensor([
+                    [5.0, 5.0],
+                    [6.0, 2.0],
+                ]),
+                torch.tensor([
+                    [0, 3],
+                    [1, 1],
+                ]),
+            ),
+        }
+
+        profile = self.tc.compute_candidate_profile(
+            batch_size=2,
+            component_latents=component_latents,
+        )
+        self.tc.update_batch(batch_ids, component_latents)
+
+        actual_m = profile.candidate_ids.shape[1]
+        self.assertTrue(torch.equal(self.tc.candidate_ids[:, :actual_m], profile.candidate_ids.cpu()))
+        self.assertTrue(torch.allclose(self.tc.candidate_vals[:, :actual_m], profile.candidate_vals.cpu()))
+        self.assertEqual(profile.token_count, 4)
+
+    def test_candidate_profile_matches_update_batch_freq_weighted_mode(self):
+        self.tc._mode = "freq_weighted"
+        self.tc.allocate()
+        self.tc.prepare_dump([10])
+        self.tc.freq_factors[1] = 0.5
+        self.tc.freq_factors[4] = 2.0
+
+        batch_ids = torch.tensor([10])
+        component_latents = {
+            0: (
+                torch.tensor([[10.0, 20.0]]),
+                torch.tensor([[1, 1]]),
+            ),
+            1: (
+                torch.tensor([[4.0, 2.0]]),
+                torch.tensor([[0, 0]]),
+            ),
+        }
+
+        profile = self.tc.compute_candidate_profile(
+            batch_size=1,
+            component_latents=component_latents,
+        )
+        self.tc.update_batch(batch_ids, component_latents)
+
+        actual_m = profile.candidate_ids.shape[1]
+        self.assertTrue(torch.equal(self.tc.candidate_ids[:, :actual_m], profile.candidate_ids.cpu()))
+        self.assertTrue(torch.allclose(self.tc.candidate_vals[:, :actual_m], profile.candidate_vals.cpu()))
+        self.assertAlmostEqual(profile.candidate_vals[0, 0].item(), 7.5)
+
+    def test_candidate_profile_matches_update_batch_pmi_mode(self):
+        self.tc._mode = "pmi"
+        self.tc.allocate()
+        self.tc.prepare_dump([10])
+        self.tc.total_tokens_processed = 0
+
+        batch_ids = torch.tensor([10])
+        component_latents = {
+            0: (
+                torch.tensor([[1.0, 2.0, 0.0, 3.0]]),
+                torch.tensor([[1, 1, 1, 1]]),
+            ),
+            1: (
+                torch.tensor([[0.0, 4.0, 5.0, 0.0]]),
+                torch.tensor([[2, 2, 3, 3]]),
+            ),
+        }
+
+        profile = self.tc.compute_candidate_profile(
+            batch_size=1,
+            component_latents=component_latents,
+        )
+        self.tc.update_batch(batch_ids, component_latents)
+
+        actual_m = profile.candidate_ids.shape[1]
+        self.assertTrue(torch.equal(self.tc.candidate_ids[:, :actual_m], profile.candidate_ids.cpu()))
+        self.assertTrue(torch.allclose(self.tc.candidate_vals[:, :actual_m], profile.candidate_vals.cpu()))
+        self.assertEqual(profile.token_count, 4)
+        self.assertEqual(self.tc.total_tokens_processed, 4)
+
     def test_pmi_postprocess(self):
         self.tc._mode = "pmi"
         self.tc.allocate()
