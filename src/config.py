@@ -76,13 +76,22 @@ class NegCtxConfig(BaseModel):
     max_repr_seqs: Optional[int] = 200000
     backend: str = "single_gpu_exact"
     devices: List[Union[int, str]] = Field(default_factory=list)
+    memory_guardrail_fraction: float = 0.90
+    fail_on_memory_guardrail: bool = True
 
     @field_validator("backend")
     @classmethod
     def validate_backend(cls, v: str) -> str:
-        allowed = ["single_gpu_exact", "multi_gpu_exact"]
+        allowed = ["single_gpu_exact", "multi_gpu_exact", "multi_gpu_index_sharded_exact"]
         if v not in allowed:
             raise ValueError(f"backend must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("memory_guardrail_fraction")
+    @classmethod
+    def validate_memory_guardrail_fraction(cls, v: float) -> float:
+        if not (0.0 < v <= 1.0):
+            raise ValueError("memory_guardrail_fraction must be in (0, 1]")
         return v
 
 class LogitCtxConfig(BaseModel):
@@ -94,6 +103,49 @@ class SeqLatentIndexConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     enabled: bool = False
     top_k_per_component: int = 12
+
+class DistributedMidCtxCandidatePoolConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    enabled: bool = True
+    band_margin_sigma: float = 1.0
+    max_candidates_per_latent: Optional[int] = None
+    on_truncation: str = "replay_fallback"
+
+    @field_validator("band_margin_sigma")
+    @classmethod
+    def validate_band_margin_sigma(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("band_margin_sigma must be >= 0")
+        return v
+
+    @field_validator("max_candidates_per_latent")
+    @classmethod
+    def validate_max_candidates_per_latent(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("max_candidates_per_latent must be null or >= 1")
+        return v
+
+    @field_validator("on_truncation")
+    @classmethod
+    def validate_on_truncation(cls, v: str) -> str:
+        allowed = ["fail", "replay_fallback", "allow_bounded_approx"]
+        if v not in allowed:
+            raise ValueError(f"on_truncation must be one of {allowed}, got {v!r}")
+        return v
+
+class DistributedConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    sampling_seed: int = 0
+    mid_ctx_candidate_pool: DistributedMidCtxCandidatePoolConfig = Field(
+        default_factory=DistributedMidCtxCandidatePoolConfig
+    )
+
+    @field_validator("sampling_seed")
+    @classmethod
+    def validate_sampling_seed(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("sampling_seed must be >= 0")
+        return v
 
 class TopCoactivationLatentsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -423,6 +475,7 @@ class RootConfig(BaseModel):
     data: DataConfig = Field(default_factory=DataConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
     latents: LatentsConfig = Field(default_factory=LatentsConfig)
+    distributed: DistributedConfig = Field(default_factory=DistributedConfig)
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     persist: PersistConfig = Field(default_factory=PersistConfig)
     analysis: AnalysisConfig = Field(default_factory=AnalysisConfig)

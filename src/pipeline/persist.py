@@ -7,6 +7,7 @@ from typing import Callable, cast
 import torch
 
 from .runtime import get_runtime
+from .distributed.interfaces import build_output_paths
 from store.context import mid_ctx, neg_ctx, top_ctx
 from store.latent_stats import latent_stats
 from store.logit_context import logit_ctx
@@ -126,9 +127,10 @@ def reload_model_and_sae() -> None:
     runtime.bank = SAEBank(devices=runtime.devices, load_decoders=runtime.fast, compile=runtime.compile)
 
 
-def save_results() -> None:
+def save_results(output_root: str = "outputs") -> None:
     runtime = get_runtime()
-    os.makedirs("outputs", exist_ok=True)
+    paths = build_output_paths(output_root)
+    os.makedirs(paths.run_root, exist_ok=True)
     assert runtime.seq_repr is not None
     assert runtime.bank is not None
     assert runtime.loader is not None
@@ -138,11 +140,11 @@ def save_results() -> None:
     print(f"Saving outputs (workers={save_workers})...")
     
     tasks = {
-        "latent_stats": lambda: _save_artifact("outputs/latent_stats.pt", latent_stats.save),
-        "top_ctx": lambda: _save_artifact("outputs/top_ctx.pt", top_ctx.save),
-        "mid_ctx": lambda: _save_artifact("outputs/mid_ctx.pt", mid_ctx.save),
-        "seq_repr": lambda: _save_artifact("outputs/seq_repr.pt", cast(SeqRepr, runtime.seq_repr).save),
-        "logit_ctx": lambda: _save_artifact("outputs/logit_ctx.pt", logit_ctx.save),
+        "latent_stats": lambda: _save_artifact(str(paths.latent_stats), latent_stats.save),
+        "top_ctx": lambda: _save_artifact(str(paths.top_ctx), top_ctx.save),
+        "mid_ctx": lambda: _save_artifact(str(paths.mid_ctx), mid_ctx.save),
+        "seq_repr": lambda: _save_artifact(str(paths.seq_repr), cast(SeqRepr, runtime.seq_repr).save),
+        "logit_ctx": lambda: _save_artifact(str(paths.logit_ctx), logit_ctx.save),
     }
 
     def timed_save(fn):
@@ -166,7 +168,7 @@ def save_results() -> None:
     gc.collect()
     
     if config.latents.seq_latent_index.enabled:
-        print("  ✓ seq_latent_index shards written to outputs/seq_latent_index/")
+        print(f"  ✓ seq_latent_index shards written to {paths.seq_latent_index_dir}/")
 
     mode = search_cache_build_mode()
     if mode == "disabled":

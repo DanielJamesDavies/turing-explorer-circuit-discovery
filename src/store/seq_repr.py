@@ -38,7 +38,14 @@ from model.turingllm import TuringLLMConfig
 
 class SeqRepr:
 
-    def __init__(self, n_seqs: int, device: Optional[torch.device] = None):
+    def __init__(
+        self,
+        n_seqs: int,
+        device: Optional[torch.device] = None,
+        *,
+        slot_to_id: Optional[torch.Tensor] = None,
+        id_to_slot: Optional[torch.Tensor] = None,
+    ):
         """
         Args:
             n_seqs: Total number of unique sequences in the dataset.
@@ -52,10 +59,22 @@ class SeqRepr:
         _max_cfg = config.latents.neg_ctx.max_repr_seqs
         _max     = int(_max_cfg) if _max_cfg is not None else None
 
-        self.is_capped = (_max is not None) and (_max < n_seqs)
-        self.n_stored  = min(_max, n_seqs) if _max is not None else n_seqs
+        if slot_to_id is not None or id_to_slot is not None:
+            if slot_to_id is None or id_to_slot is None:
+                raise ValueError("slot_to_id and id_to_slot must be provided together")
+            self.slot_to_id = slot_to_id.cpu().to(torch.int64)
+            self.id_to_slot = id_to_slot.cpu().to(torch.int32)
+            self.n_stored = int(self.slot_to_id.numel() - 1)
+            self.is_capped = self.n_stored < n_seqs
+            buf_size = self.n_stored + 1
+            if self.id_to_slot.shape != (n_seqs + 1,):
+                raise ValueError("id_to_slot shape does not match n_seqs")
+            print(f"  [seq_repr] Using manifest slot mapping with {self.n_stored:,} stored sequences")
+        else:
+            self.is_capped = (_max is not None) and (_max < n_seqs)
+            self.n_stored  = min(_max, n_seqs) if _max is not None else n_seqs
 
-        if self.is_capped:
+        if slot_to_id is None and self.is_capped:
             # Pre-select a uniform random sample of seq IDs (without replacement).
             # Sorted so slot indices are stable and compact.
             kept = (torch.randperm(n_seqs)[: self.n_stored].sort().values + 1)  # [n_stored] 1-indexed
@@ -72,7 +91,7 @@ class SeqRepr:
             pct = self.n_stored / n_seqs * 100
             print(f"  [seq_repr] Capped at {self.n_stored:,} / {n_seqs:,} sequences "
                   f"(uniform random sample, {pct:.1f}%)")
-        else:
+        elif slot_to_id is None:
             self.slot_to_id = None   # identity: slot == seq_id
             self.id_to_slot = None
             buf_size = n_seqs + 1

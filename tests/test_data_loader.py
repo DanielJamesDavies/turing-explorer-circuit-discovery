@@ -82,6 +82,46 @@ def test_get_batches_uses_indexed_mmap_and_preserves_ids_remainders(
     assert torch.equal(tokens, _padded(expected_sequences, max_length=5))
 
 
+def test_get_batches_for_shards_preserves_global_ids(synthetic_shards):
+    loader = DataLoader(torch.device("cpu"), skip_first_token=True)
+
+    batches = list(loader.get_batches_for_shards([2, 0], max_length=5))
+    ids = torch.cat([batch_ids.cpu() for batch_ids, _tokens in batches], dim=0)
+    tokens = torch.cat([tokens.cpu() for _batch_ids, tokens in batches], dim=0)
+
+    assert loader.num_batches_for_shards([2, 0]) == 2
+    assert ids.tolist() == [3, 4, 1, 2]
+    assert torch.equal(
+        tokens,
+        _padded(
+            [
+                np.asarray([41, 42, 43], dtype=np.int64),
+                np.asarray([51, 52], dtype=np.int64),
+                np.asarray([11, 12], dtype=np.int64),
+                np.asarray([21, 22, 23], dtype=np.int64),
+            ],
+            max_length=5,
+        ),
+    )
+
+    with pytest.raises(IndexError, match="Shard index out of range"):
+        list(loader.get_batches_for_shards([999]))
+
+
+def test_two_worker_shard_split_matches_single_process_global_ids(synthetic_shards):
+    loader = DataLoader(torch.device("cpu"), skip_first_token=True)
+
+    single_process_ids, _tokens = _collect_padded_batches(loader, max_length=5)
+    worker_0_batches = list(loader.get_batches_for_shards([0, 2], max_length=5))
+    worker_1_batches = list(loader.get_batches_for_shards([1], max_length=5))
+    worker_ids = torch.cat(
+        [batch_ids.cpu() for batch_ids, _tokens in worker_0_batches + worker_1_batches],
+        dim=0,
+    )
+
+    assert sorted(worker_ids.tolist()) == single_process_ids.tolist()
+
+
 def test_skip_first_false_public_load_shard_matches_reference(synthetic_shards):
     loader = DataLoader(torch.device("cpu"), skip_first_token=False)
 

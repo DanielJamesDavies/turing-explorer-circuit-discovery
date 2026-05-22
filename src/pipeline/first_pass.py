@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, cast
+from typing import Dict, Optional, Sequence, Tuple, cast
 
 import torch
 from tqdm import tqdm
@@ -35,7 +35,11 @@ def _update_stores(
         current_batch_last_latents[comp_idx] = latents[1][:, -1, :].detach()
 
 
-def run_first_pass() -> None:
+def run_first_pass(
+    *,
+    assigned_shard_ids: Optional[Sequence[int]] = None,
+    seq_latent_index_output_dir: str = "outputs/seq_latent_index",
+) -> None:
     runtime = get_runtime()
     print("--- First Pass: Latent Stats & Context ---")
     assert runtime.bank is not None
@@ -54,7 +58,7 @@ def run_first_pass() -> None:
         accumulator = SeqLatentIndexAccumulator(
             shard_id_ranges=runtime.loader.shard_id_ranges,
             top_k_per_component=seq_idx_cfg.top_k_per_component,
-            output_dir="outputs/seq_latent_index",
+            output_dir=seq_latent_index_output_dir,
         )
         print(f"  seq_latent_index enabled: top_k_per_component={seq_idx_cfg.top_k_per_component}")
 
@@ -86,7 +90,15 @@ def run_first_pass() -> None:
             if accumulator is not None:
                 accumulator.update(comp_idx, sequence_ids, latents)
 
-    for batch_ids, batch_tokens in tqdm(runtime.loader.get_batches(), total=len(runtime.loader), desc="Latent Stats & Ctx"):
+    if assigned_shard_ids is None:
+        batch_iter = runtime.loader.get_batches()
+        total_batches = len(runtime.loader)
+    else:
+        shard_ids = list(assigned_shard_ids)
+        batch_iter = runtime.loader.get_batches_for_shards(shard_ids)
+        total_batches = runtime.loader.num_batches_for_shards(shard_ids)
+
+    for batch_ids, batch_tokens in tqdm(batch_iter, total=total_batches, desc="Latent Stats & Ctx"):
         current_batch_last_latents.clear()
         pending_encodes.clear()
         tokens = cast(torch.Tensor, batch_tokens)

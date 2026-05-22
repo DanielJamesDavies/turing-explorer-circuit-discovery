@@ -8,6 +8,12 @@ from data.loader import DataLoader
 from hardware import detect_devices, is_fast_memory, should_compile
 from model.inference import Inference
 from observability.timing import format_duration, timer
+from .distributed.devices import (
+    apply_worker_environment,
+    validate_worker_isolation,
+    worker_local_devices,
+)
+from .distributed.manifest import DeviceAssignment
 from sae.bank import SAEBank
 from store.seq_repr import SeqRepr
 
@@ -61,6 +67,26 @@ def build_runtime() -> PipelineRuntime:
         device=devices[0],
         cpu_device=torch.device("cpu"),
         multi_gpu=len(devices) > 1,
+        mid_ctx_warmup=cast(int, config.latents.mid_ctx.warmup_batches),
+    )
+
+
+def build_distributed_worker_runtime(
+    assignment: DeviceAssignment,
+    *,
+    apply_environment: bool = True,
+) -> PipelineRuntime:
+    validate_worker_isolation(assignment)
+    if apply_environment:
+        apply_worker_environment(assignment)
+    devices = worker_local_devices(assignment)
+    return PipelineRuntime(
+        fast=is_fast_memory(),
+        compile=should_compile(),
+        devices=devices,
+        device=devices[0],
+        cpu_device=torch.device("cpu"),
+        multi_gpu=False,
         mid_ctx_warmup=cast(int, config.latents.mid_ctx.warmup_batches),
     )
 

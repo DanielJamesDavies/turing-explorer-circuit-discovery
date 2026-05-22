@@ -5,6 +5,7 @@ from typing import Dict, Tuple, cast
 import torch
 from tqdm import tqdm
 
+from .distributed.interfaces import build_output_paths
 from .runtime import get_runtime
 from .encoding import encode_layer_components
 from config import config
@@ -14,8 +15,9 @@ from store.latent_stats import latent_stats
 from store.top_coactivation import top_coactivation
 
 
-def run_second_pass() -> None:
+def run_second_pass(output_root: str = "outputs") -> None:
     runtime = get_runtime()
+    output_paths = build_output_paths(output_root)
     print("--- Second Pass: Top Co-Activation ---")
     assert runtime.loader is not None
     assert runtime.model is not None
@@ -105,6 +107,7 @@ def run_second_pass() -> None:
     )
     print(f"  [timing] top_coactivation reduce+postprocess: {time.perf_counter() - reduce_t0:.2f} s")
     save_t0 = time.perf_counter()
-    top_coactivation.save("outputs/top_coactivation.pt")
+    output_paths.run_root.mkdir(parents=True, exist_ok=True)
+    top_coactivation.save(str(output_paths.top_coactivation))
     print(f"  top_coactivation saved ({time.perf_counter() - save_t0:.2f} s)")
     print("")
