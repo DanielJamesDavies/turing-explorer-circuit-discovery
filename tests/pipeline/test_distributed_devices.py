@@ -44,6 +44,30 @@ def test_build_device_assignments_records_physical_identity(monkeypatch):
     assert assignments[1].total_vram_bytes == 80 * 1024**3
 
 
+def test_build_device_assignments_normalizes_cuda_metadata_to_strings(monkeypatch):
+    class FakeCudaUuid:
+        def __str__(self):
+            return "GPU-fake"
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 1)
+    monkeypatch.setattr(
+        torch.cuda,
+        "get_device_properties",
+        lambda idx: SimpleNamespace(
+            name="RTX",
+            uuid=FakeCudaUuid(),
+            pci_bus_id=1,
+            total_memory=16 * 1024**3,
+        ),
+    )
+
+    assignment = build_device_assignments(worker_count=1, physical_ids=[0])[0]
+
+    assert assignment.uuid == "GPU-fake"
+    assert assignment.pci_bus_id == "1"
+
+
 def test_build_device_assignments_rejects_oversubscription_by_default():
     with pytest.raises(ValueError, match="physical device IDs must be unique"):
         build_device_assignments(worker_count=2, physical_ids=[0, 0])

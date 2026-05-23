@@ -11,6 +11,14 @@ import torch
 from .manifest import DeviceAssignment
 
 
+def _optional_str(value: object) -> Optional[str]:
+    """Normalize best-effort CUDA metadata for strict manifest schemas."""
+
+    if value is None:
+        return None
+    return str(value)
+
+
 def build_device_assignments(
     worker_count: int,
     *,
@@ -85,9 +93,9 @@ def collect_device_assignment(worker_id: int, physical_id: int) -> DeviceAssignm
     total_vram_bytes: Optional[int] = None
     if torch.cuda.is_available() and physical_id < torch.cuda.device_count():
         props = torch.cuda.get_device_properties(physical_id)
-        name = getattr(props, "name", None)
-        uuid = getattr(props, "uuid", None)
-        pci_bus_id = getattr(props, "pci_bus_id", None)
+        name = _optional_str(getattr(props, "name", None))
+        uuid = _optional_str(getattr(props, "uuid", None))
+        pci_bus_id = _optional_str(getattr(props, "pci_bus_id", None))
         total_vram_bytes = getattr(props, "total_memory", None)
 
     return DeviceAssignment(

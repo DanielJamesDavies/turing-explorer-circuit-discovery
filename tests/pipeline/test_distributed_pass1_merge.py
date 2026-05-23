@@ -952,7 +952,13 @@ def test_merge_pass1_worker_outputs_writes_canonical_artifacts_and_report(tmp_pa
     assert top_ctx["metadata"]["run_id"] == manifest.run_id
     assert top_ctx["metadata"]["config_hash"] == manifest.normalized_config_hash
     assert top_ctx["config_hash"] == manifest.normalized_config_hash
-    assert load_manifest(manifest.manifest_path).status == "completed"
+    saved_manifest = load_manifest(manifest.manifest_path)
+    assert saved_manifest.status == "completed"
+    assert saved_manifest.work_assignments.pass2_replay_sequence_count == 2
+    assert saved_manifest.work_assignments.pass2_sequence_ids == {
+        "0": [1],
+        "1": [3],
+    }
 
 
 def test_merge_pass1_worker_outputs_one_worker_matches_partial_schema(tmp_path):
@@ -989,7 +995,9 @@ def test_merge_pass1_worker_outputs_one_worker_matches_partial_schema(tmp_path):
     assert latent_stats["active_count"].shape == (1, 2)
     assert top_ctx["ctx_seq_idx"].shape == (1, 2, 2)
     assert seq_repr["repr_buf"].shape == (5, 2)
-    assert load_manifest(manifest.manifest_path).status == "completed"
+    saved_manifest = load_manifest(manifest.manifest_path)
+    assert saved_manifest.status == "completed"
+    assert saved_manifest.work_assignments.pass2_sequence_ids == {"0": [1, 2]}
 
 
 def test_one_worker_merge_outputs_feed_negative_context_stage(tmp_path):
@@ -1044,6 +1052,15 @@ def test_merge_latent_stats_partials_rejects_negative_variance_state():
 
     with pytest.raises(ValueError, match="m2 contains non-finite|negative"):
         merge_latent_stats_partials([(_metadata(0), payload)])
+
+
+def test_merge_latent_stats_partials_clamps_tiny_negative_variance_noise():
+    payload = _payload({(0, 0): [1.0]}, {(0, 0): [0.5]})
+    payload["m2"][0, 0] = -5e-4
+
+    merged = merge_latent_stats_partials([(_metadata(0), payload)])
+
+    assert merged["m2"][0, 0].item() == 0.0
 
 
 def _combine_value_maps(

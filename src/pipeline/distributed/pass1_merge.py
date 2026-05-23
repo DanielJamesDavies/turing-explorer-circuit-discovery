@@ -21,6 +21,7 @@ from .pass1_partials import (
     load_pass1_partial,
     validate_pass1_partial,
 )
+from .pass2_replay import assign_pass2_replay_sequences
 from .seq_repr_mapping import validate_seq_repr_mapping
 
 
@@ -167,6 +168,11 @@ def merge_latent_stats_partials(
         "m2_seq": m2_seq,
         "component_steps": dict(component_steps),
     }
+    for tensor_name in ["m2", "m2_abs", "m2_seq"]:
+        merged[tensor_name] = _clamp_small_negative_variance_state(
+            tensor_name,
+            merged[tensor_name],
+        )
     _validate_merged_latent_stats(merged, partials)
     return merged
 
@@ -762,7 +768,9 @@ def merge_pass1_worker_outputs(
     report_path = layout.reports_dir / "pass1_sanity_report.json"
     _atomic_write_json(report_path, report)
 
-    completed_manifest = manifest.model_copy(update={"status": ManifestStatus.COMPLETED})
+    completed_manifest = assign_pass2_replay_sequences(manifest, top_ctx_payload).model_copy(
+        update={"status": ManifestStatus.COMPLETED}
+    )
     save_manifest(completed_manifest, manifest.manifest_path)
 
     return {
@@ -860,6 +868,23 @@ def _merge_welford_state(
         merged_mean.to(mean_a.dtype),
         merged_m2.to(m2_a.dtype),
     )
+
+
+def _clamp_small_negative_variance_state(
+    tensor_name: str,
+    tensor: torch.Tensor,
+    *,
+    atol: float = 1e-3,
+) -> torch.Tensor:
+    """Clamp tiny float32 Welford variance noise while rejecting real negatives."""
+
+    negative = tensor < 0
+    if not bool(negative.any()):
+        return tensor
+    min_value = float(tensor[negative].min())
+    if min_value < -atol:
+        raise ValueError(f"merged {tensor_name} contains negative variance state")
+    return tensor.clamp_min(0)
 
 
 def _validate_latent_stats_partial_set(

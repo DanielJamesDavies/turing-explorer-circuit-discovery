@@ -305,6 +305,12 @@ from .reporting import (
     save_mode_summary_report,
     save_run_report,
 )
+from .equivalence import (
+    DEFAULT_CANONICAL_ARTIFACTS,
+    compare_artifact,
+    compare_run_roots,
+    save_equivalence_report,
+)
 
 __all__ = [
     "ArtifactSchemaVersions",
@@ -320,6 +326,7 @@ __all__ = [
     "ExperimentalFastModeRunConfig",
     "DISCOVERY_SCHEDULING_CANDIDATE_CONTIGUOUS",
     "DISCOVERY_SCHEDULING_METHOD_COST_GREEDY",
+    "DEFAULT_CANONICAL_ARTIFACTS",
     "ManifestStatus",
     "MetricEvent",
     "MID_CTX_CANDIDATE_POOL_DEFAULTS",
@@ -421,6 +428,8 @@ __all__ = [
     "classify_part_resume_state",
     "cleanup_candidates",
     "collect_device_assignment",
+    "compare_artifact",
+    "compare_run_roots",
     "create_output_layout",
     "derive_seq_repr_cap_seed",
     "discovery_methods_for_worker_filter",
@@ -500,6 +509,7 @@ __all__ = [
     "save_pass1_partials",
     "save_candidate_dump_partial",
     "save_candidate_preaggregation_partial",
+    "save_equivalence_report",
     "save_mapreduce_partial_sum_shard",
     "save_mapreduce_target_shard_result",
     "save_pass2_candidate_dump",
