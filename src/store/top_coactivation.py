@@ -11,6 +11,13 @@ from sae.topk_sae import SAEConfig
 from store.utils import _AutoAllocTensor
 
 
+TARGET_SHARDED_REDUCER_REBUILD_MESSAGE = (
+    "target_sharded reduction requires a rebuilt Phase 7 top_coactivation_reduce "
+    "extension with target_start and target_end keyword arguments. Build it with: "
+    "cd src/native && python setup.py build_ext --inplace"
+)
+
+
 @dataclass(frozen=True)
 class CandidateProfile:
     candidate_ids: torch.Tensor
@@ -517,6 +524,10 @@ class TopCoactivation:
         reduce_backend = cast(str, getattr(config.latents.top_coactivation, "reduce_backend", "single_process") or "single_process")
         reduce_shards = int(getattr(config.latents.top_coactivation, "reduce_shards", 1) or 1)
         reduce_shard_output_dir = getattr(config.latents.top_coactivation, "reduce_shard_output_dir", None)
+        if reduce_backend not in {"single_process", "target_sharded"}:
+            raise ValueError("top_coactivation reduce_backend must be single_process or target_sharded")
+        if reduce_shards < 1:
+            raise ValueError("top_coactivation reduce_shards must be >= 1")
         print(
             "  [top_coactivation] reducer controls: "
             f"backend={reduce_backend} shards={reduce_shards} "
@@ -560,10 +571,10 @@ class TopCoactivation:
                 legacy_bits = ("omp_threads", "schedule_chunk", "print_timings", "target_start", "target_end")
                 if not any(bit in str(exc) for bit in legacy_bits):
                     raise
+                if reduce_backend == "target_sharded":
+                    raise RuntimeError(TARGET_SHARDED_REDUCER_REBUILD_MESSAGE) from exc
                 if start != 0 or end != n_targets:
-                    raise RuntimeError(
-                        "target_sharded reduction requires a rebuilt Phase 7 top_coactivation_reduce extension."
-                    ) from exc
+                    raise RuntimeError(TARGET_SHARDED_REDUCER_REBUILD_MESSAGE) from exc
                 print("  [top_coactivation] native reducer was built before Phase 7 controls; using legacy call signature.")
                 legacy_ids, legacy_vals = top_coactivation_reduce.reduce_topk(*reduce_args)
                 return legacy_ids.reshape(n_targets, self.n_latents_per_latent), legacy_vals.reshape(n_targets, self.n_latents_per_latent)
@@ -640,6 +651,12 @@ class TopCoactivation:
         C, d_sae, K = self.top_values.shape
         pmi_clamp_min = cast(float, config.latents.top_coactivation.pmi_clamp_min or -5.0)
         pmi_clamp_max = cast(float, config.latents.top_coactivation.pmi_clamp_max or 10.0)
+        if pmi_clamp_min > pmi_clamp_max:
+            raise ValueError("pmi_clamp_min must be <= pmi_clamp_max")
+        if active_count.shape != (self.num_components, self.d_sae):
+            raise ValueError("active_count shape must match top_coactivation dimensions")
+        if not torch.isfinite(active_count.float()).all() or (active_count < 0).any():
+            raise ValueError("active_count must be finite and non-negative for PMI")
 
         # Derive total_tokens_globally from active_count and SAE sparsity K.
         # active_count[c].sum() == total_tokens_globally * k_sae (each token fires k_sae latents
@@ -665,6 +682,8 @@ class TopCoactivation:
 
         # PMI = log( P(j fires | T's context) / P(j fires globally) )
         pmi = (context_rate / j_rate.clamp(min=1e-10)).log().clamp(pmi_clamp_min, pmi_clamp_max)
+        if not torch.isfinite(pmi).all():
+            raise ValueError("PMI postprocess produced non-finite values")
 
         self.top_values.copy_(pmi)
 

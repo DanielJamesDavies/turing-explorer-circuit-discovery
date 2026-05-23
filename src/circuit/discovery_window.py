@@ -1,6 +1,7 @@
 import torch
 import os
 import time
+import json
 from typing import List, Dict, Any
 from tqdm import tqdm
 
@@ -185,16 +186,36 @@ class DiscoveryWindow:
         }
 
         discovered_count = 0
+        task_metrics: List[Dict[str, Any]] = []
+        from observability.tracking import obs
 
         pbar = tqdm(candidates, desc="Discovering Circuits")
         for cand in pbar:
             comp_idx = cand["comp_idx"]
             latent_idx = cand["latent_idx"]
+            allowed_methods = set(cand.get("methods") or [])
 
             for method in self.methods:
+                method_name = self._method_name(method)
+                if allowed_methods and method_name not in allowed_methods:
+                    continue
                 m_t0 = time.perf_counter()
+                forwards_before = obs.forward_passes
                 circuit = method.discover(comp_idx, latent_idx)
                 _m_dt = time.perf_counter() - m_t0
+                task_metrics.append(
+                    {
+                        "task_key": f"{cand.get('candidate_index', '?')}:{method_name}",
+                        "candidate_index": cand.get("candidate_index"),
+                        "comp_idx": comp_idx,
+                        "latent_idx": latent_idx,
+                        "method": method_name,
+                        "duration_s": _m_dt,
+                        "forward_pass_count": obs.forward_passes - forwards_before,
+                        "accepted_circuit_count": 1 if circuit else 0,
+                        "peak_cuda_memory_bytes": self._peak_cuda_memory_bytes(),
+                    }
+                )
                 
                 # If a method is slow (>1s), log its duration to the console for observability
                 # if m_dt > 1.0:
@@ -207,6 +228,8 @@ class DiscoveryWindow:
                     matched = _cand_index.get((comp_idx, latent_idx))
                     if matched and "criteria_scores" in matched:
                         circuit.metadata["seed_criteria"] = dict(matched["criteria_scores"])
+                    if matched:
+                        self._attach_candidate_metadata(circuit, matched)
                     circuit_store.add_circuit(circuit)
                     run_post_circuit_analyses(circuit, self._analysis_context, self._analyses)
                     self._run_node_presence_eval(circuit)
@@ -221,14 +244,28 @@ class DiscoveryWindow:
         cluster_count = 0
         if self._run_cluster_contrast:
             from pipeline.cluster_discovery import run_cluster_contrast_discovery
+            cluster_t0 = time.perf_counter()
+            forwards_before = obs.forward_passes
             cluster_circuits = run_cluster_contrast_discovery(self.inference, self.bank, self.loader)
             for c in cluster_circuits:
                 circuit_store.add_circuit(c)
             cluster_count = len(cluster_circuits)
+            task_metrics.append(
+                {
+                    "task_key": "seed_free:cluster_contrast",
+                    "candidate_index": None,
+                    "comp_idx": None,
+                    "latent_idx": None,
+                    "method": "cluster_contrast",
+                    "duration_s": time.perf_counter() - cluster_t0,
+                    "forward_pass_count": obs.forward_passes - forwards_before,
+                    "accepted_circuit_count": cluster_count,
+                    "peak_cuda_memory_bytes": self._peak_cuda_memory_bytes(),
+                }
+            )
             if cluster_circuits:
                 self.save_store()
 
-        from observability.tracking import obs
         cluster_suffix = f"  |  {cluster_count} cluster circuits" if cluster_count else ""
         print(f"Discovery Window complete. Found {discovered_count} faithful circuits{cluster_suffix}.")
         print(f"Total Forward Passes: {obs.forward_passes}")
@@ -238,6 +275,20 @@ class DiscoveryWindow:
         print("")
         self._print_summary_table()
         self._print_eval_stats_table()
+        return task_metrics
+
+    @staticmethod
+    def _method_name(method: DiscoveryMethod) -> str:
+        return str(getattr(method, "method_name", type(method).__name__))
+
+    @staticmethod
+    def _peak_cuda_memory_bytes() -> int | None:
+        if not torch.cuda.is_available():
+            return None
+        try:
+            return int(torch.cuda.max_memory_allocated())
+        except Exception:
+            return None
 
     def _run_node_presence_eval(self, circuit: Any) -> None:
         """
@@ -582,13 +633,30 @@ class DiscoveryWindow:
     def save_store(self):
         """Persists the circuit store to disk."""
         path = os.path.join(self.output_dir, "discovered_circuits.pt")
-        circuit_store.save(path)
+        tmp_path = f"{path}.tmp"
+        circuit_store.save(tmp_path)
+        os.replace(tmp_path, path)
         self._save_summary()
         self._save_summary_xlsx()
 
+    @staticmethod
+    def _attach_candidate_metadata(circuit: Any, candidate: Dict[str, Any]) -> None:
+        """Copy distributed candidate provenance without changing circuit structure."""
+        copy_keys = (
+            "run_id",
+            "worker_id",
+            "candidate_index",
+            "config_hash",
+            "artifact_hashes",
+        )
+        for key in copy_keys:
+            if key in candidate:
+                circuit.metadata[key] = candidate[key]
+        circuit.metadata.setdefault("seed_comp", candidate.get("comp_idx"))
+        circuit.metadata.setdefault("seed_latent", candidate.get("latent_idx"))
+
     def _save_summary(self):
         """Saves a JSON summary of all discovered circuits."""
-        import json
         summary = []
         for _, circuit in circuit_store.circuits.items():
             summary.append({
@@ -603,8 +671,10 @@ class DiscoveryWindow:
             })
 
         path = os.path.join(self.output_dir, "summary.json")
-        with open(path, "w") as f:
+        tmp_path = f"{path}.tmp"
+        with open(tmp_path, "w") as f:
             json.dump(summary, f, indent=2)
+        os.replace(tmp_path, path)
 
     @staticmethod
     def _flatten(d: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
@@ -748,9 +818,11 @@ class DiscoveryWindow:
         df = df.rename(columns=_ALIASES)
 
         path = os.path.join(self.output_dir, "summary.xlsx")
-        with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        tmp_path = f"{path}.tmp.xlsx"
+        with pd.ExcelWriter(tmp_path, engine="openpyxl") as writer:
             df.to_excel(writer, sheet_name="Circuits", index=False)
             self._write_correlation_sheet(writer, df)
+        os.replace(tmp_path, path)
 
     @staticmethod
     def _write_correlation_sheet(writer: Any, df: Any) -> None:

@@ -4,14 +4,20 @@ from pathlib import Path
 import pytest
 
 from pipeline.distributed.assignments import (
+    DISCOVERY_SCHEDULING_METHOD_COST_GREEDY,
+    assign_seed_free_method_owners,
+    build_discovery_candidate_assignments,
+    build_discovery_scheduling_report,
+    build_discovery_task_assignments,
     build_work_assignments,
     partition_contiguous,
     partition_pass1_shards,
     partition_seed_ids,
     partition_sequence_ids,
+    select_discovery_resume_tasks,
 )
 from pipeline.distributed.devices import build_device_assignments
-from pipeline.distributed.manifest import DistributedRunManifest, generate_run_id
+from pipeline.distributed.manifest import DistributedRunManifest, WorkAssignments, generate_run_id
 from pipeline.distributed.shard_table import ShardRecord
 
 
@@ -142,6 +148,80 @@ def test_seed_partitioner_is_deterministic_and_rejects_duplicates():
 
     with pytest.raises(ValueError, match="duplicate seed ID"):
         partition_seed_ids([10, 10], 2)
+
+
+def test_discovery_candidate_assignments_exclude_seed_free_methods():
+    seed_ids, assignments = build_discovery_candidate_assignments(
+        [{"comp_idx": 1, "latent_idx": 10}, {"comp_idx": 2, "latent_idx": 20}],
+        2,
+        methods=["coactivation_statistical", "cluster_contrast"],
+    )
+
+    assert seed_ids == {"0": [0], "1": [1]}
+    assert assignments["0"][0].methods == ["coactivation_statistical"]
+    assert assignments["0"][0].estimated_task_count == 1
+    assert assign_seed_free_method_owners(
+        ["coactivation_statistical", "cluster_contrast"],
+        2,
+    ) == {"cluster_contrast": 0}
+
+
+def test_candidate_level_discovery_scheduling_is_deterministic():
+    tasks, costs = build_discovery_task_assignments(
+        [
+            {"comp_idx": 1, "latent_idx": 10},
+            {"comp_idx": 2, "latent_idx": 20},
+            {"comp_idx": 3, "latent_idx": 30},
+        ],
+        2,
+        methods=["coactivation_statistical", "logit_attribution", "cluster_contrast"],
+        seed_free_method_owners={"cluster_contrast": 0},
+    )
+
+    assert [task.task_id for task in tasks["0"]] == [0, 1, 2, 3, 6]
+    assert [task.task_id for task in tasks["1"]] == [4, 5]
+    assert costs == {"0": 5.0, "1": 2.0}
+
+
+def test_method_aware_discovery_scheduling_balances_synthetic_costs():
+    tasks, costs = build_discovery_task_assignments(
+        [
+            {"comp_idx": 1, "latent_idx": 10},
+            {"comp_idx": 2, "latent_idx": 20},
+        ],
+        2,
+        methods=["cheap", "expensive"],
+        strategy=DISCOVERY_SCHEDULING_METHOD_COST_GREEDY,
+        method_costs={"cheap": 1.0, "expensive": 10.0},
+    )
+
+    assert costs == {"0": 11.0, "1": 11.0}
+    assert [task.method for task in tasks["0"]] == ["cheap", "expensive"]
+    assert [task.method for task in tasks["1"]] == ["cheap", "expensive"]
+
+
+def test_scheduling_report_and_failed_task_resume_ranges():
+    tasks, costs = build_discovery_task_assignments(
+        [{"comp_idx": 1, "latent_idx": 10}],
+        1,
+        methods=["coactivation_statistical", "logit_attribution"],
+    )
+    assignments = WorkAssignments(
+        discovery_seed_ids={"0": [0]},
+        discovery_task_assignments=tasks,
+        discovery_worker_estimated_costs=costs,
+        discovery_failed_task_ranges={"0": [[1, 1]]},
+    )
+
+    report = build_discovery_scheduling_report(assignments, 1)
+    resume = select_discovery_resume_tasks(tasks, assignments.discovery_failed_task_ranges)
+
+    assert report["workers"][0]["methods"] == {
+        "coactivation_statistical": 1,
+        "logit_attribution": 1,
+    }
+    assert report["workers"][0]["failed_task_ranges"] == [[1, 1]]
+    assert [task.task_id for task in resume["0"]] == [1]
 
 
 def test_build_work_assignments_is_manifest_ready(tmp_path):

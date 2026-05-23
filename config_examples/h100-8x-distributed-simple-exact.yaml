@@ -1,0 +1,64 @@
+# Future 8x H100 distributed_simple_exact config.
+#
+# Use this after Parts 1-6 have passed local one-worker and reduced real-data
+# equivalence. It plans one replicated model+SAE worker per physical GPU and
+# keeps distributed worker partials under outputs/<run_id>/distributed/.
+
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt"
+  sae_path: "models/TuringLLM/SAE"
+
+data:
+  dataset_path: "data"
+  n_shards: 256
+  batch_size: 512
+
+hardware:
+  multi_gpu: false
+  memory: "fast"
+  compile: true
+  parallel_kinds: false
+  ann_device: "auto"
+  keep_model_loaded_for_neg_ctx: true
+
+distributed:
+  mode: "distributed_simple_exact"
+  output_base: "outputs"
+  worker_count: 8
+  devices: [0, 1, 2, 3, 4, 5, 6, 7]
+  launch_strategy: "manual_commands"
+  resume_policy: "fresh"
+  cleanup_policy: "keep_all"
+  parts: []
+  strict_equivalence: true
+  sampling_seed: 0
+  mid_ctx_candidate_pool:
+    enabled: true
+    band_margin_sigma: 1.0
+    max_candidates_per_latent: null
+    on_truncation: "replay_fallback"
+
+latents:
+  neg_ctx:
+    backend: "multi_gpu_exact"
+    devices: []
+    max_repr_seqs: 200000
+  top_coactivation:
+    mode: "pmi"
+    dump_device: "gpu"
+    reduce_backend: "single_process"
+    reduce_shards: 1
+    reduce_shard_output_dir: null
+  seq_latent_index:
+    enabled: true
+
+discovery:
+  n_seeds: 16
+  probe_batch_size: 4
+  neg_ctx_eval_max: 16
+  methods:
+    - counterfactual_gradient
+
+persist:
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false

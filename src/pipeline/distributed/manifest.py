@@ -7,7 +7,7 @@ import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -102,6 +102,49 @@ class DeviceAssignment(BaseModel):
         return self
 
 
+class DiscoveryCandidateAssignment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_index: int
+    comp_idx: int
+    latent_idx: int
+    methods: List[str] = Field(default_factory=list)
+    estimated_task_count: int = 0
+
+    @field_validator("candidate_index", "comp_idx", "latent_idx", "estimated_task_count")
+    @classmethod
+    def counts_are_non_negative(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("discovery candidate assignment counts must be >= 0")
+        return value
+
+
+class DiscoveryTaskAssignment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    task_id: int
+    candidate_index: Optional[int] = None
+    comp_idx: Optional[int] = None
+    latent_idx: Optional[int] = None
+    method: str
+    estimated_cost: float = 1.0
+    seed_free: bool = False
+
+    @field_validator("task_id", "candidate_index", "comp_idx", "latent_idx")
+    @classmethod
+    def optional_counts_are_non_negative(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value < 0:
+            raise ValueError("discovery task assignment counts must be >= 0")
+        return value
+
+    @field_validator("estimated_cost")
+    @classmethod
+    def estimated_cost_is_non_negative(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("discovery task estimated cost must be >= 0")
+        return value
+
+
 class WorkAssignments(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -111,6 +154,16 @@ class WorkAssignments(BaseModel):
     pass2_replay_sequence_count: Optional[int] = None
     pass2_replay_sequence_hash: Optional[str] = None
     discovery_seed_ids: Dict[str, List[int]] = Field(default_factory=dict)
+    discovery_candidate_assignments: Dict[str, List[DiscoveryCandidateAssignment]] = Field(
+        default_factory=dict
+    )
+    discovery_seed_free_method_owners: Dict[str, int] = Field(default_factory=dict)
+    discovery_scheduling_strategy: str = "candidate_contiguous"
+    discovery_task_assignments: Dict[str, List[DiscoveryTaskAssignment]] = Field(
+        default_factory=dict
+    )
+    discovery_worker_estimated_costs: Dict[str, float] = Field(default_factory=dict)
+    discovery_failed_task_ranges: Dict[str, List[List[int]]] = Field(default_factory=dict)
 
     @field_validator("pass1_sequence_totals")
     @classmethod
@@ -141,6 +194,52 @@ class WorkAssignments(BaseModel):
     ) -> Optional[str]:
         if value is not None and not re.fullmatch(r"[0-9a-f]{64}", value):
             raise ValueError("pass2 replay sequence hash must be a lowercase SHA-256 hex digest")
+        return value
+
+    @model_validator(mode="after")
+    def validate_discovery_candidate_assignments(self) -> "WorkAssignments":
+        for worker_id, assignments in self.discovery_candidate_assignments.items():
+            seed_ids = self.discovery_seed_ids.get(worker_id)
+            candidate_indices = [assignment.candidate_index for assignment in assignments]
+            if seed_ids is not None and candidate_indices != seed_ids:
+                raise ValueError("discovery candidate assignments must match discovery_seed_ids")
+        return self
+
+    @field_validator("discovery_seed_free_method_owners")
+    @classmethod
+    def seed_free_method_owners_are_non_negative(
+        cls,
+        value: Dict[str, int],
+    ) -> Dict[str, int]:
+        for owner in value.values():
+            if owner < 0:
+                raise ValueError("seed-free method owner worker IDs must be >= 0")
+        return value
+
+    @field_validator("discovery_worker_estimated_costs")
+    @classmethod
+    def discovery_worker_costs_are_non_negative(
+        cls,
+        value: Dict[str, float],
+    ) -> Dict[str, float]:
+        for cost in value.values():
+            if cost < 0:
+                raise ValueError("discovery worker estimated costs must be >= 0")
+        return value
+
+    @field_validator("discovery_failed_task_ranges")
+    @classmethod
+    def failed_task_ranges_are_valid(
+        cls,
+        value: Dict[str, List[List[int]]],
+    ) -> Dict[str, List[List[int]]]:
+        for ranges in value.values():
+            for task_range in ranges:
+                if len(task_range) != 2:
+                    raise ValueError("failed discovery task ranges must have start and end")
+                start, end = task_range
+                if start < 0 or end < start:
+                    raise ValueError("failed discovery task ranges must be non-negative and ordered")
         return value
 
 
@@ -186,6 +285,24 @@ class NegativeContextRunConfig(BaseModel):
         return value
 
 
+class ExperimentalFastModeRunConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    acknowledged: bool = False
+    exact_baseline_root: Optional[str] = None
+    quality_toggles: Dict[str, Union[bool, int, float, str]] = Field(default_factory=dict)
+    warning_banner: str = ""
+
+    @model_validator(mode="after")
+    def validate_experimental_contract(self) -> "ExperimentalFastModeRunConfig":
+        if self.acknowledged:
+            if not self.exact_baseline_root:
+                raise ValueError("experimental fast mode requires exact_baseline_root")
+            if not self.quality_toggles:
+                raise ValueError("experimental fast mode requires quality_toggles")
+        return self
+
+
 class DistributedRunManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -225,6 +342,9 @@ class DistributedRunManifest(BaseModel):
     shard_table: List[ShardRecord] = Field(default_factory=list)
     work_assignments: WorkAssignments = Field(default_factory=WorkAssignments)
     neg_ctx: NegativeContextRunConfig = Field(default_factory=NegativeContextRunConfig)
+    experimental_fast: ExperimentalFastModeRunConfig = Field(
+        default_factory=ExperimentalFastModeRunConfig
+    )
 
     @field_validator(
         "manifest_schema_version",
@@ -280,10 +400,10 @@ class DistributedRunManifest(BaseModel):
         if len(physical_ids) != len(set(physical_ids)):
             raise ValueError("physical device IDs must be unique")
 
-        expected_output_root = str(Path("outputs") / self.run_id)
-        normalized_output_root = self.output_root.replace("\\", "/")
-        if not normalized_output_root.endswith(expected_output_root.replace("\\", "/")):
-            raise ValueError("output_root must end with outputs/<run_id>")
+        output_root_path = Path(self.output_root)
+        normalized_output_parts = [part.lower() for part in output_root_path.parts]
+        if output_root_path.name != self.run_id or "outputs" not in normalized_output_parts:
+            raise ValueError("output_root must be under outputs/ and end with <run_id>")
 
         expected_distributed_root = str(Path(self.output_root) / "distributed")
         if Path(self.distributed_root) != Path(expected_distributed_root):
@@ -328,6 +448,20 @@ class DistributedRunManifest(BaseModel):
                 and self.work_assignments.pass2_replay_sequence_count != len(seen_sequence_ids)
             ):
                 raise ValueError("pass2 replay sequence count does not match assigned sequences")
+
+        for worker_id in self.work_assignments.discovery_seed_ids:
+            _validate_worker_key(worker_id, self.worker_count)
+        for worker_id in self.work_assignments.discovery_candidate_assignments:
+            _validate_worker_key(worker_id, self.worker_count)
+        for worker_id in self.work_assignments.discovery_task_assignments:
+            _validate_worker_key(worker_id, self.worker_count)
+        for worker_id in self.work_assignments.discovery_worker_estimated_costs:
+            _validate_worker_key(worker_id, self.worker_count)
+        for worker_id in self.work_assignments.discovery_failed_task_ranges:
+            _validate_worker_key(worker_id, self.worker_count)
+        for worker_id in self.work_assignments.discovery_seed_free_method_owners.values():
+            if worker_id >= self.worker_count:
+                raise ValueError("seed-free method owner worker ID out of range")
 
         return self
 

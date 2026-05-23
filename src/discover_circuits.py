@@ -6,13 +6,10 @@ from hardware import is_fast_memory, should_compile, detect_devices
 from model.inference import Inference
 from sae.bank import SAEBank
 from data.loader import DataLoader
-from store.latent_stats import latent_stats
-from store.top_coactivation import top_coactivation
-from store.context import top_ctx, mid_ctx, neg_ctx
-from store.logit_context import logit_ctx
 from circuit.discovery_window import DiscoveryWindow
 from circuit.feature_selection import CandidateSelector
 from config import config
+from pipeline.discovery_artifacts import load_discovery_artifacts
 
 def discover_circuits(candidates_path: str = "outputs/candidates.pt", reselect: bool = False, n_seeds: int | None = None):
     if n_seeds is None:
@@ -27,14 +24,10 @@ def discover_circuits(candidates_path: str = "outputs/candidates.pt", reselect: 
     os.makedirs("outputs", exist_ok=True)
 
     print("Loading stores from outputs/...")
-    
-    # Load required stores
-    latent_stats.load("outputs/latent_stats.pt")
-    top_coactivation.load("outputs/top_coactivation.pt")
-    top_ctx.load("outputs/top_ctx.pt")
-    mid_ctx.load("outputs/mid_ctx.pt")
-    neg_ctx.load("outputs/neg_ctx.pt")
-    logit_ctx.load("outputs/logit_ctx.pt")
+    load_discovery_artifacts(
+        "outputs",
+        candidates_path=candidates_path if (not reselect and os.path.exists(candidates_path)) else None,
+    )
 
     if reselect:
         print(f"Reselecting top {n_seeds} candidates...")

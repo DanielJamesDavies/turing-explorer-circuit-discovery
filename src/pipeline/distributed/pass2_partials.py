@@ -114,6 +114,8 @@ class CandidatePreAggregationMetadata(BaseModel):
     num_components: int
     d_sae: int
     m: int
+    target_start_id: int = 0
+    target_end_id: Optional[int] = None
     created_at: str
 
     @field_validator("partial_schema_version")
@@ -130,6 +132,7 @@ class CandidatePreAggregationMetadata(BaseModel):
         "num_components",
         "d_sae",
         "m",
+        "target_start_id",
     )
     @classmethod
     def counts_are_non_negative(cls, value: int) -> int:
@@ -138,9 +141,16 @@ class CandidatePreAggregationMetadata(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def artifact_name_is_supported(self) -> "CandidatePreAggregationMetadata":
+    def validate_preaggregation_contract(self) -> "CandidatePreAggregationMetadata":
         if self.artifact_name != "candidate_preaggregation":
             raise ValueError("preaggregation artifact_name must be candidate_preaggregation")
+        flattened_target_count = self.num_components * self.d_sae
+        if self.target_end_id is None:
+            self.target_end_id = flattened_target_count
+        if self.target_end_id < self.target_start_id:
+            raise ValueError("target_end_id must be greater than or equal to target_start_id")
+        if self.target_end_id > flattened_target_count:
+            raise ValueError("target_end_id exceeds flattened target count")
         return self
 
 
@@ -246,6 +256,8 @@ def build_candidate_preaggregation_metadata(
         num_components=candidate_metadata.num_components,
         d_sae=candidate_metadata.d_sae,
         m=candidate_metadata.m,
+        target_start_id=0,
+        target_end_id=candidate_metadata.num_components * candidate_metadata.d_sae,
         created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     )
 
@@ -491,6 +503,11 @@ def validate_candidate_preaggregation_partial(
         raise ValueError("candidate_ids out of range")
     if (target_ids < 0).any() or (candidate_ids < 0).any():
         raise ValueError("preaggregation IDs must be non-negative")
+    if target_ids.numel():
+        if int(target_ids.min().item()) < metadata.target_start_id:
+            raise ValueError("target_ids outside reducer target range")
+        if int(target_ids.max().item()) >= int(metadata.target_end_id):
+            raise ValueError("target_ids outside reducer target range")
     if (target_ids.to(torch.int32) == candidate_ids).any():
         raise ValueError("preaggregation must not contain self-candidate records")
     return metadata, payload

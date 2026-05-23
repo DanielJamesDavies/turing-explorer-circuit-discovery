@@ -337,6 +337,117 @@ class TestTopCoactivationModes(unittest.TestCase):
         self.assertTrue(torch.equal(flat_ids[:, 0], torch.arange(flat_total, dtype=torch.int32)))
         self.assertEqual(mock_reduce.reduce_topk.call_count, 5)
 
+    def test_single_process_reduce_passes_native_controls(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+        flat_total = self.tc.num_components * self.tc.d_sae
+
+        def fake_reduce_topk(*args, **kwargs):
+            self.assertEqual(kwargs["omp_threads"], 7)
+            self.assertEqual(kwargs["schedule_chunk"], 13)
+            self.assertTrue(kwargs["print_timings"])
+            self.assertEqual(kwargs["target_start"], 0)
+            self.assertEqual(kwargs["target_end"], flat_total)
+            ids = torch.zeros((flat_total, self.tc.n_latents_per_latent), dtype=torch.int32)
+            vals = torch.zeros((flat_total, self.tc.n_latents_per_latent), dtype=torch.float32)
+            return ids, vals
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with patch('store.top_coactivation.config') as mock_c:
+            mock_c.latents.top_coactivation.reduce_backend = "single_process"
+            mock_c.latents.top_coactivation.reduce_shards = 1
+            mock_c.latents.top_coactivation.reduce_shard_output_dir = None
+            mock_c.latents.top_coactivation.reduce_omp_threads = 7
+            mock_c.latents.top_coactivation.reduce_schedule_chunk = 13
+            self.tc.reduce(
+                seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                active_count=None,
+            )
+
+        self.assertEqual(mock_reduce.reduce_topk.call_count, 1)
+
+    def test_single_process_reduce_falls_back_to_legacy_native_signature(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+        flat_total = self.tc.num_components * self.tc.d_sae
+
+        def fake_reduce_topk(*args, **kwargs):
+            if kwargs:
+                raise TypeError("target_start is an invalid keyword argument")
+            ids = torch.zeros((flat_total, self.tc.n_latents_per_latent), dtype=torch.int32)
+            vals = torch.zeros((flat_total, self.tc.n_latents_per_latent), dtype=torch.float32)
+            return ids, vals
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with patch('store.top_coactivation.config') as mock_c:
+            mock_c.latents.top_coactivation.reduce_backend = "single_process"
+            mock_c.latents.top_coactivation.reduce_shards = 1
+            mock_c.latents.top_coactivation.reduce_shard_output_dir = None
+            mock_c.latents.top_coactivation.reduce_omp_threads = None
+            mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+            self.tc.reduce(
+                seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                active_count=None,
+            )
+
+        self.assertEqual(mock_reduce.reduce_topk.call_count, 2)
+
+    def test_target_sharded_reduce_rejects_legacy_native_signature(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+
+        def fake_reduce_topk(*args, **kwargs):
+            if kwargs:
+                raise TypeError("target_start is an invalid keyword argument")
+            raise AssertionError("target_sharded must not use legacy reduce_topk fallback")
+
+        mock_reduce.reduce_topk.side_effect = fake_reduce_topk
+        with patch('store.top_coactivation.config') as mock_c:
+            mock_c.latents.top_coactivation.reduce_backend = "target_sharded"
+            mock_c.latents.top_coactivation.reduce_shards = 1
+            mock_c.latents.top_coactivation.reduce_shard_output_dir = None
+            mock_c.latents.top_coactivation.reduce_omp_threads = None
+            mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+            with self.assertRaisesRegex(RuntimeError, "rebuilt Phase 7 top_coactivation_reduce extension"):
+                self.tc.reduce(
+                    seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                    seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                    active_count=None,
+                )
+
+        self.assertEqual(mock_reduce.reduce_topk.call_count, 1)
+
+    def test_reduce_rejects_unknown_backend(self):
+        self.tc._mode = "raw"
+        self.tc.n_latents_per_latent = 2
+        self.tc.candidate_ids = torch.zeros((2, 3), dtype=torch.int32)
+        self.tc.candidate_vals = torch.zeros((2, 3), dtype=torch.float32)
+        self.tc.seq_id_to_row = {1: 0, 2: 1}
+
+        with patch('store.top_coactivation.config') as mock_c:
+            mock_c.latents.top_coactivation.reduce_backend = "not_a_backend"
+            mock_c.latents.top_coactivation.reduce_shards = 1
+            mock_c.latents.top_coactivation.reduce_shard_output_dir = None
+            mock_c.latents.top_coactivation.reduce_omp_threads = None
+            mock_c.latents.top_coactivation.reduce_schedule_chunk = 256
+            with self.assertRaisesRegex(ValueError, "reduce_backend"):
+                self.tc.reduce(
+                    seq_offsets=torch.tensor([0, 1, 2], dtype=torch.int64),
+                    seq_targets_global=torch.tensor([0, 1], dtype=torch.int64),
+                    active_count=None,
+                )
+
     def test_target_sharded_reduce_can_write_and_merge_partial_files(self):
         self.tc._mode = "raw"
         self.tc.n_latents_per_latent = 2

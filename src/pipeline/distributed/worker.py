@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import torch
 
@@ -16,7 +17,8 @@ from data.loader import DataLoader
 from config import config
 from model.inference import Inference
 from sae.bank import SAEBank
-from store.context import mid_ctx, top_ctx
+from store.circuits import circuit_store
+from store.context import mid_ctx, neg_ctx, top_ctx
 from store.latent_stats import latent_stats
 from store.logit_context import logit_ctx
 from store.seq_repr import SeqRepr
@@ -28,6 +30,11 @@ from pipeline.runtime import (
     clear_runtime,
     get_runtime,
     set_runtime,
+)
+from pipeline.discovery_artifacts import (
+    hash_discovery_artifacts,
+    load_discovery_artifacts,
+    validate_discovery_artifacts,
 )
 from pipeline.second_pass import SecondPassDumpResult, run_second_pass_dump
 
@@ -76,6 +83,8 @@ PASS2_PARTIAL_FILENAMES = {
     "pass2_summary": "pass2_summary.json",
 }
 
+SEED_FREE_DISCOVERY_METHODS = {"cluster_contrast"}
+
 
 def run_worker(
     manifest_path: str | Path,
@@ -90,6 +99,8 @@ def run_worker(
         return run_pass1_worker(manifest, worker_id)
     if phase == "pass2":
         return run_pass2_worker(manifest, worker_id)
+    if phase == "discovery":
+        return run_discovery_worker(manifest, worker_id)
     raise ValueError(f"unsupported worker phase: {phase}")
 
 
@@ -341,6 +352,353 @@ def initialize_pass2_worker_resources(
     )
 
 
+def run_discovery_worker(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+    *,
+    validate_inputs_fn: Optional[Callable[[DistributedRunManifest, int], None]] = None,
+    load_artifacts_fn: Optional[Callable[[DistributedRunManifest], None]] = None,
+    initialize_fn: Optional[Callable[[DistributedRunManifest, int], None]] = None,
+    run_discovery_fn: Optional[Callable[[List[Dict[str, Any]], str], None]] = None,
+) -> Dict[str, str]:
+    """Run discovery for one worker's assigned candidate subset."""
+
+    validate_inputs = validate_inputs_fn or validate_discovery_worker_inputs
+    load_artifacts = load_artifacts_fn or load_discovery_global_artifacts
+    initialize = initialize_fn or initialize_discovery_worker_resources
+    run_discovery = run_discovery_fn or run_worker_discovery_window
+    layout = build_run_layout(manifest)
+    worker_layout = layout.workers[worker_id]
+    seed_count = len(manifest.work_assignments.discovery_seed_ids.get(str(worker_id), []))
+    start_time = _utc_now()
+    started_at = time.perf_counter()
+
+    write_worker_marker(
+        build_worker_marker(
+            manifest,
+            worker_id,
+            phase="discovery",
+            status="started",
+            start_time=start_time,
+            seed_count=seed_count,
+        ),
+        worker_layout.started_marker,
+    )
+
+    try:
+        validate_inputs(manifest, worker_id)
+        assigned_candidates = load_assigned_discovery_candidates(manifest, worker_id)
+        artifacts = save_discovery_worker_inputs(manifest, worker_id, assigned_candidates)
+        reset_discovery_worker_state()
+        load_artifacts(manifest)
+        initialize(manifest, worker_id)
+        circuits_dir = worker_layout.discovery_dir / "circuits"
+        if run_discovery_fn is None:
+            task_metrics = run_worker_discovery_window(
+                assigned_candidates,
+                str(circuits_dir),
+                seed_free_methods=seed_free_methods_for_worker(manifest, worker_id),
+            )
+        else:
+            run_discovery(assigned_candidates, str(circuits_dir))
+            task_metrics = []
+        artifacts["worker_discovery_stats"] = str(
+            save_worker_discovery_stats(
+                manifest,
+                worker_id,
+                assigned_candidates,
+                task_metrics=task_metrics,
+            )
+        )
+        artifacts.update(_discovery_output_artifacts(worker_layout))
+        end_time = _utc_now()
+        write_worker_marker(
+            build_worker_marker(
+                manifest,
+                worker_id,
+                phase="discovery",
+                status="completed",
+                start_time=start_time,
+                end_time=end_time,
+                duration_s=time.perf_counter() - started_at,
+                seed_count=seed_count,
+                peak_cuda_memory_bytes=_peak_cuda_memory_bytes(),
+                artifacts=artifacts,
+            ),
+            worker_layout.completed_marker,
+        )
+        return artifacts
+    except Exception as error:
+        write_worker_marker(
+            build_worker_marker(
+                manifest,
+                worker_id,
+                phase="discovery",
+                status="failed",
+                start_time=start_time,
+                end_time=_utc_now(),
+                duration_s=time.perf_counter() - started_at,
+                seed_count=seed_count,
+                error=str(error),
+            ),
+            worker_layout.failed_marker,
+        )
+        raise
+    finally:
+        clear_runtime()
+
+
+def validate_discovery_worker_inputs(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+    *,
+    validate_on_disk: bool = True,
+) -> None:
+    """Validate discovery worker inputs before model/SAE initialization."""
+
+    _validate_worker_id(manifest, worker_id)
+    if validate_on_disk:
+        validate_shard_table(manifest.dataset_path, manifest.shard_table)
+    assignments = manifest.work_assignments.discovery_candidate_assignments.get(str(worker_id))
+    seed_ids = manifest.work_assignments.discovery_seed_ids.get(str(worker_id))
+    if assignments is None or seed_ids is None:
+        raise ValueError("manifest missing discovery assignments for worker")
+    if [assignment.candidate_index for assignment in assignments] != seed_ids:
+        raise ValueError("discovery assignment metadata does not match seed IDs")
+    validate_discovery_artifacts(
+        manifest.output_root,
+        candidates_path=Path(manifest.output_root) / "candidates.pt",
+    )
+
+
+def load_discovery_global_artifacts(manifest: DistributedRunManifest) -> None:
+    """Load merged global stores needed for discovery."""
+
+    load_discovery_artifacts(manifest.output_root)
+
+
+def initialize_discovery_worker_resources(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+) -> None:
+    """Initialize DataLoader, model, and SAE bank for one discovery worker."""
+
+    assignment = _device_assignment_for_worker(manifest, worker_id)
+    runtime = build_distributed_worker_runtime(assignment)
+    set_runtime(runtime)
+    runtime.loader = DataLoader(device=runtime.device, pin_memory=runtime.fast)
+    runtime.model = Inference(device=runtime.device, compile=runtime.compile)
+    runtime.bank = SAEBank(
+        devices=runtime.devices,
+        load_decoders=runtime.fast,
+        compile=runtime.compile,
+    )
+
+
+def load_assigned_discovery_candidates(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+) -> List[Dict[str, Any]]:
+    """Load the canonical candidate list and return this worker's assigned subset."""
+
+    _validate_worker_id(manifest, worker_id)
+    candidates_path = Path(manifest.output_root) / "candidates.pt"
+    candidates: List[Dict[str, Any]] = torch.load(candidates_path, weights_only=False)
+    artifact_hashes = hash_discovery_artifacts(
+        manifest.output_root,
+        candidates_path=candidates_path,
+    )
+    assignments = manifest.work_assignments.discovery_candidate_assignments.get(str(worker_id), [])
+    assigned: List[Dict[str, Any]] = []
+    for assignment in assignments:
+        if assignment.candidate_index >= len(candidates):
+            raise ValueError("assigned candidate index out of range")
+        candidate = dict(candidates[assignment.candidate_index])
+        if int(candidate.get("comp_idx", -1)) != assignment.comp_idx:
+            raise ValueError("assigned candidate comp_idx mismatch")
+        if int(candidate.get("latent_idx", -1)) != assignment.latent_idx:
+            raise ValueError("assigned candidate latent_idx mismatch")
+        candidate["candidate_index"] = assignment.candidate_index
+        candidate["run_id"] = manifest.run_id
+        candidate["worker_id"] = worker_id
+        candidate["config_hash"] = manifest.normalized_config_hash
+        candidate["artifact_hashes"] = artifact_hashes
+        candidate["methods"] = list(assignment.methods)
+        assigned.append(candidate)
+    return assigned
+
+
+def save_discovery_worker_inputs(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+    assigned_candidates: List[Dict[str, Any]],
+) -> Dict[str, str]:
+    """Save assigned candidates and assignment metadata for traceability."""
+
+    worker_layout = build_run_layout(manifest).workers[worker_id]
+    worker_layout.discovery_dir.mkdir(parents=True, exist_ok=True)
+    candidates_path = worker_layout.discovery_dir / "assigned_candidates.pt"
+    metadata_path = worker_layout.discovery_dir / "assignment_metadata.json"
+    _atomic_torch_save(assigned_candidates, candidates_path)
+    metadata = {
+        "schema_version": 1,
+        "run_id": manifest.run_id,
+        "worker_id": worker_id,
+        "candidate_count": len(assigned_candidates),
+        "owned_seed_free_methods": seed_free_methods_for_worker(manifest, worker_id),
+        "assignments": [
+            assignment.model_dump(mode="json")
+            for assignment in manifest.work_assignments.discovery_candidate_assignments.get(str(worker_id), [])
+        ],
+    }
+    _atomic_write_json(metadata_path, metadata)
+    return {
+        "assigned_candidates": str(candidates_path),
+        "assignment_metadata": str(metadata_path),
+    }
+
+
+def _discovery_output_artifacts(worker_layout) -> Dict[str, str]:
+    circuits_dir = worker_layout.discovery_dir / "circuits"
+    artifact_paths = {
+        "discovered_circuits": circuits_dir / "discovered_circuits.pt",
+        "summary": circuits_dir / "summary.json",
+        "summary_xlsx": circuits_dir / "summary.xlsx",
+    }
+    return {
+        name: str(path)
+        for name, path in artifact_paths.items()
+        if path.exists()
+    }
+
+
+def save_worker_discovery_stats(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+    assigned_candidates: List[Dict[str, Any]],
+    *,
+    task_metrics: Optional[List[Dict[str, Any]]] = None,
+) -> Path:
+    """Save a small worker-local discovery stats/provenance JSON."""
+
+    worker_layout = build_run_layout(manifest).workers[worker_id]
+    stats_path = worker_layout.discovery_dir / "worker_discovery_stats.json"
+    methods = sorted(
+        {
+            method
+            for assignment in manifest.work_assignments.discovery_candidate_assignments.get(str(worker_id), [])
+            for method in assignment.methods
+        }
+        | set(seed_free_methods_for_worker(manifest, worker_id))
+    )
+    stats = {
+        "schema_version": 1,
+        "run_id": manifest.run_id,
+        "worker_id": worker_id,
+        "config_hash": manifest.normalized_config_hash,
+        "candidate_count": len(assigned_candidates),
+        "planned_task_count": len(
+            manifest.work_assignments.discovery_task_assignments.get(str(worker_id), [])
+        ),
+        "estimated_task_cost": manifest.work_assignments.discovery_worker_estimated_costs.get(
+            str(worker_id),
+            0.0,
+        ),
+        "failed_task_ranges": manifest.work_assignments.discovery_failed_task_ranges.get(
+            str(worker_id),
+            [],
+        ),
+        "method_count": len(methods),
+        "methods": methods,
+        "accepted_circuit_count": len(circuit_store.circuits),
+        "circuit_uuids": sorted(circuit_store.circuits.keys()),
+        "task_metrics": list(task_metrics or []),
+    }
+    _atomic_write_json(stats_path, stats)
+    return stats_path
+
+
+def run_worker_discovery_window(
+    assigned_candidates: List[Dict[str, Any]],
+    output_dir: str,
+    *,
+    seed_free_methods: Optional[Sequence[str]] = None,
+) -> List[Dict[str, Any]]:
+    """Run DiscoveryWindow on an already-initialized distributed worker runtime."""
+
+    from circuit.discovery_window import DiscoveryWindow
+
+    runtime = get_runtime()
+    assert runtime.model is not None
+    assert runtime.bank is not None
+    assert runtime.loader is not None
+    with discovery_methods_for_worker(seed_free_methods or ()):
+        window = DiscoveryWindow(
+            runtime.model,
+            runtime.bank,
+            runtime.loader,
+            output_dir=output_dir,
+        )
+        return window.run(assigned_candidates)
+
+
+def seed_free_methods_for_worker(
+    manifest: DistributedRunManifest,
+    worker_id: int,
+) -> List[str]:
+    """Return seed-free methods owned by this worker."""
+
+    return sorted(
+        method
+        for method, owner in manifest.work_assignments.discovery_seed_free_method_owners.items()
+        if owner == worker_id
+    )
+
+
+def discovery_methods_for_worker_filter(
+    methods: Sequence[str],
+    seed_free_methods: Sequence[str],
+) -> List[str]:
+    """Filter seed-free methods so only explicitly owned ones remain enabled."""
+
+    allowed_seed_free = set(seed_free_methods)
+    return [
+        str(method)
+        for method in methods
+        if str(method) not in SEED_FREE_DISCOVERY_METHODS or str(method) in allowed_seed_free
+    ]
+
+
+@contextmanager
+def discovery_methods_for_worker(seed_free_methods: Sequence[str]):
+    """Temporarily filter global discovery methods for one worker run."""
+
+    original_methods = config.discovery.methods
+    config.discovery.methods = discovery_methods_for_worker_filter(
+        list(original_methods),
+        seed_free_methods,
+    )
+    try:
+        yield
+    finally:
+        config.discovery.methods = original_methods
+
+
+def reset_discovery_worker_state() -> None:
+    """Reset process-global discovery state before a worker-local run."""
+
+    circuit_store.circuits.clear()
+    try:
+        from observability.tracking import obs
+
+        obs.forward_passes = 0
+        obs.total_forward_time = 0.0
+        obs.attempt_forward_passes = 0
+        obs.attempt_start_time = 0.0
+    except Exception:
+        pass
+
+
 def save_pass2_candidate_dump(
     manifest: DistributedRunManifest,
     worker_id: int,
@@ -555,7 +913,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Run a distributed pipeline worker")
     parser.add_argument("--manifest", required=True, help="Path to distributed manifest JSON")
     parser.add_argument("--worker-id", required=True, type=int, help="Worker ID from manifest")
-    parser.add_argument("--phase", default="pass1", choices=["pass1", "pass2"], help="Worker phase to run")
+    parser.add_argument("--phase", default="pass1", choices=["pass1", "pass2", "discovery"], help="Worker phase to run")
     args = parser.parse_args(argv)
     run_worker(args.manifest, args.worker_id, phase=args.phase)
 
@@ -608,6 +966,11 @@ def _device_assignment_for_worker(
     raise ValueError(f"manifest has no device assignment for worker {worker_id}")
 
 
+def _validate_worker_id(manifest: DistributedRunManifest, worker_id: int) -> None:
+    if worker_id < 0 or worker_id >= manifest.worker_count:
+        raise ValueError("worker_id out of range")
+
+
 def _total_sequences(shard_table: Sequence[ShardRecord]) -> int:
     if not shard_table:
         raise ValueError("manifest shard_table is required for pass1 workers")
@@ -638,6 +1001,16 @@ def _atomic_write_json(path: str | Path, data: Dict[str, object]) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = output_path.with_name(f"{output_path.name}.tmp")
     tmp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp_path, output_path)
+
+
+def _atomic_torch_save(data: object, path: str | Path) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = output_path.with_name(f"{output_path.name}.tmp")
+    if tmp_path.exists():
+        tmp_path.unlink()
+    torch.save(data, tmp_path)
     os.replace(tmp_path, output_path)
 
 

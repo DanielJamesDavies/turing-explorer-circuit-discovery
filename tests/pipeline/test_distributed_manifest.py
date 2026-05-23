@@ -220,7 +220,7 @@ def test_manifest_rejects_duplicate_worker_and_physical_device_ids(tmp_path):
 
 
 def test_manifest_rejects_non_run_root_output(tmp_path):
-    with pytest.raises(ValidationError, match="output_root must end with outputs/<run_id>"):
+    with pytest.raises(ValidationError, match="output_root must be under outputs/ and end with <run_id>"):
         _manifest(tmp_path, output_root=str(tmp_path / "outputs"))
 
 

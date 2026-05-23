@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 
+from config import config
 from pipeline.distributed.layout import build_run_layout, read_worker_marker
 from pipeline.distributed.manifest import (
     CleanupPolicy,
@@ -18,14 +19,23 @@ from pipeline.distributed.worker import (
     PASS1_PARTIAL_FILENAMES,
     PASS2_PARTIAL_FILENAMES,
     configure_mid_ctx_candidate_pool,
+    discovery_methods_for_worker_filter,
+    initialize_discovery_worker_resources,
     initialize_pass1_worker_resources,
     initialize_pass2_worker_resources,
+    load_assigned_discovery_candidates,
+    load_discovery_global_artifacts,
     load_pass2_global_artifacts,
+    run_discovery_worker,
     run_pass1_worker,
     run_pass2_worker,
     run_worker,
+    save_discovery_worker_inputs,
     save_pass1_partials,
     save_pass2_candidate_dump,
+    save_worker_discovery_stats,
+    seed_free_methods_for_worker,
+    validate_discovery_worker_inputs,
     validate_pass1_worker_inputs,
     validate_pass2_worker_inputs,
 )
@@ -35,6 +45,7 @@ from pipeline.distributed.pass2_replay import hash_replay_sequence_ids
 from pipeline.distributed.shard_table import build_shard_table
 from pipeline.second_pass import SecondPassDumpResult
 from pipeline.runtime import clear_runtime, get_runtime
+from store.circuits import Circuit, circuit_store
 
 
 def _manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
@@ -126,10 +137,131 @@ def _pass2_manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunMani
     )
 
 
+def _discovery_manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
+    manifest = _manifest(tmp_path, worker_count=worker_count)
+    if worker_count == 1:
+        seed_ids = {"0": [0, 1, 2]}
+        candidate_assignments = {
+            "0": [
+                {
+                    "candidate_index": 0,
+                    "comp_idx": 1,
+                    "latent_idx": 10,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                },
+                {
+                    "candidate_index": 1,
+                    "comp_idx": 2,
+                    "latent_idx": 20,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                },
+                {
+                    "candidate_index": 2,
+                    "comp_idx": 3,
+                    "latent_idx": 30,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                },
+            ]
+        }
+    else:
+        seed_ids = {"0": [0], "1": [1, 2]}
+        candidate_assignments = {
+            "0": [
+                {
+                    "candidate_index": 0,
+                    "comp_idx": 1,
+                    "latent_idx": 10,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                }
+            ],
+            "1": [
+                {
+                    "candidate_index": 1,
+                    "comp_idx": 2,
+                    "latent_idx": 20,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                },
+                {
+                    "candidate_index": 2,
+                    "comp_idx": 3,
+                    "latent_idx": 30,
+                    "methods": ["coactivation_statistical"],
+                    "estimated_task_count": 1,
+                },
+            ],
+        }
+    return manifest.model_copy(
+        update={
+            "work_assignments": WorkAssignments(
+                pass1_shards=manifest.work_assignments.pass1_shards,
+                pass1_sequence_totals=manifest.work_assignments.pass1_sequence_totals,
+                pass2_sequence_ids=manifest.work_assignments.pass2_sequence_ids,
+                pass2_replay_sequence_count=manifest.work_assignments.pass2_replay_sequence_count,
+                pass2_replay_sequence_hash=manifest.work_assignments.pass2_replay_sequence_hash,
+                discovery_seed_ids=seed_ids,
+                discovery_candidate_assignments=candidate_assignments,
+            )
+        }
+    )
+
+
 def _write_shards(dataset_path: Path) -> None:
     dataset_path.mkdir(parents=True, exist_ok=True)
     np.save(dataset_path / "shard_0.npy", np.asarray([1, 2, 3, -1, 4, 5, 6], dtype=np.int64))
     np.save(dataset_path / "shard_1.npy", np.asarray([7, 8, 9, -1, 10, 11, 12], dtype=np.int64))
+
+
+def _write_discovery_artifacts(run_root: Path) -> None:
+    run_root.mkdir(parents=True, exist_ok=True)
+    mode = str(config.latents.top_coactivation.mode or "freq_weighted")
+    shape = (2, 3)
+    ctx_shape = (2, 3, 2)
+    topk_shape = (2, 3, 4)
+    torch.save(
+        {
+            "active_count": torch.ones(shape, dtype=torch.int64),
+            "seq_count": torch.ones(shape, dtype=torch.int64),
+            "mean_seq": torch.ones(shape, dtype=torch.float32),
+        },
+        run_root / "latent_stats.pt",
+    )
+    for name in ("top_ctx", "mid_ctx", "neg_ctx"):
+        torch.save(
+            {
+                "ctx_seq_idx": torch.ones(ctx_shape, dtype=torch.int32),
+                "ctx_seq_val": torch.ones(ctx_shape, dtype=torch.float32),
+            },
+            run_root / f"{name}.pt",
+        )
+    torch.save(
+        {
+            "latent_counts": torch.ones(shape, dtype=torch.int64),
+            "top_tokens": torch.ones(ctx_shape, dtype=torch.int32),
+            "top_probs": torch.ones(ctx_shape, dtype=torch.float32),
+        },
+        run_root / "logit_ctx.pt",
+    )
+    torch.save(
+        {
+            "top_indices": torch.ones(topk_shape, dtype=torch.int32),
+            "top_values": torch.ones(topk_shape, dtype=torch.float32),
+            "mode": mode,
+        },
+        run_root / "top_coactivation.pt",
+    )
+    torch.save(
+        [
+            {"comp_idx": 1, "latent_idx": 10},
+            {"comp_idx": 2, "latent_idx": 20},
+            {"comp_idx": 3, "latent_idx": 30},
+        ],
+        run_root / "candidates.pt",
+    )
 
 
 def _real_manifest(tmp_path: Path) -> DistributedRunManifest:
@@ -303,6 +435,273 @@ def test_run_worker_dispatches_pass2_phase(monkeypatch, tmp_path):
     run_worker(manifest_path, 0, phase="pass2")
 
     assert seen["pass2"] == (manifest.run_id, 0)
+
+
+def test_run_worker_dispatches_discovery_phase(monkeypatch, tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    manifest_path = Path(manifest.manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(manifest.model_dump_json(), encoding="utf-8")
+    seen = {}
+
+    def fake_run_discovery(observed_manifest, worker_id):
+        seen["discovery"] = (observed_manifest.run_id, worker_id)
+        return {}
+
+    monkeypatch.setattr("pipeline.distributed.worker.run_discovery_worker", fake_run_discovery)
+
+    run_worker(manifest_path, 1, phase="discovery")
+
+    assert seen["discovery"] == (manifest.run_id, 1)
+
+
+def test_run_discovery_worker_saves_assigned_candidates_and_worker_outputs(tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    output_root = Path(manifest.output_root)
+    _write_discovery_artifacts(output_root)
+    seen = {}
+
+    def fake_load(observed_manifest):
+        seen["load"] = observed_manifest.run_id
+
+    def fake_initialize(observed_manifest, worker_id):
+        seen["initialize"] = (observed_manifest.run_id, worker_id)
+
+    def fake_run_discovery(candidates, output_dir):
+        seen["candidates"] = candidates
+        seen["output_dir"] = Path(output_dir)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        (Path(output_dir) / "discovered_circuits.pt").write_text("circuits", encoding="utf-8")
+        (Path(output_dir) / "summary.json").write_text("[]", encoding="utf-8")
+
+    artifacts = run_discovery_worker(
+        manifest,
+        1,
+        validate_inputs_fn=lambda _manifest, _worker_id: None,
+        load_artifacts_fn=fake_load,
+        initialize_fn=fake_initialize,
+        run_discovery_fn=fake_run_discovery,
+    )
+
+    worker_layout = build_run_layout(manifest).workers[1]
+    completed = read_worker_marker(worker_layout.completed_marker)
+    started = read_worker_marker(worker_layout.started_marker)
+    assert seen["load"] == manifest.run_id
+    assert seen["initialize"] == (manifest.run_id, 1)
+    assert [candidate["candidate_index"] for candidate in seen["candidates"]] == [1, 2]
+    assert seen["output_dir"] == worker_layout.discovery_dir / "circuits"
+    assert started.phase == "discovery"
+    assert completed.status == "completed"
+    assert completed.phase == "discovery"
+    assert completed.seed_count == 2
+    assert artifacts["assigned_candidates"] == str(worker_layout.discovery_dir / "assigned_candidates.pt")
+    assert artifacts["assignment_metadata"] == str(worker_layout.discovery_dir / "assignment_metadata.json")
+    assert artifacts["worker_discovery_stats"] == str(worker_layout.discovery_dir / "worker_discovery_stats.json")
+    assert artifacts["discovered_circuits"] == str(worker_layout.discovery_dir / "circuits" / "discovered_circuits.pt")
+    assert artifacts["summary"] == str(worker_layout.discovery_dir / "circuits" / "summary.json")
+    assert completed.artifacts == artifacts
+    assert not (Path(manifest.output_root) / "circuits").exists()
+
+
+def test_initialize_discovery_worker_resources_uses_single_worker_device(monkeypatch, tmp_path):
+    manifest = _discovery_manifest(tmp_path, worker_count=1).model_copy(
+        update={"devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")]}
+    )
+    seen = {}
+
+    class FakeDataLoader:
+        def __init__(self, device, pin_memory):
+            seen["loader"] = (device, pin_memory)
+
+    class FakeInference:
+        def __init__(self, device, compile):
+            seen["model"] = (device, compile)
+
+    class FakeSAEBank:
+        def __init__(self, devices, load_decoders, compile):
+            seen["sae_devices"] = devices
+
+    monkeypatch.setattr("pipeline.distributed.worker.DataLoader", FakeDataLoader)
+    monkeypatch.setattr("pipeline.distributed.worker.Inference", FakeInference)
+    monkeypatch.setattr("pipeline.distributed.worker.SAEBank", FakeSAEBank)
+
+    try:
+        initialize_discovery_worker_resources(manifest, 0)
+        runtime = get_runtime()
+    finally:
+        clear_runtime()
+
+    assert runtime.devices == [torch.device("cuda:0")]
+    assert runtime.multi_gpu is False
+    assert seen["loader"][0] == torch.device("cuda:0")
+    assert seen["model"][0] == torch.device("cuda:0")
+    assert seen["sae_devices"] == [torch.device("cuda:0")]
+
+
+def test_load_assigned_discovery_candidates_rejects_manifest_drift(tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    output_root = Path(manifest.output_root)
+    _write_discovery_artifacts(output_root)
+    torch.save(
+        [
+            {"comp_idx": 1, "latent_idx": 10},
+            {"comp_idx": 999, "latent_idx": 20},
+            {"comp_idx": 3, "latent_idx": 30},
+        ],
+        output_root / "candidates.pt",
+    )
+
+    with pytest.raises(ValueError, match="assigned candidate comp_idx mismatch"):
+        load_assigned_discovery_candidates(manifest, 1)
+
+
+def test_load_assigned_discovery_candidates_attaches_worker_metadata(tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    output_root = Path(manifest.output_root)
+    _write_discovery_artifacts(output_root)
+
+    assigned = load_assigned_discovery_candidates(manifest, 1)
+
+    assert [candidate["candidate_index"] for candidate in assigned] == [1, 2]
+    assert {candidate["run_id"] for candidate in assigned} == {manifest.run_id}
+    assert {candidate["worker_id"] for candidate in assigned} == {1}
+    assert {candidate["config_hash"] for candidate in assigned} == {manifest.normalized_config_hash}
+    assert [candidate["methods"] for candidate in assigned] == [
+        ["coactivation_statistical"],
+        ["coactivation_statistical"],
+    ]
+    assert "top_coactivation" in assigned[0]["artifact_hashes"]
+
+
+def test_save_worker_discovery_stats_records_worker_circuits(tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    circuit_store.circuits.clear()
+    try:
+        circuit = Circuit(name="demo")
+        circuit_store.add_circuit(circuit)
+        stats_path = save_worker_discovery_stats(
+            manifest,
+            1,
+            [{"comp_idx": 2, "latent_idx": 20}],
+            task_metrics=[
+                {
+                    "task_key": "1:coactivation_statistical",
+                    "method": "coactivation_statistical",
+                    "duration_s": 0.25,
+                    "forward_pass_count": 2,
+                    "accepted_circuit_count": 1,
+                    "peak_cuda_memory_bytes": None,
+                }
+            ],
+        )
+        stats = json.loads(stats_path.read_text(encoding="utf-8"))
+    finally:
+        circuit_store.circuits.clear()
+
+    assert stats["candidate_count"] == 1
+    assert stats["accepted_circuit_count"] == 1
+    assert stats["circuit_uuids"] == [circuit.uuid]
+    assert stats["methods"] == ["coactivation_statistical"]
+    assert stats["planned_task_count"] == 0
+    assert stats["estimated_task_cost"] == 0.0
+    assert stats["task_metrics"][0]["forward_pass_count"] == 2
+
+
+def test_seed_free_methods_are_owned_by_one_worker(tmp_path):
+    manifest = _discovery_manifest(tmp_path).model_copy(
+        update={
+            "work_assignments": WorkAssignments(
+                pass1_shards={"0": [0], "1": [1]},
+                pass1_sequence_totals={"0": 2, "1": 3},
+                discovery_seed_ids={"0": [0], "1": [1, 2]},
+                discovery_candidate_assignments={
+                    "0": [
+                        {
+                            "candidate_index": 0,
+                            "comp_idx": 1,
+                            "latent_idx": 10,
+                            "methods": ["coactivation_statistical"],
+                            "estimated_task_count": 1,
+                        }
+                    ],
+                    "1": [
+                        {
+                            "candidate_index": 1,
+                            "comp_idx": 2,
+                            "latent_idx": 20,
+                            "methods": ["coactivation_statistical"],
+                            "estimated_task_count": 1,
+                        },
+                        {
+                            "candidate_index": 2,
+                            "comp_idx": 3,
+                            "latent_idx": 30,
+                            "methods": ["coactivation_statistical"],
+                            "estimated_task_count": 1,
+                        },
+                    ],
+                },
+                discovery_seed_free_method_owners={"cluster_contrast": 0},
+            )
+        }
+    )
+
+    assert seed_free_methods_for_worker(manifest, 0) == ["cluster_contrast"]
+    assert seed_free_methods_for_worker(manifest, 1) == []
+
+
+def test_discovery_methods_filter_prevents_duplicate_cluster_contrast():
+    methods = ["coactivation_statistical", "cluster_contrast", "logit_attribution"]
+
+    assert discovery_methods_for_worker_filter(methods, []) == [
+        "coactivation_statistical",
+        "logit_attribution",
+    ]
+    assert discovery_methods_for_worker_filter(methods, ["cluster_contrast"]) == methods
+
+
+def test_validate_discovery_worker_inputs_requires_assignments_and_artifacts(tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="missing discovery input artifacts"):
+        validate_discovery_worker_inputs(manifest, 0, validate_on_disk=False)
+
+    output_root = Path(manifest.output_root)
+    _write_discovery_artifacts(output_root)
+
+    validate_discovery_worker_inputs(manifest, 0, validate_on_disk=False)
+
+
+def test_load_discovery_global_artifacts_loads_required_stores(monkeypatch, tmp_path):
+    manifest = _discovery_manifest(tmp_path)
+    _write_discovery_artifacts(Path(manifest.output_root))
+    seen = {}
+
+    class FakeStore:
+        def __init__(self, key):
+            self.key = key
+
+        def load(self, path):
+            seen[self.key] = Path(path)
+
+    monkeypatch.setattr("pipeline.discovery_artifacts.latent_stats", FakeStore("latent_stats"))
+    monkeypatch.setattr("pipeline.discovery_artifacts.top_ctx", FakeStore("top_ctx"))
+    monkeypatch.setattr("pipeline.discovery_artifacts.mid_ctx", FakeStore("mid_ctx"))
+    monkeypatch.setattr("pipeline.discovery_artifacts.neg_ctx", FakeStore("neg_ctx"))
+    monkeypatch.setattr("pipeline.discovery_artifacts.logit_ctx", FakeStore("logit_ctx"))
+    monkeypatch.setattr("pipeline.discovery_artifacts.top_coactivation", FakeStore("top_coactivation"))
+
+    load_discovery_global_artifacts(manifest)
+
+    output_root = Path(manifest.output_root)
+    assert seen == {
+        "latent_stats": output_root / "latent_stats.pt",
+        "top_ctx": output_root / "top_ctx.pt",
+        "mid_ctx": output_root / "mid_ctx.pt",
+        "neg_ctx": output_root / "neg_ctx.pt",
+        "logit_ctx": output_root / "logit_ctx.pt",
+        "top_coactivation": output_root / "top_coactivation.pt",
+    }
 
 
 def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, tmp_path):

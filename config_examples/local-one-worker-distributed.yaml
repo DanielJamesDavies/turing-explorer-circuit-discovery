@@ -1,0 +1,50 @@
+# Local one-worker distributed validation config.
+#
+# Use this to exercise the distributed manifest/worker artifact contracts on a
+# local GPU before scaling out. It keeps the same conservative memory posture as
+# the RTX 5070 Ti reduced-run config and leaves search-cache generation offline.
+
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt"
+  sae_path: "models/TuringLLM/SAE"
+
+data:
+  dataset_path: "data"
+  n_shards: 4
+  batch_size: 128
+
+hardware:
+  multi_gpu: false
+  memory: "efficient"
+  compile: true
+  parallel_kinds: false
+  ann_device: "auto"
+  keep_model_loaded_for_neg_ctx: false
+
+distributed:
+  mode: "distributed_simple_exact"
+  output_base: "outputs"
+  worker_count: 1
+  devices: [0]
+  launch_strategy: "manual_commands"
+  resume_policy: "fresh"
+  cleanup_policy: "keep_all"
+  parts: []
+  strict_equivalence: true
+  sampling_seed: 0
+  mid_ctx_candidate_pool:
+    enabled: true
+    band_margin_sigma: 1.0
+    max_candidates_per_latent: null
+    on_truncation: "replay_fallback"
+
+discovery:
+  n_seeds: 16
+  probe_batch_size: 4
+  neg_ctx_eval_max: 16
+  methods:
+    - counterfactual_gradient
+
+persist:
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false

@@ -2,8 +2,8 @@
 
 import yaml
 import os
-from pydantic import BaseModel, Field, ConfigDict, field_validator
-from typing import List, Optional, Any, Union
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from typing import Dict, List, Optional, Any, Union
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(PROJECT_ROOT) == "src":
@@ -133,12 +133,111 @@ class DistributedMidCtxCandidatePoolConfig(BaseModel):
             raise ValueError(f"on_truncation must be one of {allowed}, got {v!r}")
         return v
 
+class DistributedSchemaVersionsConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    manifest: int = 1
+    partial_artifacts: int = 1
+    metrics_jsonl: int = 1
+    sanity_reports: int = 1
+    run_summaries: int = 1
+
+    @field_validator("*")
+    @classmethod
+    def validate_schema_version(cls, v: int) -> int:
+        if v != 1:
+            raise ValueError("distributed schema versions must be 1 for the current contracts")
+        return v
+
 class DistributedConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    mode: str = "single_process"
+    run_id: Optional[str] = None
+    output_base: str = "outputs"
+    worker_count: int = 1
+    devices: List[Union[int, str]] = Field(default_factory=list)
+    launch_strategy: str = "manual_commands"
+    resume_policy: str = "fresh"
+    cleanup_policy: str = "keep_all"
+    parts: List[str] = Field(default_factory=list)
+    strict_equivalence: bool = True
+    experimental_acknowledgement: bool = False
+    experimental_exact_baseline_root: Optional[str] = None
+    experimental_quality_toggles: Dict[str, Union[bool, int, float, str]] = Field(default_factory=dict)
+    observability_sample_interval_s: float = 30.0
+    schema_versions: DistributedSchemaVersionsConfig = Field(
+        default_factory=DistributedSchemaVersionsConfig
+    )
     sampling_seed: int = 0
     mid_ctx_candidate_pool: DistributedMidCtxCandidatePoolConfig = Field(
         default_factory=DistributedMidCtxCandidatePoolConfig
     )
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        allowed = [
+            "single_process",
+            "distributed_simple_exact",
+            "distributed_mapreduce_exact",
+            "distributed_experimental_fast",
+        ]
+        if v not in allowed:
+            raise ValueError(f"mode must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("run_id")
+    @classmethod
+    def validate_run_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        import re
+
+        if not re.fullmatch(r"\d{8}-\d{6}-[0-9a-fA-F]{8}", v):
+            raise ValueError("run_id must match YYYYMMDD-HHMMSS-<config_hash_8>")
+        return v
+
+    @field_validator("output_base")
+    @classmethod
+    def validate_output_base(cls, v: str) -> str:
+        if not v:
+            raise ValueError("output_base must be non-empty")
+        return v
+
+    @field_validator("worker_count")
+    @classmethod
+    def validate_worker_count(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("worker_count must be >= 1")
+        return v
+
+    @field_validator("launch_strategy")
+    @classmethod
+    def validate_launch_strategy(cls, v: str) -> str:
+        allowed = ["manual_commands", "subprocess", "external_scheduler"]
+        if v not in allowed:
+            raise ValueError(f"launch_strategy must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("resume_policy")
+    @classmethod
+    def validate_resume_policy(cls, v: str) -> str:
+        allowed = ["fresh", "resume", "auto"]
+        if v not in allowed:
+            raise ValueError(f"resume_policy must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("cleanup_policy")
+    @classmethod
+    def validate_cleanup_policy(cls, v: str) -> str:
+        allowed = [
+            "keep_all",
+            "delete_large_partials_on_success",
+            "delete_all_partials_on_success",
+            "manual_cleanup_only",
+        ]
+        if v not in allowed:
+            raise ValueError(f"cleanup_policy must be one of {allowed}, got {v!r}")
+        return v
 
     @field_validator("sampling_seed")
     @classmethod
@@ -146,6 +245,53 @@ class DistributedConfig(BaseModel):
         if v < 0:
             raise ValueError("sampling_seed must be >= 0")
         return v
+
+    @field_validator("observability_sample_interval_s")
+    @classmethod
+    def validate_observability_sample_interval(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("observability_sample_interval_s must be > 0")
+        return v
+
+    @model_validator(mode="after")
+    def validate_mode_policy(self) -> "DistributedConfig":
+        if self.mode == "single_process":
+            if self.worker_count != 1:
+                raise ValueError("single_process mode must use worker_count=1")
+            if self.devices:
+                raise ValueError("single_process mode must not declare distributed devices")
+            if self.launch_strategy != "manual_commands":
+                raise ValueError("single_process mode must use launch_strategy='manual_commands'")
+        else:
+            if self.mode != "distributed_experimental_fast" and self.experimental_acknowledgement:
+                raise ValueError("experimental_acknowledgement is only valid for distributed_experimental_fast")
+
+        if self.mode == "distributed_experimental_fast" and not self.experimental_acknowledgement:
+            raise ValueError("distributed_experimental_fast requires experimental_acknowledgement=true")
+        if self.mode == "distributed_experimental_fast":
+            if not self.experimental_exact_baseline_root:
+                raise ValueError("distributed_experimental_fast requires experimental_exact_baseline_root")
+            if not self.experimental_quality_toggles:
+                raise ValueError("distributed_experimental_fast requires experimental_quality_toggles")
+            output_marker = self.output_base.replace("\\", "/").lower()
+            if "experimental" not in output_marker and "fast" not in output_marker:
+                raise ValueError(
+                    "distributed_experimental_fast output_base must be clearly marked experimental/fast"
+                )
+
+        if (
+            self.mode in {"distributed_simple_exact", "distributed_mapreduce_exact"}
+            and self.mid_ctx_candidate_pool.on_truncation == "allow_bounded_approx"
+        ):
+            raise ValueError("exact distributed modes require exact mid_ctx truncation handling")
+
+        if self.devices and len(self.devices) != len(set(str(device) for device in self.devices)):
+            raise ValueError("distributed devices must be unique")
+
+        if self.devices and len(self.devices) != self.worker_count:
+            raise ValueError("distributed devices must match worker_count when explicitly provided")
+
+        return self
 
 class TopCoactivationLatentsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -488,6 +634,23 @@ class RootConfig(BaseModel):
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     persist: PersistConfig = Field(default_factory=PersistConfig)
     analysis: AnalysisConfig = Field(default_factory=AnalysisConfig)
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_distributed_mode_defaults(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        distributed = data.get("distributed") or {}
+        if not isinstance(distributed, dict):
+            return data
+        if distributed.get("mode", "single_process") == "single_process":
+            return data
+
+        updated = dict(data)
+        persist = dict(updated.get("persist") or {})
+        persist.setdefault("build_search_cache_after_pipeline", False)
+        updated["persist"] = persist
+        return updated
 
 def load_config() -> RootConfig:
     data = {}

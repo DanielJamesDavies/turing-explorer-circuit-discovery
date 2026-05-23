@@ -94,6 +94,61 @@ Do not make replicated model+SAE workers mandatory. That strategy is intended fo
 
 ---
 
+## Operating Mode Workflow
+
+The implemented mode surface is documented in detail in [`part-7-operating-modes.md`](part-7-operating-modes.md). Use these modes deliberately:
+
+- `single_process`: the default local pipeline and correctness oracle. Use this for normal RTX 5070 Ti work and for exact baselines.
+- `distributed_simple_exact`: the first H100 target. It uses one isolated worker per GPU, exact pass-barrier merges, and the central exact pass-2 candidate-dump reducer.
+- `distributed_mapreduce_exact`: the scalable exact pass-2 path. Use only after `distributed_simple_exact` has passed equivalence and the central reducer is the measured bottleneck.
+- `distributed_experimental_fast`: exploratory only. It requires explicit acknowledgement, an exact baseline root, quality toggles, and an output root clearly marked experimental/fast.
+
+Mode-specific config examples:
+
+- [`config_examples/local-one-worker-distributed.yaml`](../../config_examples/local-one-worker-distributed.yaml): local one-worker validation of distributed contracts with efficient memory settings and search-cache generation disabled.
+- [`config_examples/h100-8x-distributed-simple-exact.yaml`](../../config_examples/h100-8x-distributed-simple-exact.yaml): future 8x H100 `distributed_simple_exact` run with one worker per physical GPU.
+
+Controller dry-run and worker commands:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --dry-run
+python -m pipeline.distributed.controller --config config_examples/h100-8x-distributed-simple-exact.yaml --mode distributed_simple_exact --worker-count 8 --devices 0,1,2,3,4,5,6,7 --dry-run
+python -m pipeline.distributed.worker --manifest outputs/<run_id>/distributed/manifest.json --worker-id 0 --phase pass1
+```
+
+Standalone merge/reduce entrypoints:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m pipeline.distributed.pass1_merge --manifest outputs/<run_id>/distributed/manifest.json
+python -m pipeline.distributed.pass2_reduce --output-root outputs/<run_id> --candidate-dump outputs/<run_id>/distributed/workers/worker_000/pass2/candidate_dump.partial.pt
+```
+
+For H100 rollout, use this order:
+
+1. Run a dry run and inspect the manifest, worker commands, local/H100 report, and output root.
+2. Run `distributed_simple_exact` on one worker and compare against `single_process`.
+3. Run reduced real-data equivalence, then an 8-worker H100 benchmark.
+4. Keep `distributed_mapreduce_exact` disabled until the benchmark shows central pass-2 reduce is the bottleneck.
+5. Keep `distributed_experimental_fast` out of paper-facing outputs unless it is explicitly labelled and compared against an exact baseline.
+
+Search-cache generation should stay off the distributed critical path. Distributed configs default `persist.build_search_cache_after_pipeline` to `false`; build the search cache later from validated canonical artifacts under `outputs/<run_id>/`.
+
+Cleanup policy guidance:
+
+- Use `keep_all` for validation, equivalence, failed runs, and early H100 profiling.
+- Use `delete_large_partials_on_success` only after the exact pipeline is trusted and final reports/metrics are sufficient for debugging.
+- Use `delete_all_partials_on_success` only for mature full-size runs where partials can be regenerated from the manifest.
+- Use `manual_cleanup_only` when preserving paper-facing artifacts and deleting by hand after review.
+
+Paper eligibility:
+
+- Paper-eligible: `single_process`, `distributed_simple_exact` after required equivalence gates, and `distributed_mapreduce_exact` after equivalence against `distributed_simple_exact`.
+- Exploratory only: `distributed_experimental_fast`, approximate quality toggles, and any run with missing equivalence, benchmark, or final run reports.
+
+---
+
 ## Part 1 — Manifest And Worker Runtime
 
 - [ ] Add a run manifest containing config hash, model path, SAE path, dataset path, worker count, CUDA device assignment, output root, shard assignments, sequence assignments, seed assignments, and artifact schema versions.
