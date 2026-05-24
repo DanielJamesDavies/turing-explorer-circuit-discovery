@@ -3,8 +3,8 @@
 > Unsupervised, multi-pass pipeline for discovering minimal, faithful sub-networks inside TuringLLM using Sparse Autoencoders.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.10-orange)
-![CUDA](https://img.shields.io/badge/CUDA-13.0-green)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.7%20%7C%202.8%20%7C%202.10-orange)
+![CUDA](https://img.shields.io/badge/CUDA-12.6%20%7C%2012.8%20%7C%2013.0-green)
 ![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey)
 
 ---
@@ -77,6 +77,8 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
 .
 ├── config.yaml                   — master configuration
 ├── requirements.txt
+├── requirements-cu128.txt         — hosted CUDA 12.8 / PyTorch 2.8 profile
+├── requirements-cu126.txt         — hosted CUDA 12.6 / PyTorch 2.7 fallback
 ├── tests/                        — unit + integration tests
 └── src/
     ├── main.py                   — entry point (full pipeline)
@@ -125,7 +127,8 @@ The SAE bank supports multi-GPU layer splitting, `torch.compile`, a cublasLt fus
 
 ## Installation
 
-**Requirements:** Python 3.12, CUDA 13.0, Linux
+**Requirements:** Python 3.12, Linux, and a CUDA/PyTorch profile matching the
+target machine.
 
 > **Windows users:** the native CUDA extensions and PyTorch CUDA builds require a Linux environment. Use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) with a CUDA-capable GPU and install the CUDA toolkit inside WSL before proceeding.
 
@@ -138,27 +141,68 @@ source .venv/bin/activate
 
 ### 2 — Install Python dependencies
 
+Pick the requirements file that matches the CUDA runtime in the target
+environment:
+
+| File | Target | Torch stack |
+| ---- | ------ | ----------- |
+| `requirements.txt` | Local CUDA 13.0 profile | `torch 2.10.0+cu130`, `torchvision 0.25.0+cu130`, `torchao 0.16.0` |
+| `requirements-cu128.txt` | Preferred hosted H100 profile, e.g. RunPod PyTorch 2.8 / CUDA 12.8 | `torch 2.8.0+cu128`, `torchvision 0.23.0+cu128`, `torchao 0.13.0` |
+| `requirements-cu126.txt` | Hosted CUDA 12.6 fallback | `torch 2.7.1+cu126`, `torchvision 0.22.1+cu126`, `torchao 0.12.0` |
+
 ```bash
 pip install -r requirements.txt
 ```
 
+For a RunPod-style CUDA 12.8 image, use:
+
+```bash
+pip install -r requirements-cu128.txt
+```
+
+For a CUDA 12.6 provider image, use:
+
+```bash
+pip install -r requirements-cu126.txt
+```
+
+Before building native extensions, confirm PyTorch and the CUDA toolkit agree:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda); print(torch.cuda.device_count())"
+nvcc --version
+```
+
 ### 3 — Build native C++/CUDA extensions
 
-If WSL has more than one CUDA toolkit or an older `/usr/bin/nvcc`, make sure the
-toolkit matches the PyTorch build. For the current `torch 2.10.0+cu130` setup,
-use CUDA 13:
+If the machine has more than one CUDA toolkit or an older `/usr/bin/nvcc`, make
+sure `CUDA_HOME` and `PATH` point at the toolkit matching `torch.version.cuda`.
+For example, with the CUDA 13 local profile:
 
 ```bash
 export CUDA_HOME=/usr/local/cuda
 export PATH="$CUDA_HOME/bin:$PATH"
 ```
 
-You can save those exports in a local ignored env file such as `.env.local`.
+On managed hosted images, `nvcc` may already be on `PATH`; only set
+`CUDA_HOME` when the default toolkit does not match the installed PyTorch wheel.
+You can save local exports in an ignored env file such as `.env.local`.
 
 ```bash
 cd src/native
 python setup.py build_ext --inplace
 cd ../..
+```
+
+If this build fails, first check for a PyTorch/toolkit mismatch rather than
+assuming CUDA 13 is required. The CUDA version reported by PyTorch and the
+toolkit selected by `nvcc --version` should be from the same profile.
+
+After building on a target host, run:
+
+```bash
+python -m pytest src/native/tests/test_topk.py src/native/tests/test_reduce.py -q
+python -m pytest tests/store/test_top_coactivation_modes.py -q
 ```
 
 The extensions provide:

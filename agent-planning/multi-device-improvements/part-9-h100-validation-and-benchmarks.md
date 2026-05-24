@@ -37,7 +37,16 @@ It does not replace local Part 8 testing. H100 runs should not be used to discov
 - [ ] Confirm the target machine has the expected 8x H100 CUDA device inventory.
 - [ ] Confirm each physical GPU can be isolated by `CUDA_VISIBLE_DEVICES`.
 - [ ] Confirm the H100 host has the required model weights, SAE weights, dataset shards, config files, and output storage.
-- [ ] Confirm the repo commit, Python environment, PyTorch/CUDA versions, and native build tooling are recorded before benchmarking.
+- [ ] Pick the requirements profile that matches the host image: `requirements-cu128.txt` for CUDA 12.8 provider images, `requirements-cu126.txt` for CUDA 12.6 provider images, or `requirements.txt` for the local CUDA 13 profile.
+- [ ] Confirm the repo commit, Python environment, requirements profile, PyTorch/CUDA versions, and native build tooling are recorded before benchmarking.
+- [ ] Record the environment summary before native rebuilds:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda); print(torch.cuda.device_count())"
+nvcc --version
+nvidia-smi
+```
+
 - [ ] Confirm `config_examples/h100-8x-distributed-simple-exact.yaml` still matches the intended target hardware and dataset scale.
 - [ ] Confirm `persist.build_search_cache_after_pipeline: false` so search-cache generation stays off the distributed critical path.
 - [ ] Verification: write an environment summary report before any expensive H100 run.
@@ -61,26 +70,29 @@ python -m pipeline.distributed.controller --config config_examples/h100-8x-distr
 
 ## Phase 3 - Native Extension Rebuild And Tests
 
+- [ ] Confirm `torch.version.cuda` and `nvcc --version` are from the same CUDA profile before rebuilding; CUDA 13 is not required if the installed PyTorch wheel and toolkit match.
 - [ ] Rebuild native extensions on the target H100 host before any reducer benchmark:
 
-```powershell
+```bash
 cd src/native
 python setup.py build_ext --inplace
+cd ../..
 ```
 
 - [ ] Run native tests after rebuild:
 
-```powershell
+```bash
 python -m pytest src/native/tests/test_topk.py src/native/tests/test_reduce.py -q
 ```
 
 - [ ] Run store/reducer tests that exercise the rebuilt extension:
 
-```powershell
+```bash
 python -m pytest tests/store/test_top_coactivation_modes.py -q
 ```
 
 - [ ] Confirm `target_sharded` reducer mode does not fall back to a legacy native signature.
+- [ ] If the build fails, inspect the active requirements profile, `torch.__version__`, `torch.version.cuda`, `CUDA_HOME`, `PATH`, and `nvcc --version` before changing code or assuming a CUDA 13-only issue.
 - [ ] Record native build info, compiler details, OpenMP settings, and reducer API compatibility in the benchmark report.
 
 ## Phase 4 - One-Worker H100 Equivalence Gate
