@@ -266,13 +266,16 @@ Local verification status:
 
 - Local tests prove the exact reducer math, simple exact path, target-sharded wrapper behavior, MapReduce CPU/OpenMP-compatible path, sorted COO storage, resume/stitch behavior, PMI handling, and the known local-top-K correctness trap without requiring H100 hardware.
 - `parallel` MapReduce execution is intentionally not part of the exact local gate; scheduler validation rejects unsupported parallel execution until sequential shard outputs and target-machine benchmarks justify it.
-- WSL/.venv native rebuild with CUDA extensions enabled failed because the local CUDA toolkit is `12.0` while PyTorch was built for CUDA `13.0`.
-- The CPU/OpenMP native reducer extensions were rebuilt with `TURING_NATIVE_CPU_ONLY=1`, and `src/native/tests/test_reduce.py` passed (`6 passed in 23.64s`).
-- CUDA Triton top-k correctness/agreement tests passed via `src/native/tests/test_topk.py`; the full-shape benchmark reported PyTorch top-k `11.368 ms`, Triton radix-select `10.522 ms`, `1.08x` faster on the local RTX 5070 Ti.
+- Initial WSL/.venv native rebuild with CUDA extensions enabled failed because `torch.utils.cpp_extension` detected `CUDA_HOME=/usr` and picked `/usr/bin/nvcc` from CUDA `12.0`, while PyTorch was built for CUDA `13.0`.
+- The local system also has CUDA `13.0` installed at `/usr/local/cuda`; rebuilding with `CUDA_HOME=/usr/local/cuda` and `/usr/local/cuda/bin` first on `PATH` succeeded.
+- Full in-place native rebuild copied `top_coactivation_reduce`, `mid_reservoir`, `latent_stats_cuda`, and `linear_relu_ext`.
+- Native imports passed after importing `torch` first, which loads PyTorch shared libraries such as `libc10.so`.
+- `src/native/tests/test_reduce.py` passed after the CUDA 13 rebuild (`6 passed in 15.14s`).
+- CUDA Triton top-k correctness/agreement tests passed via `src/native/tests/test_topk.py`; the full-shape benchmark reported PyTorch top-k `11.891 ms`, Triton radix-select `10.842 ms`, `1.10x` faster on the local RTX 5070 Ti.
 
 Deferred verification:
 
-- Full CUDA extension rebuild still needs a toolkit/PyTorch CUDA-version match. Keep target-machine native rebuild and native/store coverage in Part 9 before H100 benchmarking.
+- Target-machine native rebuild and native/store coverage still belong in Part 9 before H100 benchmarking, but the local WSL CUDA 13 rebuild is no longer blocked.
 
 Verification:
 
@@ -439,7 +442,7 @@ WSL/.venv CUDA smoke result:
 
 - Confirmed the WSL environment has PyTorch CUDA available with one local `NVIDIA GeForce RTX 5070 Ti`, plus `models/TuringLLM/model_1722550239_03986.pt`, `models/TuringLLM/SAE`, and `data`.
 - Fixed local CUDA manifest planning by normalizing CUDA metadata (`uuid`, `pci_bus_id`) to strings in `src/pipeline/distributed/devices.py`.
-- Rebuilt CPU/OpenMP native reducer extensions locally; full CUDA extension rebuild remains blocked by CUDA toolkit `12.0` vs PyTorch CUDA `13.0`.
+- Rebuilt all native extensions locally after forcing the CUDA 13 toolchain with `CUDA_HOME=/usr/local/cuda` and `/usr/local/cuda/bin` first on `PATH`.
 - Planned and ran one-worker `distributed_simple_exact` under run root `outputs/20260523-141046-7b815c34`.
 - Pass 1 processed `64` batches / `32,768` sequences on CUDA and filled `32,768 / 32,768` sequence representations.
 - Pass-1 merge wrote `latent_stats.pt`, `top_ctx.pt`, `mid_ctx.pt`, `seq_repr.pt`, `logit_ctx.pt`, `seq_latent_index/`, and `distributed/reports/pass1_sanity_report.json`. Merge elapsed time was about `146.08s`; peak traced CPU memory was `56,758,807` bytes on the rerun.

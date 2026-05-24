@@ -1,9 +1,7 @@
-﻿"""Compatibility facade for distributed pass-2 reduce helpers."""
+"""Distributed pass-2 reduce package exports."""
 
-from __future__ import annotations
-
-from .pass2.cli import build_arg_parser, main
-from .pass2.contracts import (
+from .cli import build_arg_parser, main
+from .contracts import (
     CandidateDumpReducerEntry,
     CandidateDumpReducerInputs,
     CandidatePreAggregationReducerEntry,
@@ -19,7 +17,7 @@ from .pass2.contracts import (
     SimpleExactReduceResult,
     TargetRange,
 )
-from .pass2.inputs import (
+from .inputs import (
     build_global_top_ctx_target_mapping,
     load_candidate_dump_reducer_inputs,
     load_candidate_preaggregation_reducer_inputs,
@@ -30,7 +28,7 @@ from .pass2.inputs import (
     validate_candidate_preaggregation_reducer_inputs,
     validate_global_active_count,
 )
-from .pass2.mapreduce import (
+from .mapreduce import (
     apply_pmi_postprocess_to_topk,
     cleanup_mapreduce_target_shards,
     compute_total_tokens_per_target,
@@ -42,7 +40,7 @@ from .pass2.mapreduce import (
     stitch_mapreduce_target_shards,
     validate_pass2_reduce_scheduler_config,
 )
-from .pass2.mapreduce_io import (
+from .mapreduce_io import (
     build_mapreduce_storage_metadata,
     checksum_coo_payload,
     estimate_mapreduce_reducer_input_bytes,
@@ -57,11 +55,11 @@ from .pass2.mapreduce_io import (
     validate_mapreduce_target_shard_artifact,
     validate_mapreduce_target_shard_result,
 )
-from .pass2.reports import (
+from .reports import (
     build_pass2_reduce_manifest_metrics,
     format_pass2_reduce_benchmark_report,
 )
-from .pass2.simple import (
+from .simple import (
     attach_simple_exact_dump_to_store,
     build_simple_exact_candidate_dump,
     build_simple_exact_reduce_report,
@@ -71,6 +69,14 @@ from .pass2.simple import (
     validate_pmi_reduce_inputs,
     validate_saved_top_coactivation_artifact,
     validate_top_coactivation_reduce_output,
+)
+from .worker import (
+    build_pass2_worker_summary,
+    initialize_pass2_worker_resources,
+    load_pass2_global_artifacts,
+    run_pass2_worker,
+    save_pass2_candidate_dump,
+    validate_pass2_worker_inputs,
 )
 
 __all__ = [
@@ -88,53 +94,55 @@ __all__ = [
     "SimpleExactCandidateDump",
     "SimpleExactReduceResult",
     "TargetRange",
-    "apply_pmi_postprocess_to_topk",
-    "attach_simple_exact_dump_to_store",
     "build_arg_parser",
+    "main",
     "build_global_top_ctx_target_mapping",
+    "load_candidate_dump_reducer_inputs",
+    "load_candidate_preaggregation_reducer_inputs",
+    "load_global_active_count",
+    "load_global_top_ctx_target_mapping",
+    "validate_candidate_dump_reducer_inputs",
+    "validate_candidate_dump_sequence_coverage",
+    "validate_candidate_preaggregation_reducer_inputs",
+    "validate_global_active_count",
+    "apply_pmi_postprocess_to_topk",
     "build_mapreduce_storage_metadata",
-    "build_pass2_reduce_manifest_metrics",
-    "build_simple_exact_candidate_dump",
-    "build_simple_exact_reduce_report",
     "checksum_coo_payload",
     "cleanup_mapreduce_target_shards",
     "compute_total_tokens_per_target",
     "estimate_mapreduce_reducer_input_bytes",
     "estimate_mapreduce_shard_tensor_bytes",
-    "format_pass2_reduce_benchmark_report",
-    "load_candidate_dump_reducer_inputs",
-    "load_candidate_preaggregation_reducer_inputs",
-    "load_global_active_count",
-    "load_global_top_ctx_target_mapping",
     "load_mapreduce_partial_sum_shard",
     "load_mapreduce_reducer_shards",
     "load_mapreduce_target_shard_result",
-    "main",
     "mapreduce_target_shard_path",
     "partition_target_ranges",
     "reduce_mapreduce_target_range",
-    "reduce_simple_exact_candidate_dump",
     "run_mapreduce_reduce_and_write",
-    "run_simple_exact_reduce_and_write",
-    "run_simple_exact_reduce_stage",
     "save_mapreduce_partial_sum_shard",
     "save_mapreduce_target_shard_result",
     "shard_preaggregation_by_target_range",
     "sorted_coo_preaggregation_payload",
     "stitch_mapreduce_target_shards",
-    "validate_candidate_dump_reducer_inputs",
-    "validate_candidate_dump_sequence_coverage",
-    "validate_candidate_preaggregation_reducer_inputs",
-    "validate_global_active_count",
     "validate_mapreduce_partial_sum_shard",
     "validate_mapreduce_target_shard_artifact",
     "validate_mapreduce_target_shard_result",
     "validate_pass2_reduce_scheduler_config",
+    "build_pass2_reduce_manifest_metrics",
+    "format_pass2_reduce_benchmark_report",
+    "attach_simple_exact_dump_to_store",
+    "build_simple_exact_candidate_dump",
+    "build_simple_exact_reduce_report",
+    "reduce_simple_exact_candidate_dump",
+    "run_simple_exact_reduce_and_write",
+    "run_simple_exact_reduce_stage",
     "validate_pmi_reduce_inputs",
     "validate_saved_top_coactivation_artifact",
     "validate_top_coactivation_reduce_output",
+    "build_pass2_worker_summary",
+    "initialize_pass2_worker_resources",
+    "load_pass2_global_artifacts",
+    "run_pass2_worker",
+    "save_pass2_candidate_dump",
+    "validate_pass2_worker_inputs",
 ]
-
-
-if __name__ == "__main__":
-    main()

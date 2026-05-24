@@ -144,6 +144,17 @@ pip install -r requirements.txt
 
 ### 3 — Build native C++/CUDA extensions
 
+If WSL has more than one CUDA toolkit or an older `/usr/bin/nvcc`, make sure the
+toolkit matches the PyTorch build. For the current `torch 2.10.0+cu130` setup,
+use CUDA 13:
+
+```bash
+export CUDA_HOME=/usr/local/cuda
+export PATH="$CUDA_HOME/bin:$PATH"
+```
+
+You can save those exports in a local ignored env file such as `.env.local`.
+
 ```bash
 cd src/native
 python setup.py build_ext --inplace

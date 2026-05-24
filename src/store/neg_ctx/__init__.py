@@ -1,42 +1,35 @@
-"""Compatibility facade for negative-context store helpers."""
+"""Package entrypoint for negative-context store helpers."""
 
 from __future__ import annotations
 
-import torch
-
-from config import config
-from store.neg_ctx.ann import (
+from .ann import (
     TorchANNIndex,
     _record_ann_memory_estimate,
     check_neg_ctx_memory_guardrail,
     estimate_neg_ctx_ann_memory,
     estimate_neg_ctx_ann_memory_for_shape,
 )
-from store.neg_ctx.backends import (
+from .backends import (
     build_neg_ctx,
     build_neg_ctx_index_sharded,
     build_neg_ctx_multi_gpu,
     build_neg_ctx_single_gpu_exact,
 )
-from store.neg_ctx.component import (
-    _PAIR_CHUNK,
-    _process_component,
-    _process_component_sharded,
-)
-from store.neg_ctx.devices import (
+from .component import _PAIR_CHUNK, _process_component, _process_component_sharded
+from .devices import (
     _ann_device,
     _validate_cuda_devices,
     parse_neg_ctx_devices,
     partition_components,
 )
-from store.neg_ctx.sharded_ann import (
+from .sharded_ann import (
     ANNIndexShard,
     ShardedANNIndex,
     merge_shard_search_results,
     partition_index_slots,
 )
-from store.neg_ctx.stats import NegCtxStats
-from store.neg_ctx.validation import validate_neg_ctx_output
+from .stats import NegCtxStats
+from .validation import validate_neg_ctx_output
 
 __all__ = [
     "ANNIndexShard",

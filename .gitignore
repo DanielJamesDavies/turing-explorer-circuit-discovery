@@ -10,6 +10,8 @@ src/native/build/
 
 # Virtual environment
 .venv/
+.env.local
+.env.*.local
 
 # Data & outputs
 data/
