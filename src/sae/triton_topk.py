@@ -114,8 +114,12 @@ def _build_kernel():
           the boolean include mask.
         """
         row      = tl.program_id(0)
-        base     = row * N
-        out_base = row * K
+        # H100-sized batches can produce M=65536 rows for N=40960, where
+        # row * N exceeds int32. Keep pointer offsets in int64 to avoid
+        # wrapping input addresses and causing illegal memory accesses.
+        row_i64  = row.to(tl.int64)
+        base     = row_i64 * N
+        out_base = row_i64 * K
         n_tiles  = N // BLOCK_N
 
         # ── Phase 1: 8×2-bit radix select ────────────────────────────────────
