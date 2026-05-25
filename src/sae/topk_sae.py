@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from config import config
+from .fused_exact_topk import linear_relu_topk_exact as _linear_relu_topk_exact
 from .fused_linear_relu import is_available as _cublaslt_available, linear_relu as _linear_relu
 from .triton_topk import (
     is_available as _triton_topk_available,
@@ -14,6 +15,19 @@ from .triton_topk import (
 # ── Top-k backend selection ───────────────────────────────────────────────────
 # Set env var TURINGLLM_TOPK_IMPL=pytorch|triton to override config.yaml.
 # Default config uses the Triton radix-select kernel when available.
+
+def _initial_encode_backend() -> str:
+    backend = os.environ.get("TURINGLLM_SAE_ENCODE_IMPL")
+    if backend is None:
+        backend = config.sae.encode_backend
+    backend = backend.strip().lower()
+    if backend not in ("standard", "fused_exact_topk"):
+        raise ValueError(
+            "TURINGLLM_SAE_ENCODE_IMPL/config.sae.encode_backend must be "
+            f"'standard' or 'fused_exact_topk', got {backend!r}"
+        )
+    return backend
+
 
 def _initial_topk_backend() -> str:
     backend = os.environ.get("TURINGLLM_TOPK_IMPL")
@@ -28,6 +42,7 @@ def _initial_topk_backend() -> str:
     return backend
 
 
+_ENCODE_BACKEND: str = _initial_encode_backend()
 _TOPK_BACKEND: str = _initial_topk_backend()
 _USE_TRITON_TOPK: bool = _TOPK_BACKEND == "triton"
 
@@ -54,11 +69,25 @@ def set_topk_backend(backend: str) -> None:
     print(f"[topk_sae] top-k backend: {backend}")
 
 
+def set_encode_backend(backend: str) -> None:
+    """Switch the non-gradient SAE encode implementation at runtime."""
+    global _ENCODE_BACKEND
+    if backend not in ("standard", "fused_exact_topk"):
+        raise ValueError(f"backend must be 'standard' or 'fused_exact_topk', got {backend!r}")
+    _ENCODE_BACKEND = backend
+    print(f"[topk_sae] encode backend: {backend}")
+
+
 def get_topk_backend() -> str:
     """Return the name of the currently active top-k backend."""
     if _USE_TRITON_TOPK and _triton_topk_available():
         return "triton"
     return "pytorch"
+
+
+def get_encode_backend() -> str:
+    """Return the active non-gradient SAE encode backend."""
+    return _ENCODE_BACKEND
 
 
 def _warmup_triton_topk(d_sae: int, k: int, device: torch.device) -> None:
@@ -143,6 +172,14 @@ class SAE(nn.Module):
         if torch.is_grad_enabled():
             pre_acts = torch.relu(nn.functional.linear(x, self.encoder.weight, self._get_bias_eff()))
             return pre_acts.topk(self.k, sorted=False, dim=-1)
+
+        if _ENCODE_BACKEND == "fused_exact_topk":
+            return _linear_relu_topk_exact(
+                x,
+                self.encoder.weight,
+                self._get_bias_eff(),
+                self.k,
+            )
 
         pre_acts = _linear_relu(x, self.encoder.weight, self._get_bias_eff())
 

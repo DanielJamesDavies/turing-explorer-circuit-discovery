@@ -13,6 +13,7 @@ hardware:
   ann_device: "auto" # ANN search device for neg_ctx: "auto" (GPU if CUDA available, else CPU) | "gpu" | "cpu"
   keep_model_loaded_for_neg_ctx: false # high-VRAM mode: skip model/SAE offload + reload around neg_ctx
 sae:
+  encode_backend: "standard" # "standard" = dense Linear+ReLU then top-k; "fused_exact_topk" is experimental exact block-local merge.
   topk_backend: "pytorch" # "pytorch" uses torch.topk; "triton" uses the custom radix-select kernel. TURINGLLM_TOPK_IMPL overrides this.
 first_pass:
   sae_encode_mode: "streaming" # "streaming" encodes in layer hooks; "deferred" buffers activations and encodes after forward.

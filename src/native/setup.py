@@ -52,9 +52,20 @@ if _CUDA_AVAILABLE:
             extra_link_args=["-lcublasLt"],
         )
     )
+    ext_modules.append(
+        CUDAExtension(
+            "linear_relu_topk_exact_ext",
+            ["linear_relu_topk_exact.cu"],
+            extra_compile_args={"cxx": cxx_args, "nvcc": nvcc_args},
+        )
+    )
 else:
     reason = "TURING_NATIVE_CPU_ONLY=1" if _CPU_ONLY else "CUDA not available"
-    print(f"WARNING: {reason} - latent_stats_cuda and linear_relu_ext will not be built.")
+    print(
+        "WARNING: "
+        f"{reason} - latent_stats_cuda, linear_relu_ext, and "
+        "linear_relu_topk_exact_ext will not be built."
+    )
 
 setup(
     name="native_extensions",

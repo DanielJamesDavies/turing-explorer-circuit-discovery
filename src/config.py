@@ -49,7 +49,16 @@ class HardwareConfig(BaseModel):
 
 class SaeRuntimeConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    encode_backend: str = "standard"
     topk_backend: str = "triton"
+
+    @field_validator("encode_backend")
+    @classmethod
+    def validate_encode_backend(cls, v: str) -> str:
+        allowed = ["standard", "fused_exact_topk"]
+        if v not in allowed:
+            raise ValueError(f"encode_backend must be one of {allowed}, got {v!r}")
+        return v
 
     @field_validator("topk_backend")
     @classmethod
