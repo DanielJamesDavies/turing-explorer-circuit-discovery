@@ -47,6 +47,18 @@ class HardwareConfig(BaseModel):
     ann_device: str = "auto"
     keep_model_loaded_for_neg_ctx: bool = False
 
+class SaeRuntimeConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    topk_backend: str = "triton"
+
+    @field_validator("topk_backend")
+    @classmethod
+    def validate_topk_backend(cls, v: str) -> str:
+        allowed = ["triton", "pytorch"]
+        if v not in allowed:
+            raise ValueError(f"topk_backend must be one of {allowed}, got {v!r}")
+        return v
+
 class TopCtxConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_sequences: int = 64
@@ -629,6 +641,7 @@ class RootConfig(BaseModel):
     weights: WeightsConfig
     data: DataConfig = Field(default_factory=DataConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
+    sae: SaeRuntimeConfig = Field(default_factory=SaeRuntimeConfig)
     latents: LatentsConfig = Field(default_factory=LatentsConfig)
     distributed: DistributedConfig = Field(default_factory=DistributedConfig)
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)

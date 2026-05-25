@@ -31,6 +31,9 @@ hardware:
   ann_device: "cuda:0"
   keep_model_loaded_for_neg_ctx: true
 
+sae:
+  topk_backend: "pytorch"
+
 latents:
   top_ctx:
     n_sequences: 64

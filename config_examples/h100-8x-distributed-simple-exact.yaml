@@ -21,6 +21,9 @@ hardware:
   ann_device: "auto"
   keep_model_loaded_for_neg_ctx: true
 
+sae:
+  topk_backend: "pytorch"
+
 distributed:
   mode: "distributed_simple_exact"
   output_base: "outputs"

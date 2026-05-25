@@ -4,6 +4,7 @@ import torch.nn as nn
 from dataclasses import dataclass
 from typing import Optional
 
+from config import config
 from .fused_linear_relu import is_available as _cublaslt_available, linear_relu as _linear_relu
 from .triton_topk import (
     is_available as _triton_topk_available,
@@ -11,12 +12,23 @@ from .triton_topk import (
 )
 
 # ── Top-k backend selection ───────────────────────────────────────────────────
-# Set env var TURINGLLM_TOPK_IMPL=pytorch to force the PyTorch fallback.
-# Default: use the Triton radix-select kernel when available.
+# Set env var TURINGLLM_TOPK_IMPL=pytorch|triton to override config.yaml.
+# Default config uses the Triton radix-select kernel when available.
 
-_USE_TRITON_TOPK: bool = (
-    os.environ.get("TURINGLLM_TOPK_IMPL", "triton").strip().lower() != "pytorch"
-)
+def _initial_topk_backend() -> str:
+    backend = os.environ.get("TURINGLLM_TOPK_IMPL")
+    if backend is None:
+        backend = config.sae.topk_backend
+    backend = backend.strip().lower()
+    if backend not in ("triton", "pytorch"):
+        raise ValueError(
+            "TURINGLLM_TOPK_IMPL/config.sae.topk_backend must be "
+            f"'triton' or 'pytorch', got {backend!r}"
+        )
+    return backend
+
+
+_USE_TRITON_TOPK: bool = _initial_topk_backend() == "triton"
 
 _triton_topk_warmed_up: bool = False
 
