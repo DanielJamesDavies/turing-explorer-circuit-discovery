@@ -49,23 +49,26 @@ class HardwareConfig(BaseModel):
 
 class SaeRuntimeConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    encode_backend: str = "standard"
     topk_backend: str = "triton"
-
-    @field_validator("encode_backend")
-    @classmethod
-    def validate_encode_backend(cls, v: str) -> str:
-        allowed = ["standard", "blockwise_fused_topk"]
-        if v not in allowed:
-            raise ValueError(f"encode_backend must be one of {allowed}, got {v!r}")
-        return v
 
     @field_validator("topk_backend")
     @classmethod
     def validate_topk_backend(cls, v: str) -> str:
-        allowed = ["triton", "pytorch", "blockwise"]
+        allowed = ["triton", "pytorch"]
         if v not in allowed:
             raise ValueError(f"topk_backend must be one of {allowed}, got {v!r}")
+        return v
+
+class FirstPassConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    sae_encode_mode: str = "streaming"
+
+    @field_validator("sae_encode_mode")
+    @classmethod
+    def validate_sae_encode_mode(cls, v: str) -> str:
+        allowed = ["streaming", "deferred"]
+        if v not in allowed:
+            raise ValueError(f"sae_encode_mode must be one of {allowed}, got {v!r}")
         return v
 
 class TopCtxConfig(BaseModel):
@@ -651,6 +654,7 @@ class RootConfig(BaseModel):
     data: DataConfig = Field(default_factory=DataConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
     sae: SaeRuntimeConfig = Field(default_factory=SaeRuntimeConfig)
+    first_pass: FirstPassConfig = Field(default_factory=FirstPassConfig)
     latents: LatentsConfig = Field(default_factory=LatentsConfig)
     distributed: DistributedConfig = Field(default_factory=DistributedConfig)
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)

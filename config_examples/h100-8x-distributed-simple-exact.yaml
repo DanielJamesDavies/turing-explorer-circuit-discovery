@@ -22,8 +22,9 @@ hardware:
   keep_model_loaded_for_neg_ctx: true
 
 sae:
-  encode_backend: "standard"
   topk_backend: "pytorch"
+first_pass:
+  sae_encode_mode: "streaming"
 
 distributed:
   mode: "distributed_simple_exact"

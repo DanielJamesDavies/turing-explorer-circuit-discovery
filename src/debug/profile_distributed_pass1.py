@@ -103,6 +103,7 @@ def _run_profiled_batches(
     n_kinds = len(runtime.bank.kinds)
     pending_encodes: list[tuple[PendingEncode, torch.Tensor]] = []
     current_batch_last_latents: Dict[int, torch.Tensor] = {}
+    deferred_sae_encode = config.first_pass.sae_encode_mode == "deferred"
 
     seq_idx_cfg = config.latents.seq_latent_index
     accumulator: Optional[SeqLatentIndexAccumulator] = None
@@ -124,6 +125,9 @@ def _run_profiled_batches(
         if layer_idx == last_layer_idx:
             with record_function("seq_repr_update"):
                 runtime.seq_repr.update(sequence_ids, activations[resid_kind_idx])
+
+        if deferred_sae_encode:
+            return
 
         if runtime.multi_gpu:
             raise RuntimeError("profile_distributed_pass1 expects one worker-local GPU")
@@ -156,21 +160,69 @@ def _run_profiled_batches(
                 accumulator,
             )
 
+    def encode_deferred_activations(
+        sequence_ids: torch.Tensor,
+        deferred_layers: list[tuple[int, Tuple[torch.Tensor, ...]]],
+    ) -> None:
+        assert runtime.bank is not None
+        if runtime.multi_gpu:
+            raise RuntimeError("profile_distributed_pass1 expects one worker-local GPU")
+
+        for layer_idx, activations in deferred_layers:
+            if runtime.bank.parallel_kinds:
+                with record_function("deferred_sae_encode_parallel_all_kinds"):
+                    latents_list = runtime.bank.encode_layer_kinds_parallel(activations, layer_idx)
+                for kind_idx, latents in enumerate(latents_list):
+                    comp_idx = component_idx(layer_idx, kind_idx, n_kinds)
+                    _update_stores(
+                        runtime.mid_ctx_warmup,
+                        current_batch_last_latents,
+                        comp_idx,
+                        sequence_ids,
+                        latents,
+                        accumulator,
+                    )
+                continue
+
+            for kind_idx, kind in enumerate(runtime.bank.kinds):
+                comp_idx = component_idx(layer_idx, kind_idx, n_kinds)
+                with record_function(f"deferred_sae_encode_{kind}"):
+                    latents = runtime.bank.encode(activations[kind_idx], kind, layer_idx)
+                _update_stores(
+                    runtime.mid_ctx_warmup,
+                    current_batch_last_latents,
+                    comp_idx,
+                    sequence_ids,
+                    latents,
+                    accumulator,
+                )
+
     def run_one_batch(batch_ids: torch.Tensor, batch_tokens: torch.Tensor) -> None:
         current_batch_last_latents.clear()
         pending_encodes.clear()
+        deferred_layers: list[tuple[int, Tuple[torch.Tensor, ...]]] = []
+
+        def batch_activations_callback(
+            layer_idx: int,
+            acts: Tuple[torch.Tensor, ...],
+        ) -> None:
+            if deferred_sae_encode:
+                deferred_layers.append((layer_idx, tuple(act.detach() for act in acts)))
+            activations_callback(layer_idx, batch_ids, acts)
+
         with record_function("model_forward_with_callbacks"):
             _tokens, last_logits, _ = runtime.model.forward(
                 batch_tokens,
                 num_gen=1,
                 tokenize_final=False,
-                activations_callback=lambda layer_idx, acts: activations_callback(
-                    layer_idx,
-                    batch_ids,
-                    acts,
-                ),
+                activations_callback=batch_activations_callback,
                 return_activations=False,
             )
+
+        if deferred_sae_encode:
+            with record_function("deferred_sae_encode_and_update"):
+                encode_deferred_activations(batch_ids, deferred_layers)
+            deferred_layers.clear()
 
         if last_logits is not None:
             with record_function("logit_softmax"):
@@ -190,7 +242,7 @@ def _run_profiled_batches(
         f"batch_size={config.data.batch_size} "
         f"memory={config.hardware.memory} "
         f"parallel_kinds={config.hardware.parallel_kinds} "
-        f"encode_backend={config.sae.encode_backend} "
+        f"sae_encode_mode={config.first_pass.sae_encode_mode} "
         f"topk_backend={config.sae.topk_backend}"
     )
 

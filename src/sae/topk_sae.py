@@ -5,46 +5,29 @@ from dataclasses import dataclass
 from typing import Optional
 
 from config import config
-from .blockwise_topk import topk_blockwise as _topk_blockwise
 from .fused_linear_relu import is_available as _cublaslt_available, linear_relu as _linear_relu
-from .fused_linear_relu_topk import linear_relu_topk_blockwise as _linear_relu_topk_blockwise
 from .triton_topk import (
     is_available as _triton_topk_available,
     topk_nonneg_bf16 as _topk_nonneg_bf16,
 )
 
 # ── Top-k backend selection ───────────────────────────────────────────────────
-# Set env vars TURINGLLM_TOPK_IMPL and TURINGLLM_SAE_ENCODE_IMPL to override
-# config.yaml for benchmark experiments.
+# Set env var TURINGLLM_TOPK_IMPL=pytorch|triton to override config.yaml.
 # Default config uses the Triton radix-select kernel when available.
-
-def _initial_encode_backend() -> str:
-    backend = os.environ.get("TURINGLLM_SAE_ENCODE_IMPL")
-    if backend is None:
-        backend = config.sae.encode_backend
-    backend = backend.strip().lower()
-    if backend not in ("standard", "blockwise_fused_topk"):
-        raise ValueError(
-            "TURINGLLM_SAE_ENCODE_IMPL/config.sae.encode_backend must be "
-            f"'standard' or 'blockwise_fused_topk', got {backend!r}"
-        )
-    return backend
-
 
 def _initial_topk_backend() -> str:
     backend = os.environ.get("TURINGLLM_TOPK_IMPL")
     if backend is None:
         backend = config.sae.topk_backend
     backend = backend.strip().lower()
-    if backend not in ("triton", "pytorch", "blockwise"):
+    if backend not in ("triton", "pytorch"):
         raise ValueError(
             "TURINGLLM_TOPK_IMPL/config.sae.topk_backend must be "
-            f"'triton', 'pytorch', or 'blockwise', got {backend!r}"
+            f"'triton' or 'pytorch', got {backend!r}"
         )
     return backend
 
 
-_ENCODE_BACKEND: str = _initial_encode_backend()
 _TOPK_BACKEND: str = _initial_topk_backend()
 _USE_TRITON_TOPK: bool = _TOPK_BACKEND == "triton"
 
@@ -64,36 +47,18 @@ def set_topk_backend(backend: str) -> None:
         set_topk_backend("triton")    # benchmark Triton
     """
     global _TOPK_BACKEND, _USE_TRITON_TOPK
-    if backend not in ("triton", "pytorch", "blockwise"):
-        raise ValueError(f"backend must be 'triton', 'pytorch', or 'blockwise', got {backend!r}")
+    if backend not in ("triton", "pytorch"):
+        raise ValueError(f"backend must be 'triton' or 'pytorch', got {backend!r}")
     _TOPK_BACKEND = backend
     _USE_TRITON_TOPK = backend == "triton"
     print(f"[topk_sae] top-k backend: {backend}")
-
-
-def set_encode_backend(backend: str) -> None:
-    """Switch the non-gradient SAE encode implementation at runtime."""
-    global _ENCODE_BACKEND
-    if backend not in ("standard", "blockwise_fused_topk"):
-        raise ValueError(
-            f"backend must be 'standard' or 'blockwise_fused_topk', got {backend!r}"
-        )
-    _ENCODE_BACKEND = backend
-    print(f"[topk_sae] encode backend: {backend}")
 
 
 def get_topk_backend() -> str:
     """Return the name of the currently active top-k backend."""
     if _USE_TRITON_TOPK and _triton_topk_available():
         return "triton"
-    if _TOPK_BACKEND == "blockwise":
-        return "blockwise"
     return "pytorch"
-
-
-def get_encode_backend() -> str:
-    """Return the active non-gradient SAE encode backend."""
-    return _ENCODE_BACKEND
 
 
 def _warmup_triton_topk(d_sae: int, k: int, device: torch.device) -> None:
@@ -179,14 +144,6 @@ class SAE(nn.Module):
             pre_acts = torch.relu(nn.functional.linear(x, self.encoder.weight, self._get_bias_eff()))
             return pre_acts.topk(self.k, sorted=False, dim=-1)
 
-        if _ENCODE_BACKEND == "blockwise_fused_topk":
-            return _linear_relu_topk_blockwise(
-                x,
-                self.encoder.weight,
-                self._get_bias_eff(),
-                self.k,
-            )
-
         pre_acts = _linear_relu(x, self.encoder.weight, self._get_bias_eff())
 
         if (
@@ -196,9 +153,6 @@ class SAE(nn.Module):
             and pre_acts.dtype == torch.bfloat16
         ):
             return _topk_nonneg_bf16(pre_acts, self.k)
-
-        if _TOPK_BACKEND == "blockwise":
-            return _topk_blockwise(pre_acts, self.k)
 
         return pre_acts.topk(self.k, sorted=False, dim=-1)
 

@@ -1,11 +1,9 @@
-"""Benchmark SAE encode backend prototypes.
+"""Benchmark production SAE encode top-k backends.
 
 This script benchmarks the measured pass1 hot path in isolation:
 
   1. current cublasLt Linear+ReLU + PyTorch top-k
   2. cublasLt Linear+ReLU + Triton top-k
-  3. cublasLt Linear+ReLU + blockwise top-k prototype
-  4. blockwise Linear+ReLU+TopK prototype
 
 Run on the H100 pod from the repo root or ``src`` directory:
 
@@ -22,13 +20,10 @@ from dataclasses import dataclass
 from typing import Callable
 
 import torch
-import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sae.blockwise_topk import topk_blockwise
 from sae.fused_linear_relu import linear_relu
-from sae.fused_linear_relu_topk import linear_relu_topk_blockwise
 from sae.triton_topk import is_available as triton_topk_available
 from sae.triton_topk import topk_nonneg_bf16
 
@@ -50,7 +45,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--k", type=int, default=128)
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iters", type=int, default=10)
-    parser.add_argument("--block-n", type=int, default=4096)
     parser.add_argument("--skip-correctness", action="store_true")
     return parser.parse_args()
 
@@ -122,22 +116,6 @@ def _check_values(
             raise AssertionError(f"{name}: indices do not gather returned values")
 
 
-def _check_candidate(
-    name: str,
-    values: torch.Tensor,
-    indices: torch.Tensor,
-    ref_values: torch.Tensor,
-    pre_acts: torch.Tensor | None = None,
-) -> bool:
-    try:
-        _check_values(name, values, indices, ref_values, pre_acts)
-    except AssertionError as exc:
-        print(f"  [FAIL] {exc}")
-        return False
-    print(f"  [PASS] {name}")
-    return True
-
-
 def main() -> None:
     args = parse_args()
     if not torch.cuda.is_available():
@@ -161,53 +139,16 @@ def main() -> None:
     ref_values, ref_indices = pre_acts.topk(args.k, dim=-1, sorted=False)
     _synchronize()
 
-    valid_triton = triton_topk_available()
-    valid_blockwise_topk = True
-    valid_blockwise_fused = True
-
     if not args.skip_correctness:
         print("Correctness checks:")
         _check_values("pytorch", ref_values, ref_indices, ref_values, pre_acts)
+        print("  [PASS] pytorch_topk")
 
         if triton_topk_available():
             triton_values, triton_indices = topk_nonneg_bf16(pre_acts, args.k)
             _synchronize()
-            valid_triton = _check_candidate(
-                "triton_topk",
-                triton_values,
-                triton_indices,
-                ref_values,
-                pre_acts,
-            )
-
-        block_values, block_indices = topk_blockwise(
-            pre_acts,
-            args.k,
-            block_n=args.block_n,
-        )
-        _synchronize()
-        valid_blockwise_topk = _check_candidate(
-            "blockwise_topk",
-            block_values,
-            block_indices,
-            ref_values,
-            pre_acts,
-        )
-
-        fused_values, fused_indices = linear_relu_topk_blockwise(
-            x,
-            weight,
-            bias,
-            args.k,
-            block_n=args.block_n,
-        )
-        _synchronize()
-        valid_blockwise_fused = _check_candidate(
-            "blockwise_fused_topk",
-            fused_values,
-            fused_indices,
-            ref_values,
-        )
+            _check_values("triton_topk", triton_values, triton_indices, ref_values, pre_acts)
+            print("  [PASS] triton_topk")
 
     print("\nBenchmarks:")
     results: list[BenchmarkResult] = []
@@ -219,29 +160,11 @@ def main() -> None:
             iters=args.iters,
         )
     )
-    if valid_triton and triton_topk_available():
+    if triton_topk_available():
         results.append(
             _time_backend(
                 "cublaslt_relu + triton_topk",
                 lambda: topk_nonneg_bf16(linear_relu(x, weight, bias), args.k),
-                warmup=args.warmup,
-                iters=args.iters,
-            )
-        )
-    if valid_blockwise_topk:
-        results.append(
-            _time_backend(
-                "cublaslt_relu + blockwise_topk",
-                lambda: topk_blockwise(linear_relu(x, weight, bias), args.k, block_n=args.block_n),
-                warmup=args.warmup,
-                iters=args.iters,
-            )
-        )
-    if valid_blockwise_fused:
-        results.append(
-            _time_backend(
-                "blockwise_fused_topk",
-                lambda: linear_relu_topk_blockwise(x, weight, bias, args.k, block_n=args.block_n),
                 warmup=args.warmup,
                 iters=args.iters,
             )

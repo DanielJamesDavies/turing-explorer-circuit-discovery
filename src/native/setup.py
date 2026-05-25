@@ -34,12 +34,6 @@ ext_modules = [
         extra_compile_args={"cxx": cxx_args},
         extra_link_args=link_args,
     ),
-    CppExtension(
-        "linear_relu_topk_ext",
-        ["linear_relu_topk.cpp"],
-        extra_compile_args={"cxx": cxx_args},
-        extra_link_args=link_args,
-    ),
 ]
 
 if _CUDA_AVAILABLE:
