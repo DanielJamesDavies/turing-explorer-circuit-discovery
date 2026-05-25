@@ -20,6 +20,7 @@ hardware:
 sae:
   encode_backend: "standard" # "standard" = dense Linear+ReLU then top-k; "fused_exact_topk" is experimental exact block-local merge.
   topk_backend: "pytorch" # "pytorch" uses torch.topk; "triton" uses the custom radix-select kernel. TURINGLLM_TOPK_IMPL overrides this.
+  fused_exact_topk_use_native: false # Set true with encode_backend="fused_exact_topk" after building src/native extensions.
 first_pass:
   sae_encode_mode: "deferred" # "streaming" encodes in layer hooks; "deferred" buffers activations and encodes after forward.
 latents:

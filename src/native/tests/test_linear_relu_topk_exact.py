@@ -128,8 +128,8 @@ def test_native_non_divisible_block() -> None:
         return
     torch.manual_seed(5)
     x = torch.randn(11, 24, device=DEVICE, dtype=torch.bfloat16)
-    weight = torch.randn(70, 24, device=DEVICE, dtype=torch.bfloat16)
-    bias = torch.randn(70, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(90, 24, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(90, device=DEVICE, dtype=torch.bfloat16)
     _assert_matches_reference(
         "native_non_divisible_block",
         x,
@@ -139,6 +139,20 @@ def test_native_non_divisible_block() -> None:
         block_n=32,
         use_native=True,
     )
+
+
+def test_native_rejects_tiny_tail_block() -> None:
+    if not _native_ready():
+        return
+    x = torch.randn(3, 16, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(65, 16, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(65, device=DEVICE, dtype=torch.bfloat16)
+    try:
+        linear_relu_topk_exact(x, weight, bias, 8, block_n=32, use_native=True)
+    except ValueError as exc:
+        assert "final block" in str(exc)
+    else:
+        raise AssertionError("native tiny tail block should be rejected")
 
 
 def test_native_matches_python_path() -> None:
@@ -174,6 +188,8 @@ def main() -> None:
         print("  [PASS] native_3d_pass1_shape")
         test_native_non_divisible_block()
         print("  [PASS] native_non_divisible_block")
+        test_native_rejects_tiny_tail_block()
+        print("  [PASS] native_rejects_tiny_tail_block")
         test_native_matches_python_path()
         print("  [PASS] native_matches_python_path")
     else:

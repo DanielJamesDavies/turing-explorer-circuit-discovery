@@ -1,0 +1,108 @@
+# 1x H100 pass-1 benchmark config using the native fused exact SAE top-k backend.
+#
+# Build native extensions before using this config:
+#   cd src/native && python setup.py build_ext --inplace
+
+weights:
+  model_path: "models/TuringLLM/model_1722550239_03986.pt"
+  sae_path: "models/TuringLLM/SAE"
+
+data:
+  dataset_path: "data"
+  n_shards: 32
+  batch_size: 4096
+
+hardware:
+  multi_gpu: false
+  memory: "fast"
+  compile: true
+  parallel_kinds: true
+  ann_device: "auto"
+  keep_model_loaded_for_neg_ctx: true
+
+sae:
+  encode_backend: "fused_exact_topk"
+  topk_backend: "pytorch"
+  fused_exact_topk_use_native: true
+
+first_pass:
+  sae_encode_mode: "deferred"
+
+latents:
+  top_ctx:
+    n_sequences: 64
+  mid_ctx:
+    n_sequences: 64
+    mode: "reservoir_cpu"
+    band_low_sigma: 0.5
+    band_high_sigma: 1.5
+    warmup_batches: 100
+  neg_ctx:
+    n_sequences: 64
+    n_neighbors: 512
+    min_pos_ctx: 8
+    backend: "single_gpu_exact"
+    devices: []
+    repr_mode: "mean_pool"
+    max_repr_seqs: 200000
+  logit_ctx:
+    n_tokens_per_latent: 32
+    topk_output_tokens: 32
+  top_coactivation:
+    n_latents_per_latent: 64
+    n_candidates_per_component: 16
+    dump_device: "gpu"
+    dump_profile: true
+  seq_latent_index:
+    enabled: true
+    top_k_per_component: 12
+
+distributed:
+  mode: "distributed_simple_exact"
+  output_base: "outputs"
+  worker_count: 1
+  devices: [0]
+  launch_strategy: "manual_commands"
+  resume_policy: "fresh"
+  cleanup_policy: "keep_all"
+  strict_equivalence: true
+  sampling_seed: 0
+  mid_ctx_candidate_pool:
+    enabled: true
+    band_margin_sigma: 1.0
+    max_candidates_per_latent: 64
+    on_truncation: "replay_fallback"
+
+discovery:
+  n_seeds: 16
+  probe_batch_size: 4
+  neg_ctx_eval_max: 16
+  min_faithfulness: 0.2
+  min_active_count: 1
+  max_neighbors: 32
+  focal_monosemantic_min_partners: 4
+  seed_criteria:
+    - stratified_random
+  seed_filter:
+    layers: []
+    kinds: []
+  methods:
+    - counterfactual_gradient
+
+persist:
+  save_workers: 1
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false
+  atomic_saves: true
+  search_cache_n_sequences: 8
+  search_cache_component_chunk: 4
+
+analysis:
+  methods:
+    - coactivation_overlap
+    - layer_distribution
+    - edge_weight_gini
+    - node_activity
+    - node_rarity
+    - top_token_consistency
+    - internode_coact_density

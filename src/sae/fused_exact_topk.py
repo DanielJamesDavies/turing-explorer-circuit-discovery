@@ -14,11 +14,14 @@ import os
 import torch
 import torch.nn.functional as F
 
+from config import config
+
 _ext = None
 _available: bool | None = None
+_load_error: str | None = None
 
 
-def _block_size(default: int = 4096) -> int:
+def _block_size(default: int = 10240) -> int:
     raw = os.environ.get("TURINGLLM_FUSED_EXACT_TOPK_BLOCK_N")
     if raw is None:
         return default
@@ -28,8 +31,36 @@ def _block_size(default: int = 4096) -> int:
     return value
 
 
+def _native_requested() -> bool:
+    raw = os.environ.get("TURINGLLM_FUSED_EXACT_TOPK_USE_NATIVE")
+    if raw is None:
+        return bool(config.sae.fused_exact_topk_use_native)
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _validate_block_size(block_n: int, d_sae: int, k: int, *, use_native: bool) -> None:
+    if block_n < 1:
+        raise ValueError("fused exact top-k block_n must be >= 1")
+    if k > d_sae:
+        raise ValueError(f"k must be <= d_sae, got k={k}, d_sae={d_sae}")
+    if not use_native:
+        return
+    if block_n < k:
+        raise ValueError(
+            "native fused exact top-k requires block_n >= k "
+            f"(got block_n={block_n}, k={k})"
+        )
+    tail = d_sae % block_n
+    if tail and tail < k:
+        raise ValueError(
+            "native fused exact top-k requires the final block to be empty or at least k wide "
+            f"(got d_sae={d_sae}, block_n={block_n}, tail={tail}, k={k}). "
+            "Use a divisor of d_sae such as 10240 for d_sae=40960."
+        )
+
+
 def _load_native() -> bool:
-    global _ext, _available
+    global _ext, _available, _load_error
     if _available is not None:
         return _available
 
@@ -47,8 +78,10 @@ def _load_native() -> bool:
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
         _ext = mod
         _available = True
-    except Exception:
+        _load_error = None
+    except Exception as exc:
         _available = False
+        _load_error = str(exc)
     return _available
 
 
@@ -56,6 +89,19 @@ def native_is_available() -> bool:
     """Return whether the optional native fused exact extension can be loaded."""
 
     return _load_native()
+
+
+def require_native() -> None:
+    """Raise a clear setup error if the native extension cannot be loaded."""
+
+    if _load_native():
+        return
+    raise RuntimeError(
+        "sae.fused_exact_topk_use_native is enabled, but linear_relu_topk_exact_ext "
+        "could not be loaded. Build native extensions with: "
+        "cd src/native && python setup.py build_ext --inplace"
+        + (f". Import error: {_load_error}" if _load_error else "")
+    )
 
 
 def linear_relu_topk_exact(
@@ -71,15 +117,14 @@ def linear_relu_topk_exact(
 
     block_n = int(block_n or _block_size())
     if use_native is None:
-        use_native = os.environ.get("TURINGLLM_FUSED_EXACT_TOPK_USE_NATIVE", "0") == "1"
-    if use_native and _load_native():
-        return _ext.linear_relu_topk_exact(x, weight, bias, int(k), block_n)  # type: ignore[union-attr]
-
+        use_native = _native_requested()
     orig_shape = x.shape
     d_model = int(orig_shape[-1])
     d_sae = int(weight.shape[0])
-    if k > d_sae:
-        raise ValueError(f"k must be <= d_sae, got k={k}, d_sae={d_sae}")
+    _validate_block_size(block_n, d_sae, int(k), use_native=bool(use_native))
+    if use_native:
+        require_native()
+        return _ext.linear_relu_topk_exact(x, weight, bias, int(k), block_n)  # type: ignore[union-attr]
 
     rows = x.reshape(-1, d_model)
     value_chunks: list[torch.Tensor] = []

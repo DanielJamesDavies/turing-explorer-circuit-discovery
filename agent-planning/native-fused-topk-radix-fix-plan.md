@@ -168,3 +168,41 @@ Only if radix local top-k still cannot beat `cublaslt_relu + pytorch_topk`, cons
 I would not start here. Your profiler says the immediate bug is the selector, not the GEMM.
 
 Bottom line: **Phase 1 is the real fix**. Port the Triton radix-select idea into `local_topk_kernel`, validate, then re-profile.
+
+## Production Promotion Results
+H100 pass-1 profiling showed the native fused exact backend is worth promoting from env-var experiment to a guarded production H100 option.
+
+Profile setup:
+- GPU: 1x H100.
+- `data.batch_size: 4096`.
+- `data.n_shards: 32`.
+- `first_pass.sae_encode_mode: "deferred"`.
+- Native fused exact: `sae.encode_backend: "fused_exact_topk"`, `sae.fused_exact_topk_use_native: true`.
+- The native fused exact path uses a production default feature block width of `10240` for `d_sae=40960`.
+- Baseline: `sae.encode_backend: "standard"`, `sae.topk_backend: "pytorch"`.
+
+Measured over 8 profiled pass-1 batches:
+
+```text
+Native fused exact:
+  profiled_pass1_batch avg:       6.897 s
+  deferred encode/update avg:     6.620 s
+  peak CUDA allocated:           40.70 GiB
+
+Standard PyTorch:
+  profiled_pass1_batch avg:       9.670 s
+  deferred encode/update avg:     9.398 s
+  peak CUDA allocated:           55.32 GiB
+```
+
+Observed impact:
+- `~1.40x` faster profiled pass-1 batches.
+- `~14.62 GiB` lower peak CUDA allocation during the profiled window.
+- Native fused exact avoids materializing the full dense SAE activation matrix and reduces allocator pressure.
+
+Production guardrails added:
+- `sae.fused_exact_topk_use_native` controls whether the native extension is required.
+- The validated H100 block size (`10240`) is hardcoded as the production default; `TURINGLLM_FUSED_EXACT_TOPK_BLOCK_N` remains available only as an explicit developer override for future experiments.
+- Native mode fails loudly if `linear_relu_topk_exact_ext` is missing.
+- Native mode rejects unsafe block layouts where the trailing feature block is non-empty but narrower than `k`.
+- Generic defaults stay on `standard + pytorch`; H100 native use is exposed through `config_examples/h100-1x-pass1-native-fused.yaml`.

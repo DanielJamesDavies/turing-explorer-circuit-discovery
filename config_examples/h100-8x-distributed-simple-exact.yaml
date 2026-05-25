@@ -24,6 +24,7 @@ hardware:
 sae:
   encode_backend: "standard"
   topk_backend: "pytorch"
+  fused_exact_topk_use_native: false
 first_pass:
   sae_encode_mode: "streaming"
 

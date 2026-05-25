@@ -51,6 +51,7 @@ class SaeRuntimeConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     encode_backend: str = "standard"
     topk_backend: str = "triton"
+    fused_exact_topk_use_native: bool = False
 
     @field_validator("encode_backend")
     @classmethod
