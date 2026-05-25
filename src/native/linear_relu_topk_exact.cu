@@ -38,8 +38,7 @@ __global__ void local_topk_kernel(
   __shared__ int counts[RADIX_BUCKETS][TOPK_THREADS];
   __shared__ int threshold_shared;
   __shared__ int k_remaining_shared;
-  __shared__ int write_ptr;
-  __shared__ int ties_written;
+  __shared__ int total_above_shared;
 
   const int tid = threadIdx.x;
   const int64_t row_base = row * width;
@@ -156,36 +155,58 @@ __global__ void local_topk_kernel(
     k_remaining = k_remaining_shared;
   }
 
-  if (tid == 0) {
-    write_ptr = 0;
-    ties_written = 0;
-  }
-  __syncthreads();
-
+  int above_count = 0;
+  int tie_count = 0;
   for (int64_t col = tid; col < width; col += blockDim.x) {
     const int bits = static_cast<int>(act_bits[row_base + col]);
     if (bits > threshold) {
-      const int pos = atomicAdd(&write_ptr, 1);
+      ++above_count;
+    } else if (bits == threshold) {
+      ++tie_count;
+    }
+  }
+
+  counts[0][tid] = above_count;
+  counts[1][tid] = tie_count;
+  __syncthreads();
+
+  for (int stride = 1; stride < TOPK_THREADS; stride <<= 1) {
+    const int add_above = tid >= stride ? counts[0][tid - stride] : 0;
+    const int add_tie = tid >= stride ? counts[1][tid - stride] : 0;
+    __syncthreads();
+    counts[0][tid] += add_above;
+    counts[1][tid] += add_tie;
+    __syncthreads();
+  }
+
+  const int above_offset = counts[0][tid] - above_count;
+  const int tie_offset = counts[1][tid] - tie_count;
+  if (tid == TOPK_THREADS - 1) {
+    total_above_shared = counts[0][tid];
+  }
+  __syncthreads();
+
+  int local_above_rank = 0;
+  int local_tie_rank = 0;
+  for (int64_t col = tid; col < width; col += blockDim.x) {
+    const int bits = static_cast<int>(act_bits[row_base + col]);
+    if (bits > threshold) {
+      const int pos = above_offset + local_above_rank;
       if (pos < local_k) {
         candidate_values[out_base + pos] = acts[row_base + col];
         candidate_indices[out_base + pos] = static_cast<int32_t>(global_start + col);
       }
-    }
-  }
-  __syncthreads();
-
-  const int tie_base = write_ptr;
-  for (int64_t col = tid; col < width; col += blockDim.x) {
-    const int bits = static_cast<int>(act_bits[row_base + col]);
-    if (bits == threshold) {
-      const int tie_pos = atomicAdd(&ties_written, 1);
+      ++local_above_rank;
+    } else if (bits == threshold) {
+      const int tie_pos = tie_offset + local_tie_rank;
       if (tie_pos < k_remaining) {
-        const int pos = tie_base + tie_pos;
+        const int pos = total_above_shared + tie_pos;
         if (pos < local_k) {
           candidate_values[out_base + pos] = acts[row_base + col];
           candidate_indices[out_base + pos] = static_cast<int32_t>(global_start + col);
         }
       }
+      ++local_tie_rank;
     }
   }
 }
