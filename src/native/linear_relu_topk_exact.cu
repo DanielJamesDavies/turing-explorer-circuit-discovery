@@ -11,7 +11,7 @@
 
 static constexpr size_t WORKSPACE_SIZE = 16ULL * 1024 * 1024; // 16 MB
 static constexpr int TOPK_THREADS = 256;
-static constexpr int RADIX_BUCKETS = 4;
+static constexpr int RADIX_BUCKETS = 16;
 
 #define CUBLASLT_CHECK(call)                                                \
   do {                                                                      \
@@ -48,47 +48,10 @@ __global__ void local_topk_kernel(
   int threshold = 0;
   int k_remaining = local_k;
 
-  for (int pass = 0; pass < 8; ++pass) {
-    const int shift = 14 - pass * 2;
-    const int prefix_shift = 16 - pass * 2;
-
-    if (pass == 0) {
-      int c1 = 0;
-      for (int64_t col = tid; col < width; col += blockDim.x) {
-        const int bits = static_cast<int>(act_bits[row_base + col]);
-        c1 += (bits >> 14) & 0x1;
-      }
-
-      counts[0][tid] = c1;
-      __syncthreads();
-
-      for (int stride = TOPK_THREADS / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-          counts[0][tid] += counts[0][tid + stride];
-        }
-        __syncthreads();
-      }
-
-      if (tid == 0) {
-        const int total1 = counts[0][0];
-        const int threshold_digit = total1 >= k_remaining ? 1 : 0;
-        const int n_above = threshold_digit < 1 ? total1 : 0;
-
-        threshold |= threshold_digit << shift;
-        k_remaining -= n_above;
-        threshold_shared = threshold;
-        k_remaining_shared = k_remaining;
-      }
-      __syncthreads();
-      threshold = threshold_shared;
-      k_remaining = k_remaining_shared;
-      continue;
-    }
-
-    int c0 = 0;
-    int c1 = 0;
-    int c2 = 0;
-    int c3 = 0;
+  for (int pass = 0; pass < 4; ++pass) {
+    const int shift = 12 - pass * 4;
+    const int prefix_shift = 16 - pass * 4;
+    int local_counts[RADIX_BUCKETS] = {};
 
     // Non-negative BF16 values preserve numeric order in their raw bit pattern.
     for (int64_t col = tid; col < width; col += blockDim.x) {
@@ -96,54 +59,40 @@ __global__ void local_topk_kernel(
       if (pass > 0 && ((bits >> prefix_shift) != (threshold >> prefix_shift))) {
         continue;
       }
-      const int digit = (bits >> shift) & 0x3;
-      if (digit == 0) {
-        ++c0;
-      } else if (digit == 1) {
-        ++c1;
-      } else if (digit == 2) {
-        ++c2;
-      } else {
-        ++c3;
-      }
+      ++local_counts[(bits >> shift) & 0xF];
     }
 
-    counts[0][tid] = c0;
-    counts[1][tid] = c1;
-    counts[2][tid] = c2;
-    counts[3][tid] = c3;
+    #pragma unroll
+    for (int bucket = 0; bucket < RADIX_BUCKETS; ++bucket) {
+      counts[bucket][tid] = local_counts[bucket];
+    }
     __syncthreads();
 
     for (int stride = TOPK_THREADS / 2; stride > 0; stride >>= 1) {
       if (tid < stride) {
-        counts[0][tid] += counts[0][tid + stride];
-        counts[1][tid] += counts[1][tid + stride];
-        counts[2][tid] += counts[2][tid + stride];
-        counts[3][tid] += counts[3][tid + stride];
+        #pragma unroll
+        for (int bucket = 0; bucket < RADIX_BUCKETS; ++bucket) {
+          counts[bucket][tid] += counts[bucket][tid + stride];
+        }
       }
       __syncthreads();
     }
 
     if (tid == 0) {
-      const int total0 = counts[0][0];
-      const int total1 = counts[1][0];
-      const int total2 = counts[2][0];
-      const int total3 = counts[3][0];
+      int running = 0;
+      int threshold_digit = 0;
+      for (int bucket = RADIX_BUCKETS - 1; bucket >= 0; --bucket) {
+        running += counts[bucket][0];
+        if (running >= k_remaining) {
+          threshold_digit = bucket;
+          break;
+        }
+      }
 
-      const int rev3 = total3;
-      const int rev2 = rev3 + total2;
-      const int rev1 = rev2 + total1;
-      const int rev0 = rev1 + total0;
-      const int n_true =
-          (rev0 >= k_remaining ? 1 : 0) +
-          (rev1 >= k_remaining ? 1 : 0) +
-          (rev2 >= k_remaining ? 1 : 0) +
-          (rev3 >= k_remaining ? 1 : 0);
-      const int threshold_digit = n_true - 1;
-      const int n_above =
-          (threshold_digit < 1 ? total1 : 0) +
-          (threshold_digit < 2 ? total2 : 0) +
-          (threshold_digit < 3 ? total3 : 0);
+      int n_above = 0;
+      for (int bucket = threshold_digit + 1; bucket < RADIX_BUCKETS; ++bucket) {
+        n_above += counts[bucket][0];
+      }
 
       threshold |= threshold_digit << shift;
       k_remaining -= n_above;
