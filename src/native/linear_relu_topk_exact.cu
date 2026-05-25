@@ -2,10 +2,10 @@
 #include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAException.h>
 #include <cublasLt.h>
-#include <cuda_runtime.h>
 #include <torch/extension.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <cstdint>
 #include <tuple>
 #include <vector>
@@ -53,7 +53,7 @@ __global__ void local_topk_kernel(
   const int64_t out_base = row * candidate_width + candidate_offset;
 
   for (int out = 0; out < local_k; ++out) {
-    float best_value = -CUDART_INF_F;
+    float best_value = -FLT_MAX;
     int best_index = -1;
 
     for (int64_t col = tid; col < width; col += blockDim.x) {
@@ -124,7 +124,7 @@ __global__ void merge_topk_kernel(
   const int64_t output_base = row * k;
 
   for (int out = 0; out < k; ++out) {
-    float best_value = -CUDART_INF_F;
+    float best_value = -FLT_MAX;
     int best_position = -1;
 
     for (int64_t pos = tid; pos < candidate_width; pos += blockDim.x) {
