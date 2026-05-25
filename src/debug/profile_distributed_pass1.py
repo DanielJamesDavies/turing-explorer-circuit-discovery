@@ -190,6 +190,7 @@ def _run_profiled_batches(
         f"batch_size={config.data.batch_size} "
         f"memory={config.hardware.memory} "
         f"parallel_kinds={config.hardware.parallel_kinds} "
+        f"encode_backend={config.sae.encode_backend} "
         f"topk_backend={config.sae.topk_backend}"
     )
 

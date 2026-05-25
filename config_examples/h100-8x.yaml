@@ -32,6 +32,7 @@ hardware:
   keep_model_loaded_for_neg_ctx: true
 
 sae:
+  encode_backend: "standard"
   topk_backend: "pytorch"
 
 latents:
