@@ -5,13 +5,13 @@
 #include <torch/extension.h>
 
 #include <algorithm>
-#include <cfloat>
 #include <cstdint>
 #include <tuple>
 #include <vector>
 
 static constexpr size_t WORKSPACE_SIZE = 16ULL * 1024 * 1024; // 16 MB
 static constexpr int TOPK_THREADS = 256;
+static constexpr int RADIX_BUCKETS = 4;
 
 #define CUBLASLT_CHECK(call)                                                \
   do {                                                                      \
@@ -19,14 +19,6 @@ static constexpr int TOPK_THREADS = 256;
     TORCH_CHECK(_s == CUBLAS_STATUS_SUCCESS,                                \
                 "cublasLt error ", static_cast<int>(_s), " in " #call);    \
   } while (0)
-
-__device__ __forceinline__ bool better_pair(
-    float value,
-    int index,
-    float best_value,
-    int best_index) {
-  return value > best_value || (value == best_value && (best_index < 0 || index < best_index));
-}
 
 __global__ void local_topk_kernel(
     const c10::BFloat16* __restrict__ acts,
@@ -43,61 +35,124 @@ __global__ void local_topk_kernel(
     return;
   }
 
-  extern __shared__ unsigned char shared_raw[];
-  float* shared_values = reinterpret_cast<float*>(shared_raw);
-  int* shared_indices = reinterpret_cast<int*>(shared_values + blockDim.x);
-  int* selected = shared_indices + blockDim.x;
+  __shared__ int counts[RADIX_BUCKETS][TOPK_THREADS];
+  __shared__ int threshold_shared;
+  __shared__ int k_remaining_shared;
+  __shared__ int write_ptr;
+  __shared__ int ties_written;
 
   const int tid = threadIdx.x;
   const int64_t row_base = row * width;
   const int64_t out_base = row * candidate_width + candidate_offset;
+  const uint16_t* act_bits = reinterpret_cast<const uint16_t*>(acts);
 
-  for (int out = 0; out < local_k; ++out) {
-    float best_value = -FLT_MAX;
-    int best_index = -1;
+  int threshold = 0;
+  int k_remaining = local_k;
 
+  for (int pass = 0; pass < 8; ++pass) {
+    const int shift = 14 - pass * 2;
+    const int prefix_shift = 16 - pass * 2;
+    int c0 = 0;
+    int c1 = 0;
+    int c2 = 0;
+    int c3 = 0;
+
+    // Non-negative BF16 values preserve numeric order in their raw bit pattern.
     for (int64_t col = tid; col < width; col += blockDim.x) {
-      bool already_selected = false;
-      for (int prev = 0; prev < out; ++prev) {
-        if (selected[prev] == static_cast<int>(col)) {
-          already_selected = true;
-          break;
-        }
-      }
-      if (already_selected) {
+      const int bits = static_cast<int>(act_bits[row_base + col]);
+      if (pass > 0 && ((bits >> prefix_shift) != (threshold >> prefix_shift))) {
         continue;
       }
-
-      const float value = static_cast<float>(acts[row_base + col]);
-      const int index = static_cast<int>(col);
-      if (better_pair(value, index, best_value, best_index)) {
-        best_value = value;
-        best_index = index;
+      const int digit = (bits >> shift) & 0x3;
+      if (digit == 0) {
+        ++c0;
+      } else if (digit == 1) {
+        ++c1;
+      } else if (digit == 2) {
+        ++c2;
+      } else {
+        ++c3;
       }
     }
 
-    shared_values[tid] = best_value;
-    shared_indices[tid] = best_index;
+    counts[0][tid] = c0;
+    counts[1][tid] = c1;
+    counts[2][tid] = c2;
+    counts[3][tid] = c3;
     __syncthreads();
 
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+    for (int stride = TOPK_THREADS / 2; stride > 0; stride >>= 1) {
       if (tid < stride) {
-        const float other_value = shared_values[tid + stride];
-        const int other_index = shared_indices[tid + stride];
-        if (better_pair(other_value, other_index, shared_values[tid], shared_indices[tid])) {
-          shared_values[tid] = other_value;
-          shared_indices[tid] = other_index;
-        }
+        counts[0][tid] += counts[0][tid + stride];
+        counts[1][tid] += counts[1][tid + stride];
+        counts[2][tid] += counts[2][tid + stride];
+        counts[3][tid] += counts[3][tid + stride];
       }
       __syncthreads();
     }
 
     if (tid == 0) {
-      selected[out] = shared_indices[0];
-      candidate_values[out_base + out] = c10::BFloat16(shared_values[0]);
-      candidate_indices[out_base + out] = static_cast<int32_t>(global_start + shared_indices[0]);
+      const int total0 = counts[0][0];
+      const int total1 = counts[1][0];
+      const int total2 = counts[2][0];
+      const int total3 = counts[3][0];
+
+      const int rev3 = total3;
+      const int rev2 = rev3 + total2;
+      const int rev1 = rev2 + total1;
+      const int rev0 = rev1 + total0;
+      const int n_true =
+          (rev0 >= k_remaining ? 1 : 0) +
+          (rev1 >= k_remaining ? 1 : 0) +
+          (rev2 >= k_remaining ? 1 : 0) +
+          (rev3 >= k_remaining ? 1 : 0);
+      const int threshold_digit = n_true - 1;
+      const int n_above =
+          (threshold_digit < 1 ? total1 : 0) +
+          (threshold_digit < 2 ? total2 : 0) +
+          (threshold_digit < 3 ? total3 : 0);
+
+      threshold |= threshold_digit << shift;
+      k_remaining -= n_above;
+      threshold_shared = threshold;
+      k_remaining_shared = k_remaining;
     }
     __syncthreads();
+    threshold = threshold_shared;
+    k_remaining = k_remaining_shared;
+  }
+
+  if (tid == 0) {
+    write_ptr = 0;
+    ties_written = 0;
+  }
+  __syncthreads();
+
+  for (int64_t col = tid; col < width; col += blockDim.x) {
+    const int bits = static_cast<int>(act_bits[row_base + col]);
+    if (bits > threshold) {
+      const int pos = atomicAdd(&write_ptr, 1);
+      if (pos < local_k) {
+        candidate_values[out_base + pos] = acts[row_base + col];
+        candidate_indices[out_base + pos] = static_cast<int32_t>(global_start + col);
+      }
+    }
+  }
+  __syncthreads();
+
+  const int tie_base = write_ptr;
+  for (int64_t col = tid; col < width; col += blockDim.x) {
+    const int bits = static_cast<int>(act_bits[row_base + col]);
+    if (bits == threshold) {
+      const int tie_pos = atomicAdd(&ties_written, 1);
+      if (tie_pos < k_remaining) {
+        const int pos = tie_base + tie_pos;
+        if (pos < local_k) {
+          candidate_values[out_base + pos] = acts[row_base + col];
+          candidate_indices[out_base + pos] = static_cast<int32_t>(global_start + col);
+        }
+      }
+    }
   }
 }
 
@@ -347,10 +402,7 @@ std::tuple<torch::Tensor, torch::Tensor> linear_relu_topk_exact(
         starts[block],
         widths[block]);
 
-    const int shared_bytes =
-        TOPK_THREADS * static_cast<int>(sizeof(float) + sizeof(int)) +
-        static_cast<int>(local_ks[block] * sizeof(int));
-    local_topk_kernel<<<static_cast<unsigned int>(M), TOPK_THREADS, shared_bytes, stream>>>(
+    local_topk_kernel<<<static_cast<unsigned int>(M), TOPK_THREADS, 0, stream>>>(
         block_acts.data_ptr<c10::BFloat16>(),
         candidate_values.data_ptr<c10::BFloat16>(),
         candidate_indices.data_ptr<int32_t>(),

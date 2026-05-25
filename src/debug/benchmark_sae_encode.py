@@ -49,6 +49,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--iters", type=int, default=10)
     parser.add_argument("--block-n", type=int, default=4096)
     parser.add_argument("--use-native-fused-exact", action="store_true")
+    parser.add_argument(
+        "--native-max-batch-size",
+        type=int,
+        default=256,
+        help=(
+            "Maximum batch size for native fused_exact_topk timing unless "
+            "--allow-slow-native is set. This prevents accidental long-running "
+            "native benchmark launches while the native selector is experimental."
+        ),
+    )
+    parser.add_argument(
+        "--allow-slow-native",
+        action="store_true",
+        help="Allow native fused_exact_topk correctness and timing above --native-max-batch-size.",
+    )
     parser.add_argument("--skip-correctness", action="store_true")
     return parser.parse_args()
 
@@ -149,6 +164,19 @@ def main() -> None:
         f"B={args.batch_size} T={args.seq_len} M={rows} "
         f"D={args.d_model} N={args.d_sae} K={args.k}"
     )
+    run_fused_exact = True
+    if (
+        args.use_native_fused_exact
+        and args.batch_size > args.native_max_batch_size
+        and not args.allow_slow_native
+    ):
+        run_fused_exact = False
+        print(
+            "[benchmark_sae_encode] Skipping native fused_exact_topk for "
+            f"batch_size={args.batch_size} because it exceeds "
+            f"--native-max-batch-size={args.native_max_batch_size}. "
+            "Pass --allow-slow-native to run it intentionally."
+        )
 
     torch.manual_seed(0)
     x = torch.randn(rows, args.d_model, device=device, dtype=dtype)
@@ -171,22 +199,25 @@ def main() -> None:
             _check_values("triton_topk", triton_values, triton_indices, ref_values, pre_acts)
             print("  [PASS] triton_topk")
 
-        fused_values, fused_indices = linear_relu_topk_exact(
-            x,
-            weight,
-            bias,
-            args.k,
-            block_n=args.block_n,
-            use_native=args.use_native_fused_exact,
-        )
-        _synchronize()
-        valid_fused_exact = _check_candidate(
-            "fused_exact_topk",
-            fused_values,
-            fused_indices,
-            ref_values,
-            pre_acts,
-        )
+        if run_fused_exact:
+            fused_values, fused_indices = linear_relu_topk_exact(
+                x,
+                weight,
+                bias,
+                args.k,
+                block_n=args.block_n,
+                use_native=args.use_native_fused_exact,
+            )
+            _synchronize()
+            valid_fused_exact = _check_candidate(
+                "fused_exact_topk",
+                fused_values,
+                fused_indices,
+                ref_values,
+                pre_acts,
+            )
+        else:
+            valid_fused_exact = False
 
     print("\nBenchmarks:")
     results: list[BenchmarkResult] = []
@@ -207,7 +238,7 @@ def main() -> None:
                 iters=args.iters,
             )
         )
-    if valid_fused_exact:
+    if run_fused_exact and valid_fused_exact:
         results.append(
             _time_backend(
                 "fused_exact_topk",
