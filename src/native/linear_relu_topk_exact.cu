@@ -10,7 +10,7 @@
 #include <vector>
 
 static constexpr size_t WORKSPACE_SIZE = 16ULL * 1024 * 1024; // 16 MB
-static constexpr int TOPK_THREADS = 256;
+static constexpr int TOPK_THREADS = 512;
 static constexpr int RADIX_BUCKETS = 4;
 
 #define CUBLASLT_CHECK(call)                                                \
