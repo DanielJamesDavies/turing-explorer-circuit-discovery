@@ -14,7 +14,7 @@ src/native/build/
 .env.*.local
 
 # Data & outputs
-data/
+/data/
 outputs/
 profile_trace/
 
@@ -22,5 +22,5 @@ profile_trace/
 .cursor/
 
 .venv
-models
+/models
 AGENTS.md
