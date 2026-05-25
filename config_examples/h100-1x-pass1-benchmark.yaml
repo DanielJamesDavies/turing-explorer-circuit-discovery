@@ -9,7 +9,7 @@ weights:
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
   n_shards: 32 # Number of data shards to process
-  batch_size: 2048 # Sequences per batch during inference
+  batch_size: 4096 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
   memory: "fast" # "efficient" (minimize VRAM, CPU offloading) | "fast" (maximize throughput, pin memory, keep decoders in VRAM)
