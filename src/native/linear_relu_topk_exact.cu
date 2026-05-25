@@ -52,6 +52,40 @@ __global__ void local_topk_kernel(
   for (int pass = 0; pass < 8; ++pass) {
     const int shift = 14 - pass * 2;
     const int prefix_shift = 16 - pass * 2;
+
+    if (pass == 0) {
+      int c1 = 0;
+      for (int64_t col = tid; col < width; col += blockDim.x) {
+        const int bits = static_cast<int>(act_bits[row_base + col]);
+        c1 += (bits >> 14) & 0x1;
+      }
+
+      counts[0][tid] = c1;
+      __syncthreads();
+
+      for (int stride = TOPK_THREADS / 2; stride > 0; stride >>= 1) {
+        if (tid < stride) {
+          counts[0][tid] += counts[0][tid + stride];
+        }
+        __syncthreads();
+      }
+
+      if (tid == 0) {
+        const int total1 = counts[0][0];
+        const int threshold_digit = total1 >= k_remaining ? 1 : 0;
+        const int n_above = threshold_digit < 1 ? total1 : 0;
+
+        threshold |= threshold_digit << shift;
+        k_remaining -= n_above;
+        threshold_shared = threshold;
+        k_remaining_shared = k_remaining;
+      }
+      __syncthreads();
+      threshold = threshold_shared;
+      k_remaining = k_remaining_shared;
+      continue;
+    }
+
     int c0 = 0;
     int c1 = 0;
     int c2 = 0;
