@@ -57,6 +57,7 @@ if _CUDA_AVAILABLE:
             "linear_relu_topk_exact_ext",
             ["linear_relu_topk_exact.cu"],
             extra_compile_args={"cxx": cxx_args, "nvcc": nvcc_args},
+            extra_link_args=["-lcublasLt"],
         )
     )
 else:

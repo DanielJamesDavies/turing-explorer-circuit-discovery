@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from sae.fused_exact_topk import linear_relu_topk_exact
+from sae.fused_exact_topk import linear_relu_topk_exact, native_is_available
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,10 +37,18 @@ def _assert_matches_reference(
     k: int,
     *,
     block_n: int,
+    use_native: bool = False,
 ) -> None:
     ref_acts = torch.relu(F.linear(x, weight, bias))
     ref_values, _ = ref_acts.topk(k, dim=-1, sorted=False)
-    values, indices = linear_relu_topk_exact(x, weight, bias, k, block_n=block_n)
+    values, indices = linear_relu_topk_exact(
+        x,
+        weight,
+        bias,
+        k,
+        block_n=block_n,
+        use_native=use_native,
+    )
 
     assert values.shape == ref_values.shape, f"{label}: value shape mismatch"
     assert indices.shape == ref_values.shape, f"{label}: index shape mismatch"
@@ -83,6 +91,73 @@ def test_ties_and_sparse_values() -> None:
     _assert_matches_reference("ties_sparse", x, weight, bias, 12, block_n=16)
 
 
+def test_non_divisible_block() -> None:
+    torch.manual_seed(2)
+    x = torch.randn(11, 24, device=DEVICE, dtype=DTYPE)
+    weight = torch.randn(70, 24, device=DEVICE, dtype=DTYPE)
+    bias = torch.randn(70, device=DEVICE, dtype=DTYPE)
+    _assert_matches_reference("non_divisible_block", x, weight, bias, 13, block_n=32)
+
+
+def _native_ready() -> bool:
+    return torch.cuda.is_available() and native_is_available()
+
+
+def test_native_random_2d() -> None:
+    if not _native_ready():
+        return
+    torch.manual_seed(3)
+    x = torch.randn(17, 32, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(128, 32, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(128, device=DEVICE, dtype=torch.bfloat16)
+    _assert_matches_reference("native_random_2d", x, weight, bias, 16, block_n=32, use_native=True)
+
+
+def test_native_3d_pass1_shape() -> None:
+    if not _native_ready():
+        return
+    torch.manual_seed(4)
+    x = torch.randn(3, 7, 32, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(160, 32, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(160, device=DEVICE, dtype=torch.bfloat16)
+    _assert_matches_reference("native_3d", x, weight, bias, 24, block_n=40, use_native=True)
+
+
+def test_native_non_divisible_block() -> None:
+    if not _native_ready():
+        return
+    torch.manual_seed(5)
+    x = torch.randn(11, 24, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(70, 24, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(70, device=DEVICE, dtype=torch.bfloat16)
+    _assert_matches_reference(
+        "native_non_divisible_block",
+        x,
+        weight,
+        bias,
+        13,
+        block_n=32,
+        use_native=True,
+    )
+
+
+def test_native_matches_python_path() -> None:
+    if not _native_ready():
+        return
+    torch.manual_seed(6)
+    x = torch.randn(9, 19, device=DEVICE, dtype=torch.bfloat16)
+    weight = torch.randn(75, 19, device=DEVICE, dtype=torch.bfloat16)
+    bias = torch.randn(75, device=DEVICE, dtype=torch.bfloat16)
+    py_values, py_indices = linear_relu_topk_exact(x, weight, bias, 15, block_n=20, use_native=False)
+    native_values, native_indices = linear_relu_topk_exact(x, weight, bias, 15, block_n=20, use_native=True)
+
+    tol = _tolerance(native_values.dtype)
+    assert torch.allclose(_sorted_values(native_values), _sorted_values(py_values), atol=tol, rtol=0)
+    ref_acts = torch.relu(F.linear(x, weight, bias))
+    assert torch.allclose(ref_acts.gather(-1, native_indices), native_values, atol=tol, rtol=0)
+    assert torch.allclose(ref_acts.gather(-1, py_indices), py_values, atol=tol, rtol=0)
+
+
 def main() -> None:
     test_random_2d()
     print("  [PASS] random_2d")
@@ -90,6 +165,19 @@ def main() -> None:
     print("  [PASS] 3d_pass1_shape")
     test_ties_and_sparse_values()
     print("  [PASS] ties_and_sparse_values")
+    test_non_divisible_block()
+    print("  [PASS] non_divisible_block")
+    if _native_ready():
+        test_native_random_2d()
+        print("  [PASS] native_random_2d")
+        test_native_3d_pass1_shape()
+        print("  [PASS] native_3d_pass1_shape")
+        test_native_non_divisible_block()
+        print("  [PASS] native_non_divisible_block")
+        test_native_matches_python_path()
+        print("  [PASS] native_matches_python_path")
+    else:
+        print("  [SKIP] native extension unavailable")
 
 
 if __name__ == "__main__":
