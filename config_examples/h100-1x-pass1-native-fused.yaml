@@ -16,7 +16,7 @@ hardware:
   multi_gpu: false
   memory: "fast"
   compile: true
-  parallel_kinds: true
+  parallel_kinds: false
   ann_device: "auto"
   keep_model_loaded_for_neg_ctx: true
 
@@ -26,7 +26,7 @@ sae:
   fused_exact_topk_use_native: true
 
 first_pass:
-  sae_encode_mode: "deferred"
+  sae_encode_mode: "streaming"
 
 latents:
   top_ctx:
