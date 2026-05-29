@@ -16,6 +16,7 @@ from pydantic import BaseModel
 class MockTopCoactivationLatentsConfig(BaseModel):
     n_latents_per_latent: int = 2
     n_candidates_per_component: int = 2
+    candidate_oversample_factor: int = 4
     freq_alpha: float = 2.0
     mode: str = "freq_weighted"
     pmi_clamp_min: float = -5.0
@@ -61,6 +62,21 @@ class TestTopCoactivationModes(unittest.TestCase):
             # num_components = 1 * 3 = 3
             # d_sae = 4
             # M = min(2*4, 3*2) = 6
+
+    def test_candidate_oversample_factor_controls_dump_width(self):
+        with patch('store.top_coactivation.TuringLLMConfig') as mock_llm, \
+             patch('store.top_coactivation.SAEConfig') as mock_sae, \
+             patch('store.top_coactivation.config') as mock_c:
+            mock_llm.return_value.n_layer = 1
+            mock_sae.return_value.d_sae = 4
+            mock_sae.return_value.k = 4
+            mock_c.latents.top_coactivation.n_latents_per_latent = 2
+            mock_c.latents.top_coactivation.n_candidates_per_component = 4
+            mock_c.latents.top_coactivation.candidate_oversample_factor = 5
+
+            tc = TopCoactivation(device=torch.device("cpu"))
+
+        self.assertEqual(tc.M, 10)
     
     def test_mode_property(self):
         # Directly mock the config object in the store

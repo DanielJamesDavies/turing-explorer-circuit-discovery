@@ -331,6 +331,7 @@ class TopCoactivationLatentsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_latents_per_latent: int = 64
     n_candidates_per_component: int = 16
+    candidate_oversample_factor: int = 4
     freq_alpha: float = 2.0
     mode: str = "freq_weighted"  # "freq_weighted" | "raw" | "pmi"
     pmi_clamp_min: float = -5.0
@@ -351,6 +352,13 @@ class TopCoactivationLatentsConfig(BaseModel):
         allowed = ["freq_weighted", "raw", "pmi"]
         if v not in allowed:
             raise ValueError(f"mode must be one of {allowed}, got {v}")
+        return v
+
+    @field_validator("n_latents_per_latent", "n_candidates_per_component", "candidate_oversample_factor")
+    @classmethod
+    def validate_positive_top_coactivation_counts(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("top coactivation counts must be >= 1")
         return v
 
     @field_validator("dump_device")

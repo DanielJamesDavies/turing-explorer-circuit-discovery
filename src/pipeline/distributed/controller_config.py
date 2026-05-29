@@ -65,10 +65,15 @@ def _candidate_dump_m_from_config(normalized_config: Dict[str, object]) -> int:
         if isinstance(top_coactivation, dict)
         else 16
     )
+    candidate_oversample_factor = int(
+        top_coactivation.get("candidate_oversample_factor", 4)
+        if isinstance(top_coactivation, dict)
+        else 4
+    )
     # The model config currently defaults to 12 layers with three SAE components per layer.
     default_num_components = 36
     return min(
-        n_latents_per_latent * 4,
+        n_latents_per_latent * candidate_oversample_factor,
         default_num_components * n_candidates_per_component,
     )
 

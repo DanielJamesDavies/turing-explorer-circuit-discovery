@@ -45,7 +45,8 @@ latents:
     topk_output_tokens: 32 # Top predicted tokens to store per latent
   top_coactivation:
     n_latents_per_latent: 64 # Final number of top co-activating latents stored per target latent
-    n_candidates_per_component: 16 # Candidates extracted per component per sequence during dump (36 comps x 16 = 576, reduced to 128 globally)
+    n_candidates_per_component: 16 # Candidates extracted per component per sequence during dump (36 comps x 16 = 576)
+    candidate_oversample_factor: 4 # Global per-sequence candidate dump width is min(n_latents_per_latent * this, components * n_candidates_per_component)
     freq_alpha: 2.0 # Exponent for frequency adjustment: 1/(log(count+1))^alpha. Higher = suppress frequent latents more
     mode: "pmi" # "freq_weighted" (default) | "raw" (no freq adjustment) | "pmi" (token-level PMI scoring)
     pmi_clamp_min: -5.0 # Lower bound for PMI values

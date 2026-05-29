@@ -52,6 +52,7 @@ latents:
     max_repr_seqs: 200000
   top_coactivation:
     mode: "pmi"
+    candidate_oversample_factor: 4
     dump_device: "gpu"
     reduce_backend: "single_process"
     reduce_shards: 1

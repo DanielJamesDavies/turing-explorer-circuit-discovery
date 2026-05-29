@@ -51,9 +51,10 @@ class TopCoactivation:
         self.d_sae = self.sae_config.d_sae
         self.n_latents_per_latent = cast(int, config.latents.top_coactivation.n_latents_per_latent or 64)
         self.n_candidates_per_component = cast(int, config.latents.top_coactivation.n_candidates_per_component or 16)
+        self.candidate_oversample_factor = cast(int, config.latents.top_coactivation.candidate_oversample_factor or 4)
 
         self.M = min(
-            self.n_latents_per_latent * 4,
+            self.n_latents_per_latent * self.candidate_oversample_factor,
             self.num_components * self.n_candidates_per_component,
         )
 

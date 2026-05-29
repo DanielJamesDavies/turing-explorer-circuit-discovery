@@ -51,6 +51,7 @@ latents:
   top_coactivation:
     n_latents_per_latent: 64
     n_candidates_per_component: 16
+    candidate_oversample_factor: 4
     dump_device: "gpu"
     dump_profile: true
   seq_latent_index:

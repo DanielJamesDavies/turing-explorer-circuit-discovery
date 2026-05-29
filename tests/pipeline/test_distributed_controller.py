@@ -19,6 +19,7 @@ from pipeline.distributed.controller import (
     plan_distributed_run_from_args,
     run_parts_1_to_3,
 )
+from pipeline.distributed.controller_config import _candidate_dump_m_from_config
 from pipeline.distributed.layout import build_worker_marker, create_output_layout, write_worker_marker
 from pipeline.distributed.manifest import CleanupPolicy, DeviceAssignment
 
@@ -353,6 +354,20 @@ def test_controller_dry_run_includes_pass2_dump_estimate(tmp_path, monkeypatch):
     assert "pass2 candidate dump estimate:" in plan.dry_run_text
     assert "total_dump_bytes: 6144" in plan.dry_run_text
     assert "worker_001: sequences=1 dump_bytes=2048" in plan.dry_run_text
+
+
+def test_candidate_dump_m_uses_configured_oversample_factor():
+    assert _candidate_dump_m_from_config(
+        {
+            "latents": {
+                "top_coactivation": {
+                    "n_latents_per_latent": 128,
+                    "n_candidates_per_component": 64,
+                    "candidate_oversample_factor": 8,
+                }
+            }
+        }
+    ) == 1024
 
 
 def test_controller_h100_style_8_worker_dry_run_has_stable_assignments(
