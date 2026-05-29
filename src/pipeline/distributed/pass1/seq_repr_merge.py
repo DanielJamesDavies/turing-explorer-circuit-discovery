@@ -17,6 +17,7 @@ def load_and_merge_seq_repr_partials(
     *,
     expected_config_hash: str | None = None,
     seq_repr_mapping: dict[str, object] | None = None,
+    sequence_ids_by_worker: dict[int, Sequence[int]] | None = None,
 ) -> Dict[str, object]:
     """Load seq-repr partial files and merge them by global sequence ID."""
 
@@ -28,13 +29,18 @@ def load_and_merge_seq_repr_partials(
         )
         for path in partial_paths
     ]
-    return merge_seq_repr_partials(partials, seq_repr_mapping=seq_repr_mapping)
+    return merge_seq_repr_partials(
+        partials,
+        seq_repr_mapping=seq_repr_mapping,
+        sequence_ids_by_worker=sequence_ids_by_worker,
+    )
 
 
 def merge_seq_repr_partials(
     partials: Sequence[SeqReprPartial],
     *,
     seq_repr_mapping: dict[str, object] | None = None,
+    sequence_ids_by_worker: dict[int, Sequence[int]] | None = None,
 ) -> Dict[str, object]:
     """Merge capped or uncapped seq_repr partials into one global store payload."""
 
@@ -59,7 +65,14 @@ def merge_seq_repr_partials(
         source_id_to_slot = payload.get("id_to_slot")
         if source_id_to_slot is not None:
             source_id_to_slot = source_id_to_slot.to(torch.int64)
-        for sequence_id in range(metadata.sequence_id_min or 1, (metadata.sequence_id_max or 0) + 1):
+        sequence_ids = (
+            sequence_ids_by_worker.get(metadata.worker_id)
+            if sequence_ids_by_worker is not None
+            else None
+        )
+        if sequence_ids is None:
+            sequence_ids = range(metadata.sequence_id_min or 1, (metadata.sequence_id_max or 0) + 1)
+        for sequence_id in sequence_ids:
             if sequence_id < 1 or sequence_id > n_seqs:
                 raise ValueError("seq_repr sequence ID out of global range")
             target_slot = int(id_to_slot[sequence_id].item())

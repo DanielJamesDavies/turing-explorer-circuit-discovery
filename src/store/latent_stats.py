@@ -133,8 +133,8 @@ class LatentStats:
             safe_n_b = n_b.clamp(min=1)
             mean_b = sum_b / safe_n_b
             mean_abs_b = sum_abs_b / safe_n_b
-            m2_b = sum_sq_b - n_b * mean_b.square()
-            m2_abs_b = sum_sq_abs_b - n_b * mean_abs_b.square()
+            m2_b = (sum_sq_b - n_b * mean_b.square()).clamp(min=0)
+            m2_abs_b = (sum_sq_abs_b - n_b * mean_abs_b.square()).clamp(min=0)
 
             n_a = self.active_count[component_idx].float()
             self._welford_merge(self.mean[component_idx], self.m2[component_idx], n_a, mean_b, m2_b, n_b)

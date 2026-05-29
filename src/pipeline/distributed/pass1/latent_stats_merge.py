@@ -111,8 +111,8 @@ def _merge_welford_state(
     count_b_f = count_b.to(torch.float64)
     mean_a_f = mean_a.to(torch.float64)
     mean_b_f = mean_b.to(torch.float64)
-    m2_a_f = m2_a.to(torch.float64)
-    m2_b_f = m2_b.to(torch.float64)
+    m2_a_f = _clamp_small_negative_variance_state("m2_a", m2_a).to(torch.float64)
+    m2_b_f = _clamp_small_negative_variance_state("m2_b", m2_b).to(torch.float64)
 
     count_total_f = count_a_f + count_b_f
     safe_count_total = count_total_f.clamp(min=1)
@@ -135,6 +135,7 @@ def _clamp_small_negative_variance_state(
     tensor: torch.Tensor,
     *,
     atol: float = 1e-3,
+    rtol: float = 1e-6,
 ) -> torch.Tensor:
     """Clamp tiny float32 Welford variance noise while rejecting real negatives."""
 
@@ -142,8 +143,12 @@ def _clamp_small_negative_variance_state(
     if not bool(negative.any()):
         return tensor
     min_value = float(tensor[negative].min())
-    if min_value < -atol:
-        raise ValueError(f"merged {tensor_name} contains negative variance state")
+    tolerance = max(atol, float(tensor.detach().abs().max()) * rtol)
+    if min_value < -tolerance:
+        raise ValueError(
+            f"merged {tensor_name} contains negative variance state "
+            f"(min={min_value:.6g}, tolerance={tolerance:.6g})"
+        )
     return tensor.clamp_min(0)
 
 

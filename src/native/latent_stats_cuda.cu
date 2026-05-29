@@ -79,8 +79,8 @@ __global__ void welford_merge_kernel(
 
     float mean_b     = sb     / nb;
     float mean_abs_b = sb_abs / nb;
-    float m2_b       = ssq     - nb * mean_b     * mean_b;
-    float m2_abs_b   = ssq_abs - nb * mean_abs_b * mean_abs_b;
+    float m2_b       = fmaxf(ssq     - nb * mean_b     * mean_b, 0.0f);
+    float m2_abs_b   = fmaxf(ssq_abs - nb * mean_abs_b * mean_abs_b, 0.0f);
 
     // Parallel Welford merge
     float na      = (float)n_global[d];

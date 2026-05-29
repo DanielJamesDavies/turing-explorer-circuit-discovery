@@ -14,6 +14,7 @@ from ..interfaces import build_output_paths
 from ..layout import build_run_layout
 from ..manifest import DistributedRunManifest, ManifestStatus, save_manifest
 from ..pass2_replay import assign_pass2_replay_sequences
+from ..shard_table import sequence_ids_for_shards
 from .context_merge import (
     load_and_merge_mid_ctx_candidate_partials,
     load_and_merge_top_ctx_partials,
@@ -66,6 +67,10 @@ def merge_pass1_worker_outputs(
     seq_repr_payload = load_and_merge_seq_repr_partials(
         partial_paths["seq_repr"],
         expected_config_hash=manifest.normalized_config_hash,
+        sequence_ids_by_worker={
+            int(worker_id): sequence_ids_for_shards(manifest.shard_table, shard_ids)
+            for worker_id, shard_ids in manifest.work_assignments.pass1_shards.items()
+        },
     )
     logit_ctx_payload = load_and_merge_logit_ctx_partials(
         partial_paths["logit_ctx"],

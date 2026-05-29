@@ -664,6 +664,30 @@ def test_merge_seq_repr_partials_capped_uses_global_slot_mapping():
         )
 
 
+def test_merge_seq_repr_partials_uses_assigned_sequence_ids_for_noncontiguous_shards():
+    worker_0 = _seq_repr_payload(rows={1: [1.0, 1.1], 3: [3.0, 3.3]}, n_seqs=4)
+    worker_1 = _seq_repr_payload(rows={2: [2.0, 2.2], 4: [4.0, 4.4]}, n_seqs=4)
+    worker_0_metadata = _seq_repr_metadata(0).model_copy(
+        update={"sequence_id_min": 1, "sequence_id_max": 3}
+    )
+    worker_1_metadata = _seq_repr_metadata(1).model_copy(
+        update={"sequence_id_min": 2, "sequence_id_max": 4}
+    )
+
+    merged = merge_seq_repr_partials(
+        [(worker_0_metadata, worker_0), (worker_1_metadata, worker_1)],
+        sequence_ids_by_worker={0: [1, 3], 1: [2, 4]},
+    )
+
+    assert merged["repr_buf"].tolist() == [
+        [0.0, 0.0],
+        [1.0, 1.099609375],
+        [2.0, 2.19921875],
+        [3.0, 3.30078125],
+        [4.0, 4.3984375],
+    ]
+
+
 def test_load_and_merge_seq_repr_partials_round_trip(tmp_path):
     worker_0 = _seq_repr_payload(rows={1: [1.0, 1.1], 2: [2.0, 2.2]}, n_seqs=4)
     worker_1 = _seq_repr_payload(rows={3: [3.0, 3.3], 4: [4.0, 4.4]}, n_seqs=4)
@@ -1057,6 +1081,16 @@ def test_merge_latent_stats_partials_rejects_negative_variance_state():
 def test_merge_latent_stats_partials_clamps_tiny_negative_variance_noise():
     payload = _payload({(0, 0): [1.0]}, {(0, 0): [0.5]})
     payload["m2"][0, 0] = -5e-4
+
+    merged = merge_latent_stats_partials([(_metadata(0), payload)])
+
+    assert merged["m2"][0, 0].item() == 0.0
+
+
+def test_merge_latent_stats_partials_clamps_relative_negative_variance_noise():
+    payload = _payload({(0, 0): [1.0, 3.0]}, {(0, 0): [0.5]})
+    payload["m2"][0, 0] = -0.05
+    payload["m2"][0, 1] = 100000.0
 
     merged = merge_latent_stats_partials([(_metadata(0), payload)])
 
