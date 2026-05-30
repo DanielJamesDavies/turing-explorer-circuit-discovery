@@ -105,14 +105,14 @@ The implemented mode surface is documented in detail in [`part-7-operating-modes
 
 Mode-specific config examples:
 
-- [`config_examples/local-one-worker-distributed.yaml`](../../config_examples/local-one-worker-distributed.yaml): local one-worker validation of distributed contracts with efficient memory settings and search-cache generation disabled.
+- [`config_examples/local-distributed-smoke.yaml`](../../config_examples/local-distributed-smoke.yaml): local one-worker validation of distributed contracts with efficient memory settings and search-cache generation disabled.
 - [`config_examples/h100-8x-distributed-simple-exact.yaml`](../../config_examples/h100-8x-distributed-simple-exact.yaml): future 8x H100 `distributed_simple_exact` run with one worker per physical GPU.
 
 Controller dry-run and worker commands:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --dry-run
+python -m pipeline.distributed.controller --config config_examples/local-distributed-smoke.yaml --dry-run
 python -m pipeline.distributed.controller --config config_examples/h100-8x-distributed-simple-exact.yaml --mode distributed_simple_exact --worker-count 8 --devices 0,1,2,3,4,5,6,7 --dry-run
 python -m pipeline.distributed.worker --manifest outputs/<run_id>/distributed/manifest.json --worker-id 0 --phase pass1
 ```

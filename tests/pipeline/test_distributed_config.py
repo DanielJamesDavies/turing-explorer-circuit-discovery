@@ -53,8 +53,8 @@ def test_one_worker_distributed_config_defaults_search_cache_to_deferred():
     assert parsed.persist.build_search_cache_after_pipeline is False
 
 
-def test_local_one_worker_distributed_example_config_is_valid():
-    with open("config_examples/local-one-worker-distributed.yaml", encoding="utf-8") as handle:
+def test_local_distributed_smoke_example_config_is_valid():
+    with open("config_examples/local-distributed-smoke.yaml", encoding="utf-8") as handle:
         parsed = RootConfig.model_validate(yaml.safe_load(handle))
 
     assert parsed.distributed.mode == "distributed_simple_exact"
@@ -119,7 +119,7 @@ def test_distributed_h100_example_config_is_valid_and_one_worker_per_gpu():
     assert parsed.hardware.memory == "fast"
     assert parsed.hardware.multi_gpu is False
     assert parsed.latents.neg_ctx.backend == "multi_gpu_exact"
-    assert parsed.latents.neg_ctx.devices == []
+    assert parsed.latents.neg_ctx.devices == list(range(8))
     assert parsed.latents.top_coactivation.reduce_backend == "single_process"
     assert parsed.persist.build_search_cache_after_pipeline is False
 

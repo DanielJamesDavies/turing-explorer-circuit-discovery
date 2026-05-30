@@ -425,7 +425,7 @@ Dry-run command executed locally:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --use-cpu --dry-run
+python -m pipeline.distributed.controller --config config_examples/local-distributed-smoke.yaml --use-cpu --dry-run
 ```
 
 Dry-run result:
@@ -659,7 +659,7 @@ Reduced pre-H100 smoke command:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --use-cpu --dry-run
+python -m pipeline.distributed.controller --config config_examples/local-distributed-smoke.yaml --use-cpu --dry-run
 ```
 
 Run this before H100 access to confirm local config validity, run-root layout, shard table construction, deferred search-cache settings, and one-worker command generation. A real worker launch remains gated on model/SAE artifacts being present.

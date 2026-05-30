@@ -10,8 +10,8 @@ weights:
 
 data:
   dataset_path: "data"
-  n_shards: 256
-  batch_size: 512
+  n_shards: 3030
+  batch_size: 4096
 
 hardware:
   multi_gpu: false
@@ -22,9 +22,9 @@ hardware:
   keep_model_loaded_for_neg_ctx: true
 
 sae:
-  encode_backend: "standard"
+  encode_backend: "fused_exact_topk"
   topk_backend: "pytorch"
-  fused_exact_topk_use_native: false
+  fused_exact_topk_use_native: true
 first_pass:
   sae_encode_mode: "streaming"
 
@@ -46,27 +46,88 @@ distributed:
     on_truncation: "replay_fallback"
 
 latents:
+  top_ctx:
+    n_sequences: 64
+  mid_ctx:
+    n_sequences: 64
+    mode: "reservoir_cpu"
+    band_low_sigma: 0.5
+    band_high_sigma: 1.5
+    warmup_batches: 100
   neg_ctx:
+    n_sequences: 64
+    n_neighbors: 512
+    min_pos_ctx: 8
     backend: "multi_gpu_exact"
-    devices: []
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    repr_mode: "mean_pool"
     max_repr_seqs: 200000
+  logit_ctx:
+    n_tokens_per_latent: 32
+    topk_output_tokens: 32
   top_coactivation:
     mode: "pmi"
-    candidate_oversample_factor: 4
+    n_latents_per_latent: 128
+    n_candidates_per_component: 128
+    candidate_oversample_factor: 8
+    freq_alpha: 2.0
+    pmi_clamp_min: -5.0
+    pmi_clamp_max: 10.0
     dump_device: "gpu"
+    dump_profile: true
     reduce_backend: "single_process"
     reduce_shards: 1
     reduce_shard_output_dir: null
+    reduce_omp_threads: null
+    reduce_schedule_chunk: 256
   seq_latent_index:
     enabled: true
+    top_k_per_component: 12
 
 discovery:
-  n_seeds: 16
+  n_seeds: 16384
   probe_batch_size: 4
   neg_ctx_eval_max: 16
+  min_faithfulness: 0.2
+  min_active_count: 1
+  max_neighbors: 32
+  focal_monosemantic_min_partners: 4
   methods:
     - counterfactual_gradient
+  seed_criteria:
+    - stratified_random
+  seed_filter:
+    layers: []
+    kinds: []
+  counterfactual_gradient:
+    neg_mode: "random"
+    distant_pool_size: 512
+    top_k_activators: 12
+    top_k_inhibitors: 12
+    top_k_scope: "layer_kind"
+    activator_threshold: 0.01
+    inhibitor_threshold: 0.01
+    min_active_count: 1
+    max_neg_sequences: 16
+    neg_batch_size: 16
+    pruning_threshold: 0
+    min_faithfulness: 0.2
+    node_presence_eval: true
 
 persist:
+  save_workers: 1
   search_cache_enabled: false
   build_search_cache_after_pipeline: false
+  atomic_saves: true
+  search_cache_n_sequences: 8
+  search_cache_component_chunk: 4
+
+analysis:
+  methods:
+    - coactivation_overlap
+    - layer_distribution
+    - edge_weight_gini
+    - node_activity
+    - node_rarity
+    - top_token_consistency
+    - internode_coact_density

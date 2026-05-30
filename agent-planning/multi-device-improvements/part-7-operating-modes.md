@@ -114,7 +114,7 @@ It does not implement the distributed worker internals from Parts 1-6.
 - Added `LocalCompatibilityReport` and `build_local_compatibility_report()` in `src/pipeline/distributed/controller.py` so controller dry-runs explicitly report local one-worker compatibility without model loading.
 - One-worker dry-runs now print a `local compatibility:` block with device mode (`cpu`, `single_cuda`, or `auto`), `h100_required`, memory mode, `keep_model_loaded_for_neg_ctx`, search-cache deferral, shard count, seed count, `probe_batch_size`, and `neg_ctx_eval_max`.
 - CPU local validation is supported with `--use-cpu`; single-CUDA validation is supported with one declared device, for example `distributed.devices: [0]` or `--devices 0`.
-- Added `config_examples/local-one-worker-distributed.yaml` as a local one-worker distributed validation config using efficient memory, one device, 4 shards, 16 seeds, deferred search-cache generation, and manual worker commands.
+- Added `config_examples/local-distributed-smoke.yaml` as a local one-worker distributed validation config using efficient memory, one device, 4 shards, 16 seeds, deferred search-cache generation, and manual worker commands.
 - Existing `single_process` remains the default local path for normal development; use one-worker `distributed_simple_exact` locally when validating manifest, worker, partial-artifact, and merge contracts before multi-worker H100 execution.
 - No `outputs/latest` alias was added. The controller continues to create only `outputs/<run_id>/` and distributed internals under `outputs/<run_id>/distributed/`.
 - Verification: `python -m pytest tests/pipeline/test_distributed_controller.py tests/pipeline/test_distributed_config.py -q` -> `29 passed`.
@@ -264,12 +264,12 @@ It does not implement the distributed worker internals from Parts 1-6.
 
 - Updated `multi-device-improvements.md` with an `Operating Mode Workflow` section that links back to this part file and the two implemented config examples.
 - Documented plain-language mode selection for `single_process`, `distributed_simple_exact`, `distributed_mapreduce_exact`, and `distributed_experimental_fast`.
-- Documented the local RTX 5070 Ti path as either `single_process` or `config_examples/local-one-worker-distributed.yaml`, keeping efficient memory settings and deferred search-cache generation.
+- Documented the local RTX 5070 Ti path as either `single_process` or `config_examples/local-distributed-smoke.yaml`, keeping efficient memory settings and deferred search-cache generation.
 - Documented the H100 path as controller dry run, `distributed_simple_exact`, one-worker/small-run equivalence checks, 8-worker benchmark, then optional MapReduce only if central pass-2 reduce is the bottleneck.
 - Documented search-cache generation as offline/post-validation work from canonical `outputs/<run_id>/` artifacts, not part of the distributed critical path.
 - Documented cleanup policy recommendations: `keep_all` for validation and failures, `delete_large_partials_on_success` after trust is established, `delete_all_partials_on_success` only for mature reproducible runs, and `manual_cleanup_only` for paper-facing preservation.
 - Documented paper eligibility: `single_process`, equivalence-gated `distributed_simple_exact`, and equivalence-gated `distributed_mapreduce_exact`; `distributed_experimental_fast` remains exploratory only.
-- Reviewed docs against implemented names: `config_examples/local-one-worker-distributed.yaml`, `config_examples/h100-8x-distributed-simple-exact.yaml`, `pipeline.distributed.controller`, `pipeline.distributed.worker`, `pipeline.distributed.pass1_merge`, `pipeline.distributed.pass2_reduce`, `distributed.mode`, `distributed.cleanup_policy`, and `persist.build_search_cache_after_pipeline`.
+- Reviewed docs against implemented names: `config_examples/local-distributed-smoke.yaml`, `config_examples/h100-8x-distributed-simple-exact.yaml`, `pipeline.distributed.controller`, `pipeline.distributed.worker`, `pipeline.distributed.pass1_merge`, `pipeline.distributed.pass2_reduce`, `distributed.mode`, `distributed.cleanup_policy`, and `persist.build_search_cache_after_pipeline`.
 
 ## Phase 11 - Testing And Verification
 
@@ -303,8 +303,8 @@ python -m pytest tests/pipeline/test_distributed_config.py tests/pipeline/test_d
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --dry-run
-python -m pipeline.distributed.controller --config config_examples/local-one-worker-distributed.yaml --launch
+python -m pipeline.distributed.controller --config config_examples/local-distributed-smoke.yaml --dry-run
+python -m pipeline.distributed.controller --config config_examples/local-distributed-smoke.yaml --launch
 python -m pipeline.distributed.pass1_merge --manifest outputs/<run_id>/distributed/manifest.json
 python -m pipeline.distributed.pass2_reduce --output-root outputs/<run_id> --candidate-dump outputs/<run_id>/distributed/workers/worker_000/pass2/candidate_dump.partial.pt
 ```
