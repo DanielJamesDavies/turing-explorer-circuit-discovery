@@ -38,6 +38,7 @@ from pipeline.distributed.pass1_partials import (
     Pass1PartialMetadata,
     save_pass1_partial,
 )
+from pipeline.distributed.pass1.logit_ctx_merge import _select_logit_ctx_events_reference
 from pipeline.distributed.seq_repr_mapping import (
     build_seq_repr_cap_mapping,
     derive_seq_repr_cap_seed,
@@ -1238,6 +1239,42 @@ def test_merge_logit_ctx_partials_matches_single_event_stream_for_split_workers(
     )
 
 
+def test_merge_logit_ctx_partials_matches_reference_selector_on_grid():
+    partials = _logit_ctx_grid_partials(
+        worker_count=3,
+        component_count=2,
+        d_sae=4,
+        k=5,
+    )
+
+    merged = merge_logit_ctx_partials(partials, vocab_size=10_000)
+    reference_tokens, reference_probs, reference_counts = _merge_logit_ctx_reference(
+        partials,
+        vocab_size=10_000,
+    )
+
+    assert torch.equal(merged["latent_counts"], reference_counts)
+    assert torch.equal(merged["top_tokens"], reference_tokens)
+    assert torch.equal(merged["top_probs"], reference_probs)
+
+
+def test_merge_logit_ctx_partials_handles_larger_synthetic_grid():
+    partials = _logit_ctx_grid_partials(
+        worker_count=4,
+        component_count=4,
+        d_sae=128,
+        k=16,
+    )
+
+    merged = merge_logit_ctx_partials(partials, vocab_size=100_000)
+
+    assert merged["top_tokens"].shape == (4, 128, 16)
+    assert merged["top_probs"].shape == (4, 128, 16)
+    assert merged["latent_counts"].shape == (4, 128)
+    invalid = merged["top_probs"] == 0
+    assert bool((merged["top_tokens"][invalid] == 0).all())
+
+
 def test_merge_seq_latent_index_shards_copies_disjoint_worker_outputs(tmp_path):
     worker_0 = tmp_path / "worker_0"
     worker_1 = tmp_path / "worker_1"
@@ -1667,6 +1704,104 @@ def _logit_ctx_payload(
         "top_tokens": torch.tensor(tokens, dtype=torch.int32),
         "top_probs": torch.tensor(probs, dtype=torch.float32),
     }
+
+
+def _logit_ctx_grid_partials(
+    *,
+    worker_count: int,
+    component_count: int,
+    d_sae: int,
+    k: int,
+) -> list[tuple[Pass1PartialMetadata, dict[str, object]]]:
+    partials = []
+    for worker_id in range(worker_count):
+        counts = torch.zeros((component_count, d_sae), dtype=torch.int64)
+        tokens = torch.zeros((component_count, d_sae, k), dtype=torch.int32)
+        probs = torch.zeros((component_count, d_sae, k), dtype=torch.float32)
+        for component_id in range(component_count):
+            for latent_id in range(d_sae):
+                flat_id = component_id * d_sae + latent_id
+                counts[component_id, latent_id] = flat_id + worker_id + 1
+                fill = (flat_id + worker_id) % (k + 1)
+                for slot_id in range(fill):
+                    tokens[component_id, latent_id, slot_id] = (
+                        1 + ((flat_id * 17 + worker_id * 5 + slot_id) % 97)
+                    )
+                    # Repeated probabilities exercise token/worker/row tie-breaking.
+                    probs[component_id, latent_id, slot_id] = float((slot_id % 4) + 1) / 10.0
+        metadata = _logit_ctx_metadata(worker_id).model_copy(
+            update={
+                "component_count": component_count,
+                "d_sae": d_sae,
+                "sequence_id_min": 1,
+                "sequence_id_max": 2,
+            }
+        )
+        partials.append(
+            (
+                metadata,
+                {
+                    "latent_counts": counts,
+                    "top_tokens": tokens,
+                    "top_probs": probs,
+                },
+            )
+        )
+    return partials
+
+
+def _merge_logit_ctx_reference(
+    partials: list[tuple[Pass1PartialMetadata, dict[str, object]]],
+    *,
+    vocab_size: int | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    first_payload = partials[0][1]
+    latent_counts = sum(
+        (payload["latent_counts"].to(torch.int64) for _metadata, payload in partials),
+        start=torch.zeros_like(first_payload["latent_counts"], dtype=torch.int64),
+    )
+    output_k = int(first_payload["top_tokens"].shape[2])
+    top_tokens = torch.zeros_like(first_payload["top_tokens"], dtype=torch.int32)
+    top_probs = torch.zeros_like(first_payload["top_probs"], dtype=torch.float32)
+    candidate_tokens = torch.cat(
+        [payload["top_tokens"].to(torch.int64) for _metadata, payload in partials],
+        dim=2,
+    )
+    candidate_probs = torch.cat(
+        [payload["top_probs"].to(torch.float32) for _metadata, payload in partials],
+        dim=2,
+    )
+    candidate_workers = torch.cat(
+        [
+            torch.full_like(payload["top_tokens"].to(torch.int64), metadata.worker_id)
+            for metadata, payload in partials
+        ],
+        dim=2,
+    )
+    candidate_rows = torch.cat(
+        [
+            torch.arange(payload["top_tokens"].shape[2], dtype=torch.int64)
+            .view(1, 1, -1)
+            .expand_as(payload["top_tokens"])
+            for _metadata, payload in partials
+        ],
+        dim=2,
+    )
+    valid = candidate_probs > 0
+    if vocab_size is not None:
+        valid &= candidate_tokens < int(vocab_size)
+    candidate_probs = candidate_probs.masked_fill(~valid, 0.0)
+    candidate_tokens = candidate_tokens.masked_fill(~valid, 0)
+    _select_logit_ctx_events_reference(
+        top_tokens,
+        top_probs,
+        candidate_tokens,
+        candidate_probs,
+        candidate_workers,
+        candidate_rows,
+        output_k,
+    )
+    return top_tokens, top_probs, latent_counts
 
 
 def _write_seq_latent_index_shard(
