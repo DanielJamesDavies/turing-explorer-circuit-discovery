@@ -177,7 +177,6 @@ def configure_mid_ctx_candidate_pool(manifest: DistributedRunManifest) -> None:
     mid_ctx._candidate_band_margin = band_margin_sigma
     mid_ctx._final_band_low = final_band_low
     mid_ctx._final_band_high = final_band_high
-    mid_ctx._priority_seed = int(manifest.sampling_seed)
     mid_ctx._band_low = max(0.0, final_band_low - band_margin_sigma)
     mid_ctx._band_high = final_band_high + band_margin_sigma
     mid_ctx.num_ctx_sequences = max_candidates_per_latent

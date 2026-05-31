@@ -643,7 +643,7 @@ def test_mid_ctx_candidate_payload_records_source_mode_and_truncation():
         num_components = 1
         d_sae = 2
         num_ctx_sequences = 2
-        mid_mode = "gpu_priority_reservoir"
+        mid_mode = "reservoir_cpu"
         _band_low = 0.0
         _band_high = 2.5
         _distributed_candidate_pool = True
@@ -663,7 +663,7 @@ def test_mid_ctx_candidate_payload_records_source_mode_and_truncation():
     )
 
     settings = payload["candidate_pool_settings"]
-    assert settings["source_mid_mode"] == "gpu_priority_reservoir"
+    assert settings["source_mid_mode"] == "reservoir_cpu"
     assert settings["mode"] == "widened_worker_candidate_pool"
     assert payload["truncation_counters"].tolist() == [[2, 0]]
     assert torch.equal(payload["sequence_ids"], torch.tensor([1, 2], dtype=torch.int32))

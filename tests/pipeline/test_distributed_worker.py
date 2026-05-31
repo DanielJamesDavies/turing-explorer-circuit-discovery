@@ -1025,7 +1025,6 @@ def test_configure_mid_ctx_candidate_pool_widens_band_and_capacity(monkeypatch, 
     assert fake_mid_ctx._distributed_candidate_pool is True
     assert fake_mid_ctx._final_num_ctx_sequences == 64
     assert fake_mid_ctx.num_ctx_sequences == 256
-    assert fake_mid_ctx._priority_seed == manifest.sampling_seed
     assert fake_mid_ctx._band_low == 0.0
     assert fake_mid_ctx._band_high == 2.5
     assert fake_mid_ctx._candidate_band_margin == 1.0

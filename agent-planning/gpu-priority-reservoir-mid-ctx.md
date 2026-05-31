@@ -6,6 +6,17 @@
 
 ---
 
+## Outcome
+
+The local `gpu_topk_mid` and `gpu_priority_reservoir` modes were removed after
+H100 smoke testing showed they were either scientifically biased or operationally
+slower/less reliable than `reservoir_cpu`. The supported local `mid_ctx` path is
+now `reservoir_cpu` only. The distributed merge-side deterministic priority
+selection remains, because it is part of candidate-pool merging rather than a
+local context update mode.
+
+Keep this document as historical context for why the GPU modes were not promoted.
+
 ## Phase 1 — Confirm Sampling Contract
 
 - [x] Document the intended statistical contract: uniform sampling over eligible mid-band `(component, latent, sequence)` candidates.

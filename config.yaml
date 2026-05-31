@@ -23,7 +23,7 @@ latents:
     n_sequences: 64 # Top sequences to store per latent (ranked by mean activation)
   mid_ctx:
     n_sequences: 64 # Reservoir size per latent
-    mode: "reservoir_cpu" # "reservoir_cpu" | "gpu_topk_mid"
+    mode: "reservoir_cpu" # Only supported local mid_ctx mode.
     band_low_sigma: 0.5 # Lower edge of mid band: mean_seq + band_low_sigma * std_seq
     band_high_sigma: 1.5 # Upper edge of mid band: mean_seq + band_high_sigma * std_seq
     warmup_batches: 100 # Batches per component before mid_ctx updates begin (lets Welford stats stabilise)

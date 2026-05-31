@@ -1,7 +1,5 @@
 import importlib.util
-import hashlib
 import os
-import sys
 import torch
 from typing import cast, Optional, Dict, List, Tuple
 
@@ -55,22 +53,6 @@ def compute_seq_scores(
     return scores.T  # [d_sae, batch]
 
 
-def _signed_int64_from_material(material: str) -> int:
-    value = int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
-    if value >= (1 << 63):
-        value -= 1 << 64
-    return value
-
-
-MID_CTX_PRIORITY_HASH_VERSION = "splitmix64-v1"
-
-# SplitMix64 constants, represented as signed int64 values so Torch int64
-# arithmetic wraps the same way on CPU/GPU tensor operations.
-_SPLITMIX_GOLDEN_GAMMA = -7046029254386353131  # unsigned: 0x9E3779B97F4A7C15
-_SPLITMIX_MIX_1 = -4658895280553007687        # unsigned: 0xBF58476D1CE4E5B9
-_SPLITMIX_MIX_2 = -7723592293110705685        # unsigned: 0x94D049BB133111EB
-
-
 class Context:
 
     ctx_seq_idx    = _AutoAllocTensor()
@@ -91,13 +73,11 @@ class Context:
             self.mid_mode = cast(str, config.latents.mid_ctx.mode or "reservoir_cpu")
             self._band_low  = cast(float, config.latents.mid_ctx.band_low_sigma  or 0.5)
             self._band_high = cast(float, config.latents.mid_ctx.band_high_sigma or 1.5)
-            self._priority_seed = cast(int, config.distributed.sampling_seed or 0)
             self.val_dtype = torch.float32
         elif ctx_type == "neg":
             self.device = torch.device("cpu")
             self.num_ctx_sequences = cast(int, config.latents.neg_ctx.n_sequences or 64)
             self.mid_mode = ""
-            self._priority_seed = 0
             self.val_dtype = torch.float32
         else:
             self.device = device if device is not None else torch.device(
@@ -105,7 +85,6 @@ class Context:
             )
             self.num_ctx_sequences = cast(int, config.latents.top_ctx.n_sequences)
             self.mid_mode = ""
-            self._priority_seed = 0
             self.val_dtype = torch.bfloat16
 
         self._allocated = False
@@ -140,12 +119,6 @@ class Context:
             self.reservoir_n = torch.zeros(
                 (self.num_components, self.d_sae), dtype=torch.int64,
             )
-            if self.mid_mode == "gpu_priority_reservoir":
-                self._priority_val = torch.full(
-                    (self.num_components, self.d_sae, self.num_ctx_sequences),
-                    torch.iinfo(torch.int64).max,
-                    dtype=torch.int64,
-                )
         self._allocated = True
 
     # ------------------------------------------------------------------
@@ -177,18 +150,7 @@ class Context:
                 raise ValueError(
                     "mid_ctx.update_component requires latent_mean_seq and latent_std_seq"
                 )
-            if self.mid_mode == "gpu_topk_mid":
-                self._update_mid_gpu_topk(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
-            elif self.mid_mode == "gpu_priority_reservoir":
-                self._update_mid_gpu_priority_reservoir(
-                    component_idx,
-                    sequence_indices,
-                    latents,
-                    latent_mean_seq,
-                    latent_std_seq,
-                )
-            else:
-                self._update_mid_reservoir(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
+            self._update_mid_reservoir(component_idx, sequence_indices, latents, latent_mean_seq, latent_std_seq)
         else:
             raise ValueError(f"Invalid context type: {self.ctx_type}")
 
@@ -226,13 +188,12 @@ class Context:
         latent_mean_seq: torch.Tensor,
         latent_std_seq: torch.Tensor,
         device: torch.device,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         mean_seq = latent_mean_seq.to(device)
         std_seq = latent_std_seq.to(device).clamp(min=1e-6)
         low = mean_seq + self._band_low * std_seq
         high = mean_seq + self._band_high * std_seq
-        midpoint = mean_seq + ((self._band_low + self._band_high) * 0.5) * std_seq
-        return low, high, midpoint
+        return low, high
 
     def _update_mid_reservoir(
         self,
@@ -255,7 +216,7 @@ class Context:
             # mean_seq / std_seq come from LatentStats.mean_seq / std_seq, which track
             # the distribution of compute_seq_scores() values — the same space as scores.
             # A floor on std prevents a degenerate zero-width band during warmup.
-            low, high, _midpoint = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
+            low, high = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
 
             # In-band mask: only positions where the latent fired with a
             # mean score in the mid band (score == 0 means the latent did
@@ -287,233 +248,6 @@ class Context:
                 self.reservoir_n[component_idx].contiguous(),    # [d_sae] int64  CPU
                 self.num_ctx_sequences,
             )
-
-    def _update_mid_gpu_topk(
-        self,
-        component_idx: int,
-        sequence_indices: torch.Tensor,
-        latents: tuple[torch.Tensor, torch.Tensor],
-        latent_mean_seq: torch.Tensor,
-        latent_std_seq: torch.Tensor,
-    ) -> None:
-        with torch.no_grad():
-            top_acts, top_indices = latents
-            compute_device = top_acts.device
-            scores = compute_seq_scores(top_acts, top_indices, self.d_sae)  # [d_sae, B]
-            low, high, midpoint = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
-
-            existing_idx = self.ctx_seq_idx[component_idx].to(compute_device)
-            existing_val = self.ctx_seq_val[component_idx].to(compute_device).float()
-            existing_valid = (
-                (existing_idx != 0)
-                & (existing_val > low.unsqueeze(1))
-                & (existing_val < high.unsqueeze(1))
-            )
-
-            new_idx = sequence_indices.to(compute_device).unsqueeze(0).expand(self.d_sae, -1)
-            new_valid = (scores > low.unsqueeze(1)) & (scores < high.unsqueeze(1))
-
-            candidate_idx = torch.cat([existing_idx, new_idx], dim=1)
-            candidate_val = torch.cat([existing_val, scores], dim=1)
-            candidate_valid = torch.cat([existing_valid, new_valid], dim=1)
-
-            distance = (candidate_val - midpoint.unsqueeze(1)).abs()
-            distance = distance.masked_fill(~candidate_valid, float("inf"))
-            selected_distance, selected_pos = torch.topk(
-                -distance,
-                k=self.num_ctx_sequences,
-                dim=1,
-                largest=True,
-                sorted=True,
-            )
-            selected_valid = torch.isfinite(-selected_distance)
-            selected_idx = candidate_idx.gather(1, selected_pos).to(torch.int32)
-            selected_val = candidate_val.gather(1, selected_pos).to(torch.float32)
-
-            selected_idx = selected_idx.masked_fill(~selected_valid, 0)
-            selected_val = selected_val.masked_fill(~selected_valid, 0.0)
-
-            self.ctx_seq_idx[component_idx].copy_(selected_idx.cpu())
-            self.ctx_seq_val[component_idx].copy_(selected_val.cpu().to(self.ctx_seq_val.dtype))
-            self.reservoir_fill[component_idx].copy_(selected_valid.sum(dim=1).cpu().to(torch.int32))
-            self.reservoir_n[component_idx] += new_valid.sum(dim=1).cpu().to(torch.int64)
-
-    def _update_mid_gpu_priority_reservoir(
-        self,
-        component_idx: int,
-        sequence_indices: torch.Tensor,
-        latents: tuple[torch.Tensor, torch.Tensor],
-        latent_mean_seq: torch.Tensor,
-        latent_std_seq: torch.Tensor,
-    ) -> None:
-        with torch.no_grad():
-            top_acts, top_indices = latents
-            compute_device = top_acts.device
-            scores = compute_seq_scores(top_acts, top_indices, self.d_sae)  # [d_sae, B]
-            low, high, _midpoint = self._mid_band_bounds(latent_mean_seq, latent_std_seq, compute_device)
-
-            existing_idx = self.ctx_seq_idx[component_idx].to(compute_device)
-            existing_val = self.ctx_seq_val[component_idx].to(compute_device).float()
-            existing_priority = self._priority_val[component_idx].to(compute_device)
-            existing_valid = (
-                (existing_idx != 0)
-                & (existing_priority != torch.iinfo(torch.int64).max)
-            )
-
-            new_valid = (scores > low.unsqueeze(1)) & (scores < high.unsqueeze(1))
-            pairs = new_valid.nonzero()
-            if pairs.numel() == 0:
-                return
-
-            new_latents = pairs[:, 0]
-            new_batch_positions = pairs[:, 1]
-            sequence_ids_d = sequence_indices.to(compute_device)
-            new_sequences = sequence_ids_d[new_batch_positions]
-            new_scores = scores[new_latents, new_batch_positions]
-            new_priorities = self._mid_priority_values_for_candidates(
-                component_idx,
-                new_latents,
-                new_sequences,
-                compute_device,
-            )
-
-            new_counts = torch.bincount(new_latents, minlength=self.d_sae).cpu().to(torch.int64)
-            self.reservoir_n[component_idx] += new_counts
-
-            invalid_priority = torch.iinfo(torch.int64).max
-            for latent_idx in torch.unique(new_latents).tolist():
-                latent = int(latent_idx)
-                existing_latent_valid = existing_valid[latent]
-                new_latent_mask = new_latents == latent
-
-                candidate_idx = torch.cat(
-                    [
-                        existing_idx[latent, existing_latent_valid],
-                        new_sequences[new_latent_mask].to(existing_idx.dtype),
-                    ],
-                    dim=0,
-                )
-                candidate_val = torch.cat(
-                    [
-                        existing_val[latent, existing_latent_valid],
-                        new_scores[new_latent_mask].to(torch.float32),
-                    ],
-                    dim=0,
-                )
-                candidate_priority = torch.cat(
-                    [
-                        existing_priority[latent, existing_latent_valid],
-                        new_priorities[new_latent_mask],
-                    ],
-                    dim=0,
-                )
-
-                order_by_sequence = torch.argsort(candidate_idx.to(torch.long), stable=True)
-                candidate_idx = candidate_idx[order_by_sequence]
-                candidate_val = candidate_val[order_by_sequence]
-                candidate_priority = candidate_priority[order_by_sequence]
-
-                selected_count = min(int(candidate_priority.numel()), self.num_ctx_sequences)
-                selected_priority, selected_pos = torch.topk(
-                    candidate_priority,
-                    k=selected_count,
-                    largest=False,
-                    sorted=True,
-                )
-                selected_idx = candidate_idx[selected_pos].to(torch.int32)
-                selected_val = candidate_val[selected_pos].to(torch.float32)
-
-                self.ctx_seq_idx[component_idx, latent].zero_()
-                self.ctx_seq_val[component_idx, latent].zero_()
-                self._priority_val[component_idx, latent].fill_(invalid_priority)
-                self.ctx_seq_idx[component_idx, latent, :selected_count].copy_(selected_idx.cpu())
-                self.ctx_seq_val[component_idx, latent, :selected_count].copy_(
-                    selected_val.cpu().to(self.ctx_seq_val.dtype)
-                )
-                self._priority_val[component_idx, latent, :selected_count].copy_(
-                    selected_priority.cpu().to(torch.int64)
-                )
-                self.reservoir_fill[component_idx, latent] = selected_count
-
-    def _mid_priority_values(
-        self,
-        component_idx: int,
-        sequence_indices: torch.Tensor,
-        device: torch.device,
-    ) -> torch.Tensor:
-        final_band_low = float(getattr(self, "_final_band_low", self._band_low))
-        final_band_high = float(getattr(self, "_final_band_high", self._band_high))
-        final_num_ctx_sequences = int(
-            getattr(self, "_final_num_ctx_sequences", self.num_ctx_sequences)
-        )
-        material = "|".join(
-            [
-                MID_CTX_PRIORITY_HASH_VERSION,
-                str(int(self._priority_seed)),
-                "mid_ctx",
-                str(getattr(self, "_candidate_pool_dataset_fingerprint", "")),
-                str(final_band_low),
-                str(final_band_high),
-                str(float(self._band_low)),
-                str(float(self._band_high)),
-                str(float(getattr(self, "_candidate_band_margin", 0.0))),
-                str(final_num_ctx_sequences),
-            ]
-        )
-        base = _signed_int64_from_material(material)
-        seq_ids = sequence_indices.to(device=device, dtype=torch.int64).unsqueeze(0)
-        latent_ids = torch.arange(self.d_sae, device=device, dtype=torch.int64).unsqueeze(1)
-        component_ids = torch.full((1, 1), int(component_idx), device=device, dtype=torch.int64)
-        values = seq_ids * _SPLITMIX_MIX_1
-        values = values + latent_ids * _SPLITMIX_MIX_2
-        values = values + component_ids * _SPLITMIX_GOLDEN_GAMMA
-        values = values + base
-        values = self._splitmix64(values)
-        return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
-
-    def _mid_priority_values_for_candidates(
-        self,
-        component_idx: int,
-        latent_indices: torch.Tensor,
-        sequence_indices: torch.Tensor,
-        device: torch.device,
-    ) -> torch.Tensor:
-        final_band_low = float(getattr(self, "_final_band_low", self._band_low))
-        final_band_high = float(getattr(self, "_final_band_high", self._band_high))
-        final_num_ctx_sequences = int(
-            getattr(self, "_final_num_ctx_sequences", self.num_ctx_sequences)
-        )
-        material = "|".join(
-            [
-                MID_CTX_PRIORITY_HASH_VERSION,
-                str(int(self._priority_seed)),
-                "mid_ctx",
-                str(getattr(self, "_candidate_pool_dataset_fingerprint", "")),
-                str(final_band_low),
-                str(final_band_high),
-                str(float(self._band_low)),
-                str(float(self._band_high)),
-                str(float(getattr(self, "_candidate_band_margin", 0.0))),
-                str(final_num_ctx_sequences),
-            ]
-        )
-        base = _signed_int64_from_material(material)
-        seq_ids = sequence_indices.to(device=device, dtype=torch.int64)
-        latent_ids = latent_indices.to(device=device, dtype=torch.int64)
-        component_ids = torch.full_like(seq_ids, int(component_idx), dtype=torch.int64, device=device)
-        values = seq_ids * _SPLITMIX_MIX_1
-        values = values + latent_ids * _SPLITMIX_MIX_2
-        values = values + component_ids * _SPLITMIX_GOLDEN_GAMMA
-        values = values + base
-        values = self._splitmix64(values)
-        return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
-
-    @staticmethod
-    def _splitmix64(values: torch.Tensor) -> torch.Tensor:
-        values = values + _SPLITMIX_GOLDEN_GAMMA
-        values = torch.bitwise_xor(values, values >> 30) * _SPLITMIX_MIX_1
-        values = torch.bitwise_xor(values, values >> 27) * _SPLITMIX_MIX_2
-        return torch.bitwise_xor(values, values >> 31)
 
     # ------------------------------------------------------------------
     # Persistence
