@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.distributed.assignments import (
+    DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
     DISCOVERY_SCHEDULING_METHOD_COST_GREEDY,
     assign_seed_free_method_owners,
     build_discovery_candidate_assignments,
@@ -150,6 +151,23 @@ def test_seed_partitioner_is_deterministic_and_rejects_duplicates():
         partition_seed_ids([10, 10], 2)
 
 
+def test_seed_partitioner_can_shuffle_deterministically():
+    contiguous = partition_seed_ids(list(range(12)), 3)
+    shuffled_a = partition_seed_ids(list(range(12)), 3, shuffle_seed=123)
+    shuffled_b = partition_seed_ids(list(range(12)), 3, shuffle_seed=123)
+    shuffled_c = partition_seed_ids(list(range(12)), 3, shuffle_seed=456)
+
+    assert shuffled_a == shuffled_b
+    assert shuffled_a != contiguous
+    assert shuffled_a != shuffled_c
+    assert sorted(seed for seeds in shuffled_a.values() for seed in seeds) == list(range(12))
+    assert {worker_id: len(seeds) for worker_id, seeds in shuffled_a.items()} == {
+        "0": 4,
+        "1": 4,
+        "2": 4,
+    }
+
+
 def test_discovery_candidate_assignments_exclude_seed_free_methods():
     seed_ids, assignments = build_discovery_candidate_assignments(
         [{"comp_idx": 1, "latent_idx": 10}, {"comp_idx": 2, "latent_idx": 20}],
@@ -164,6 +182,25 @@ def test_discovery_candidate_assignments_exclude_seed_free_methods():
         ["coactivation_statistical", "cluster_contrast"],
         2,
     ) == {"cluster_contrast": 0}
+
+
+def test_discovery_candidate_assignments_can_shuffle_candidate_order():
+    seed_ids, assignments = build_discovery_candidate_assignments(
+        [{"comp_idx": index, "latent_idx": index + 10} for index in range(12)],
+        3,
+        methods=["coactivation_statistical"],
+        shuffle_seed=123,
+    )
+
+    flattened = [
+        candidate_index
+        for worker_seed_ids in seed_ids.values()
+        for candidate_index in worker_seed_ids
+    ]
+    assert flattened != list(range(12))
+    assert sorted(flattened) == list(range(12))
+    for worker_id, worker_assignments in assignments.items():
+        assert [assignment.candidate_index for assignment in worker_assignments] == seed_ids[worker_id]
 
 
 def test_candidate_level_discovery_scheduling_is_deterministic():
@@ -181,6 +218,25 @@ def test_candidate_level_discovery_scheduling_is_deterministic():
     assert [task.task_id for task in tasks["0"]] == [0, 1, 2, 3, 6]
     assert [task.task_id for task in tasks["1"]] == [4, 5]
     assert costs == {"0": 5.0, "1": 2.0}
+
+
+def test_candidate_level_discovery_scheduling_can_shuffle_candidates():
+    tasks, costs = build_discovery_task_assignments(
+        [{"comp_idx": index, "latent_idx": index + 10} for index in range(12)],
+        3,
+        methods=["method_a"],
+        strategy=DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
+        shuffle_seed=123,
+    )
+
+    assigned_candidate_order = [
+        task.candidate_index
+        for worker_tasks in tasks.values()
+        for task in worker_tasks
+    ]
+    assert assigned_candidate_order != list(range(12))
+    assert sorted(assigned_candidate_order) == list(range(12))
+    assert costs == {"0": 4.0, "1": 4.0, "2": 4.0}
 
 
 def test_method_aware_discovery_scheduling_balances_synthetic_costs():

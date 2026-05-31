@@ -17,6 +17,7 @@ from store.latent_stats import latent_stats
 from store.logit_context import logit_ctx
 from store.top_coactivation import top_coactivation
 from .distributed.assignments import (
+    DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
     assign_seed_free_method_owners,
     build_discovery_candidate_assignments,
     build_discovery_scheduling_report,
@@ -208,10 +209,12 @@ def assign_discovery_candidates_to_manifest(
     """Return a manifest with deterministic candidate assignments for discovery workers."""
 
     method_list = list(methods if methods is not None else config.discovery.methods)
+    shuffle_seed = int(manifest.sampling_seed)
     seed_ids, candidate_assignments = build_discovery_candidate_assignments(
         candidates,
         manifest.worker_count,
         methods=method_list,
+        shuffle_seed=shuffle_seed,
     )
     seed_free_owners = assign_seed_free_method_owners(
         method_list,
@@ -223,6 +226,8 @@ def assign_discovery_candidates_to_manifest(
         manifest.worker_count,
         methods=method_list,
         seed_free_method_owners=seed_free_owners,
+        strategy=DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
+        shuffle_seed=shuffle_seed,
     )
     existing = manifest.work_assignments
     updated_work = WorkAssignments(
@@ -234,7 +239,7 @@ def assign_discovery_candidates_to_manifest(
         discovery_seed_ids=seed_ids,
         discovery_candidate_assignments=candidate_assignments,
         discovery_seed_free_method_owners=seed_free_owners,
-        discovery_scheduling_strategy="candidate_contiguous",
+        discovery_scheduling_strategy=DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
         discovery_task_assignments=task_assignments,
         discovery_worker_estimated_costs=worker_costs,
         discovery_failed_task_ranges=existing.discovery_failed_task_ranges,

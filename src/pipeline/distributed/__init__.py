@@ -26,6 +26,7 @@ from .devices import (
 )
 from .assignments import (
     DISCOVERY_SCHEDULING_CANDIDATE_CONTIGUOUS,
+    DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED,
     DISCOVERY_SCHEDULING_METHOD_COST_GREEDY,
     assign_seed_free_method_owners,
     build_discovery_candidate_assignments,
@@ -325,6 +326,7 @@ __all__ = [
     "ExperimentalFastModeReport",
     "ExperimentalFastModeRunConfig",
     "DISCOVERY_SCHEDULING_CANDIDATE_CONTIGUOUS",
+    "DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED",
     "DISCOVERY_SCHEDULING_METHOD_COST_GREEDY",
     "DEFAULT_CANONICAL_ARTIFACTS",
     "ManifestStatus",

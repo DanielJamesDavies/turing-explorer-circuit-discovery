@@ -244,7 +244,7 @@ def test_assign_discovery_candidates_records_seed_free_owner(tmp_path):
     assert updated.work_assignments.discovery_seed_free_method_owners == {
         "cluster_contrast": 0
     }
-    assert updated.work_assignments.discovery_scheduling_strategy == "candidate_contiguous"
+    assert updated.work_assignments.discovery_scheduling_strategy == "candidate_shuffled"
     assert updated.work_assignments.discovery_worker_estimated_costs == {
         "0": 2.0,
         "1": 1.0,
@@ -271,27 +271,34 @@ def test_assign_discovery_candidates_handles_uneven_and_more_workers_than_candid
         methods=["method_a"],
     )
 
-    assert updated.work_assignments.discovery_seed_ids == {
-        "0": [0, 1],
-        "1": [2, 3],
-        "2": [4],
-    }
-    assert [
+    assigned_candidate_indices = [
         item.candidate_index
         for worker_items in updated.work_assignments.discovery_candidate_assignments.values()
         for item in worker_items
-    ] == [0, 1, 2, 3, 4]
+    ]
+    assert sorted(assigned_candidate_indices) == [0, 1, 2, 3, 4]
+    assert assigned_candidate_indices != [0, 1, 2, 3, 4]
+    assert {key: len(value) for key, value in updated.work_assignments.discovery_seed_ids.items()} == {
+        "0": 2,
+        "1": 2,
+        "2": 1,
+    }
 
     sparse = candidate_selection.assign_discovery_candidates_to_manifest(
         _manifest(tmp_path, worker_count=4),
         candidates[:2],
         methods=["method_a"],
     )
-    assert sparse.work_assignments.discovery_seed_ids == {
-        "0": [0],
-        "1": [1],
-        "2": [],
-        "3": [],
+    assert sorted(
+        seed_id
+        for worker_seed_ids in sparse.work_assignments.discovery_seed_ids.values()
+        for seed_id in worker_seed_ids
+    ) == [0, 1]
+    assert {key: len(value) for key, value in sparse.work_assignments.discovery_seed_ids.items()} == {
+        "0": 1,
+        "1": 1,
+        "2": 0,
+        "3": 0,
     }
     assert sparse.work_assignments.discovery_candidate_assignments["2"] == []
     assert sparse.work_assignments.discovery_candidate_assignments["3"] == []
@@ -311,12 +318,21 @@ def test_candidate_selection_stage_records_assignments_in_manifest(monkeypatch, 
     )
 
     updated = load_manifest(manifest.manifest_path)
-    assert updated.work_assignments.discovery_seed_ids == {"0": [0], "1": []}
-    assigned = updated.work_assignments.discovery_candidate_assignments["0"][0]
+    assert sorted(
+        seed_id
+        for worker_seed_ids in updated.work_assignments.discovery_seed_ids.values()
+        for seed_id in worker_seed_ids
+    ) == [0]
+    assigned = next(
+        assignment
+        for assignments in updated.work_assignments.discovery_candidate_assignments.values()
+        for assignment in assignments
+    )
     assert (assigned.comp_idx, assigned.latent_idx) == (1, 2)
     assert assigned.methods == list(candidate_selection.config.discovery.methods)
     report_path = Path(manifest.distributed_root) / "reports" / "discovery_scheduling_report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    assert report["scheduling_strategy"] == "candidate_contiguous"
-    assert report["workers"][0]["task_count"] == len(candidate_selection.config.discovery.methods)
-    assert report["workers"][1]["task_count"] == 0
+    assert report["scheduling_strategy"] == "candidate_shuffled"
+    assert sum(worker["task_count"] for worker in report["workers"]) == len(
+        candidate_selection.config.discovery.methods
+    )

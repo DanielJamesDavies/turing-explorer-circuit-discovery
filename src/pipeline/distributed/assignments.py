@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, TypeVar
 
 from .manifest import DiscoveryCandidateAssignment, DiscoveryTaskAssignment, WorkAssignments
@@ -11,6 +12,7 @@ from .shard_table import ShardRecord, contains_sequence_id
 T = TypeVar("T")
 SEED_FREE_DISCOVERY_METHODS = {"cluster_contrast"}
 DISCOVERY_SCHEDULING_CANDIDATE_CONTIGUOUS = "candidate_contiguous"
+DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED = "candidate_shuffled"
 DISCOVERY_SCHEDULING_METHOD_COST_GREEDY = "method_cost_greedy"
 
 
@@ -84,11 +86,19 @@ def partition_sequence_ids(
     return partition_contiguous(sequence_ids, worker_count)
 
 
-def partition_seed_ids(seed_ids: Sequence[int], worker_count: int) -> Dict[str, List[int]]:
+def partition_seed_ids(
+    seed_ids: Sequence[int],
+    worker_count: int,
+    *,
+    shuffle_seed: int | None = None,
+) -> Dict[str, List[int]]:
     """Partition selected discovery seed/candidate IDs deterministically."""
 
     _reject_duplicates(seed_ids, "seed ID")
-    return partition_contiguous(seed_ids, worker_count)
+    partitioned_ids = list(seed_ids)
+    if shuffle_seed is not None:
+        random.Random(int(shuffle_seed)).shuffle(partitioned_ids)
+    return partition_contiguous(partitioned_ids, worker_count)
 
 
 def build_discovery_candidate_assignments(
@@ -96,11 +106,16 @@ def build_discovery_candidate_assignments(
     worker_count: int,
     *,
     methods: Sequence[str],
+    shuffle_seed: int | None = None,
 ) -> tuple[Dict[str, List[int]], Dict[str, List[DiscoveryCandidateAssignment]]]:
     """Partition selected candidates and attach seed/task metadata per worker."""
 
     candidate_indices = list(range(len(candidates)))
-    seed_assignments = partition_seed_ids(candidate_indices, worker_count)
+    seed_assignments = partition_seed_ids(
+        candidate_indices,
+        worker_count,
+        shuffle_seed=shuffle_seed,
+    )
     method_list = [
         str(method)
         for method in methods
@@ -151,6 +166,7 @@ def build_discovery_task_assignments(
     strategy: str = DISCOVERY_SCHEDULING_CANDIDATE_CONTIGUOUS,
     method_costs: Mapping[str, float] | None = None,
     seed_free_method_owners: Mapping[str, int] | None = None,
+    shuffle_seed: int | None = None,
 ) -> tuple[Dict[str, List[DiscoveryTaskAssignment]], Dict[str, float]]:
     """Build deterministic discovery task schedules for reporting and future resume."""
 
@@ -172,6 +188,13 @@ def build_discovery_task_assignments(
             tasks,
             len(candidates),
             worker_count,
+        )
+    elif strategy == DISCOVERY_SCHEDULING_CANDIDATE_SHUFFLED:
+        assignments, totals = _candidate_contiguous_task_assignments(
+            tasks,
+            len(candidates),
+            worker_count,
+            shuffle_seed=shuffle_seed,
         )
     elif strategy == DISCOVERY_SCHEDULING_METHOD_COST_GREEDY:
         assignments, totals = _greedy_task_assignments(tasks, worker_count)
@@ -326,8 +349,14 @@ def _candidate_contiguous_task_assignments(
     tasks: Sequence[DiscoveryTaskAssignment],
     candidate_count: int,
     worker_count: int,
+    *,
+    shuffle_seed: int | None = None,
 ) -> tuple[Dict[str, List[DiscoveryTaskAssignment]], Dict[str, float]]:
-    candidate_assignments = partition_seed_ids(list(range(candidate_count)), worker_count)
+    candidate_assignments = partition_seed_ids(
+        list(range(candidate_count)),
+        worker_count,
+        shuffle_seed=shuffle_seed,
+    )
     candidate_to_worker = {
         candidate_index: worker_id
         for worker_id, candidate_indices in candidate_assignments.items()
