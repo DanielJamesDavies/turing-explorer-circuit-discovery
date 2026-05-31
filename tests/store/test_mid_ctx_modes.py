@@ -130,6 +130,16 @@ def test_gpu_priority_reservoir_inclusion_frequency_matches_uniform_expectation(
     assert bool((deviations <= max_abs_deviation).all()), counts.tolist()
 
 
+def test_gpu_priority_reservoir_handles_large_component_ids(monkeypatch):
+    ctx = _tiny_mid_ctx(monkeypatch, "gpu_priority_reservoir", sampling_seed=321)
+    sequence_ids = torch.tensor([501, 502, 503, 504], dtype=torch.int32)
+    priorities = ctx._mid_priority_values(35, sequence_ids, torch.device("cpu"))
+
+    assert priorities.shape == (3, 4)
+    assert priorities.dtype == torch.int64
+    assert bool((priorities >= 0).all())
+
+
 def test_gpu_priority_reservoir_differs_from_gpu_topk_midpoint_selection(monkeypatch):
     sequence_ids = torch.tensor([101, 102, 103, 104], dtype=torch.int32)
     top_acts = torch.tensor([[[0.6]], [[1.0]], [[1.2]], [[1.4]]], dtype=torch.float32)

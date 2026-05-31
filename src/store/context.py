@@ -64,6 +64,12 @@ def _signed_int64_from_material(material: str) -> int:
 
 MID_CTX_PRIORITY_HASH_VERSION = "splitmix64-v1"
 
+# SplitMix64 constants, represented as signed int64 values so Torch int64
+# arithmetic wraps the same way on CPU/GPU tensor operations.
+_SPLITMIX_GOLDEN_GAMMA = -7046029254386353131  # unsigned: 0x9E3779B97F4A7C15
+_SPLITMIX_MIX_1 = -4658895280553007687        # unsigned: 0xBF58476D1CE4E5B9
+_SPLITMIX_MIX_2 = -7723592293110705685        # unsigned: 0x94D049BB133111EB
+
 
 class Context:
 
@@ -421,18 +427,19 @@ class Context:
         base = _signed_int64_from_material(material)
         seq_ids = sequence_indices.to(device=device, dtype=torch.int64).unsqueeze(0)
         latent_ids = torch.arange(self.d_sae, device=device, dtype=torch.int64).unsqueeze(1)
-        values = seq_ids * -4658895280553007687
-        values = values + latent_ids * -7723592293110705685
-        values = values + int(component_idx) * -7046029254386353131
+        component_ids = torch.full((1, 1), int(component_idx), device=device, dtype=torch.int64)
+        values = seq_ids * _SPLITMIX_MIX_1
+        values = values + latent_ids * _SPLITMIX_MIX_2
+        values = values + component_ids * _SPLITMIX_GOLDEN_GAMMA
         values = values + base
         values = self._splitmix64(values)
         return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
 
     @staticmethod
     def _splitmix64(values: torch.Tensor) -> torch.Tensor:
-        values = values + -7046029254386353131
-        values = torch.bitwise_xor(values, values >> 30) * -4658895280553007687
-        values = torch.bitwise_xor(values, values >> 27) * -7723592293110705685
+        values = values + _SPLITMIX_GOLDEN_GAMMA
+        values = torch.bitwise_xor(values, values >> 30) * _SPLITMIX_MIX_1
+        values = torch.bitwise_xor(values, values >> 27) * _SPLITMIX_MIX_2
         return torch.bitwise_xor(values, values >> 31)
 
     # ------------------------------------------------------------------

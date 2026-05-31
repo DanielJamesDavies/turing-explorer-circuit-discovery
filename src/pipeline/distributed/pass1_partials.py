@@ -18,6 +18,12 @@ from .shard_table import sequence_ids_for_shards
 PASS1_PARTIAL_SCHEMA_VERSION = 1
 MID_CTX_PRIORITY_HASH_VERSION = "splitmix64-v1"
 
+# SplitMix64 constants, represented as signed int64 values so Torch int64
+# arithmetic wraps the same way as the local mid-context priority path.
+_SPLITMIX_GOLDEN_GAMMA = -7046029254386353131  # unsigned: 0x9E3779B97F4A7C15
+_SPLITMIX_MIX_1 = -4658895280553007687        # unsigned: 0xBF58476D1CE4E5B9
+_SPLITMIX_MIX_2 = -7723592293110705685        # unsigned: 0x94D049BB133111EB
+
 Pass1ArtifactName = Literal[
     "latent_stats",
     "top_ctx",
@@ -407,9 +413,9 @@ def _candidate_priorities(
         artifact_name=artifact_name,
     )
     base = _signed_int64_from_material(material)
-    values = sequence_ids.to(torch.int64) * -4658895280553007687
-    values = values + latent_ids.to(torch.int64) * -7723592293110705685
-    values = values + component_ids.to(torch.int64) * -7046029254386353131
+    values = sequence_ids.to(torch.int64) * _SPLITMIX_MIX_1
+    values = values + latent_ids.to(torch.int64) * _SPLITMIX_MIX_2
+    values = values + component_ids.to(torch.int64) * _SPLITMIX_GOLDEN_GAMMA
     values = values + base
     values = _splitmix64(values)
     return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
@@ -447,9 +453,9 @@ def _signed_int64_from_material(material: str) -> int:
 
 
 def _splitmix64(values: torch.Tensor) -> torch.Tensor:
-    values = values + -7046029254386353131
-    values = torch.bitwise_xor(values, values >> 30) * -4658895280553007687
-    values = torch.bitwise_xor(values, values >> 27) * -7723592293110705685
+    values = values + _SPLITMIX_GOLDEN_GAMMA
+    values = torch.bitwise_xor(values, values >> 30) * _SPLITMIX_MIX_1
+    values = torch.bitwise_xor(values, values >> 27) * _SPLITMIX_MIX_2
     return torch.bitwise_xor(values, values >> 31)
 
 
