@@ -20,6 +20,13 @@ from .contracts import (
 
 MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION = "weighted-reservoir-v1"
 
+# SplitMix64 constants, represented as signed int64 values so Torch int64
+# arithmetic wraps deterministically while mixing per-candidate priority keys.
+_SPLITMIX_GOLDEN_GAMMA = -7046029254386353131  # unsigned: 0x9E3779B97F4A7C15
+_SPLITMIX_MIX_1 = -4658895280553007687        # unsigned: 0xBF58476D1CE4E5B9
+_SPLITMIX_MIX_2 = -7723592293110705685        # unsigned: 0x94D049BB133111EB
+_WEIGHTED_RESERVOIR_CHUNK_ROWS = 8192
+
 
 def load_and_merge_top_ctx_partials(
     partial_paths: Sequence[str | Path],
@@ -349,7 +356,6 @@ def merge_mid_ctx_reservoir_partials(
     component_count = metadata.component_count
     d_sae = metadata.d_sae
     total_rows = component_count * d_sae
-    progress_interval = max(1, total_rows // 20)
     merge_start = time.perf_counter()
     print(
         "[pass1_merge] merging mid_ctx weighted reservoirs "
@@ -357,44 +363,17 @@ def merge_mid_ctx_reservoir_partials(
         f"rows={total_rows} output_k={output_k}",
         flush=True,
     )
-    ctx_seq_idx = torch.zeros((component_count, d_sae, output_k), dtype=torch.int32)
-    ctx_seq_val = torch.zeros((component_count, d_sae, output_k), dtype=torch.float32)
-    reservoir_fill = torch.zeros((component_count, d_sae), dtype=torch.int32)
-    reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
-    empty_worker_rows = torch.zeros((component_count, d_sae), dtype=torch.int64)
-
-    rows_done = 0
-    for component_id in range(component_count):
-        for latent_id in range(d_sae):
-            for _metadata, payload in partials:
-                worker_n = int(payload["reservoir_n"][component_id, latent_id].item())
-                worker_fill = int(payload["reservoir_fill"][component_id, latent_id].item())
-                if worker_n <= 0 or worker_fill <= 0:
-                    empty_worker_rows[component_id, latent_id] += 1
-            row_indices, row_values, row_fill, row_n = merge_mid_ctx_reservoir_row(
-                partials,
-                component_id=component_id,
-                latent_id=latent_id,
-                output_k=output_k,
-                sampling_seed=sampling_seed,
-                dataset_fingerprint=dataset_fingerprint,
-            )
-            ctx_seq_idx[component_id, latent_id] = row_indices
-            ctx_seq_val[component_id, latent_id] = row_values
-            reservoir_fill[component_id, latent_id] = int(row_fill)
-            reservoir_n[component_id, latent_id] = int(row_n)
-            rows_done += 1
-            if rows_done == 1 or rows_done == total_rows or rows_done % progress_interval == 0:
-                elapsed_s = time.perf_counter() - merge_start
-                rows_per_s = rows_done / max(elapsed_s, 1e-9)
-                remaining_s = (total_rows - rows_done) / max(rows_per_s, 1e-9)
-                print(
-                    "[pass1_merge] mid_ctx weighted reservoir progress "
-                    f"{rows_done}/{total_rows} rows "
-                    f"({rows_done / total_rows:.1%}) "
-                    f"elapsed={elapsed_s:.1f}s eta={remaining_s:.1f}s",
-                    flush=True,
-                )
+    ctx_seq_idx, ctx_seq_val, reservoir_fill, reservoir_n, empty_worker_rows = (
+        _merge_mid_ctx_reservoir_partials_chunked(
+            partials,
+            component_count=component_count,
+            d_sae=d_sae,
+            output_k=output_k,
+            sampling_seed=sampling_seed,
+            dataset_fingerprint=dataset_fingerprint,
+            merge_start=merge_start,
+        )
+    )
 
     merge_report = {
         "mode": "weighted_reservoir",
@@ -427,6 +406,144 @@ def merge_mid_ctx_reservoir_partials(
     }
     _validate_merged_mid_ctx(merged, partials)
     return merged
+
+
+def _merge_mid_ctx_reservoir_partials_chunked(
+    partials: Sequence[MidCtxCandidatesPartial],
+    *,
+    component_count: int,
+    d_sae: int,
+    output_k: int,
+    sampling_seed: int,
+    dataset_fingerprint: str,
+    merge_start: float,
+    chunk_rows: int = _WEIGHTED_RESERVOIR_CHUNK_ROWS,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Chunked tensor implementation of weighted reservoir merging."""
+
+    sorted_partials = sorted(partials, key=lambda item: item[0].worker_id)
+    total_rows = component_count * d_sae
+    input_k = int(sorted_partials[0][1]["ctx_seq_idx"].shape[2])
+    candidates_per_row = len(sorted_partials) * input_k
+    selected_k = min(output_k, candidates_per_row)
+    worker_ids = torch.tensor(
+        [int(metadata.worker_id) for metadata, _payload in sorted_partials],
+        dtype=torch.int64,
+    ).view(-1, 1, 1)
+    base_seed = _weighted_reservoir_hash_base(
+        sampling_seed=sampling_seed,
+        dataset_fingerprint=dataset_fingerprint,
+    )
+    base_seed_tensor = torch.tensor(base_seed, dtype=torch.int64)
+    slot_ids = torch.arange(input_k, dtype=torch.int64).view(1, 1, input_k)
+
+    ctx_seq_idx = torch.zeros((component_count, d_sae, output_k), dtype=torch.int32)
+    ctx_seq_val = torch.zeros((component_count, d_sae, output_k), dtype=torch.float32)
+    reservoir_fill = torch.zeros((component_count, d_sae), dtype=torch.int32)
+    reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
+    empty_worker_rows = torch.zeros((component_count, d_sae), dtype=torch.int64)
+
+    progress_interval = max(chunk_rows, max(1, total_rows // 20))
+    next_progress = 0
+    for row_start in range(0, total_rows, chunk_rows):
+        row_end = min(total_rows, row_start + chunk_rows)
+        row_count = row_end - row_start
+        chunk_start = time.perf_counter()
+
+        idx_chunk = torch.stack(
+            [
+                payload["ctx_seq_idx"].reshape(total_rows, input_k)[row_start:row_end].to(torch.int64)
+                for _metadata, payload in sorted_partials
+            ],
+            dim=0,
+        )
+        val_chunk = torch.stack(
+            [
+                payload["ctx_seq_val"].reshape(total_rows, input_k)[row_start:row_end].to(torch.float32)
+                for _metadata, payload in sorted_partials
+            ],
+            dim=0,
+        )
+        fill_chunk = torch.stack(
+            [
+                payload["reservoir_fill"].reshape(total_rows)[row_start:row_end].to(torch.int64)
+                for _metadata, payload in sorted_partials
+            ],
+            dim=0,
+        )
+        n_chunk = torch.stack(
+            [
+                payload["reservoir_n"].reshape(total_rows)[row_start:row_end].to(torch.int64)
+                for _metadata, payload in sorted_partials
+            ],
+            dim=0,
+        )
+
+        row_ids = torch.arange(row_start, row_end, dtype=torch.int64)
+        component_ids = (row_ids // d_sae).view(1, row_count, 1)
+        latent_ids = (row_ids % d_sae).view(1, row_count, 1)
+        fill_expanded = fill_chunk.unsqueeze(-1)
+        n_expanded = n_chunk.unsqueeze(-1)
+        slot_mask = slot_ids[:, :, :input_k] < fill_expanded
+        valid = slot_mask & (idx_chunk > 0) & torch.isfinite(val_chunk)
+
+        weights = n_expanded.to(torch.float64) / fill_expanded.clamp(min=1).to(torch.float64)
+        uniforms = _weighted_reservoir_uniform_tensor(
+            base_seed=base_seed_tensor,
+            component_ids=component_ids,
+            latent_ids=latent_ids,
+            worker_ids=worker_ids,
+            sequence_ids=idx_chunk,
+            slot_ids=slot_ids[:, :, :input_k],
+            reservoir_n=n_expanded,
+        )
+        keys = -torch.log(uniforms) / weights.clamp(min=1e-12)
+        keys = keys.masked_fill(~valid, float("inf"))
+
+        flat_keys = keys.permute(1, 0, 2).reshape(row_count, candidates_per_row)
+        flat_idx = idx_chunk.permute(1, 0, 2).reshape(row_count, candidates_per_row)
+        flat_val = val_chunk.permute(1, 0, 2).reshape(row_count, candidates_per_row)
+        selected_keys, selected_positions = torch.topk(
+            flat_keys,
+            k=selected_k,
+            dim=1,
+            largest=False,
+        )
+        selected_idx = flat_idx.gather(1, selected_positions).to(torch.int32)
+        selected_val = flat_val.gather(1, selected_positions).to(torch.float32)
+        selected_valid = torch.isfinite(selected_keys)
+        selected_idx = selected_idx.masked_fill(~selected_valid, 0)
+        selected_val = selected_val.masked_fill(~selected_valid, 0.0)
+
+        out_idx = torch.zeros((row_count, output_k), dtype=torch.int32)
+        out_val = torch.zeros((row_count, output_k), dtype=torch.float32)
+        out_idx[:, :selected_k] = selected_idx
+        out_val[:, :selected_k] = selected_val
+
+        ctx_seq_idx.view(total_rows, output_k)[row_start:row_end] = out_idx
+        ctx_seq_val.view(total_rows, output_k)[row_start:row_end] = out_val
+        reservoir_fill.view(-1)[row_start:row_end] = selected_valid.sum(dim=1).to(torch.int32)
+        reservoir_n.view(-1)[row_start:row_end] = n_chunk.sum(dim=0)
+        empty_worker_rows.view(-1)[row_start:row_end] = (
+            (n_chunk <= 0) | (fill_chunk <= 0)
+        ).sum(dim=0).to(torch.int64)
+
+        rows_done = row_end
+        if rows_done >= next_progress or rows_done == total_rows:
+            elapsed_s = time.perf_counter() - merge_start
+            rows_per_s = rows_done / max(elapsed_s, 1e-9)
+            remaining_s = (total_rows - rows_done) / max(rows_per_s, 1e-9)
+            print(
+                "[pass1_merge] mid_ctx weighted reservoir chunk progress "
+                f"{rows_done}/{total_rows} rows "
+                f"({rows_done / total_rows:.1%}) "
+                f"chunk_elapsed={time.perf_counter() - chunk_start:.1f}s "
+                f"elapsed={elapsed_s:.1f}s eta={remaining_s:.1f}s",
+                flush=True,
+            )
+            next_progress = rows_done + progress_interval
+
+    return ctx_seq_idx, ctx_seq_val, reservoir_fill, reservoir_n, empty_worker_rows
 
 
 def merge_mid_ctx_reservoir_row(
@@ -500,21 +617,70 @@ def _weighted_reservoir_uniform(
     slot_id: int,
     reservoir_n: int,
 ) -> float:
+    base_seed = torch.tensor(
+        _weighted_reservoir_hash_base(
+            sampling_seed=sampling_seed,
+            dataset_fingerprint=dataset_fingerprint,
+        ),
+        dtype=torch.int64,
+    )
+    uniform = _weighted_reservoir_uniform_tensor(
+        base_seed=base_seed,
+        component_ids=torch.tensor([[[int(component_id)]]], dtype=torch.int64),
+        latent_ids=torch.tensor([[[int(latent_id)]]], dtype=torch.int64),
+        worker_ids=torch.tensor([[[int(worker_id)]]], dtype=torch.int64),
+        sequence_ids=torch.tensor([[[int(sequence_id)]]], dtype=torch.int64),
+        slot_ids=torch.tensor([[[int(slot_id)]]], dtype=torch.int64),
+        reservoir_n=torch.tensor([[[int(reservoir_n)]]], dtype=torch.int64),
+    )
+    return float(uniform.item())
+
+
+def _weighted_reservoir_hash_base(
+    *,
+    sampling_seed: int,
+    dataset_fingerprint: str,
+) -> int:
     material = "|".join(
         [
             MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION,
             str(int(sampling_seed)),
             str(dataset_fingerprint),
-            str(int(component_id)),
-            str(int(latent_id)),
-            str(int(worker_id)),
-            str(int(sequence_id)),
-            str(int(slot_id)),
-            str(int(reservoir_n)),
         ]
     )
     value = int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
-    return float(value + 1) / float(1 << 64)
+    if value >= (1 << 63):
+        value -= 1 << 64
+    return value
+
+
+def _weighted_reservoir_uniform_tensor(
+    *,
+    base_seed: torch.Tensor,
+    component_ids: torch.Tensor,
+    latent_ids: torch.Tensor,
+    worker_ids: torch.Tensor,
+    sequence_ids: torch.Tensor,
+    slot_ids: torch.Tensor,
+    reservoir_n: torch.Tensor,
+) -> torch.Tensor:
+    values = base_seed + component_ids.to(torch.int64) * _SPLITMIX_GOLDEN_GAMMA
+    values = values + latent_ids.to(torch.int64) * _SPLITMIX_MIX_1
+    values = values + worker_ids.to(torch.int64) * _SPLITMIX_MIX_2
+    values = _splitmix64(values)
+    values = values + sequence_ids.to(torch.int64) * _SPLITMIX_MIX_1
+    values = values + slot_ids.to(torch.int64) * _SPLITMIX_MIX_2
+    values = values + reservoir_n.to(torch.int64) * _SPLITMIX_GOLDEN_GAMMA
+    values = _splitmix64(values)
+    positive = torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF).to(torch.float64)
+    return (positive + 1.0) / float(1 << 63)
+
+
+def _splitmix64(values: torch.Tensor) -> torch.Tensor:
+    values = values + _SPLITMIX_GOLDEN_GAMMA
+    values = torch.bitwise_xor(values, values >> 30) * _SPLITMIX_MIX_1
+    values = torch.bitwise_xor(values, values >> 27) * _SPLITMIX_MIX_2
+    return torch.bitwise_xor(values, values >> 31)
 
 
 def _validate_top_ctx_partial_set(

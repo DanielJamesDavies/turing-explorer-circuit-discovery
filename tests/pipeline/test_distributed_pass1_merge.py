@@ -860,6 +860,70 @@ def test_merge_mid_ctx_reservoir_partials_preserves_schema_and_report():
     assert merged["merge_report"]["priority_mode"] == "deterministic_weighted_reservoir"
 
 
+def test_merge_mid_ctx_reservoir_partials_matches_row_reference():
+    partials = _mid_ctx_reservoir_grid_partials(
+        worker_count=3,
+        component_count=2,
+        d_sae=3,
+        k=4,
+    )
+
+    merged = merge_mid_ctx_reservoir_partials(
+        partials,
+        num_ctx_sequences=3,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    expected_idx = torch.zeros((2, 3, 3), dtype=torch.int32)
+    expected_val = torch.zeros((2, 3, 3), dtype=torch.float32)
+    expected_fill = torch.zeros((2, 3), dtype=torch.int32)
+    expected_n = torch.zeros((2, 3), dtype=torch.int64)
+    for component_id in range(2):
+        for latent_id in range(3):
+            row_idx, row_val, row_fill, row_n = merge_mid_ctx_reservoir_row(
+                partials,
+                component_id=component_id,
+                latent_id=latent_id,
+                output_k=3,
+                sampling_seed=123,
+                dataset_fingerprint="dataset-a",
+            )
+            expected_idx[component_id, latent_id] = row_idx
+            expected_val[component_id, latent_id] = row_val
+            expected_fill[component_id, latent_id] = row_fill
+            expected_n[component_id, latent_id] = row_n
+
+    assert torch.equal(merged["ctx_seq_idx"], expected_idx)
+    assert torch.equal(merged["ctx_seq_val"], expected_val)
+    assert torch.equal(merged["reservoir_fill"], expected_fill)
+    assert torch.equal(merged["reservoir_n"], expected_n)
+
+
+def test_merge_mid_ctx_reservoir_partials_handles_larger_synthetic_grid():
+    partials = _mid_ctx_reservoir_grid_partials(
+        worker_count=4,
+        component_count=4,
+        d_sae=128,
+        k=8,
+    )
+
+    merged = merge_mid_ctx_reservoir_partials(
+        partials,
+        num_ctx_sequences=6,
+        sampling_seed=456,
+        dataset_fingerprint="dataset-b",
+    )
+
+    assert merged["ctx_seq_idx"].shape == (4, 128, 6)
+    assert merged["ctx_seq_val"].shape == (4, 128, 6)
+    assert merged["reservoir_fill"].shape == (4, 128)
+    assert merged["reservoir_n"].shape == (4, 128)
+    assert int(merged["reservoir_n"].sum()) > 0
+    invalid = merged["ctx_seq_idx"] == 0
+    assert bool((merged["ctx_seq_val"][invalid] == 0).all())
+
+
 def test_merge_mid_ctx_reservoir_partials_rejects_candidate_pool_partials():
     candidate_pool_partial = (
         _mid_ctx_metadata(0),
@@ -1516,6 +1580,54 @@ def _mid_ctx_reservoir_partial(
         "reservoir_n": torch.tensor([[reservoir_n, 0]], dtype=torch.int64),
     }
     return _mid_ctx_metadata(worker_id), payload
+
+
+def _mid_ctx_reservoir_grid_partials(
+    *,
+    worker_count: int,
+    component_count: int,
+    d_sae: int,
+    k: int,
+) -> list[tuple[Pass1PartialMetadata, dict[str, object]]]:
+    partials = []
+    for worker_id in range(worker_count):
+        ctx_seq_idx = torch.zeros((component_count, d_sae, k), dtype=torch.int32)
+        ctx_seq_val = torch.zeros((component_count, d_sae, k), dtype=torch.float32)
+        reservoir_fill = torch.zeros((component_count, d_sae), dtype=torch.int32)
+        reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
+        for component_id in range(component_count):
+            for latent_id in range(d_sae):
+                flat_id = component_id * d_sae + latent_id
+                fill = (flat_id + worker_id) % (k + 1)
+                reservoir_fill[component_id, latent_id] = fill
+                reservoir_n[component_id, latent_id] = fill + (worker_id + 1) * 3
+                for slot_id in range(fill):
+                    seq_id = 1 + worker_id * 1_000_000 + flat_id * k + slot_id
+                    ctx_seq_idx[component_id, latent_id, slot_id] = seq_id
+                    ctx_seq_val[component_id, latent_id, slot_id] = float(seq_id % 997) / 997.0
+        metadata = _mid_ctx_metadata(worker_id).model_copy(
+            update={
+                "component_count": component_count,
+                "d_sae": d_sae,
+                "sequence_id_min": 1,
+                "sequence_id_max": worker_count * 1_000_000 + component_count * d_sae * k,
+            }
+        )
+        partials.append(
+            (
+                metadata,
+                {
+                    "ctx_seq_idx": ctx_seq_idx,
+                    "ctx_seq_val": ctx_seq_val,
+                    "ctx_type": "mid",
+                    "mode": "reservoir_cpu",
+                    "merge_source": "worker_local_reservoir",
+                    "reservoir_fill": reservoir_fill,
+                    "reservoir_n": reservoir_n,
+                },
+            )
+        )
+    return partials
 
 
 def _mid_ctx_latent_stats_payload() -> dict[str, torch.Tensor]:
