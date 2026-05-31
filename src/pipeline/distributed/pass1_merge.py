@@ -13,9 +13,13 @@ from .pass1.contracts import (
 )
 from .pass1.cli import build_arg_parser, main
 from .pass1.context_merge import (
+    MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION,
     load_and_merge_mid_ctx_candidate_partials,
+    load_and_merge_mid_ctx_reservoir_partials,
     load_and_merge_top_ctx_partials,
     merge_mid_ctx_candidate_partials,
+    merge_mid_ctx_reservoir_partials,
+    merge_mid_ctx_reservoir_row,
     merge_top_ctx_partials,
 )
 from .pass1.latent_stats_merge import (
@@ -38,6 +42,7 @@ __all__ = [
     "LatentStatsPartial",
     "LogitCtxPartial",
     "MID_CTX_CANDIDATE_POOL_DEFAULTS",
+    "MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION",
     "MidCtxCandidatesPartial",
     "PASS1_PARTIAL_FILENAMES",
     "SeqReprPartial",
@@ -47,12 +52,15 @@ __all__ = [
     "load_and_merge_latent_stats_partials",
     "load_and_merge_logit_ctx_partials",
     "load_and_merge_mid_ctx_candidate_partials",
+    "load_and_merge_mid_ctx_reservoir_partials",
     "load_and_merge_seq_repr_partials",
     "load_and_merge_top_ctx_partials",
     "main",
     "merge_latent_stats_partials",
     "merge_logit_ctx_partials",
     "merge_mid_ctx_candidate_partials",
+    "merge_mid_ctx_reservoir_partials",
+    "merge_mid_ctx_reservoir_row",
     "merge_pass1_worker_outputs",
     "merge_seq_latent_index_shards",
     "merge_seq_repr_partials",

@@ -41,6 +41,7 @@ from .pass1_partials import (
     latent_stats_payload,
     logit_ctx_payload,
     mid_ctx_candidates_payload,
+    mid_ctx_reservoir_payload,
     save_pass1_partial,
     seq_repr_payload,
     top_ctx_payload,
@@ -64,6 +65,7 @@ _runtime_seq_repr_payload = _pass1_worker._runtime_seq_repr_payload
 _component_count = _pass1_worker._component_count
 _d_sae = _pass1_worker._d_sae
 _store_mode_for = _pass1_worker._store_mode_for
+_mid_ctx_partial_payload = _pass1_worker._mid_ctx_partial_payload
 _PASS1_IMPL_VALIDATE = _pass1_worker.validate_pass1_worker_inputs
 
 
@@ -80,10 +82,12 @@ def _sync_pass1() -> None:
             "top_ctx", "mid_ctx", "latent_stats", "logit_ctx", "PASS1_PARTIAL_FILENAMES",
             "build_distributed_worker_runtime", "set_runtime", "clear_runtime",
             "latent_stats_payload", "top_ctx_payload", "mid_ctx_candidates_payload",
+            "mid_ctx_reservoir_payload",
             "seq_repr_payload", "logit_ctx_payload", "build_pass1_partial_metadata",
             "save_pass1_partial", "get_worker_shard_ids", "build_seq_repr_cap_mapping",
             "shard_table_fingerprint", "sequence_ids_for_shards", "validate_shard_table",
             "_runtime_seq_repr_payload", "_component_count", "_d_sae", "_store_mode_for",
+            "_mid_ctx_partial_payload",
             "_device_assignment_for_worker", "_total_sequences", "_worker_batch_count",
         ),
     )

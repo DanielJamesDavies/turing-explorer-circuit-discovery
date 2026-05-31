@@ -27,6 +27,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mid-ctx-band-low-sigma", type=float, default=0.5)
     parser.add_argument("--mid-ctx-band-high-sigma", type=float, default=1.5)
     parser.add_argument(
+        "--mid-ctx-merge-mode",
+        choices=["weighted_reservoir", "candidate_pool"],
+        default=None,
+    )
+    parser.add_argument("--mid-ctx-sampling-seed", type=int, default=None)
+    parser.add_argument(
         "--mid-ctx-on-truncation",
         choices=["fail", "replay_fallback", "allow_bounded_approx"],
         default="replay_fallback",
@@ -48,6 +54,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         mid_ctx_band_low_sigma=args.mid_ctx_band_low_sigma,
         mid_ctx_band_high_sigma=args.mid_ctx_band_high_sigma,
         mid_ctx_on_truncation=args.mid_ctx_on_truncation,
+        mid_ctx_merge_mode=args.mid_ctx_merge_mode,
+        mid_ctx_sampling_seed=args.mid_ctx_sampling_seed,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
 

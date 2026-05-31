@@ -36,6 +36,7 @@ def build_pass1_sanity_report(
             "top_ctx": _context_fill_rate(payloads["top_ctx"]),
             "mid_ctx": _context_fill_rate(payloads["mid_ctx"]),
         },
+        "mid_ctx_merge": _mid_ctx_merge_summary(payloads["mid_ctx"]),
         "seq_repr_fill": _seq_repr_fill(payloads["seq_repr"]),
         "logit_ctx_counts": _logit_ctx_count_summary(payloads["logit_ctx"]),
         "seq_latent_index": seq_latent_index_report,
@@ -99,6 +100,34 @@ def _seq_repr_fill(payload: Dict[str, object]) -> Dict[str, object]:
         "n_stored": n_stored,
         "fill_rate": float(filled / n_stored) if n_stored else 0.0,
         "is_capped": bool(payload["is_capped"]),
+    }
+
+
+def _mid_ctx_merge_summary(payload: Dict[str, object]) -> Dict[str, object]:
+    merge_report = payload.get("merge_report")
+    if not isinstance(merge_report, dict):
+        return {"merge_mode": payload.get("mode")}
+    reservoir_n = payload.get("reservoir_n")
+    reservoir_fill = payload.get("reservoir_fill")
+    empty_worker_rows = merge_report.get("empty_worker_rows")
+    return {
+        "merge_mode": merge_report.get("merge_mode", merge_report.get("mode")),
+        "priority_mode": merge_report.get("priority_mode"),
+        "priority_hash_version": merge_report.get("priority_hash_version"),
+        "num_ctx_sequences": merge_report.get("num_ctx_sequences"),
+        "total_reservoir_n": int(reservoir_n.sum().item())
+        if isinstance(reservoir_n, torch.Tensor)
+        else None,
+        "nonzero_reservoir_rows": int((reservoir_n > 0).sum().item())
+        if isinstance(reservoir_n, torch.Tensor)
+        else None,
+        "selected_count": int(reservoir_fill.sum().item())
+        if isinstance(reservoir_fill, torch.Tensor)
+        else None,
+        "any_worker_reservoir_empty": bool(merge_report.get("any_worker_reservoir_empty", False)),
+        "empty_worker_row_count": int((empty_worker_rows > 0).sum().item())
+        if isinstance(empty_worker_rows, torch.Tensor)
+        else None,
     }
 
 

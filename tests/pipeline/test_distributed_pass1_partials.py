@@ -10,6 +10,7 @@ from pipeline.distributed.pass1_partials import (
     Pass1PartialMetadata,
     load_pass1_partial,
     mid_ctx_candidates_payload,
+    mid_ctx_reservoir_payload,
     save_pass1_partial,
     validate_pass1_partial,
 )
@@ -76,6 +77,16 @@ def _payloads():
             "truncation_counters": torch.zeros(shape, dtype=torch.int64),
             "ctx_seq_idx": ctx_idx,
             "ctx_seq_val": ctx_val,
+            "ctx_type": "mid",
+            "mode": "reservoir_cpu",
+            "reservoir_fill": torch.tensor(
+                [[2, 0, 0], [0, 1, 1]],
+                dtype=torch.int32,
+            ),
+            "reservoir_n": torch.tensor(
+                [[4, 0, 0], [0, 1, 3]],
+                dtype=torch.int64,
+            ),
         },
         "seq_repr": {
             "repr_buf": torch.zeros((3, 4), dtype=torch.float16),
@@ -140,6 +151,151 @@ def test_pass1_partial_rejects_stale_config_hash():
 
     with pytest.raises(ValueError, match="config hash mismatch"):
         validate_pass1_partial(data, expected_config_hash="different")
+
+
+def test_mid_ctx_compact_reservoir_partial_round_trip(tmp_path):
+    path = tmp_path / "mid_ctx_candidates.partial.pt"
+    store = SimpleNamespace(
+        ctx_seq_idx=torch.tensor(
+            [
+                [[1, 2], [0, 0], [0, 0]],
+                [[0, 0], [1, 0], [2, 0]],
+            ],
+            dtype=torch.int32,
+        ),
+        ctx_seq_val=torch.tensor(
+            [
+                [[0.5, 0.25], [0.0, 0.0], [0.0, 0.0]],
+                [[0.0, 0.0], [0.7, 0.0], [0.3, 0.0]],
+            ],
+            dtype=torch.float32,
+        ),
+        mid_mode="reservoir_cpu",
+        reservoir_fill=torch.tensor([[2, 0, 0], [0, 1, 1]], dtype=torch.int32),
+        reservoir_n=torch.tensor([[4, 0, 0], [0, 1, 3]], dtype=torch.int64),
+    )
+
+    save_pass1_partial(path, _metadata("mid_ctx_candidates"), mid_ctx_reservoir_payload(store))
+    metadata, payload = load_pass1_partial(path, expected_artifact_name="mid_ctx_candidates")
+
+    assert metadata.artifact_name == "mid_ctx_candidates"
+    assert payload["merge_source"] == "worker_local_reservoir"
+    assert payload["mode"] == "reservoir_cpu"
+    assert set(payload) == {
+        "ctx_seq_idx",
+        "ctx_seq_val",
+        "ctx_type",
+        "mode",
+        "merge_source",
+        "reservoir_fill",
+        "reservoir_n",
+    }
+    assert torch.equal(payload["reservoir_n"], store.reservoir_n)
+
+
+def test_mid_ctx_compact_reservoir_partial_rejects_missing_summary_tensor():
+    payload = mid_ctx_reservoir_payload(
+        SimpleNamespace(
+            ctx_seq_idx=torch.zeros((2, 3, 2), dtype=torch.int32),
+            ctx_seq_val=torch.zeros((2, 3, 2), dtype=torch.float32),
+            mid_mode="reservoir_cpu",
+            reservoir_fill=torch.zeros((2, 3), dtype=torch.int32),
+            reservoir_n=torch.zeros((2, 3), dtype=torch.int64),
+        )
+    )
+    del payload["reservoir_n"]
+
+    with pytest.raises(ValueError, match="reservoir_n must be a tensor"):
+        validate_pass1_partial(
+            {
+                "metadata": _metadata("mid_ctx_candidates").model_dump(mode="json"),
+                "payload": payload,
+            }
+        )
+
+
+def test_mid_ctx_compact_reservoir_partial_rejects_bad_summary_shape():
+    payload = mid_ctx_reservoir_payload(
+        SimpleNamespace(
+            ctx_seq_idx=torch.zeros((2, 3, 2), dtype=torch.int32),
+            ctx_seq_val=torch.zeros((2, 3, 2), dtype=torch.float32),
+            mid_mode="reservoir_cpu",
+            reservoir_fill=torch.zeros((2, 2), dtype=torch.int32),
+            reservoir_n=torch.zeros((2, 3), dtype=torch.int64),
+        )
+    )
+
+    with pytest.raises(ValueError, match="reservoir_fill has invalid shape"):
+        validate_pass1_partial(
+            {
+                "metadata": _metadata("mid_ctx_candidates").model_dump(mode="json"),
+                "payload": payload,
+            }
+        )
+
+
+def test_mid_ctx_compact_reservoir_partial_rejects_nonzero_sequence_id_after_fill():
+    payload = mid_ctx_reservoir_payload(
+        SimpleNamespace(
+            ctx_seq_idx=torch.tensor(
+                [
+                    [[1, 2], [0, 0], [0, 0]],
+                    [[0, 0], [0, 0], [0, 0]],
+                ],
+                dtype=torch.int32,
+            ),
+            ctx_seq_val=torch.tensor(
+                [
+                    [[0.5, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                ],
+                dtype=torch.float32,
+            ),
+            mid_mode="reservoir_cpu",
+            reservoir_fill=torch.tensor([[1, 0, 0], [0, 0, 0]], dtype=torch.int32),
+            reservoir_n=torch.tensor([[2, 0, 0], [0, 0, 0]], dtype=torch.int64),
+        )
+    )
+
+    with pytest.raises(ValueError, match="slots beyond reservoir_fill must have zero sequence IDs"):
+        validate_pass1_partial(
+            {
+                "metadata": _metadata("mid_ctx_candidates").model_dump(mode="json"),
+                "payload": payload,
+            }
+        )
+
+
+def test_mid_ctx_compact_reservoir_partial_rejects_nonzero_value_after_fill():
+    payload = mid_ctx_reservoir_payload(
+        SimpleNamespace(
+            ctx_seq_idx=torch.tensor(
+                [
+                    [[1, 0], [0, 0], [0, 0]],
+                    [[0, 0], [0, 0], [0, 0]],
+                ],
+                dtype=torch.int32,
+            ),
+            ctx_seq_val=torch.tensor(
+                [
+                    [[0.5, 0.25], [0.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                ],
+                dtype=torch.float32,
+            ),
+            mid_mode="reservoir_cpu",
+            reservoir_fill=torch.tensor([[1, 0, 0], [0, 0, 0]], dtype=torch.int32),
+            reservoir_n=torch.tensor([[2, 0, 0], [0, 0, 0]], dtype=torch.int64),
+        )
+    )
+
+    with pytest.raises(ValueError, match="slots beyond reservoir_fill must have zero values"):
+        validate_pass1_partial(
+            {
+                "metadata": _metadata("mid_ctx_candidates").model_dump(mode="json"),
+                "payload": payload,
+            }
+        )
 
 
 def test_mid_ctx_candidate_priorities_are_seeded_and_reproducible():

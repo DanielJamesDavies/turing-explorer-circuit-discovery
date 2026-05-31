@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import math
 from pathlib import Path
 from typing import Callable, Dict, Sequence
 
@@ -13,6 +15,9 @@ from .contracts import (
     MidCtxCandidatesPartial,
     TopCtxPartial,
 )
+
+
+MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION = "weighted-reservoir-v1"
 
 
 def load_and_merge_top_ctx_partials(
@@ -112,6 +117,36 @@ def load_and_merge_mid_ctx_candidate_partials(
         band_high_sigma=band_high_sigma,
         on_truncation=on_truncation,
         replay_fallback_fn=replay_fallback_fn,
+    )
+
+
+def load_and_merge_mid_ctx_reservoir_partials(
+    partial_paths: Sequence[str | Path],
+    *,
+    expected_config_hash: str | None = None,
+    num_ctx_sequences: int | None = None,
+    band_low_sigma: float = 0.5,
+    band_high_sigma: float = 1.5,
+    sampling_seed: int = 0,
+    dataset_fingerprint: str = "",
+) -> Dict[str, object]:
+    """Load compact worker reservoir partials and merge into canonical mid_ctx."""
+
+    partials = [
+        load_pass1_partial(
+            path,
+            expected_artifact_name="mid_ctx_candidates",
+            expected_config_hash=expected_config_hash,
+        )
+        for path in partial_paths
+    ]
+    return merge_mid_ctx_reservoir_partials(
+        partials,
+        num_ctx_sequences=num_ctx_sequences,
+        band_low_sigma=band_low_sigma,
+        band_high_sigma=band_high_sigma,
+        sampling_seed=sampling_seed,
+        dataset_fingerprint=dataset_fingerprint,
     )
 
 
@@ -263,6 +298,176 @@ def merge_mid_ctx_candidate_partials(
     return merged
 
 
+def merge_mid_ctx_reservoir_partials(
+    partials: Sequence[MidCtxCandidatesPartial],
+    *,
+    num_ctx_sequences: int | None = None,
+    band_low_sigma: float = 0.5,
+    band_high_sigma: float = 1.5,
+    sampling_seed: int = 0,
+    dataset_fingerprint: str = "",
+) -> Dict[str, object]:
+    """Merge compact worker-local mid-context reservoirs by weighted sampling."""
+
+    if not partials:
+        raise ValueError("at least one mid_ctx reservoir partial is required")
+    _validate_mid_ctx_reservoir_partial_set(partials)
+
+    metadata = partials[0][0]
+    first_payload = partials[0][1]
+    output_k = int(num_ctx_sequences or first_payload["ctx_seq_idx"].shape[2])
+    if output_k < 1:
+        raise ValueError("num_ctx_sequences must be >= 1")
+
+    component_count = metadata.component_count
+    d_sae = metadata.d_sae
+    ctx_seq_idx = torch.zeros((component_count, d_sae, output_k), dtype=torch.int32)
+    ctx_seq_val = torch.zeros((component_count, d_sae, output_k), dtype=torch.float32)
+    reservoir_fill = torch.zeros((component_count, d_sae), dtype=torch.int32)
+    reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
+    empty_worker_rows = torch.zeros((component_count, d_sae), dtype=torch.int64)
+
+    for component_id in range(component_count):
+        for latent_id in range(d_sae):
+            for _metadata, payload in partials:
+                worker_n = int(payload["reservoir_n"][component_id, latent_id].item())
+                worker_fill = int(payload["reservoir_fill"][component_id, latent_id].item())
+                if worker_n <= 0 or worker_fill <= 0:
+                    empty_worker_rows[component_id, latent_id] += 1
+            row_indices, row_values, row_fill, row_n = merge_mid_ctx_reservoir_row(
+                partials,
+                component_id=component_id,
+                latent_id=latent_id,
+                output_k=output_k,
+                sampling_seed=sampling_seed,
+                dataset_fingerprint=dataset_fingerprint,
+            )
+            ctx_seq_idx[component_id, latent_id] = row_indices
+            ctx_seq_val[component_id, latent_id] = row_values
+            reservoir_fill[component_id, latent_id] = int(row_fill)
+            reservoir_n[component_id, latent_id] = int(row_n)
+
+    merge_report = {
+        "mode": "weighted_reservoir",
+        "merge_mode": "weighted_reservoir",
+        "selected_count": reservoir_fill.to(torch.int64),
+        "valid_count": reservoir_n,
+        "total_reservoir_n": reservoir_n,
+        "empty_worker_rows": empty_worker_rows,
+        "any_worker_reservoir_empty": bool((empty_worker_rows > 0).any()),
+        "fill_rate": reservoir_fill.float() / float(output_k),
+        "band_low_sigma": float(band_low_sigma),
+        "band_high_sigma": float(band_high_sigma),
+        "num_ctx_sequences": int(output_k),
+        "sampling_seed": int(sampling_seed),
+        "dataset_fingerprint": str(dataset_fingerprint),
+        "priority_mode": "deterministic_weighted_reservoir",
+        "priority_hash_version": MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION,
+    }
+    merged = {
+        "ctx_seq_idx": ctx_seq_idx,
+        "ctx_seq_val": ctx_seq_val,
+        "ctx_type": "mid",
+        "mode": "distributed_weighted_reservoir",
+        "band_low_sigma": float(band_low_sigma),
+        "band_high_sigma": float(band_high_sigma),
+        "num_ctx_sequences": int(output_k),
+        "reservoir_fill": reservoir_fill,
+        "reservoir_n": reservoir_n,
+        "merge_report": merge_report,
+    }
+    _validate_merged_mid_ctx(merged, partials)
+    return merged
+
+
+def merge_mid_ctx_reservoir_row(
+    partials: Sequence[MidCtxCandidatesPartial],
+    *,
+    component_id: int,
+    latent_id: int,
+    output_k: int,
+    sampling_seed: int = 0,
+    dataset_fingerprint: str = "",
+) -> tuple[torch.Tensor, torch.Tensor, int, int]:
+    """Merge one compact worker-local reservoir row with weighted keys."""
+
+    if output_k < 1:
+        raise ValueError("output_k must be >= 1")
+    if component_id < 0 or latent_id < 0:
+        raise ValueError("component_id and latent_id must be non-negative")
+
+    total_reservoir_n = 0
+    candidates: list[tuple[float, int, int, int, float]] = []
+    for metadata, payload in sorted(partials, key=lambda item: item[0].worker_id):
+        if component_id >= metadata.component_count or latent_id >= metadata.d_sae:
+            raise ValueError("component_id or latent_id outside partial shape")
+        worker_id = int(metadata.worker_id)
+        worker_n = int(payload["reservoir_n"][component_id, latent_id].item())
+        total_reservoir_n += worker_n
+        worker_fill = int(payload["reservoir_fill"][component_id, latent_id].item())
+        if worker_n <= 0 or worker_fill <= 0:
+            continue
+
+        row_indices = payload["ctx_seq_idx"][component_id, latent_id].to(torch.int64)
+        row_values = payload["ctx_seq_val"][component_id, latent_id].to(torch.float32)
+        selected_slots = min(worker_fill, int(row_indices.numel()))
+        weight = float(worker_n) / float(max(worker_fill, 1))
+        for slot_id in range(selected_slots):
+            sequence_id = int(row_indices[slot_id].item())
+            activation_value = float(row_values[slot_id].item())
+            if sequence_id == 0 or not math.isfinite(activation_value):
+                continue
+            uniform = _weighted_reservoir_uniform(
+                sampling_seed=sampling_seed,
+                dataset_fingerprint=dataset_fingerprint,
+                component_id=component_id,
+                latent_id=latent_id,
+                worker_id=worker_id,
+                sequence_id=sequence_id,
+                slot_id=slot_id,
+                reservoir_n=worker_n,
+            )
+            key = -math.log(uniform) / weight
+            candidates.append((key, sequence_id, worker_id, slot_id, activation_value))
+
+    candidates.sort(key=lambda item: (item[0], item[1], item[2], item[3]))
+    selected = candidates[:output_k]
+    merged_indices = torch.zeros(output_k, dtype=torch.int32)
+    merged_values = torch.zeros(output_k, dtype=torch.float32)
+    for output_slot, (_key, sequence_id, _worker_id, _slot_id, activation_value) in enumerate(selected):
+        merged_indices[output_slot] = int(sequence_id)
+        merged_values[output_slot] = float(activation_value)
+    return merged_indices, merged_values, len(selected), total_reservoir_n
+
+
+def _weighted_reservoir_uniform(
+    *,
+    sampling_seed: int,
+    dataset_fingerprint: str,
+    component_id: int,
+    latent_id: int,
+    worker_id: int,
+    sequence_id: int,
+    slot_id: int,
+    reservoir_n: int,
+) -> float:
+    material = "|".join(
+        [
+            MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION,
+            str(int(sampling_seed)),
+            str(dataset_fingerprint),
+            str(int(component_id)),
+            str(int(latent_id)),
+            str(int(worker_id)),
+            str(int(sequence_id)),
+            str(int(slot_id)),
+            str(int(reservoir_n)),
+        ]
+    )
+    value = int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
+    return float(value + 1) / float(1 << 64)
+
+
 def _validate_top_ctx_partial_set(
     partials: Sequence[TopCtxPartial],
 ) -> None:
@@ -385,6 +590,17 @@ def _std_seq_from_latent_stats(latent_stats_payload: Dict[str, object]) -> torch
     return (m2_seq / (seq_count - 1).clamp(min=1)).clamp(min=0).sqrt()
 
 
+def _validate_mid_ctx_reservoir_partial_set(
+    partials: Sequence[MidCtxCandidatesPartial],
+) -> None:
+    _validate_mid_ctx_candidate_partial_set(partials)
+    for _metadata, payload in partials:
+        if payload.get("merge_source") != "worker_local_reservoir":
+            raise ValueError(
+                "weighted reservoir merge requires compact worker_local_reservoir partials"
+            )
+
+
 def _concatenate_mid_ctx_candidates(
     partials: Sequence[MidCtxCandidatesPartial],
 ) -> Dict[str, torch.Tensor]:
@@ -459,8 +675,12 @@ def _validate_merged_mid_ctx(
 
 
 __all__ = [
+    "MID_CTX_WEIGHTED_RESERVOIR_HASH_VERSION",
     "load_and_merge_mid_ctx_candidate_partials",
+    "load_and_merge_mid_ctx_reservoir_partials",
     "load_and_merge_top_ctx_partials",
+    "merge_mid_ctx_reservoir_row",
     "merge_mid_ctx_candidate_partials",
+    "merge_mid_ctx_reservoir_partials",
     "merge_top_ctx_partials",
 ]

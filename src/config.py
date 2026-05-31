@@ -167,6 +167,26 @@ class DistributedMidCtxCandidatePoolConfig(BaseModel):
             raise ValueError(f"on_truncation must be one of {allowed}, got {v!r}")
         return v
 
+class DistributedMidCtxMergeConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    mode: str = "weighted_reservoir"
+    sampling_seed: Optional[int] = None
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        allowed = ["weighted_reservoir", "candidate_pool"]
+        if v not in allowed:
+            raise ValueError(f"mode must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("sampling_seed")
+    @classmethod
+    def validate_sampling_seed(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("mid_ctx_merge.sampling_seed must be null or >= 0")
+        return v
+
 class DistributedSchemaVersionsConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     manifest: int = 1
@@ -204,6 +224,9 @@ class DistributedConfig(BaseModel):
     sampling_seed: int = 0
     mid_ctx_candidate_pool: DistributedMidCtxCandidatePoolConfig = Field(
         default_factory=DistributedMidCtxCandidatePoolConfig
+    )
+    mid_ctx_merge: DistributedMidCtxMergeConfig = Field(
+        default_factory=DistributedMidCtxMergeConfig
     )
 
     @field_validator("mode")
@@ -315,6 +338,7 @@ class DistributedConfig(BaseModel):
 
         if (
             self.mode in {"distributed_simple_exact", "distributed_mapreduce_exact"}
+            and self.mid_ctx_merge.mode == "candidate_pool"
             and self.mid_ctx_candidate_pool.on_truncation == "allow_bounded_approx"
         ):
             raise ValueError("exact distributed modes require exact mid_ctx truncation handling")

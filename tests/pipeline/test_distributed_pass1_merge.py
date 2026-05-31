@@ -15,11 +15,14 @@ from pipeline.distributed.pass1_merge import (
     load_and_merge_latent_stats_partials,
     load_and_merge_logit_ctx_partials,
     load_and_merge_mid_ctx_candidate_partials,
+    load_and_merge_mid_ctx_reservoir_partials,
     load_and_merge_seq_repr_partials,
     load_and_merge_top_ctx_partials,
     merge_latent_stats_partials,
     merge_logit_ctx_partials,
     merge_mid_ctx_candidate_partials,
+    merge_mid_ctx_reservoir_partials,
+    merge_mid_ctx_reservoir_row,
     merge_pass1_worker_outputs,
     merge_seq_latent_index_shards,
     merge_seq_repr_partials,
@@ -680,6 +683,224 @@ def test_mid_ctx_candidate_payload_records_source_mode_and_truncation():
     )
 
 
+def test_merge_mid_ctx_reservoir_row_equal_worker_weights_selects_all_rows():
+    partials = [
+        _mid_ctx_reservoir_partial(0, [1, 2], [1.1, 1.2], reservoir_n=20),
+        _mid_ctx_reservoir_partial(1, [3, 4], [1.3, 1.4], reservoir_n=20),
+    ]
+
+    indices, values, fill, reservoir_n = merge_mid_ctx_reservoir_row(
+        partials,
+        component_id=0,
+        latent_id=0,
+        output_k=4,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    assert fill == 4
+    assert reservoir_n == 40
+    assert set(indices.tolist()) == {1, 2, 3, 4}
+    assert torch.all(values > 0)
+
+
+def test_merge_mid_ctx_reservoir_row_imbalanced_weights_favor_larger_stream():
+    low_weight = _mid_ctx_reservoir_partial(0, [1], [1.0], reservoir_n=10)
+    high_weight = _mid_ctx_reservoir_partial(1, [3], [3.0], reservoir_n=100)
+    high_selected = 0
+
+    for seed in range(400):
+        indices, _values, fill, reservoir_n = merge_mid_ctx_reservoir_row(
+            [low_weight, high_weight],
+            component_id=0,
+            latent_id=0,
+            output_k=1,
+            sampling_seed=seed,
+            dataset_fingerprint="dataset-a",
+        )
+        assert fill == 1
+        assert reservoir_n == 110
+        high_selected += int(indices[0].item() == 3)
+
+    high_rate = high_selected / 400
+    assert 0.84 < high_rate < 0.96
+
+
+def test_merge_mid_ctx_reservoir_row_ignores_empty_worker_rows():
+    partials = [
+        _mid_ctx_reservoir_partial(0, [1, 2], [1.0, 2.0], reservoir_n=0, reservoir_fill=0),
+        _mid_ctx_reservoir_partial(1, [3, 0], [3.0, 0.0], reservoir_n=5, reservoir_fill=1),
+    ]
+
+    indices, values, fill, reservoir_n = merge_mid_ctx_reservoir_row(
+        partials,
+        component_id=0,
+        latent_id=0,
+        output_k=2,
+    )
+
+    assert indices.tolist() == [3, 0]
+    assert values.tolist() == [3.0, 0.0]
+    assert fill == 1
+    assert reservoir_n == 5
+
+
+def test_merge_mid_ctx_reservoir_row_respects_partial_fills():
+    partials = [
+        _mid_ctx_reservoir_partial(0, [1, 2], [1.0, 99.0], reservoir_n=10, reservoir_fill=1),
+        _mid_ctx_reservoir_partial(1, [3, 4], [3.0, 4.0], reservoir_n=10, reservoir_fill=2),
+    ]
+
+    indices, values, fill, reservoir_n = merge_mid_ctx_reservoir_row(
+        partials,
+        component_id=0,
+        latent_id=0,
+        output_k=3,
+        sampling_seed=99,
+        dataset_fingerprint="dataset-a",
+    )
+
+    assert fill == 3
+    assert reservoir_n == 20
+    assert 2 not in indices.tolist()
+    assert 99.0 not in values.tolist()
+
+
+def test_merge_mid_ctx_reservoir_row_tie_breaks_by_sequence_worker_slot(monkeypatch):
+    monkeypatch.setattr(
+        "pipeline.distributed.pass1.context_merge._weighted_reservoir_uniform",
+        lambda **_kwargs: 1.0,
+    )
+    partials = [
+        _mid_ctx_reservoir_partial(1, [4, 3], [4.0, 3.0], reservoir_n=2),
+        _mid_ctx_reservoir_partial(0, [2, 1], [2.0, 1.0], reservoir_n=2),
+    ]
+
+    indices, _values, fill, reservoir_n = merge_mid_ctx_reservoir_row(
+        partials,
+        component_id=0,
+        latent_id=0,
+        output_k=3,
+    )
+
+    assert indices.tolist() == [1, 2, 3]
+    assert fill == 3
+    assert reservoir_n == 4
+
+
+def test_merge_mid_ctx_reservoir_row_is_deterministic_across_worker_order():
+    partials = [
+        _mid_ctx_reservoir_partial(0, [1, 2], [1.0, 2.0], reservoir_n=40),
+        _mid_ctx_reservoir_partial(1, [3, 4], [3.0, 4.0], reservoir_n=10),
+        _mid_ctx_reservoir_partial(2, [5, 6], [5.0, 6.0], reservoir_n=25),
+    ]
+
+    forward = merge_mid_ctx_reservoir_row(
+        partials,
+        component_id=0,
+        latent_id=0,
+        output_k=3,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+    reversed_order = merge_mid_ctx_reservoir_row(
+        list(reversed(partials)),
+        component_id=0,
+        latent_id=0,
+        output_k=3,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    assert torch.equal(forward[0], reversed_order[0])
+    assert torch.equal(forward[1], reversed_order[1])
+    assert forward[2:] == reversed_order[2:]
+
+
+def test_merge_mid_ctx_reservoir_row_statistical_contribution_scales_with_reservoir_n():
+    worker_0 = _mid_ctx_reservoir_partial(0, [1], [1.0], reservoir_n=10)
+    worker_1 = _mid_ctx_reservoir_partial(1, [3], [3.0], reservoir_n=100)
+    counts = {1: 0, 3: 0}
+
+    for seed in range(800):
+        indices, _values, _fill, _reservoir_n = merge_mid_ctx_reservoir_row(
+            [worker_0, worker_1],
+            component_id=0,
+            latent_id=0,
+            output_k=1,
+            sampling_seed=10_000 + seed,
+            dataset_fingerprint="dataset-a",
+        )
+        counts[int(indices[0].item())] += 1
+
+    ratio = counts[3] / max(counts[1], 1)
+    assert 7.0 < ratio < 14.0
+
+
+def test_merge_mid_ctx_reservoir_partials_preserves_schema_and_report():
+    worker_0 = _mid_ctx_reservoir_partial(0, [1, 2], [1.0, 2.0], reservoir_n=10)
+    worker_1 = _mid_ctx_reservoir_partial(1, [3, 4], [3.0, 4.0], reservoir_n=30)
+
+    merged = merge_mid_ctx_reservoir_partials(
+        [worker_0, worker_1],
+        num_ctx_sequences=2,
+        band_low_sigma=0.5,
+        band_high_sigma=1.5,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    assert merged["ctx_type"] == "mid"
+    assert merged["mode"] == "distributed_weighted_reservoir"
+    assert merged["ctx_seq_idx"].shape == (1, 2, 2)
+    assert merged["ctx_seq_val"].shape == (1, 2, 2)
+    assert merged["reservoir_n"].tolist() == [[40, 0]]
+    assert merged["reservoir_fill"][0, 0].item() == 2
+    assert merged["merge_report"]["merge_mode"] == "weighted_reservoir"
+    assert merged["merge_report"]["priority_mode"] == "deterministic_weighted_reservoir"
+
+
+def test_merge_mid_ctx_reservoir_partials_rejects_candidate_pool_partials():
+    candidate_pool_partial = (
+        _mid_ctx_metadata(0),
+        _mid_ctx_payload(
+            component_ids=[0, 0],
+            latent_ids=[0, 0],
+            sequence_ids=[1, 2],
+            activation_values=[1.0, 2.0],
+            priorities=[10, 20],
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="weighted reservoir merge requires compact worker_local_reservoir partials",
+    ):
+        merge_mid_ctx_reservoir_partials([candidate_pool_partial], num_ctx_sequences=2)
+
+
+def test_load_and_merge_mid_ctx_reservoir_partials_round_trip(tmp_path):
+    paths = []
+    for metadata, payload in [
+        _mid_ctx_reservoir_partial(0, [1, 2], [1.0, 2.0], reservoir_n=10),
+        _mid_ctx_reservoir_partial(1, [3, 4], [3.0, 4.0], reservoir_n=30),
+    ]:
+        path = tmp_path / f"mid_ctx_worker_{metadata.worker_id}.pt"
+        save_pass1_partial(path, metadata, payload)
+        paths.append(path)
+
+    merged = load_and_merge_mid_ctx_reservoir_partials(
+        paths,
+        expected_config_hash="abcdef1234567890",
+        num_ctx_sequences=2,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    assert merged["mode"] == "distributed_weighted_reservoir"
+    assert merged["reservoir_n"].tolist() == [[40, 0]]
+
+
 def test_seq_repr_cap_mapping_is_deterministic_and_seeded():
     first = build_seq_repr_cap_mapping(
         total_sequence_count=8,
@@ -1086,12 +1307,17 @@ def test_merge_pass1_worker_outputs_writes_canonical_artifacts_and_report(tmp_pa
     report = json.loads(Path(result["sanity_report"]).read_text(encoding="utf-8"))
     assert report["status"] == "completed"
     assert report["context_fill_rates"]["top_ctx"] > 0
+    assert report["mid_ctx_merge"]["merge_mode"] == "weighted_reservoir"
+    assert report["mid_ctx_merge"]["total_reservoir_n"] == 5
     assert report["seq_repr_fill"]["filled"] == 4
     assert report["logit_ctx_counts"]["total"] == 6
     top_ctx = torch.load(result["artifacts"]["top_ctx"], map_location="cpu", weights_only=False)
+    mid_ctx = torch.load(result["artifacts"]["mid_ctx"], map_location="cpu", weights_only=False)
     assert top_ctx["metadata"]["run_id"] == manifest.run_id
     assert top_ctx["metadata"]["config_hash"] == manifest.normalized_config_hash
     assert top_ctx["config_hash"] == manifest.normalized_config_hash
+    assert mid_ctx["mode"] == "distributed_weighted_reservoir"
+    assert mid_ctx["reservoir_n"].tolist() == [[5, 0]]
     saved_manifest = load_manifest(manifest.manifest_path)
     assert saved_manifest.status == "completed"
     assert saved_manifest.work_assignments.pass2_replay_sequence_count == 2
@@ -1259,7 +1485,37 @@ def _mid_ctx_payload(
         "truncation_counters": torch.zeros((1, 2), dtype=torch.int64),
         "ctx_seq_idx": torch.zeros((1, 2, 2), dtype=torch.int32),
         "ctx_seq_val": torch.zeros((1, 2, 2), dtype=torch.float32),
+        "ctx_type": "mid",
+        "mode": "reservoir_cpu",
+        "reservoir_fill": torch.zeros((1, 2), dtype=torch.int32),
+        "reservoir_n": torch.zeros((1, 2), dtype=torch.int64),
     }
+
+
+def _mid_ctx_reservoir_partial(
+    worker_id: int,
+    sequence_ids: list[int],
+    activation_values: list[float],
+    *,
+    reservoir_n: int,
+    reservoir_fill: int | None = None,
+) -> tuple[Pass1PartialMetadata, dict[str, object]]:
+    k = len(sequence_ids)
+    fill = k if reservoir_fill is None else reservoir_fill
+    ctx_seq_idx = torch.zeros((1, 2, k), dtype=torch.int32)
+    ctx_seq_val = torch.zeros((1, 2, k), dtype=torch.float32)
+    ctx_seq_idx[0, 0] = torch.tensor(sequence_ids, dtype=torch.int32)
+    ctx_seq_val[0, 0] = torch.tensor(activation_values, dtype=torch.float32)
+    payload = {
+        "ctx_seq_idx": ctx_seq_idx,
+        "ctx_seq_val": ctx_seq_val,
+        "ctx_type": "mid",
+        "mode": "reservoir_cpu",
+        "merge_source": "worker_local_reservoir",
+        "reservoir_fill": torch.tensor([[fill, 0]], dtype=torch.int32),
+        "reservoir_n": torch.tensor([[reservoir_n, 0]], dtype=torch.int64),
+    }
+    return _mid_ctx_metadata(worker_id), payload
 
 
 def _mid_ctx_latent_stats_payload() -> dict[str, torch.Tensor]:
@@ -1385,13 +1641,7 @@ def _write_pass1_worker_partials(pass1_dir, worker_id: int) -> None:
         ),
         "mid_ctx_candidates": (
             "mid_ctx_candidates.partial.pt",
-            _mid_ctx_payload(
-                component_ids=[],
-                latent_ids=[],
-                sequence_ids=[],
-                activation_values=[],
-                priorities=[],
-            ),
+            _small_mid_ctx_reservoir_payload(worker_id),
         ),
         "seq_repr": (
             "seq_repr.partial.pt",
@@ -1452,4 +1702,17 @@ def _small_latent_stats_payload(worker_id: int) -> dict[str, object]:
         "mean_seq": torch.tensor([[1.0, 0.0]], dtype=torch.float32),
         "m2_seq": torch.tensor([[1.0, 0.0]], dtype=torch.float32),
         "component_steps": {0: 1},
+    }
+
+
+def _small_mid_ctx_reservoir_payload(worker_id: int) -> dict[str, object]:
+    sequence_id = 1 + worker_id * 2
+    return {
+        "ctx_seq_idx": torch.tensor([[[sequence_id, 0], [0, 0]]], dtype=torch.int32),
+        "ctx_seq_val": torch.tensor([[[1.0 + worker_id, 0.0], [0.0, 0.0]]], dtype=torch.float32),
+        "ctx_type": "mid",
+        "mode": "reservoir_cpu",
+        "merge_source": "worker_local_reservoir",
+        "reservoir_fill": torch.tensor([[1, 0]], dtype=torch.int32),
+        "reservoir_n": torch.tensor([[2 + worker_id, 0]], dtype=torch.int64),
     }

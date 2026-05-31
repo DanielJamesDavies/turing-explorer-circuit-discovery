@@ -705,6 +705,7 @@ def test_load_discovery_global_artifacts_loads_required_stores(monkeypatch, tmp_
 
 
 def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, tmp_path):
+    monkeypatch.setattr(config.distributed.mid_ctx_merge, "mode", "candidate_pool")
     manifest = _manifest(tmp_path, worker_count=1).model_copy(
         update={
             "devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")],
@@ -755,6 +756,10 @@ def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, 
             "truncation_counters": torch.zeros(shape, dtype=torch.int64),
             "ctx_seq_idx": ctx_idx,
             "ctx_seq_val": ctx_val,
+            "ctx_type": "mid",
+            "mode": "reservoir_cpu",
+            "reservoir_fill": torch.zeros(shape, dtype=torch.int32),
+            "reservoir_n": torch.zeros(shape, dtype=torch.int64),
         },
     )
     monkeypatch.setattr(
@@ -794,6 +799,94 @@ def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, 
         assert metadata.worker_id == 0
         assert metadata.shard_ids == [0, 1]
         assert isinstance(payload, dict)
+
+
+def test_save_pass1_partials_weighted_reservoir_writes_compact_mid_payload(monkeypatch, tmp_path):
+    monkeypatch.setattr(config.distributed.mid_ctx_merge, "mode", "weighted_reservoir")
+    manifest = _manifest(tmp_path, worker_count=1).model_copy(
+        update={
+            "devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")],
+            "work_assignments": WorkAssignments(
+                pass1_shards={"0": [0, 1]},
+                pass1_sequence_totals={"0": 5},
+            ),
+        }
+    )
+
+    shape = (2, 3)
+    ctx_idx = torch.zeros((2, 3, 1), dtype=torch.int32)
+    ctx_val = torch.zeros((2, 3, 1), dtype=torch.float32)
+    monkeypatch.setattr("pipeline.distributed.worker._component_count", lambda: 2)
+    monkeypatch.setattr("pipeline.distributed.worker._d_sae", lambda: 3)
+    monkeypatch.setattr("pipeline.distributed.worker._store_mode_for", lambda _name: {})
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.latent_stats_payload",
+        lambda _store: {
+            "active_count": torch.zeros(shape, dtype=torch.int64),
+            "mean": torch.zeros(shape, dtype=torch.float32),
+            "mean_abs": torch.zeros(shape, dtype=torch.float32),
+            "m2": torch.zeros(shape, dtype=torch.float32),
+            "m2_abs": torch.zeros(shape, dtype=torch.float32),
+            "seq_count": torch.zeros(shape, dtype=torch.int64),
+            "mean_seq": torch.zeros(shape, dtype=torch.float32),
+            "m2_seq": torch.zeros(shape, dtype=torch.float32),
+            "component_steps": {},
+        },
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.top_ctx_payload",
+        lambda _store: {
+            "ctx_seq_idx": ctx_idx,
+            "ctx_seq_val": ctx_val,
+            "ctx_type": "top",
+        },
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.mid_ctx_reservoir_payload",
+        lambda _store: {
+            "ctx_seq_idx": ctx_idx,
+            "ctx_seq_val": ctx_val,
+            "ctx_type": "mid",
+            "mode": "reservoir_cpu",
+            "merge_source": "worker_local_reservoir",
+            "reservoir_fill": torch.zeros(shape, dtype=torch.int32),
+            "reservoir_n": torch.zeros(shape, dtype=torch.int64),
+        },
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.mid_ctx_candidates_payload",
+        lambda _store, **_kwargs: (_ for _ in ()).throw(AssertionError("candidate pool payload used")),
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker._runtime_seq_repr_payload",
+        lambda: {
+            "repr_buf": torch.zeros((6, 4), dtype=torch.float16),
+            "repr_mode": "mean_pool",
+            "repr_dim": 4,
+            "n_seqs": 5,
+            "n_stored": 5,
+            "is_capped": False,
+        },
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.logit_ctx_payload",
+        lambda _store: {
+            "latent_counts": torch.zeros(shape, dtype=torch.int64),
+            "top_tokens": torch.zeros((2, 3, 1), dtype=torch.int32),
+            "top_probs": torch.zeros((2, 3, 1), dtype=torch.float32),
+        },
+    )
+
+    artifacts = save_pass1_partials(manifest, 0)
+
+    _metadata, payload = load_pass1_partial(
+        artifacts["mid_ctx_candidates"],
+        expected_artifact_name="mid_ctx_candidates",
+        expected_config_hash=manifest.normalized_config_hash,
+    )
+    assert payload["merge_source"] == "worker_local_reservoir"
+    assert "component_ids" not in payload
+    assert "priorities" not in payload
 
 
 def test_initialize_pass1_worker_resources_uses_manifest_total_sequences(
@@ -843,6 +936,97 @@ def test_initialize_pass1_worker_resources_uses_manifest_total_sequences(
     assert "slot_to_id" in seen["seq_repr_kwargs"]
     assert "id_to_slot" in seen["seq_repr_kwargs"]
     assert seen["sae_devices"] == [torch.device("cuda:0")]
+
+
+def test_initialize_pass1_worker_resources_skips_candidate_pool_in_weighted_mode(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(config.distributed.mid_ctx_merge, "mode", "weighted_reservoir")
+    manifest = _manifest(tmp_path, worker_count=1).model_copy(
+        update={"devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")]}
+    )
+
+    class FakeDataLoader:
+        def __init__(self, device, pin_memory):
+            pass
+
+    class FakeSeqRepr:
+        def __init__(self, n_seqs, **kwargs):
+            pass
+
+    class FakeInference:
+        def __init__(self, device, compile):
+            pass
+
+    class FakeSAEBank:
+        def __init__(self, devices, load_decoders, compile):
+            pass
+
+    monkeypatch.setattr("pipeline.distributed.worker.DataLoader", FakeDataLoader)
+    monkeypatch.setattr("pipeline.distributed.worker.SeqRepr", FakeSeqRepr)
+    monkeypatch.setattr("pipeline.distributed.worker.Inference", FakeInference)
+    monkeypatch.setattr("pipeline.distributed.worker.SAEBank", FakeSAEBank)
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.validate_pass1_worker_inputs",
+        lambda _manifest, _worker_id: None,
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.pass1.worker.configure_mid_ctx_candidate_pool",
+        lambda _manifest: (_ for _ in ()).throw(AssertionError("candidate pool configured")),
+    )
+
+    try:
+        initialize_pass1_worker_resources(manifest, 0)
+    finally:
+        clear_runtime()
+
+
+def test_initialize_pass1_worker_resources_configures_candidate_pool_in_candidate_mode(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(config.distributed.mid_ctx_merge, "mode", "candidate_pool")
+    manifest = _manifest(tmp_path, worker_count=1).model_copy(
+        update={"devices": [DeviceAssignment(worker_id=0, physical_id=0, logical_id="cuda:0")]}
+    )
+    seen = {"configured": False}
+
+    class FakeDataLoader:
+        def __init__(self, device, pin_memory):
+            pass
+
+    class FakeSeqRepr:
+        def __init__(self, n_seqs, **kwargs):
+            pass
+
+    class FakeInference:
+        def __init__(self, device, compile):
+            pass
+
+    class FakeSAEBank:
+        def __init__(self, devices, load_decoders, compile):
+            pass
+
+    monkeypatch.setattr("pipeline.distributed.worker.DataLoader", FakeDataLoader)
+    monkeypatch.setattr("pipeline.distributed.worker.SeqRepr", FakeSeqRepr)
+    monkeypatch.setattr("pipeline.distributed.worker.Inference", FakeInference)
+    monkeypatch.setattr("pipeline.distributed.worker.SAEBank", FakeSAEBank)
+    monkeypatch.setattr(
+        "pipeline.distributed.worker.validate_pass1_worker_inputs",
+        lambda _manifest, _worker_id: None,
+    )
+    monkeypatch.setattr(
+        "pipeline.distributed.pass1.worker.configure_mid_ctx_candidate_pool",
+        lambda _manifest: seen.update(configured=True),
+    )
+
+    try:
+        initialize_pass1_worker_resources(manifest, 0)
+    finally:
+        clear_runtime()
+
+    assert seen["configured"] is True
 
 
 def test_initialize_pass2_worker_resources_uses_single_worker_device(monkeypatch, tmp_path):

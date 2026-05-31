@@ -10,13 +10,17 @@ from typing import Dict
 
 import torch
 
+from config import config
+
 from ..interfaces import build_output_paths
 from ..layout import build_run_layout
 from ..manifest import DistributedRunManifest, ManifestStatus, save_manifest
 from ..pass2_replay import assign_pass2_replay_sequences
+from ..seq_repr_mapping import shard_table_fingerprint
 from ..shard_table import sequence_ids_for_shards
 from .context_merge import (
     load_and_merge_mid_ctx_candidate_partials,
+    load_and_merge_mid_ctx_reservoir_partials,
     load_and_merge_top_ctx_partials,
 )
 from .contracts import PASS1_PARTIAL_FILENAMES
@@ -36,6 +40,8 @@ def merge_pass1_worker_outputs(
     mid_ctx_band_low_sigma: float = 0.5,
     mid_ctx_band_high_sigma: float = 1.5,
     mid_ctx_on_truncation: str = "replay_fallback",
+    mid_ctx_merge_mode: str | None = None,
+    mid_ctx_sampling_seed: int | None = None,
 ) -> Dict[str, object]:
     """Merge all worker pass-1 outputs and write canonical global artifacts."""
 
@@ -55,15 +61,38 @@ def merge_pass1_worker_outputs(
         partial_paths["top_ctx"],
         expected_config_hash=manifest.normalized_config_hash,
     )
-    mid_ctx_payload = load_and_merge_mid_ctx_candidate_partials(
-        partial_paths["mid_ctx_candidates"],
-        latent_stats_payload=latent_stats_payload,
-        expected_config_hash=manifest.normalized_config_hash,
-        num_ctx_sequences=mid_ctx_num_ctx_sequences,
-        band_low_sigma=mid_ctx_band_low_sigma,
-        band_high_sigma=mid_ctx_band_high_sigma,
-        on_truncation=mid_ctx_on_truncation,
+    resolved_mid_ctx_merge_mode = mid_ctx_merge_mode or str(config.distributed.mid_ctx_merge.mode)
+    resolved_sampling_seed = int(
+        mid_ctx_sampling_seed
+        if mid_ctx_sampling_seed is not None
+        else (
+            config.distributed.mid_ctx_merge.sampling_seed
+            if config.distributed.mid_ctx_merge.sampling_seed is not None
+            else manifest.sampling_seed
+        )
     )
+    if resolved_mid_ctx_merge_mode == "weighted_reservoir":
+        mid_ctx_payload = load_and_merge_mid_ctx_reservoir_partials(
+            partial_paths["mid_ctx_candidates"],
+            expected_config_hash=manifest.normalized_config_hash,
+            num_ctx_sequences=mid_ctx_num_ctx_sequences,
+            band_low_sigma=mid_ctx_band_low_sigma,
+            band_high_sigma=mid_ctx_band_high_sigma,
+            sampling_seed=resolved_sampling_seed,
+            dataset_fingerprint=shard_table_fingerprint(manifest.shard_table),
+        )
+    elif resolved_mid_ctx_merge_mode == "candidate_pool":
+        mid_ctx_payload = load_and_merge_mid_ctx_candidate_partials(
+            partial_paths["mid_ctx_candidates"],
+            latent_stats_payload=latent_stats_payload,
+            expected_config_hash=manifest.normalized_config_hash,
+            num_ctx_sequences=mid_ctx_num_ctx_sequences,
+            band_low_sigma=mid_ctx_band_low_sigma,
+            band_high_sigma=mid_ctx_band_high_sigma,
+            on_truncation=mid_ctx_on_truncation,
+        )
+    else:
+        raise ValueError("unsupported mid_ctx merge mode")
     seq_repr_payload = load_and_merge_seq_repr_partials(
         partial_paths["seq_repr"],
         expected_config_hash=manifest.normalized_config_hash,

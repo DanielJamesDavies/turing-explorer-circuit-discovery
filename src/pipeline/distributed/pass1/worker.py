@@ -24,6 +24,7 @@ from ..pass1_partials import (
     latent_stats_payload,
     logit_ctx_payload,
     mid_ctx_candidates_payload,
+    mid_ctx_reservoir_payload,
     save_pass1_partial,
     seq_repr_payload,
     top_ctx_payload,
@@ -153,7 +154,8 @@ def initialize_pass1_worker_resources(
         load_decoders=runtime.fast,
         compile=runtime.compile,
     )
-    configure_mid_ctx_candidate_pool(manifest)
+    if config.distributed.mid_ctx_merge.mode == "candidate_pool":
+        configure_mid_ctx_candidate_pool(manifest)
 
 
 def configure_mid_ctx_candidate_pool(manifest: DistributedRunManifest) -> None:
@@ -254,13 +256,7 @@ def save_pass1_partials(
     payload_builders = {
         "latent_stats": lambda: latent_stats_payload(latent_stats),
         "top_ctx": lambda: top_ctx_payload(top_ctx),
-        # Phase 6 later replaces this worker-local mid_ctx checkpoint with the
-        # oversampled candidate-pool collection semantics planned for exact merge.
-        "mid_ctx_candidates": lambda: mid_ctx_candidates_payload(
-            mid_ctx,
-            sampling_seed=manifest.sampling_seed,
-            dataset_fingerprint=shard_table_fingerprint(manifest.shard_table),
-        ),
+        "mid_ctx_candidates": lambda: _mid_ctx_partial_payload(manifest),
         "seq_repr": _runtime_seq_repr_payload,
         "logit_ctx": lambda: logit_ctx_payload(logit_ctx),
     }
@@ -287,6 +283,18 @@ def _runtime_seq_repr_payload() -> Dict[str, object]:
     return seq_repr_payload(seq_repr)
 
 
+def _mid_ctx_partial_payload(manifest: DistributedRunManifest) -> Dict[str, object]:
+    if config.distributed.mid_ctx_merge.mode == "weighted_reservoir":
+        return mid_ctx_reservoir_payload(mid_ctx)
+    if config.distributed.mid_ctx_merge.mode == "candidate_pool":
+        return mid_ctx_candidates_payload(
+            mid_ctx,
+            sampling_seed=manifest.sampling_seed,
+            dataset_fingerprint=shard_table_fingerprint(manifest.shard_table),
+        )
+    raise ValueError("unsupported mid_ctx merge mode")
+
+
 def _component_count() -> int:
     return int(latent_stats.num_components)
 
@@ -299,9 +307,8 @@ def _store_mode_for(artifact_name: str) -> Dict[str, object]:
     if artifact_name == "top_ctx":
         return {"ctx_type": top_ctx.ctx_type}
     if artifact_name == "mid_ctx_candidates":
-        return {
+        store_mode = {
             "ctx_type": mid_ctx.ctx_type,
-            "candidate_schema": "widened_worker_candidate_pool",
             "mid_mode": mid_ctx.mid_mode,
             "candidate_band_low_sigma": float(mid_ctx._band_low),
             "candidate_band_high_sigma": float(mid_ctx._band_high),
@@ -312,6 +319,12 @@ def _store_mode_for(artifact_name: str) -> Dict[str, object]:
             ),
             "max_candidates_per_latent": int(mid_ctx.num_ctx_sequences),
         }
+        if config.distributed.mid_ctx_merge.mode == "weighted_reservoir":
+            store_mode["candidate_schema"] = "worker_local_reservoir"
+            store_mode["merge_source"] = "worker_local_reservoir"
+        else:
+            store_mode["candidate_schema"] = "widened_worker_candidate_pool"
+        return store_mode
     if artifact_name == "seq_repr":
         seq_repr = get_runtime().seq_repr
         return {"repr_mode": seq_repr.repr_mode if seq_repr is not None else None}

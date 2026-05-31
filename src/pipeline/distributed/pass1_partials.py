@@ -235,6 +235,22 @@ def mid_ctx_candidates_payload(
         "truncation_counters": _mid_ctx_truncation_counters(store),
         "ctx_seq_idx": ctx_seq_idx,
         "ctx_seq_val": ctx_seq_val,
+        "ctx_type": "mid",
+        "mode": store.mid_mode,
+        "reservoir_fill": store.reservoir_fill.cpu(),
+        "reservoir_n": store.reservoir_n.cpu(),
+    }
+
+
+def mid_ctx_reservoir_payload(store) -> Dict[str, Any]:
+    """Compact worker-local reservoir summary for weighted distributed merge."""
+
+    return {
+        "ctx_seq_idx": store.ctx_seq_idx.cpu(),
+        "ctx_seq_val": store.ctx_seq_val.cpu().float(),
+        "ctx_type": "mid",
+        "mode": store.mid_mode,
+        "merge_source": "worker_local_reservoir",
         "reservoir_fill": store.reservoir_fill.cpu(),
         "reservoir_n": store.reservoir_n.cpu(),
     }
@@ -300,6 +316,12 @@ def _validate_mid_ctx_candidates_payload(
     metadata: Pass1PartialMetadata,
     payload: Dict[str, Any],
 ) -> None:
+    _validate_mid_ctx_reservoir_summary(metadata, payload)
+    if payload.get("merge_source") == "worker_local_reservoir":
+        if payload.get("mode") != "reservoir_cpu":
+            raise ValueError("compact mid_ctx reservoir partial mode must be reservoir_cpu")
+        return
+
     required = [
         "component_ids",
         "latent_ids",
@@ -334,7 +356,6 @@ def _validate_mid_ctx_candidates_payload(
         dtype=torch.int64,
         shape=(metadata.component_count, metadata.d_sae),
     )
-    _validate_context_payload(metadata, {**payload, "ctx_type": "mid"}, expected_ctx_type="mid")
 
 
 def _validate_seq_repr_payload(payload: Dict[str, Any]) -> None:
@@ -348,6 +369,57 @@ def _validate_seq_repr_payload(payload: Dict[str, Any]) -> None:
     if bool(payload["is_capped"]):
         _require_tensor(payload, "slot_to_id", dtype=torch.int64)
         _require_tensor(payload, "id_to_slot", dtype=torch.int32)
+
+
+def _validate_mid_ctx_reservoir_summary(
+    metadata: Pass1PartialMetadata,
+    payload: Dict[str, Any],
+) -> None:
+    context_payload = (
+        payload
+        if payload.get("ctx_type") == "mid"
+        else {**payload, "ctx_type": "mid"}
+    )
+    _validate_context_payload(metadata, context_payload, expected_ctx_type="mid")
+    idx = payload["ctx_seq_idx"]
+    vals = payload["ctx_seq_val"]
+    k = int(idx.shape[2])
+    shape = (metadata.component_count, metadata.d_sae)
+    reservoir_fill = _require_tensor(
+        payload,
+        "reservoir_fill",
+        dtype=torch.int32,
+        shape=shape,
+    )
+    reservoir_n = _require_tensor(
+        payload,
+        "reservoir_n",
+        dtype=torch.int64,
+        shape=shape,
+    )
+    if reservoir_fill.numel() > 0:
+        if int(reservoir_fill.min()) < 0 or int(reservoir_fill.max()) > k:
+            raise ValueError("reservoir_fill must be between 0 and context capacity")
+    if reservoir_n.numel() > 0 and int(reservoir_n.min()) < 0:
+        raise ValueError("reservoir_n must be non-negative")
+    valid = idx != 0
+    if bool(valid.any()):
+        if metadata.sequence_id_min is not None and int(idx[valid].min()) < metadata.sequence_id_min:
+            raise ValueError("mid_ctx sequence IDs below worker range")
+        if metadata.sequence_id_max is not None and int(idx[valid].max()) > metadata.sequence_id_max:
+            raise ValueError("mid_ctx sequence IDs above worker range")
+    for component_idx in range(idx.shape[0]):
+        for latent_idx in range(idx.shape[1]):
+            fill = int(reservoir_fill[component_idx, latent_idx].item())
+            if fill >= k:
+                continue
+            if bool((idx[component_idx, latent_idx, fill:] != 0).any()):
+                raise ValueError("mid_ctx slots beyond reservoir_fill must have zero sequence IDs")
+            if bool((vals[component_idx, latent_idx, fill:] != 0).any()):
+                raise ValueError("mid_ctx slots beyond reservoir_fill must have zero values")
+    invalid = ~valid
+    if bool((vals[invalid] != 0).any()):
+        raise ValueError("mid_ctx invalid sentinel values must be zero")
 
 
 def _validate_logit_ctx_payload(

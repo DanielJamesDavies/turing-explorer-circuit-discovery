@@ -1,6 +1,6 @@
 import torch
 
-from config import MidCtxConfig, config
+from config import DistributedMidCtxMergeConfig, MidCtxConfig, config
 from store.context import Context
 
 
@@ -27,6 +27,19 @@ def test_mid_ctx_config_only_accepts_reservoir_cpu():
             assert "reservoir_cpu" in str(exc)
         else:
             raise AssertionError(f"{mode} should not be accepted")
+
+
+def test_distributed_mid_ctx_merge_config_accepts_weighted_and_candidate_pool():
+    assert DistributedMidCtxMergeConfig().mode == "weighted_reservoir"
+    assert DistributedMidCtxMergeConfig(mode="weighted_reservoir").mode == "weighted_reservoir"
+    assert DistributedMidCtxMergeConfig(mode="candidate_pool").mode == "candidate_pool"
+    try:
+        DistributedMidCtxMergeConfig(mode="gpu_priority_reservoir")
+    except ValueError as exc:
+        assert "weighted_reservoir" in str(exc)
+        assert "candidate_pool" in str(exc)
+    else:
+        raise AssertionError("unsupported mid_ctx merge mode should not be accepted")
 
 
 def test_mid_ctx_modes_allocate_same_shapes_and_save_metadata(monkeypatch, tmp_path):
