@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import math
+import sys
 import time
 from pathlib import Path
 from typing import Callable, Dict, Sequence
 
 import torch
+from tqdm import tqdm
 
 from ..pass1_partials import Pass1PartialMetadata, load_pass1_partial, validate_pass1_partial
 from .contracts import (
@@ -443,9 +445,16 @@ def _merge_mid_ctx_reservoir_partials_chunked(
     reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
     empty_worker_rows = torch.zeros((component_count, d_sae), dtype=torch.int64)
 
-    progress_interval = max(chunk_rows, max(1, total_rows // 20))
-    next_progress = 0
-    for row_start in range(0, total_rows, chunk_rows):
+    chunk_ranges = range(0, total_rows, chunk_rows)
+    progress = tqdm(
+        chunk_ranges,
+        total=math.ceil(total_rows / chunk_rows),
+        desc="  [pass1_merge:mid_ctx]",
+        unit="chunk",
+        dynamic_ncols=True,
+        file=sys.stdout,
+    )
+    for row_start in progress:
         row_end = min(total_rows, row_start + chunk_rows)
         row_count = row_end - row_start
         chunk_start = time.perf_counter()
@@ -529,19 +538,10 @@ def _merge_mid_ctx_reservoir_partials_chunked(
         ).sum(dim=0).to(torch.int64)
 
         rows_done = row_end
-        if rows_done >= next_progress or rows_done == total_rows:
-            elapsed_s = time.perf_counter() - merge_start
-            rows_per_s = rows_done / max(elapsed_s, 1e-9)
-            remaining_s = (total_rows - rows_done) / max(rows_per_s, 1e-9)
-            print(
-                "[pass1_merge] mid_ctx weighted reservoir chunk progress "
-                f"{rows_done}/{total_rows} rows "
-                f"({rows_done / total_rows:.1%}) "
-                f"chunk_elapsed={time.perf_counter() - chunk_start:.1f}s "
-                f"elapsed={elapsed_s:.1f}s eta={remaining_s:.1f}s",
-                flush=True,
-            )
-            next_progress = rows_done + progress_interval
+        progress.set_postfix(
+            rows=f"{rows_done}/{total_rows}",
+            chunk_s=f"{time.perf_counter() - chunk_start:.2f}",
+        )
 
     return ctx_seq_idx, ctx_seq_val, reservoir_fill, reservoir_n, empty_worker_rows
 

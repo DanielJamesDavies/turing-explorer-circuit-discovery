@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
+import sys
 import time
 from typing import Dict, Sequence
 
 import torch
+from tqdm import tqdm
 
 from ..pass1_partials import load_pass1_partial, validate_pass1_partial
 from .contracts import LogitCtxPartial
@@ -199,8 +202,6 @@ def _select_logit_ctx_events_chunked(
     ).view(1, len(sorted_partials), 1)
     candidate_rows = torch.arange(input_k, dtype=torch.int64).view(1, 1, input_k)
     progress_start = merge_start if merge_start is not None else time.perf_counter()
-    progress_interval = max(chunk_rows, max(1, total_rows // 20))
-    next_progress = 0
 
     print(
         "[pass1_merge] merging logit_ctx event top-k "
@@ -209,7 +210,16 @@ def _select_logit_ctx_events_chunked(
         flush=True,
     )
 
-    for row_start in range(0, total_rows, chunk_rows):
+    chunk_ranges = range(0, total_rows, chunk_rows)
+    progress = tqdm(
+        chunk_ranges,
+        total=math.ceil(total_rows / chunk_rows),
+        desc="  [pass1_merge:logit_ctx]",
+        unit="chunk",
+        dynamic_ncols=True,
+        file=sys.stdout,
+    )
+    for row_start in progress:
         row_end = min(total_rows, row_start + chunk_rows)
         row_count = row_end - row_start
         chunk_start = time.perf_counter()
@@ -271,19 +281,12 @@ def _select_logit_ctx_events_chunked(
         top_probs.reshape(total_rows, output_k)[row_start:row_end] = out_probs
 
         rows_done = row_end
-        if rows_done >= next_progress or rows_done == total_rows:
-            elapsed_s = time.perf_counter() - progress_start
-            rows_per_s = rows_done / max(elapsed_s, 1e-9)
-            remaining_s = (total_rows - rows_done) / max(rows_per_s, 1e-9)
-            print(
-                "[pass1_merge] logit_ctx chunk progress "
-                f"{rows_done}/{total_rows} rows "
-                f"({rows_done / total_rows:.1%}) "
-                f"chunk_elapsed={time.perf_counter() - chunk_start:.1f}s "
-                f"elapsed={elapsed_s:.1f}s eta={remaining_s:.1f}s",
-                flush=True,
-            )
-            next_progress = rows_done + progress_interval
+        elapsed_s = time.perf_counter() - progress_start
+        progress.set_postfix(
+            rows=f"{rows_done}/{total_rows}",
+            chunk_s=f"{time.perf_counter() - chunk_start:.2f}",
+            elapsed_s=f"{elapsed_s:.1f}",
+        )
 
 
 def _validate_logit_ctx_token_range(
