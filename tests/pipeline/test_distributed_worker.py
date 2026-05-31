@@ -28,6 +28,7 @@ from pipeline.distributed.worker import (
     load_assigned_discovery_candidates,
     load_discovery_global_artifacts,
     load_pass2_global_artifacts,
+    main,
     run_discovery_worker,
     run_pass1_worker,
     run_pass2_worker,
@@ -150,6 +151,29 @@ def test_apply_worker_thread_limits_zero_leaves_env_unchanged(monkeypatch):
 
     for name in ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"]:
         assert name not in os.environ
+
+
+def test_pass2_cli_sets_trusted_replay_validation_env(monkeypatch):
+    calls = {}
+    monkeypatch.delenv("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS", raising=False)
+
+    def fake_run_worker(manifest_path, worker_id, *, phase):
+        calls["manifest_path"] = manifest_path
+        calls["worker_id"] = worker_id
+        calls["phase"] = phase
+        calls["trusted"] = os.environ.get("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS")
+        return {}
+
+    monkeypatch.setattr("pipeline.distributed.worker.run_worker", fake_run_worker)
+
+    main(["--manifest", "manifest.json", "--phase", "pass2", "--worker-id", "3"])
+
+    assert calls == {
+        "manifest_path": "manifest.json",
+        "worker_id": 3,
+        "phase": "pass2",
+        "trusted": "1",
+    }
 
 
 def _pass2_manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:

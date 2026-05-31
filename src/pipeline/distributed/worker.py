@@ -293,6 +293,8 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     if args.worker_threads < 0:
         raise ValueError("--worker-threads must be >= 0")
     _apply_worker_thread_limits(args.worker_threads)
+    if args.phase == "pass2":
+        os.environ.setdefault("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS", "1")
     run_worker(args.manifest, args.worker_id, phase=args.phase)
 
 

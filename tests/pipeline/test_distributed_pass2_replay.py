@@ -253,6 +253,41 @@ def test_validate_pass2_replay_assignments_rejects_stale_hash(tmp_path):
         validate_pass2_replay_assignments(stale)
 
 
+def test_trusted_pass2_replay_manifest_still_checks_count(monkeypatch, tmp_path):
+    monkeypatch.setenv("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS", "1")
+    manifest_data = _manifest(tmp_path).model_dump()
+    manifest_data["work_assignments"]["pass2_sequence_ids"] = {"0": [1], "1": [2]}
+    manifest_data["work_assignments"]["pass2_replay_sequence_count"] = 3
+    manifest_data["work_assignments"]["pass2_replay_sequence_hash"] = hash_replay_sequence_ids([1, 2])
+
+    with pytest.raises(ValueError, match="pass2 replay sequence count does not match"):
+        DistributedRunManifest.model_validate(manifest_data)
+
+
+def test_trusted_pass2_worker_input_skips_full_replay_validation(monkeypatch, tmp_path):
+    monkeypatch.setenv("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS", "1")
+    manifest_data = _manifest(tmp_path).model_dump()
+    # This is intentionally invalid globally: sequence 2 appears in both workers.
+    # The trusted path is used only for generated full-run manifests where the
+    # replay list has already been validated once during Pass 1 merge.
+    manifest_data["work_assignments"]["pass2_sequence_ids"] = {
+        "0": [1, 2],
+        "1": [2, 4],
+    }
+    manifest_data["work_assignments"]["pass2_replay_sequence_count"] = 4
+    manifest_data["work_assignments"]["pass2_replay_sequence_hash"] = hash_replay_sequence_ids(
+        [1, 2, 2, 4]
+    )
+    manifest = DistributedRunManifest.model_validate(manifest_data)
+
+    worker_input = get_pass2_worker_input(manifest, 1)
+
+    assert worker_input.sequence_ids == [2, 4]
+    assert worker_input.sequence_count == 2
+    assert worker_input.sequence_id_min == 2
+    assert worker_input.sequence_id_max == 4
+
+
 def test_pass2_worker_marker_records_sequence_metadata(tmp_path):
     manifest = assign_pass2_replay_sequences(
         _manifest(tmp_path),

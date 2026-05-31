@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 from typing import Mapping, Protocol, Sequence
 
 import torch
@@ -93,22 +94,32 @@ def get_pass2_worker_input(
 ) -> Pass2WorkerInput:
     """Return validated pass-2 input metadata for one worker."""
 
-    validate_pass2_replay_assignments(manifest)
     if worker_id < 0 or worker_id >= manifest.worker_count:
         raise ValueError("worker_id out of range")
+    if not _trust_pass2_replay_assignments():
+        validate_pass2_replay_assignments(manifest)
     sequence_ids = list(manifest.work_assignments.pass2_sequence_ids.get(str(worker_id), []))
+    if sequence_ids and _trust_pass2_replay_assignments():
+        sequence_id_min = sequence_ids[0]
+        sequence_id_max = sequence_ids[-1]
+    else:
+        sequence_id_min = min(sequence_ids) if sequence_ids else None
+        sequence_id_max = max(sequence_ids) if sequence_ids else None
     return Pass2WorkerInput(
         worker_id=worker_id,
         sequence_ids=sequence_ids,
         sequence_count=len(sequence_ids),
-        sequence_id_min=min(sequence_ids) if sequence_ids else None,
-        sequence_id_max=max(sequence_ids) if sequence_ids else None,
+        sequence_id_min=sequence_id_min,
+        sequence_id_max=sequence_id_max,
         replay_sequence_hash=manifest.work_assignments.pass2_replay_sequence_hash,
     )
 
 
 def validate_pass2_replay_assignments(manifest: DistributedRunManifest) -> None:
     """Validate pass-2 assignments as contiguous chunks of one replay list."""
+
+    if _trust_pass2_replay_assignments():
+        return
 
     assignments = manifest.work_assignments.pass2_sequence_ids
     if set(assignments) - {str(worker_id) for worker_id in range(manifest.worker_count)}:
@@ -164,3 +175,7 @@ def _extract_top_ctx_sequence_ids(top_ctx: TopContextLike | Mapping[str, object]
     if not isinstance(ctx_seq_idx, torch.Tensor):
         raise TypeError("top_ctx ctx_seq_idx must be a torch.Tensor")
     return [int(sequence_id) for sequence_id in torch.unique(ctx_seq_idx).cpu().tolist()]
+
+
+def _trust_pass2_replay_assignments() -> bool:
+    return os.environ.get("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS") == "1"

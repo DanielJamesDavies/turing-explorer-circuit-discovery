@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from enum import Enum
@@ -434,20 +435,31 @@ class DistributedRunManifest(BaseModel):
             for worker_id in self.work_assignments.pass1_sequence_totals:
                 _validate_worker_key(worker_id, self.worker_count)
 
-            seen_sequence_ids: set[int] = set()
-            for worker_id, sequence_ids in self.work_assignments.pass2_sequence_ids.items():
-                _validate_worker_key(worker_id, self.worker_count)
-                for sequence_id in sequence_ids:
-                    if sequence_id in seen_sequence_ids:
-                        raise ValueError("duplicated assigned sequence ID")
-                    seen_sequence_ids.add(sequence_id)
-                    if not contains_sequence_id(self.shard_table, sequence_id):
-                        raise ValueError("assigned sequence ID out of range")
-            if (
-                self.work_assignments.pass2_replay_sequence_count is not None
-                and self.work_assignments.pass2_replay_sequence_count != len(seen_sequence_ids)
-            ):
-                raise ValueError("pass2 replay sequence count does not match assigned sequences")
+            if _trust_pass2_replay_assignments():
+                replay_count = 0
+                for worker_id, sequence_ids in self.work_assignments.pass2_sequence_ids.items():
+                    _validate_worker_key(worker_id, self.worker_count)
+                    replay_count += len(sequence_ids)
+                if (
+                    self.work_assignments.pass2_replay_sequence_count is not None
+                    and self.work_assignments.pass2_replay_sequence_count != replay_count
+                ):
+                    raise ValueError("pass2 replay sequence count does not match assigned sequences")
+            else:
+                seen_sequence_ids: set[int] = set()
+                for worker_id, sequence_ids in self.work_assignments.pass2_sequence_ids.items():
+                    _validate_worker_key(worker_id, self.worker_count)
+                    for sequence_id in sequence_ids:
+                        if sequence_id in seen_sequence_ids:
+                            raise ValueError("duplicated assigned sequence ID")
+                        seen_sequence_ids.add(sequence_id)
+                        if not contains_sequence_id(self.shard_table, sequence_id):
+                            raise ValueError("assigned sequence ID out of range")
+                if (
+                    self.work_assignments.pass2_replay_sequence_count is not None
+                    and self.work_assignments.pass2_replay_sequence_count != len(seen_sequence_ids)
+                ):
+                    raise ValueError("pass2 replay sequence count does not match assigned sequences")
 
         for worker_id in self.work_assignments.discovery_seed_ids:
             _validate_worker_key(worker_id, self.worker_count)
@@ -495,6 +507,10 @@ def load_manifest(path: str | Path) -> DistributedRunManifest:
 
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     return DistributedRunManifest.model_validate(data)
+
+
+def _trust_pass2_replay_assignments() -> bool:
+    return os.environ.get("TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS") == "1"
 
 
 def _validate_worker_key(worker_id: str, worker_count: int) -> None:
