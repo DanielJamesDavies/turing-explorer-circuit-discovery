@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 import torch
+from tqdm import tqdm
 
 from ..interfaces import build_output_paths
 from .contracts import (
@@ -45,33 +46,64 @@ def run_simple_exact_reduce_stage(
 ) -> SimpleExactReduceResult:
     """Load candidate dumps and run the simple exact reducer from canonical artifacts."""
 
+    stage_started = time.perf_counter()
     output_paths = build_output_paths(output_root)
+    print(
+        f"[pass2_reduce] starting simple exact reduce dumps={len(candidate_dump_paths)} "
+        f"output_root={output_root}",
+        flush=True,
+    )
+    load_started = time.perf_counter()
     dump_inputs = load_candidate_dump_reducer_inputs(
         candidate_dump_paths,
         expected_config_hash=expected_config_hash,
         expected_mode=expected_mode,
     )
+    print(
+        "[pass2_reduce] candidate dump partials loaded "
+        f"workers={len(dump_inputs.entries)} sequences={dump_inputs.total_sequence_count} "
+        f"M={dump_inputs.m} elapsed={time.perf_counter() - load_started:.1f}s",
+        flush=True,
+    )
+    mapping_started = time.perf_counter()
     mapping = load_global_top_ctx_target_mapping(
         top_ctx_path or output_paths.top_ctx,
         dump_inputs=dump_inputs,
     )
+    print(
+        "[pass2_reduce] top_ctx mapping built "
+        f"replay_sequences={len(mapping.sequence_ids)} targets={mapping.seq_targets_global.numel()} "
+        f"elapsed={time.perf_counter() - mapping_started:.1f}s",
+        flush=True,
+    )
     active_count = None
     if dump_inputs.mode == "pmi":
+        active_started = time.perf_counter()
         active_count = load_global_active_count(
             latent_stats_path or output_paths.latent_stats,
             expected_config_hash=expected_config_hash,
             expected_num_components=dump_inputs.num_components,
             expected_d_sae=dump_inputs.d_sae,
         )
+        print(
+            f"[pass2_reduce] active_count loaded elapsed={time.perf_counter() - active_started:.1f}s",
+            flush=True,
+        )
     from store.top_coactivation import top_coactivation
 
-    return run_simple_exact_reduce_and_write(
+    result = run_simple_exact_reduce_and_write(
         top_coactivation,
         dump_inputs,
         mapping,
         output_root,
         active_count=active_count,
     )
+    print(
+        f"[pass2_reduce] complete elapsed={time.perf_counter() - stage_started:.1f}s "
+        f"artifact={result.artifact_path}",
+        flush=True,
+    )
+    return result
 
 
 def build_simple_exact_candidate_dump(
@@ -86,20 +118,33 @@ def build_simple_exact_candidate_dump(
     sid_to_row maps arbitrary sequence IDs back to those rows.
     """
 
-    validate_candidate_dump_sequence_coverage(dump_inputs, mapping)
     _validate_simple_dump_reduce_dimensions(dump_inputs, mapping)
     sequence_count = len(mapping.sequence_ids)
     candidate_ids = torch.zeros((sequence_count, dump_inputs.m), dtype=torch.int32)
     candidate_vals = torch.zeros((sequence_count, dump_inputs.m), dtype=torch.float32)
+    sid_to_row_tensor = mapping.sid_to_row_tensor.to(torch.int64)
+    total_rows = sum(int(entry.metadata.sequence_count) for entry in dump_inputs.entries)
+    progress = tqdm(
+        total=total_rows,
+        desc="  [pass2_reduce:assemble_dump]",
+        unit="row",
+    )
     for entry in dump_inputs.entries:
         sequence_ids = entry.payload["sequence_ids"].to(torch.int64).cpu()
         worker_candidate_ids = entry.payload["candidate_ids"].to(torch.int32).cpu()
         worker_candidate_vals = entry.payload["candidate_vals"].to(torch.float32).cpu()
-        for source_row, sequence_id_tensor in enumerate(sequence_ids):
-            sequence_id = int(sequence_id_tensor.item())
-            destination_row = mapping.sid_to_row[sequence_id]
-            candidate_ids[destination_row] = worker_candidate_ids[source_row]
-            candidate_vals[destination_row] = worker_candidate_vals[source_row]
+        chunk_rows = _candidate_dump_assembly_chunk_rows(dump_inputs.m)
+        for row_start in range(0, int(sequence_ids.numel()), chunk_rows):
+            row_end = min(row_start + chunk_rows, int(sequence_ids.numel()))
+            chunk_sequence_ids = sequence_ids[row_start:row_end]
+            destination_rows = sid_to_row_tensor[chunk_sequence_ids]
+            if bool((destination_rows < 0).any()):
+                bad_sequence_id = int(chunk_sequence_ids[destination_rows < 0][0].item())
+                raise ValueError(f"candidate dump contains sequence ID outside global replay set: {bad_sequence_id}")
+            candidate_ids[destination_rows] = worker_candidate_ids[row_start:row_end]
+            candidate_vals[destination_rows] = worker_candidate_vals[row_start:row_end]
+            progress.update(row_end - row_start)
+    progress.close()
 
     first_metadata = dump_inputs.entries[0].metadata
     return SimpleExactCandidateDump(
@@ -186,10 +231,13 @@ def run_simple_exact_reduce_and_write(
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     memory_trace = start_memory_trace()
+    print("[pass2_reduce] assembling global candidate dump", flush=True)
     build_started = time.perf_counter()
     dump = build_simple_exact_candidate_dump(dump_inputs, mapping)
     build_elapsed_s = time.perf_counter() - build_started
+    print(f"[pass2_reduce] global candidate dump assembled elapsed={build_elapsed_s:.1f}s", flush=True)
 
+    print("[pass2_reduce] reducing top coactivation", flush=True)
     reduce_started = time.perf_counter()
     reduce_simple_exact_candidate_dump(
         top_coactivation_store,
@@ -198,11 +246,15 @@ def run_simple_exact_reduce_and_write(
         active_count=active_count,
     )
     reduce_elapsed_s = time.perf_counter() - reduce_started
+    print(f"[pass2_reduce] top coactivation reduce complete elapsed={reduce_elapsed_s:.1f}s", flush=True)
 
+    print(f"[pass2_reduce] writing top_coactivation -> {output_paths.top_coactivation}", flush=True)
     save_started = time.perf_counter()
     _atomic_store_save(top_coactivation_store, output_paths.top_coactivation)
     save_elapsed_s = time.perf_counter() - save_started
+    print(f"[pass2_reduce] wrote top_coactivation elapsed={save_elapsed_s:.1f}s", flush=True)
     peak_cpu_memory_bytes = stop_memory_trace(memory_trace)
+    print("[pass2_reduce] validating top_coactivation artifact", flush=True)
     validate_saved_top_coactivation_artifact(
         top_coactivation_store,
         output_paths.top_coactivation,
@@ -222,6 +274,7 @@ def run_simple_exact_reduce_and_write(
     )
     report_path = reports_dir / report_name
     atomic_write_json(report_path, report)
+    print(f"[pass2_reduce] wrote reduce report -> {report_path}", flush=True)
     return SimpleExactReduceResult(
         artifact_path=output_paths.top_coactivation,
         report_path=report_path,
@@ -394,6 +447,12 @@ def _atomic_store_save(top_coactivation_store, path: str | Path) -> None:
     if not tmp_path.exists():
         raise ValueError("top_coactivation store did not write an artifact")
     os.replace(tmp_path, output_path)
+
+
+def _candidate_dump_assembly_chunk_rows(candidate_width: int) -> int:
+    target_bytes = int(os.environ.get("TURING_PASS2_REDUCE_ASSEMBLY_CHUNK_BYTES", str(512 * 1024 * 1024)))
+    row_bytes = max(1, int(candidate_width) * (torch.empty((), dtype=torch.int32).element_size() + torch.empty((), dtype=torch.float32).element_size()))
+    return max(1, target_bytes // row_bytes)
 
 
 __all__ = [

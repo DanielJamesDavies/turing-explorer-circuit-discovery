@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 import torch
+from tqdm import tqdm
 
 from ..pass2_partials import (
     CandidateDumpMetadata,
@@ -33,10 +34,14 @@ def load_candidate_dump_reducer_inputs(
 ) -> CandidateDumpReducerInputs:
     """Load and validate simple exact worker candidate dumps for reduction."""
 
-    entries = [
-        CandidateDumpReducerEntry(*load_candidate_dump_partial(path, expected_config_hash=expected_config_hash))
-        for path in paths
-    ]
+    print(f"[pass2_reduce] loading {len(paths)} candidate dump partials", flush=True)
+    entries = []
+    for path in tqdm(paths, desc="  [pass2_reduce:load_dumps]", unit="dump"):
+        entries.append(
+            CandidateDumpReducerEntry(
+                *load_candidate_dump_partial(path, expected_config_hash=expected_config_hash)
+            )
+        )
     return validate_candidate_dump_reducer_inputs(
         entries,
         expected_config_hash=expected_config_hash,
@@ -126,6 +131,7 @@ def load_global_top_ctx_target_mapping(
 ) -> GlobalTopCtxTargetMapping:
     """Load merged global top_ctx.pt and build reducer CSR plus dump row mapping."""
 
+    print(f"[pass2_reduce] loading top_ctx mapping input -> {path}", flush=True)
     payload = torch.load(path, map_location="cpu", weights_only=False)
     return build_global_top_ctx_target_mapping(payload, dump_inputs=dump_inputs)
 
@@ -139,6 +145,7 @@ def load_global_active_count(
 ) -> torch.Tensor:
     """Load merged global latent_stats.active_count for PMI postprocess."""
 
+    print(f"[pass2_reduce] loading active_count input -> {path}", flush=True)
     payload = torch.load(path, map_location="cpu", weights_only=False)
     if not isinstance(payload, Mapping):
         raise ValueError("latent_stats payload must be a mapping")
@@ -223,28 +230,36 @@ def validate_candidate_dump_sequence_coverage(
 ) -> None:
     """Ensure simple exact dumps cover every global replay sequence exactly once."""
 
-    seen: set[int] = set()
-    duplicates: set[int] = set()
-    replay_set = set(mapping.sequence_ids)
-    for entry in dump_inputs.entries:
-        sequence_ids = entry.payload["sequence_ids"]
-        for sequence_id in sequence_ids.tolist():
-            sequence_id = int(sequence_id)
-            if sequence_id == 0:
-                raise ValueError("candidate dump contains sentinel sequence ID 0")
-            if sequence_id not in replay_set:
-                raise ValueError(f"candidate dump contains sequence ID outside global replay set: {sequence_id}")
-            if sequence_id in seen:
-                duplicates.add(sequence_id)
-            seen.add(sequence_id)
-    if duplicates:
-        raise ValueError(f"candidate dumps contain duplicate sequence IDs: {sorted(duplicates)}")
-    missing = sorted(replay_set - seen)
-    if missing:
-        raise ValueError(f"candidate dumps missing replay sequence IDs: {missing}")
-    extras = sorted(seen - replay_set)
-    if extras:
-        raise ValueError(f"candidate dumps contain extra replay sequence IDs: {extras}")
+    expected_count = len(mapping.sequence_ids)
+    seen_rows = torch.zeros(expected_count, dtype=torch.bool)
+    sid_to_row = mapping.sid_to_row_tensor.to(torch.int64)
+    max_valid_sid = int(sid_to_row.numel()) - 1
+    seen_count = 0
+    for entry in tqdm(
+        dump_inputs.entries,
+        desc="  [pass2_reduce:validate_coverage]",
+        unit="dump",
+    ):
+        sequence_ids = entry.payload["sequence_ids"].to(torch.int64).cpu()
+        if bool((sequence_ids == 0).any()):
+            raise ValueError("candidate dump contains sentinel sequence ID 0")
+        if sequence_ids.numel() and (
+            int(sequence_ids.min().item()) < 0 or int(sequence_ids.max().item()) > max_valid_sid
+        ):
+            raise ValueError("candidate dump contains sequence ID outside global replay set")
+        rows = sid_to_row[sequence_ids]
+        if bool((rows < 0).any()):
+            bad_sequence_id = int(sequence_ids[rows < 0][0].item())
+            raise ValueError(f"candidate dump contains sequence ID outside global replay set: {bad_sequence_id}")
+        if bool(seen_rows[rows].any()):
+            duplicate_sequence_id = int(sequence_ids[seen_rows[rows]][0].item())
+            raise ValueError(f"candidate dumps contain duplicate sequence IDs: [{duplicate_sequence_id}]")
+        seen_rows[rows] = True
+        seen_count += int(sequence_ids.numel())
+    if seen_count != expected_count or not bool(seen_rows.all()):
+        missing_row = int((~seen_rows).nonzero(as_tuple=False)[0].item())
+        missing_sequence_id = int(mapping.sequence_ids[missing_row])
+        raise ValueError(f"candidate dumps missing replay sequence IDs: [{missing_sequence_id}]")
 
 
 def validate_candidate_preaggregation_reducer_inputs(
