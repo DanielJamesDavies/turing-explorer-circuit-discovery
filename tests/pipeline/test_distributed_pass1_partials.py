@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from pipeline.distributed.pass1_partials import (
+    MID_CTX_PRIORITY_HASH_VERSION,
     Pass1PartialMetadata,
     load_pass1_partial,
     mid_ctx_candidates_payload,
@@ -70,7 +71,7 @@ def _payloads():
             "latent_ids": torch.tensor([0, 2], dtype=torch.int32),
             "sequence_ids": torch.tensor([1, 2], dtype=torch.int32),
             "activation_values": torch.tensor([0.5, 0.3], dtype=torch.float32),
-            "priorities": torch.tensor([0.1, 0.2], dtype=torch.float32),
+            "priorities": torch.tensor([10, 20], dtype=torch.int64),
             "candidate_pool_settings": {"mode": "worker_local_mid_ctx_checkpoint"},
             "truncation_counters": torch.zeros(shape, dtype=torch.int64),
             "ctx_seq_idx": ctx_idx,
@@ -181,7 +182,8 @@ def test_mid_ctx_candidate_priorities_are_seeded_and_reproducible():
     assert not torch.equal(first["priorities"], changed_dataset["priorities"])
     assert first["candidate_pool_settings"]["sampling_seed"] == 123
     assert first["candidate_pool_settings"]["dataset_fingerprint"] == "dataset-a"
-    assert first["candidate_pool_settings"]["priority_hash_version"] == "sha256-v1"
+    assert first["candidate_pool_settings"]["priority_hash_version"] == MID_CTX_PRIORITY_HASH_VERSION
+    assert first["priorities"].dtype == torch.int64
 
 
 def test_mid_ctx_candidate_priorities_change_with_band_settings_not_run_id():
@@ -241,7 +243,8 @@ def test_mid_ctx_candidate_priorities_are_uniform_across_seeded_trials():
             dataset_fingerprint="dataset-a",
         )
         priorities = payload["priorities"]
-        means.append(float(priorities.mean()))
-        assert 0.45 < float((priorities < 0.5).float().mean()) < 0.55
+        normalized = priorities.to(torch.float64) / float(1 << 63)
+        means.append(float(normalized.mean()))
+        assert 0.45 < float((normalized < 0.5).float().mean()) < 0.55
 
     assert 0.45 < sum(means) / len(means) < 0.55

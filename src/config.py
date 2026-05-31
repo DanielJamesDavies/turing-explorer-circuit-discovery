@@ -96,7 +96,7 @@ class MidCtxConfig(BaseModel):
     @field_validator("mode")
     @classmethod
     def validate_mode(cls, v: str) -> str:
-        allowed = ["reservoir_cpu", "gpu_topk_mid"]
+        allowed = ["reservoir_cpu", "gpu_topk_mid", "gpu_priority_reservoir"]
         if v not in allowed:
             raise ValueError(f"mode must be one of {allowed}, got {v!r}")
         return v

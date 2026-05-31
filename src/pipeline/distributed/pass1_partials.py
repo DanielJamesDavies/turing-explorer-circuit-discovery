@@ -16,7 +16,7 @@ from .shard_table import sequence_ids_for_shards
 
 
 PASS1_PARTIAL_SCHEMA_VERSION = 1
-MID_CTX_PRIORITY_HASH_VERSION = "sha256-v1"
+MID_CTX_PRIORITY_HASH_VERSION = "splitmix64-v1"
 
 Pass1ArtifactName = Literal[
     "latent_stats",
@@ -226,9 +226,7 @@ def mid_ctx_candidates_payload(
         "activation_values": activation_values,
         "priorities": priorities,
         "candidate_pool_settings": candidate_pool_settings,
-        "truncation_counters": torch.zeros(
-            (store.num_components, store.d_sae), dtype=torch.int64
-        ),
+        "truncation_counters": _mid_ctx_truncation_counters(store),
         "ctx_seq_idx": ctx_seq_idx,
         "ctx_seq_val": ctx_seq_val,
         "reservoir_fill": store.reservoir_fill.cpu(),
@@ -318,7 +316,10 @@ def _validate_mid_ctx_candidates_payload(
         if metadata.sequence_id_max is not None and int(sequence_ids.max()) > metadata.sequence_id_max:
             raise ValueError("mid_ctx sequence_ids above worker range")
     _require_finite(activation_values, "activation_values")
-    _require_finite(priorities, "priorities")
+    if priorities.dtype != torch.int64:
+        raise ValueError("priorities must have dtype torch.int64")
+    if priorities.numel() > 0 and int(priorities.min()) < 0:
+        raise ValueError("priorities must be non-negative int64 keys")
     if not isinstance(payload.get("candidate_pool_settings"), dict):
         raise ValueError("candidate_pool_settings must be a dict")
     _require_tensor(
@@ -371,7 +372,7 @@ def _require_tensor(
     dtype: Optional[torch.dtype] = None,
     shape: Optional[Sequence[int]] = None,
 ) -> torch.Tensor:
-    value = payload.get(name)
+    value: Any = payload.get(name)
     if not isinstance(value, torch.Tensor):
         raise ValueError(f"{name} must be a tensor")
     if dtype is not None and value.dtype != dtype:
@@ -397,35 +398,65 @@ def _candidate_priorities(
     artifact_name: str = "mid_ctx",
 ) -> torch.Tensor:
     if component_ids.numel() == 0:
-        return torch.zeros(0, dtype=torch.float32)
+        return torch.zeros(0, dtype=torch.int64)
     settings = candidate_pool_settings or {}
-    priorities = []
-    for component_id, latent_id, sequence_id in zip(
-        component_ids.tolist(),
-        latent_ids.tolist(),
-        sequence_ids.tolist(),
-    ):
-        material = "|".join(
-            [
-                MID_CTX_PRIORITY_HASH_VERSION,
-                str(int(sampling_seed)),
-                str(artifact_name),
-                str(dataset_fingerprint),
-                str(settings.get("band_low_sigma", "")),
-                str(settings.get("band_high_sigma", "")),
-                str(settings.get("candidate_band_low_sigma", "")),
-                str(settings.get("candidate_band_high_sigma", "")),
-                str(settings.get("band_margin_sigma", "")),
-                str(settings.get("num_ctx_sequences", "")),
-                str(component_id),
-                str(latent_id),
-                str(sequence_id),
-            ]
-        )
-        digest = hashlib.sha256(material.encode("utf-8")).digest()
-        value = int.from_bytes(digest[:8], "big") / float(1 << 64)
-        priorities.append(value)
-    return torch.tensor(priorities, dtype=torch.float32)
+    material = _candidate_priority_material(
+        sampling_seed=sampling_seed,
+        dataset_fingerprint=dataset_fingerprint,
+        candidate_pool_settings=settings,
+        artifact_name=artifact_name,
+    )
+    base = _signed_int64_from_material(material)
+    values = sequence_ids.to(torch.int64) * -4658895280553007687
+    values = values + latent_ids.to(torch.int64) * -7723592293110705685
+    values = values + component_ids.to(torch.int64) * -7046029254386353131
+    values = values + base
+    values = _splitmix64(values)
+    return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
+
+
+def _candidate_priority_material(
+    *,
+    sampling_seed: int = 0,
+    dataset_fingerprint: str = "",
+    candidate_pool_settings: Optional[Dict[str, Any]] = None,
+    artifact_name: str = "mid_ctx",
+) -> str:
+    settings = candidate_pool_settings or {}
+    return "|".join(
+        [
+            MID_CTX_PRIORITY_HASH_VERSION,
+            str(int(sampling_seed)),
+            str(artifact_name),
+            str(dataset_fingerprint),
+            str(settings.get("band_low_sigma", "")),
+            str(settings.get("band_high_sigma", "")),
+            str(settings.get("candidate_band_low_sigma", "")),
+            str(settings.get("candidate_band_high_sigma", "")),
+            str(settings.get("band_margin_sigma", "")),
+            str(settings.get("num_ctx_sequences", "")),
+        ]
+    )
+
+
+def _signed_int64_from_material(material: str) -> int:
+    value = int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
+    if value >= (1 << 63):
+        value -= 1 << 64
+    return value
+
+
+def _splitmix64(values: torch.Tensor) -> torch.Tensor:
+    values = values + -7046029254386353131
+    values = torch.bitwise_xor(values, values >> 30) * -4658895280553007687
+    values = torch.bitwise_xor(values, values >> 27) * -7723592293110705685
+    return torch.bitwise_xor(values, values >> 31)
+
+
+def _mid_ctx_truncation_counters(store) -> torch.Tensor:
+    reservoir_n = store.reservoir_n.cpu().to(torch.int64)
+    capacity = int(store.num_ctx_sequences)
+    return (reservoir_n - capacity).clamp(min=0)
 
 
 def _atomic_torch_save(data: Dict[str, Any], path: str | Path) -> None:

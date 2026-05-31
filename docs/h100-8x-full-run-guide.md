@@ -16,7 +16,9 @@ I need:
 300-500 GiB fast output disk available
 ```
 
-For the full run I should not use a 30 GiB container disk for outputs. The expected large artifacts are:
+For the full run I should not use a small container disk or small network volume
+for outputs. On RunPod, `/workspace` may be the network volume and can be much
+smaller than the local pod disk. The expected large artifacts are:
 
 ```text
 seq_latent_index: ~80 GiB
@@ -31,7 +33,8 @@ export OUTPUT_BASE=/root/outputs
 mkdir -p "$OUTPUT_BASE"
 ```
 
-If the pod only has a small local disk, use a large mounted volume instead:
+If the pod only has a small local disk, use a large mounted volume instead. Do
+not use a small `/workspace` network volume for outputs.
 
 ```bash
 export OUTPUT_BASE=/workspace/outputs
@@ -154,6 +157,23 @@ correct.
 PYTHONPATH=src:src python scripts/run_distributed_full_pipeline.py --manifest "$MANIFEST"
 ```
 
+The wrapper caps worker CPU thread pools to `4` by default:
+
+```text
+OMP_NUM_THREADS=4
+MKL_NUM_THREADS=4
+OPENBLAS_NUM_THREADS=4
+NUMEXPR_NUM_THREADS=4
+```
+
+Override this only for benchmarking:
+
+```bash
+PYTHONPATH=src:src python scripts/run_distributed_full_pipeline.py \
+  --manifest "$MANIFEST" \
+  --worker-threads 8
+```
+
 If I also want Pass 2 worker dumps removed automatically after reduce succeeds:
 
 ```bash
@@ -166,6 +186,15 @@ PYTHONPATH=src:src python scripts/run_distributed_full_pipeline.py \
 
 Use this path when I want to benchmark, inspect, or recover each stage before
 starting the next one.
+
+For manual worker launches, I set the same CPU thread caps that the wrapper uses:
+
+```bash
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=4
+export OPENBLAS_NUM_THREADS=4
+export NUMEXPR_NUM_THREADS=4
+```
 
 ### Optional Pass 1 Profile
 

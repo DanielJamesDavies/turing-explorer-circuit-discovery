@@ -160,7 +160,7 @@ def merge_mid_ctx_candidate_partials(
         latent_ids = candidates["latent_ids"].to(torch.long)
         sequence_ids = candidates["sequence_ids"].to(torch.int32)
         activation_values = candidates["activation_values"].to(torch.float32)
-        priorities = candidates["priorities"].to(torch.float32)
+        priorities = candidates["priorities"].to(torch.int64)
         flat_ids = component_ids * d_sae + latent_ids
         candidate_count.view(-1).scatter_add_(
             0,

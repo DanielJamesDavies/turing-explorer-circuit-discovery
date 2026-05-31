@@ -18,6 +18,13 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+THREAD_ENV_VARS = (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run all distributed pipeline stages for an existing manifest."
@@ -38,7 +45,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Delete worker pass2 candidate dumps after pass2 reduce succeeds.",
     )
+    parser.add_argument(
+        "--worker-threads",
+        type=int,
+        default=int(os.environ.get("TURING_WORKER_THREADS", "4")),
+        help=(
+            "Default CPU thread cap for distributed worker subprocesses. "
+            "Set to 0 to leave thread env vars unchanged. Defaults to 4, "
+            "or TURING_WORKER_THREADS when set."
+        ),
+    )
     args = parser.parse_args(argv)
+    if args.worker_threads < 0:
+        parser.error("--worker-threads must be >= 0")
 
     from pipeline.distributed.manifest import load_manifest
 
@@ -51,9 +70,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"output_root: {output_root}")
     print(f"manifest: {manifest.manifest_path}")
     print(f"worker_count: {manifest.worker_count}")
+    print(f"worker_threads: {args.worker_threads or 'unchanged'}")
 
     env = _base_env(project_root)
-    _run_worker_phase(manifest, "pass1", project_root, env)
+    _run_worker_phase(manifest, "pass1", project_root, env, worker_threads=args.worker_threads)
     _run_logged(
         [
             sys.executable,
@@ -88,7 +108,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         env=env,
     )
 
-    _run_worker_phase(manifest, "pass2", project_root, env)
+    _run_worker_phase(manifest, "pass2", project_root, env, worker_threads=args.worker_threads)
     _run_logged(
         [
             sys.executable,
@@ -125,7 +145,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         env=env,
     )
 
-    _run_worker_phase(manifest, "discovery", project_root, env)
+    _run_worker_phase(manifest, "discovery", project_root, env, worker_threads=args.worker_threads)
     _run_discovery_merge(manifest)
     _print_final_artifact_check(output_root)
     return 0
@@ -145,6 +165,8 @@ def _run_worker_phase(
     phase: str,
     project_root: Path,
     env: dict[str, str],
+    *,
+    worker_threads: int,
 ) -> None:
     print(f"\n=== {phase} workers ===")
     processes: list[tuple[int, subprocess.Popen[bytes], object]] = []
@@ -154,6 +176,7 @@ def _run_worker_phase(
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_handle = log_path.open("wb")
         worker_env = env.copy()
+        _apply_worker_thread_limits(worker_env, worker_threads)
         physical_id = _physical_device_id(manifest, worker_id)
         if physical_id is not None:
             worker_env["CUDA_VISIBLE_DEVICES"] = str(physical_id)
@@ -192,6 +215,14 @@ def _run_worker_phase(
 
     if failures:
         raise RuntimeError(f"{phase} failed: {', '.join(failures)}")
+
+
+def _apply_worker_thread_limits(env: dict[str, str], worker_threads: int) -> None:
+    if worker_threads <= 0:
+        return
+    value = str(worker_threads)
+    for name in THREAD_ENV_VARS:
+        env.setdefault(name, value)
 
 
 def _physical_device_id(manifest: Any, worker_id: int) -> int | None:

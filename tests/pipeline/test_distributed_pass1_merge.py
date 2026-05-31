@@ -25,7 +25,11 @@ from pipeline.distributed.pass1_merge import (
     merge_seq_repr_partials,
     merge_top_ctx_partials,
 )
-from pipeline.distributed.pass1_partials import latent_stats_payload
+from pipeline.distributed.pass1_partials import (
+    _candidate_priorities,
+    latent_stats_payload,
+    mid_ctx_candidates_payload,
+)
 from store.latent_stats import LatentStats
 from pipeline.distributed.pass1_partials import (
     Pass1PartialMetadata,
@@ -562,6 +566,118 @@ def test_merge_mid_ctx_candidates_priority_selection_is_stable_across_worker_ord
     assert merged_forward["ctx_seq_idx"].tolist() == [[[2, 4], [0, 0]]]
     assert torch.equal(merged_forward["ctx_seq_idx"], merged_reversed["ctx_seq_idx"])
     assert torch.equal(merged_forward["ctx_seq_val"], merged_reversed["ctx_seq_val"])
+
+
+def test_merge_mid_ctx_candidates_breaks_priority_ties_by_sequence_id():
+    worker_0 = _mid_ctx_payload(
+        component_ids=[0, 0],
+        latent_ids=[0, 0],
+        sequence_ids=[2, 1],
+        activation_values=[2.1, 2.0],
+        priorities=[7, 7],
+    )
+    worker_1 = _mid_ctx_payload(
+        component_ids=[0, 0],
+        latent_ids=[0, 0],
+        sequence_ids=[4, 3],
+        activation_values=[2.3, 2.2],
+        priorities=[7, 7],
+    )
+
+    merged = merge_mid_ctx_candidate_partials(
+        [(_mid_ctx_metadata(0), worker_0), (_mid_ctx_metadata(1), worker_1)],
+        latent_stats_payload=_mid_ctx_latent_stats_payload(),
+        num_ctx_sequences=2,
+    )
+
+    assert merged["ctx_seq_idx"][0, 0].tolist() == [1, 2]
+
+
+def test_merge_mid_ctx_candidates_matches_single_global_priority_selection():
+    component_ids = torch.tensor([0, 0, 0, 0], dtype=torch.int16)
+    latent_ids = torch.tensor([0, 0, 0, 0], dtype=torch.int32)
+    sequence_ids = torch.tensor([1, 2, 3, 4], dtype=torch.int32)
+    priorities = _candidate_priorities(
+        component_ids,
+        latent_ids,
+        sequence_ids,
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+        candidate_pool_settings={
+            "band_low_sigma": 0.5,
+            "band_high_sigma": 1.5,
+            "candidate_band_low_sigma": 0.0,
+            "candidate_band_high_sigma": 2.5,
+            "band_margin_sigma": 0.5,
+            "num_ctx_sequences": 2,
+        },
+    )
+    worker_0 = _mid_ctx_payload(
+        component_ids=component_ids[:2].tolist(),
+        latent_ids=latent_ids[:2].tolist(),
+        sequence_ids=sequence_ids[:2].tolist(),
+        activation_values=[2.0, 2.1],
+        priorities=priorities[:2].tolist(),
+    )
+    worker_1 = _mid_ctx_payload(
+        component_ids=component_ids[2:].tolist(),
+        latent_ids=latent_ids[2:].tolist(),
+        sequence_ids=sequence_ids[2:].tolist(),
+        activation_values=[2.2, 2.3],
+        priorities=priorities[2:].tolist(),
+    )
+
+    merged = merge_mid_ctx_candidate_partials(
+        [(_mid_ctx_metadata(0), worker_0), (_mid_ctx_metadata(1), worker_1)],
+        latent_stats_payload=_mid_ctx_latent_stats_payload(),
+        num_ctx_sequences=2,
+    )
+
+    expected = sequence_ids[torch.argsort(priorities, stable=True)[:2]].tolist()
+    assert merged["ctx_seq_idx"][0, 0].tolist() == expected
+    assert merged["merge_report"]["priority_mode"] == "deterministic_priority_reservoir"
+
+
+def test_mid_ctx_candidate_payload_records_source_mode_and_truncation():
+    class FakeMidCtx:
+        num_components = 1
+        d_sae = 2
+        num_ctx_sequences = 2
+        mid_mode = "gpu_priority_reservoir"
+        _band_low = 0.0
+        _band_high = 2.5
+        _distributed_candidate_pool = True
+        _final_band_low = 0.5
+        _final_band_high = 1.5
+        _candidate_band_margin = 0.5
+        _final_num_ctx_sequences = 2
+        ctx_seq_idx = torch.tensor([[[1, 2], [0, 0]]], dtype=torch.int32)
+        ctx_seq_val = torch.tensor([[[2.0, 2.1], [0.0, 0.0]]], dtype=torch.float32)
+        reservoir_fill = torch.tensor([[2, 0]], dtype=torch.int32)
+        reservoir_n = torch.tensor([[4, 0]], dtype=torch.int64)
+
+    payload = mid_ctx_candidates_payload(
+        FakeMidCtx(),
+        sampling_seed=123,
+        dataset_fingerprint="dataset-a",
+    )
+
+    settings = payload["candidate_pool_settings"]
+    assert settings["source_mid_mode"] == "gpu_priority_reservoir"
+    assert settings["mode"] == "widened_worker_candidate_pool"
+    assert payload["truncation_counters"].tolist() == [[2, 0]]
+    assert torch.equal(payload["sequence_ids"], torch.tensor([1, 2], dtype=torch.int32))
+    assert torch.equal(
+        payload["priorities"],
+        _candidate_priorities(
+            payload["component_ids"],
+            payload["latent_ids"],
+            payload["sequence_ids"],
+            sampling_seed=123,
+            dataset_fingerprint="dataset-a",
+            candidate_pool_settings=settings,
+        ),
+    )
 
 
 def test_seq_repr_cap_mapping_is_deterministic_and_seeded():
@@ -1124,14 +1240,18 @@ def _mid_ctx_payload(
     latent_ids: list[int],
     sequence_ids: list[int],
     activation_values: list[float],
-    priorities: list[float],
+    priorities: list[float | int],
 ) -> dict[str, object]:
+    priority_keys = [
+        int(round(priority * 1000)) if isinstance(priority, float) and abs(priority) < 1 else int(priority)
+        for priority in priorities
+    ]
     return {
         "component_ids": torch.tensor(component_ids, dtype=torch.int16),
         "latent_ids": torch.tensor(latent_ids, dtype=torch.int32),
         "sequence_ids": torch.tensor(sequence_ids, dtype=torch.int32),
         "activation_values": torch.tensor(activation_values, dtype=torch.float32),
-        "priorities": torch.tensor(priorities, dtype=torch.float32),
+        "priorities": torch.tensor(priority_keys, dtype=torch.int64),
         "candidate_pool_settings": {
             "mode": "test",
             "num_ctx_sequences": 2,

@@ -750,7 +750,7 @@ def test_save_pass1_partials_writes_expected_worker_artifact_names(monkeypatch, 
             "latent_ids": torch.zeros(0, dtype=torch.int32),
             "sequence_ids": torch.zeros(0, dtype=torch.int32),
             "activation_values": torch.zeros(0, dtype=torch.float32),
-            "priorities": torch.zeros(0, dtype=torch.float32),
+            "priorities": torch.zeros(0, dtype=torch.int64),
             "candidate_pool_settings": {},
             "truncation_counters": torch.zeros(shape, dtype=torch.int64),
             "ctx_seq_idx": ctx_idx,
@@ -1025,6 +1025,7 @@ def test_configure_mid_ctx_candidate_pool_widens_band_and_capacity(monkeypatch, 
     assert fake_mid_ctx._distributed_candidate_pool is True
     assert fake_mid_ctx._final_num_ctx_sequences == 64
     assert fake_mid_ctx.num_ctx_sequences == 256
+    assert fake_mid_ctx._priority_seed == manifest.sampling_seed
     assert fake_mid_ctx._band_low == 0.0
     assert fake_mid_ctx._band_high == 2.5
     assert fake_mid_ctx._candidate_band_margin == 1.0
