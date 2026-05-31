@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
 from pathlib import Path
 from typing import Callable, Dict, Sequence
 
@@ -321,12 +322,22 @@ def merge_mid_ctx_reservoir_partials(
 
     component_count = metadata.component_count
     d_sae = metadata.d_sae
+    total_rows = component_count * d_sae
+    progress_interval = max(1, total_rows // 20)
+    merge_start = time.perf_counter()
+    print(
+        "[pass1_merge] merging mid_ctx weighted reservoirs "
+        f"workers={len(partials)} components={component_count} d_sae={d_sae} "
+        f"rows={total_rows} output_k={output_k}",
+        flush=True,
+    )
     ctx_seq_idx = torch.zeros((component_count, d_sae, output_k), dtype=torch.int32)
     ctx_seq_val = torch.zeros((component_count, d_sae, output_k), dtype=torch.float32)
     reservoir_fill = torch.zeros((component_count, d_sae), dtype=torch.int32)
     reservoir_n = torch.zeros((component_count, d_sae), dtype=torch.int64)
     empty_worker_rows = torch.zeros((component_count, d_sae), dtype=torch.int64)
 
+    rows_done = 0
     for component_id in range(component_count):
         for latent_id in range(d_sae):
             for _metadata, payload in partials:
@@ -346,6 +357,18 @@ def merge_mid_ctx_reservoir_partials(
             ctx_seq_val[component_id, latent_id] = row_values
             reservoir_fill[component_id, latent_id] = int(row_fill)
             reservoir_n[component_id, latent_id] = int(row_n)
+            rows_done += 1
+            if rows_done == 1 or rows_done == total_rows or rows_done % progress_interval == 0:
+                elapsed_s = time.perf_counter() - merge_start
+                rows_per_s = rows_done / max(elapsed_s, 1e-9)
+                remaining_s = (total_rows - rows_done) / max(rows_per_s, 1e-9)
+                print(
+                    "[pass1_merge] mid_ctx weighted reservoir progress "
+                    f"{rows_done}/{total_rows} rows "
+                    f"({rows_done / total_rows:.1%}) "
+                    f"elapsed={elapsed_s:.1f}s eta={remaining_s:.1f}s",
+                    flush=True,
+                )
 
     merge_report = {
         "mode": "weighted_reservoir",

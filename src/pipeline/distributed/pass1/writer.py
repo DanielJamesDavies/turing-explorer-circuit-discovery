@@ -53,14 +53,18 @@ def merge_pass1_worker_outputs(
     layout.reports_dir.mkdir(parents=True, exist_ok=True)
     partial_paths = _pass1_partial_paths(manifest)
 
+    print("[pass1_merge] loading and merging latent_stats partials", flush=True)
     latent_stats_payload = load_and_merge_latent_stats_partials(
         partial_paths["latent_stats"],
         expected_config_hash=manifest.normalized_config_hash,
     )
+    print("[pass1_merge] latent_stats merge complete", flush=True)
+    print("[pass1_merge] loading and merging top_ctx partials", flush=True)
     top_ctx_payload = load_and_merge_top_ctx_partials(
         partial_paths["top_ctx"],
         expected_config_hash=manifest.normalized_config_hash,
     )
+    print("[pass1_merge] top_ctx merge complete", flush=True)
     resolved_mid_ctx_merge_mode = mid_ctx_merge_mode or str(config.distributed.mid_ctx_merge.mode)
     resolved_sampling_seed = int(
         mid_ctx_sampling_seed
@@ -71,6 +75,7 @@ def merge_pass1_worker_outputs(
             else manifest.sampling_seed
         )
     )
+    print(f"[pass1_merge] loading and merging mid_ctx partials mode={resolved_mid_ctx_merge_mode}", flush=True)
     if resolved_mid_ctx_merge_mode == "weighted_reservoir":
         mid_ctx_payload = load_and_merge_mid_ctx_reservoir_partials(
             partial_paths["mid_ctx_candidates"],
@@ -93,6 +98,8 @@ def merge_pass1_worker_outputs(
         )
     else:
         raise ValueError("unsupported mid_ctx merge mode")
+    print("[pass1_merge] mid_ctx merge complete", flush=True)
+    print("[pass1_merge] loading and merging seq_repr partials", flush=True)
     seq_repr_payload = load_and_merge_seq_repr_partials(
         partial_paths["seq_repr"],
         expected_config_hash=manifest.normalized_config_hash,
@@ -101,11 +108,14 @@ def merge_pass1_worker_outputs(
             for worker_id, shard_ids in manifest.work_assignments.pass1_shards.items()
         },
     )
+    print("[pass1_merge] seq_repr merge complete", flush=True)
+    print("[pass1_merge] loading and merging logit_ctx partials", flush=True)
     logit_ctx_payload = load_and_merge_logit_ctx_partials(
         partial_paths["logit_ctx"],
         expected_config_hash=manifest.normalized_config_hash,
         vocab_size=vocab_size,
     )
+    print("[pass1_merge] logit_ctx merge complete", flush=True)
 
     artifacts = {
         "latent_stats": (output_paths.latent_stats, _with_canonical_metadata(latent_stats_payload, manifest, "latent_stats")),
@@ -114,9 +124,12 @@ def merge_pass1_worker_outputs(
         "seq_repr": (output_paths.seq_repr, _with_canonical_metadata(seq_repr_payload, manifest, "seq_repr")),
         "logit_ctx": (output_paths.logit_ctx, _with_canonical_metadata(logit_ctx_payload, manifest, "logit_ctx")),
     }
-    for _name, (path, payload) in artifacts.items():
+    for name, (path, payload) in artifacts.items():
+        print(f"[pass1_merge] writing {name} -> {path}", flush=True)
         _atomic_torch_save(payload, path)
+    print("[pass1_merge] artifact writes complete", flush=True)
 
+    print("[pass1_merge] merging seq_latent_index shards", flush=True)
     seq_latent_index_report = merge_seq_latent_index_shards(
         [worker.pass1_dir / "seq_latent_index" for worker in layout.workers.values()],
         output_paths.seq_latent_index_dir,
@@ -127,6 +140,7 @@ def merge_pass1_worker_outputs(
             for record in manifest.shard_table
         },
     )
+    print("[pass1_merge] seq_latent_index merge complete", flush=True)
 
     _validate_written_artifacts(artifacts)
     current_memory, peak_memory = tracemalloc.get_traced_memory()
@@ -147,11 +161,18 @@ def merge_pass1_worker_outputs(
     )
     report_path = layout.reports_dir / "pass1_sanity_report.json"
     _atomic_write_json(report_path, report)
+    print(f"[pass1_merge] wrote sanity report -> {report_path}", flush=True)
 
     completed_manifest = assign_pass2_replay_sequences(manifest, top_ctx_payload).model_copy(
         update={"status": ManifestStatus.COMPLETED}
     )
     save_manifest(completed_manifest, manifest.manifest_path)
+    print(
+        "[pass1_merge] complete "
+        f"elapsed={report['timing']['elapsed_s']:.1f}s "
+        f"peak_cpu_memory_bytes={report['timing']['peak_cpu_memory_bytes']}",
+        flush=True,
+    )
 
     return {
         "artifacts": {name: str(path) for name, (path, _payload) in artifacts.items()},
