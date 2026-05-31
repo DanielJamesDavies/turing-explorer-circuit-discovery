@@ -62,16 +62,32 @@ def run_candidate_selection_stage(
 ) -> CandidateSelectionStageResult:
     """Run centralized candidate selection over merged global run-root artifacts."""
 
+    stage_t0 = time.perf_counter()
     selector_class = selector_cls or CandidateSelector
+    print(f"[candidate_selection] starting output_root={output_root}", flush=True)
+    manifest_t0 = time.perf_counter()
     manifest = load_manifest(manifest_path) if manifest_path is not None else None
+    if manifest is not None:
+        print(
+            f"[candidate_selection] loaded manifest run_id={manifest.run_id} "
+            f"elapsed={format_duration(time.perf_counter() - manifest_t0)}",
+            flush=True,
+        )
     effective_config_hash = expected_config_hash or (
         manifest.normalized_config_hash if manifest is not None else None
     )
     output_paths = build_output_paths(output_root)
     part_dir = _candidate_selection_part_dir(output_paths.run_root)
     artifact_paths = _required_candidate_selection_artifacts(output_paths)
+    print("[candidate_selection] validating required artifacts", flush=True)
     _validate_required_artifacts(artifact_paths)
+    hash_t0 = time.perf_counter()
     artifact_hashes = _hash_artifacts(artifact_paths)
+    print(
+        f"[candidate_selection] artifact hashes computed "
+        f"elapsed={format_duration(time.perf_counter() - hash_t0)}",
+        flush=True,
+    )
     metadata = _candidate_selection_metadata(
         artifact_hashes=artifact_hashes,
         expected_config_hash=effective_config_hash,
@@ -80,7 +96,12 @@ def run_candidate_selection_stage(
 
     _write_part_marker(part_dir / "started.json", "running", metadata)
     try:
+        load_t0 = time.perf_counter()
         load_candidate_selection_inputs(output_paths.run_root)
+        print(
+            f"[candidate_selection] inputs loaded elapsed={format_duration(time.perf_counter() - load_t0)}",
+            flush=True,
+        )
         candidates = _run_candidate_selection_with_selector(
             output_paths.run_root,
             selector_cls=selector_class,
@@ -92,13 +113,28 @@ def run_candidate_selection_stage(
             candidates=candidates,
         )
         if manifest is not None:
+            assign_t0 = time.perf_counter()
+            print(
+                f"[candidate_selection] assigning {len(candidates)} candidates to discovery workers",
+                flush=True,
+            )
             manifest = assign_discovery_candidates_to_manifest(manifest, candidates)
             save_manifest(manifest, manifest.manifest_path)
             scheduling_report_path = _write_discovery_scheduling_report(manifest)
+            print(
+                "[candidate_selection] discovery assignments saved "
+                f"elapsed={format_duration(time.perf_counter() - assign_t0)}",
+                flush=True,
+            )
         else:
             scheduling_report_path = None
         metadata_path = part_dir / "candidate_selection_metadata.json"
+        metadata_t0 = time.perf_counter()
         _atomic_write_json(metadata_path, metadata)
+        print(
+            f"[candidate_selection] metadata written elapsed={format_duration(time.perf_counter() - metadata_t0)}",
+            flush=True,
+        )
         _write_part_marker(
             part_dir / "completed.json",
             "completed",
@@ -112,6 +148,10 @@ def run_candidate_selection_stage(
                     else {}
                 ),
             },
+        )
+        print(
+            f"[candidate_selection] complete elapsed={format_duration(time.perf_counter() - stage_t0)}",
+            flush=True,
         )
         return CandidateSelectionStageResult(
             candidates_path=output_paths.candidates,
@@ -130,12 +170,33 @@ def load_candidate_selection_inputs(output_root: str | Path = "outputs") -> None
     output_paths = build_output_paths(output_root)
     artifact_paths = _required_candidate_selection_artifacts(output_paths)
     _validate_required_artifacts(artifact_paths)
+    print("[candidate_selection] loading latent_stats", flush=True)
+    t0 = time.perf_counter()
     latent_stats.load(str(artifact_paths["latent_stats"]))
+    print(f"[candidate_selection] loaded latent_stats elapsed={format_duration(time.perf_counter() - t0)}", flush=True)
+    print("[candidate_selection] loading top_ctx", flush=True)
+    t0 = time.perf_counter()
     top_ctx.load(str(artifact_paths["top_ctx"]))
+    print(f"[candidate_selection] loaded top_ctx elapsed={format_duration(time.perf_counter() - t0)}", flush=True)
+    print("[candidate_selection] loading mid_ctx", flush=True)
+    t0 = time.perf_counter()
     mid_ctx.load(str(artifact_paths["mid_ctx"]))
+    print(f"[candidate_selection] loaded mid_ctx elapsed={format_duration(time.perf_counter() - t0)}", flush=True)
+    print("[candidate_selection] loading neg_ctx", flush=True)
+    t0 = time.perf_counter()
     neg_ctx.load(str(artifact_paths["neg_ctx"]))
+    print(f"[candidate_selection] loaded neg_ctx elapsed={format_duration(time.perf_counter() - t0)}", flush=True)
+    print("[candidate_selection] loading logit_ctx", flush=True)
+    t0 = time.perf_counter()
     logit_ctx.load(str(artifact_paths["logit_ctx"]))
+    print(f"[candidate_selection] loaded logit_ctx elapsed={format_duration(time.perf_counter() - t0)}", flush=True)
+    print("[candidate_selection] loading top_coactivation", flush=True)
+    t0 = time.perf_counter()
     top_coactivation.load(str(artifact_paths["top_coactivation"]))
+    print(
+        f"[candidate_selection] loaded top_coactivation elapsed={format_duration(time.perf_counter() - t0)}",
+        flush=True,
+    )
 
 
 def assign_discovery_candidates_to_manifest(
@@ -196,10 +257,17 @@ def _run_candidate_selection_with_selector(
     print("--- Candidate Selection: Finding Seeds ---")
     output_paths = build_output_paths(output_root)
     n_seeds = cast(int, config.discovery.n_seeds or 1000)
+    print(
+        f"[candidate_selection] initializing selector n_seeds={n_seeds} "
+        f"criteria={list(config.discovery.seed_criteria)}",
+        flush=True,
+    )
     selector = selector_cls(n_seeds=n_seeds)
     select_t0 = time.perf_counter()
+    print("[candidate_selection] scoring candidates", flush=True)
     candidates = selector.select_candidates()
     print(f"  [timing] candidate scoring: {format_duration(time.perf_counter() - select_t0)}")
+    print(f"[candidate_selection] selected candidates={len(candidates)}", flush=True)
     selector.get_summary_stats(candidates)
 
     save_t0 = time.perf_counter()
@@ -268,7 +336,20 @@ def _candidate_selection_metadata(
 
 
 def _hash_artifacts(paths: Mapping[str, Path]) -> Dict[str, str]:
-    return {name: _sha256_file(path) for name, path in paths.items()}
+    hashes: Dict[str, str] = {}
+    for name, path in paths.items():
+        t0 = time.perf_counter()
+        size_bytes = Path(path).stat().st_size
+        print(
+            f"[candidate_selection] hashing {name} size={size_bytes / 1024 ** 2:.1f} MiB -> {path}",
+            flush=True,
+        )
+        hashes[name] = _sha256_file(path)
+        print(
+            f"[candidate_selection] hashed {name} elapsed={format_duration(time.perf_counter() - t0)}",
+            flush=True,
+        )
+    return hashes
 
 
 def _sha256_file(path: str | Path) -> str:
