@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
@@ -61,6 +62,12 @@ from .worker_common import (
 )
 
 SEED_FREE_DISCOVERY_METHODS = _discovery_method_filtering.SEED_FREE_DISCOVERY_METHODS
+THREAD_ENV_VARS = (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
 _runtime_seq_repr_payload = _pass1_worker._runtime_seq_repr_payload
 _component_count = _pass1_worker._component_count
 _d_sae = _pass1_worker._d_sae
@@ -269,12 +276,32 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", required=True, help="Path to distributed manifest JSON")
     parser.add_argument("--worker-id", required=True, type=int, help="Worker ID from manifest")
     parser.add_argument("--phase", default="pass1", choices=["pass1", "pass2", "discovery"], help="Worker phase to run")
+    parser.add_argument(
+        "--worker-threads",
+        type=int,
+        default=int(os.environ.get("TURING_WORKER_THREADS", "4")),
+        help=(
+            "Default CPU thread cap for direct worker launches. Set to 0 to leave "
+            "thread env vars unchanged. Defaults to 4, or TURING_WORKER_THREADS when set."
+        ),
+    )
     return parser
 
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     args = build_arg_parser().parse_args(argv)
+    if args.worker_threads < 0:
+        raise ValueError("--worker-threads must be >= 0")
+    _apply_worker_thread_limits(args.worker_threads)
     run_worker(args.manifest, args.worker_id, phase=args.phase)
+
+
+def _apply_worker_thread_limits(worker_threads: int) -> None:
+    if worker_threads <= 0:
+        return
+    value = str(worker_threads)
+    for name in THREAD_ENV_VARS:
+        os.environ.setdefault(name, value)
 
 
 __all__ = [

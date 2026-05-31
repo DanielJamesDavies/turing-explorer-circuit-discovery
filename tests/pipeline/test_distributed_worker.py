@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,7 @@ from pipeline.distributed.manifest import (
 from pipeline.distributed.worker import (
     PASS1_PARTIAL_FILENAMES,
     PASS2_PARTIAL_FILENAMES,
+    _apply_worker_thread_limits,
     configure_mid_ctx_candidate_pool,
     discovery_methods_for_worker_filter,
     initialize_discovery_worker_resources,
@@ -114,6 +116,40 @@ def _manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
         ],
         work_assignments=work_assignments,
     )
+
+
+def test_apply_worker_thread_limits_sets_default_thread_env(monkeypatch):
+    for name in ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"]:
+        monkeypatch.delenv(name, raising=False)
+
+    _apply_worker_thread_limits(4)
+
+    assert os.environ["OMP_NUM_THREADS"] == "4"
+    assert os.environ["MKL_NUM_THREADS"] == "4"
+    assert os.environ["OPENBLAS_NUM_THREADS"] == "4"
+    assert os.environ["NUMEXPR_NUM_THREADS"] == "4"
+
+
+def test_apply_worker_thread_limits_preserves_existing_env(monkeypatch):
+    monkeypatch.setenv("OMP_NUM_THREADS", "8")
+    monkeypatch.delenv("MKL_NUM_THREADS", raising=False)
+    monkeypatch.delenv("OPENBLAS_NUM_THREADS", raising=False)
+    monkeypatch.delenv("NUMEXPR_NUM_THREADS", raising=False)
+
+    _apply_worker_thread_limits(4)
+
+    assert os.environ["OMP_NUM_THREADS"] == "8"
+    assert os.environ["MKL_NUM_THREADS"] == "4"
+
+
+def test_apply_worker_thread_limits_zero_leaves_env_unchanged(monkeypatch):
+    for name in ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"]:
+        monkeypatch.delenv(name, raising=False)
+
+    _apply_worker_thread_limits(0)
+
+    for name in ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"]:
+        assert name not in os.environ
 
 
 def _pass2_manifest(tmp_path: Path, worker_count: int = 2) -> DistributedRunManifest:
