@@ -140,6 +140,23 @@ def test_gpu_priority_reservoir_handles_large_component_ids(monkeypatch):
     assert bool((priorities >= 0).all())
 
 
+def test_gpu_priority_sparse_candidate_priorities_match_dense(monkeypatch):
+    ctx = _tiny_mid_ctx(monkeypatch, "gpu_priority_reservoir", sampling_seed=654)
+    sequence_ids = torch.tensor([601, 602, 603, 604], dtype=torch.int32)
+    latent_indices = torch.tensor([0, 2, 1], dtype=torch.long)
+    batch_indices = torch.tensor([3, 1, 2], dtype=torch.long)
+
+    dense = ctx._mid_priority_values(17, sequence_ids, torch.device("cpu"))
+    sparse = ctx._mid_priority_values_for_candidates(
+        17,
+        latent_indices,
+        sequence_ids[batch_indices],
+        torch.device("cpu"),
+    )
+
+    assert torch.equal(sparse, dense[latent_indices, batch_indices])
+
+
 def test_gpu_priority_reservoir_differs_from_gpu_topk_midpoint_selection(monkeypatch):
     sequence_ids = torch.tensor([101, 102, 103, 104], dtype=torch.int32)
     top_acts = torch.tensor([[[0.6]], [[1.0]], [[1.2]], [[1.4]]], dtype=torch.float32)

@@ -360,44 +360,80 @@ class Context:
                 & (existing_priority != torch.iinfo(torch.int64).max)
             )
 
-            new_idx = sequence_indices.to(compute_device).unsqueeze(0).expand(self.d_sae, -1)
             new_valid = (scores > low.unsqueeze(1)) & (scores < high.unsqueeze(1))
-            new_priority = self._mid_priority_values(component_idx, sequence_indices, compute_device)
+            pairs = new_valid.nonzero()
+            if pairs.numel() == 0:
+                return
 
-            candidate_idx = torch.cat([existing_idx, new_idx], dim=1)
-            candidate_val = torch.cat([existing_val, scores], dim=1)
-            candidate_priority = torch.cat([existing_priority, new_priority], dim=1)
-            candidate_valid = torch.cat([existing_valid, new_valid], dim=1)
+            new_latents = pairs[:, 0]
+            new_batch_positions = pairs[:, 1]
+            sequence_ids_d = sequence_indices.to(compute_device)
+            new_sequences = sequence_ids_d[new_batch_positions]
+            new_scores = scores[new_latents, new_batch_positions]
+            new_priorities = self._mid_priority_values_for_candidates(
+                component_idx,
+                new_latents,
+                new_sequences,
+                compute_device,
+            )
 
-            sequence_sorted, order_by_sequence = torch.sort(candidate_idx.to(torch.long), dim=1, stable=True)
-            candidate_priority = candidate_priority.gather(1, order_by_sequence)
-            candidate_idx = sequence_sorted.to(candidate_idx.dtype)
-            candidate_val = candidate_val.gather(1, order_by_sequence)
-            candidate_valid = candidate_valid.gather(1, order_by_sequence)
+            new_counts = torch.bincount(new_latents, minlength=self.d_sae).cpu().to(torch.int64)
+            self.reservoir_n[component_idx] += new_counts
 
             invalid_priority = torch.iinfo(torch.int64).max
-            priority_for_select = candidate_priority.masked_fill(~candidate_valid, invalid_priority)
-            selected_priority, selected_pos = torch.topk(
-                priority_for_select,
-                k=self.num_ctx_sequences,
-                dim=1,
-                largest=False,
-                sorted=True,
-            )
-            selected_priority = selected_priority.to(torch.int64)
-            selected_valid = selected_priority != invalid_priority
-            selected_idx = candidate_idx.gather(1, selected_pos).to(torch.int32)
-            selected_val = candidate_val.gather(1, selected_pos).to(torch.float32)
+            for latent_idx in torch.unique(new_latents).tolist():
+                latent = int(latent_idx)
+                existing_latent_valid = existing_valid[latent]
+                new_latent_mask = new_latents == latent
 
-            selected_idx = selected_idx.masked_fill(~selected_valid, 0)
-            selected_val = selected_val.masked_fill(~selected_valid, 0.0)
-            selected_priority = selected_priority.masked_fill(~selected_valid, invalid_priority)
+                candidate_idx = torch.cat(
+                    [
+                        existing_idx[latent, existing_latent_valid],
+                        new_sequences[new_latent_mask].to(existing_idx.dtype),
+                    ],
+                    dim=0,
+                )
+                candidate_val = torch.cat(
+                    [
+                        existing_val[latent, existing_latent_valid],
+                        new_scores[new_latent_mask].to(torch.float32),
+                    ],
+                    dim=0,
+                )
+                candidate_priority = torch.cat(
+                    [
+                        existing_priority[latent, existing_latent_valid],
+                        new_priorities[new_latent_mask],
+                    ],
+                    dim=0,
+                )
 
-            self.ctx_seq_idx[component_idx].copy_(selected_idx.cpu())
-            self.ctx_seq_val[component_idx].copy_(selected_val.cpu().to(self.ctx_seq_val.dtype))
-            self._priority_val[component_idx].copy_(selected_priority.cpu())
-            self.reservoir_fill[component_idx].copy_(selected_valid.sum(dim=1).cpu().to(torch.int32))
-            self.reservoir_n[component_idx] += new_valid.sum(dim=1).cpu().to(torch.int64)
+                order_by_sequence = torch.argsort(candidate_idx.to(torch.long), stable=True)
+                candidate_idx = candidate_idx[order_by_sequence]
+                candidate_val = candidate_val[order_by_sequence]
+                candidate_priority = candidate_priority[order_by_sequence]
+
+                selected_count = min(int(candidate_priority.numel()), self.num_ctx_sequences)
+                selected_priority, selected_pos = torch.topk(
+                    candidate_priority,
+                    k=selected_count,
+                    largest=False,
+                    sorted=True,
+                )
+                selected_idx = candidate_idx[selected_pos].to(torch.int32)
+                selected_val = candidate_val[selected_pos].to(torch.float32)
+
+                self.ctx_seq_idx[component_idx, latent].zero_()
+                self.ctx_seq_val[component_idx, latent].zero_()
+                self._priority_val[component_idx, latent].fill_(invalid_priority)
+                self.ctx_seq_idx[component_idx, latent, :selected_count].copy_(selected_idx.cpu())
+                self.ctx_seq_val[component_idx, latent, :selected_count].copy_(
+                    selected_val.cpu().to(self.ctx_seq_val.dtype)
+                )
+                self._priority_val[component_idx, latent, :selected_count].copy_(
+                    selected_priority.cpu().to(torch.int64)
+                )
+                self.reservoir_fill[component_idx, latent] = selected_count
 
     def _mid_priority_values(
         self,
@@ -428,6 +464,43 @@ class Context:
         seq_ids = sequence_indices.to(device=device, dtype=torch.int64).unsqueeze(0)
         latent_ids = torch.arange(self.d_sae, device=device, dtype=torch.int64).unsqueeze(1)
         component_ids = torch.full((1, 1), int(component_idx), device=device, dtype=torch.int64)
+        values = seq_ids * _SPLITMIX_MIX_1
+        values = values + latent_ids * _SPLITMIX_MIX_2
+        values = values + component_ids * _SPLITMIX_GOLDEN_GAMMA
+        values = values + base
+        values = self._splitmix64(values)
+        return torch.bitwise_and(values, 0x7FFFFFFFFFFFFFFF)
+
+    def _mid_priority_values_for_candidates(
+        self,
+        component_idx: int,
+        latent_indices: torch.Tensor,
+        sequence_indices: torch.Tensor,
+        device: torch.device,
+    ) -> torch.Tensor:
+        final_band_low = float(getattr(self, "_final_band_low", self._band_low))
+        final_band_high = float(getattr(self, "_final_band_high", self._band_high))
+        final_num_ctx_sequences = int(
+            getattr(self, "_final_num_ctx_sequences", self.num_ctx_sequences)
+        )
+        material = "|".join(
+            [
+                MID_CTX_PRIORITY_HASH_VERSION,
+                str(int(self._priority_seed)),
+                "mid_ctx",
+                str(getattr(self, "_candidate_pool_dataset_fingerprint", "")),
+                str(final_band_low),
+                str(final_band_high),
+                str(float(self._band_low)),
+                str(float(self._band_high)),
+                str(float(getattr(self, "_candidate_band_margin", 0.0))),
+                str(final_num_ctx_sequences),
+            ]
+        )
+        base = _signed_int64_from_material(material)
+        seq_ids = sequence_indices.to(device=device, dtype=torch.int64)
+        latent_ids = latent_indices.to(device=device, dtype=torch.int64)
+        component_ids = torch.full_like(seq_ids, int(component_idx), dtype=torch.int64, device=device)
         values = seq_ids * _SPLITMIX_MIX_1
         values = values + latent_ids * _SPLITMIX_MIX_2
         values = values + component_ids * _SPLITMIX_GOLDEN_GAMMA
