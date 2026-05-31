@@ -133,15 +133,36 @@ def load_and_merge_mid_ctx_reservoir_partials(
 ) -> Dict[str, object]:
     """Load compact worker reservoir partials and merge into canonical mid_ctx."""
 
-    partials = [
-        load_pass1_partial(
-            path,
-            expected_artifact_name="mid_ctx_candidates",
-            expected_config_hash=expected_config_hash,
+    load_start = time.perf_counter()
+    partials = []
+    print(
+        f"[pass1_merge] loading {len(partial_paths)} compact mid_ctx reservoir partials",
+        flush=True,
+    )
+    for index, path in enumerate(partial_paths, start=1):
+        partial_start = time.perf_counter()
+        print(
+            f"[pass1_merge] loading mid_ctx reservoir partial {index}/{len(partial_paths)} -> {path}",
+            flush=True,
         )
-        for path in partial_paths
-    ]
-    return merge_mid_ctx_reservoir_partials(
+        partials.append(
+            load_pass1_partial(
+                path,
+                expected_artifact_name="mid_ctx_candidates",
+                expected_config_hash=expected_config_hash,
+            )
+        )
+        print(
+            "[pass1_merge] loaded mid_ctx reservoir partial "
+            f"{index}/{len(partial_paths)} elapsed={time.perf_counter() - partial_start:.1f}s",
+            flush=True,
+        )
+    print(
+        f"[pass1_merge] loaded all compact mid_ctx reservoir partials elapsed={time.perf_counter() - load_start:.1f}s",
+        flush=True,
+    )
+    merge_start = time.perf_counter()
+    merged = merge_mid_ctx_reservoir_partials(
         partials,
         num_ctx_sequences=num_ctx_sequences,
         band_low_sigma=band_low_sigma,
@@ -149,6 +170,11 @@ def load_and_merge_mid_ctx_reservoir_partials(
         sampling_seed=sampling_seed,
         dataset_fingerprint=dataset_fingerprint,
     )
+    print(
+        f"[pass1_merge] compact mid_ctx reservoir merge elapsed={time.perf_counter() - merge_start:.1f}s",
+        flush=True,
+    )
+    return merged
 
 
 def merge_mid_ctx_candidate_partials(

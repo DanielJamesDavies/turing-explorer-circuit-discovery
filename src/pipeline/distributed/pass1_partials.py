@@ -408,15 +408,12 @@ def _validate_mid_ctx_reservoir_summary(
             raise ValueError("mid_ctx sequence IDs below worker range")
         if metadata.sequence_id_max is not None and int(idx[valid].max()) > metadata.sequence_id_max:
             raise ValueError("mid_ctx sequence IDs above worker range")
-    for component_idx in range(idx.shape[0]):
-        for latent_idx in range(idx.shape[1]):
-            fill = int(reservoir_fill[component_idx, latent_idx].item())
-            if fill >= k:
-                continue
-            if bool((idx[component_idx, latent_idx, fill:] != 0).any()):
-                raise ValueError("mid_ctx slots beyond reservoir_fill must have zero sequence IDs")
-            if bool((vals[component_idx, latent_idx, fill:] != 0).any()):
-                raise ValueError("mid_ctx slots beyond reservoir_fill must have zero values")
+    slot_ids = torch.arange(k, device=idx.device).view(1, 1, k)
+    trailing_mask = slot_ids >= reservoir_fill.to(idx.device, dtype=torch.long).unsqueeze(-1)
+    if bool((idx[trailing_mask] != 0).any()):
+        raise ValueError("mid_ctx slots beyond reservoir_fill must have zero sequence IDs")
+    if bool((vals[trailing_mask] != 0).any()):
+        raise ValueError("mid_ctx slots beyond reservoir_fill must have zero values")
     invalid = ~valid
     if bool((vals[invalid] != 0).any()):
         raise ValueError("mid_ctx invalid sentinel values must be zero")
