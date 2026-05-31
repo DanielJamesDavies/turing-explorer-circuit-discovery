@@ -417,3 +417,8 @@ done
 ```
 
 Confirm no worker failed before starting pass1 merge or pass2.
+
+For the rest of the full distributed pipeline, continue with
+`docs/h100-8x-full-run-guide.md`. That guide covers pass1 merge, negative
+context, pass2, shuffled candidate assignment, discovery, discovery merge, and
+the final backup/provenance archive steps.

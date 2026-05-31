@@ -83,6 +83,20 @@ This example is the canonical full-run config. It pins the active discovery,
 latent-store, persistence, and analysis settings, so I only edit it when I am
 intentionally changing the experiment.
 
+For the next counterfactual-gradient production run, use `32x32` contrast
+settings. A completed 8xH100 run used `16x16` successfully, then pilots on 128
+seeds showed `32x32` had similar speed, safe H100 memory use, and slightly
+better acceptance. `64x32` was viable but slower without improving acceptance on
+the same pilot sample.
+
+```yaml
+discovery:
+  probe_batch_size: 4
+  counterfactual_gradient:
+    max_neg_sequences: 32
+    neg_batch_size: 32
+```
+
 Check the important fields:
 
 ```bash
@@ -117,7 +131,7 @@ top_coact: pmi 128 128 8
 candidate_width_M: 1024
 discovery: 16384 ['counterfactual_gradient']
 seed_criteria: ['stratified_random']
-counterfactual_gradient: random layer_kind 16 16
+counterfactual_gradient: random layer_kind 32 32
 ```
 
 ## 4. Create Manifest
@@ -385,6 +399,8 @@ done
 ### Candidate Selection
 
 ```bash
+TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS=1 \
+PYTHONUNBUFFERED=1 \
 PYTHONPATH=src:src python -m pipeline.candidate_selection \
   --output-root "$RUN_ROOT" \
   --manifest "$MANIFEST" \
@@ -400,17 +416,29 @@ from pathlib import Path
 
 m = json.loads(Path(os.environ["MANIFEST"]).read_text())
 wa = m["work_assignments"]
+print("scheduling_strategy:", wa.get("discovery_scheduling_strategy"))
 print("candidate assignments:", sum(len(v) for v in wa["discovery_candidate_assignments"].values()))
 for w in range(8):
-    print(f"worker {w} seeds:", len(wa["discovery_seed_ids"].get(str(w), [])))
+    ids = wa["discovery_seed_ids"].get(str(w), [])
+    print(f"worker {w} seeds:", len(ids), "first10:", ids[:10])
 PY
+```
+
+Expected:
+
+```text
+scheduling_strategy: candidate_shuffled
+worker seed counts: 2047-2048 each
+first10 values: non-contiguous-looking candidate indices
 ```
 
 ### Run Discovery Workers
 
 ```bash
 for W in 0 1 2 3 4 5 6 7; do
-  CUDA_VISIBLE_DEVICES=$W PYTHONPATH=src:src python -m pipeline.distributed.worker \
+  CUDA_VISIBLE_DEVICES=$W \
+  TURING_TRUST_PASS2_REPLAY_ASSIGNMENTS=1 \
+  PYTHONPATH=src:src python -m pipeline.distributed.worker \
     --manifest "$MANIFEST" \
     --phase discovery \
     --worker-id "$W" \
@@ -428,6 +456,23 @@ for f in "$RUN_ROOT"/distributed/discovery_worker_*.log; do
   tail -n 80 "$f"
 done
 ```
+
+Progress monitor:
+
+```bash
+watch -n 60 'date; echo; nvidia-smi --query-gpu=index,utilization.gpu,memory.used,power.draw --format=csv,noheader,nounits; echo; for f in "$RUN_ROOT"/distributed/discovery_worker_*.log; do echo "=== $(basename "$f") ==="; python - "$f" <<PY
+import sys
+from pathlib import Path
+text = Path(sys.argv[1]).read_text(errors="replace").replace("\\r", "\\n")
+lines = [l for l in text.splitlines() if "Discovering Circuits:" in l]
+print(lines[-1] if lines else "no progress yet")
+PY
+done'
+```
+
+On the completed shuffled run, discovery processed `16,380` seeds with
+`2047-2048` seeds per worker and balanced worker runtimes. That run found `7,525`
+accepted circuits before merge.
 
 ### Merge Discovery
 
@@ -474,7 +519,78 @@ for rel in [
 PY
 ```
 
-## 7. Useful Recovery Commands
+## 7. Backup Essential Outputs Before Shutdown
+
+Before terminating a rented GPU pod, copy the essential artifacts to durable
+storage. The completed run's essential archive was about `2.9 GiB`; the full
+output directory was much larger because it included worker-local intermediates.
+
+Create an essential archive:
+
+```bash
+cd "$RUN_ROOT/.."
+
+tar -czf "$(basename "$RUN_ROOT")-essential.tar.gz" \
+  "$(basename "$RUN_ROOT")/circuits" \
+  "$(basename "$RUN_ROOT")/candidates.pt" \
+  "$(basename "$RUN_ROOT")/latent_stats.pt" \
+  "$(basename "$RUN_ROOT")/top_ctx.pt" \
+  "$(basename "$RUN_ROOT")/mid_ctx.pt" \
+  "$(basename "$RUN_ROOT")/neg_ctx.pt" \
+  "$(basename "$RUN_ROOT")/neg_ctx_stats.json" \
+  "$(basename "$RUN_ROOT")/logit_ctx.pt" \
+  "$(basename "$RUN_ROOT")/top_coactivation.pt" \
+  "$(basename "$RUN_ROOT")/seq_repr.pt" \
+  "$(basename "$RUN_ROOT")/distributed/manifest.json" \
+  "$(basename "$RUN_ROOT")/distributed/reports" \
+  "$(basename "$RUN_ROOT")/distributed/parts/candidate_selection" \
+  "$(basename "$RUN_ROOT")/distributed"/*.log
+
+ls -lh "$(basename "$RUN_ROOT")-essential.tar.gz"
+sha256sum "$(basename "$RUN_ROOT")-essential.tar.gz"
+```
+
+Create a small provenance archive with the exact repo config and git state:
+
+```bash
+cd /workspace/turing
+
+mkdir -p "$RUN_ROOT/provenance"
+cp config.yaml "$RUN_ROOT/provenance/config.yaml"
+git rev-parse HEAD > "$RUN_ROOT/provenance/git_head.txt"
+git status --short > "$RUN_ROOT/provenance/git_status_short.txt"
+git diff > "$RUN_ROOT/provenance/git_diff.patch"
+
+cd "$RUN_ROOT/.."
+tar -czf "$(basename "$RUN_ROOT")-provenance.tar.gz" \
+  "$(basename "$RUN_ROOT")/provenance" \
+  "$(basename "$RUN_ROOT")/distributed/manifest.json" \
+  "$(basename "$RUN_ROOT")/distributed/reports"
+
+ls -lh "$(basename "$RUN_ROOT")-provenance.tar.gz"
+sha256sum "$(basename "$RUN_ROOT")-provenance.tar.gz"
+```
+
+Transfer from Windows using the pod's direct TCP SSH/SCP endpoint:
+
+```powershell
+scp -P <PORT> -i "$env:USERPROFILE\.ssh\id_ed25519" `
+  root@<HOST>:/root/outputs/<RUN_ID>-essential.tar.gz `
+  "X:\Projects\AIs\Turing\Publication\3 Implementation\Runs\<RUN_ID>-essential.tar.gz"
+
+scp -P <PORT> -i "$env:USERPROFILE\.ssh\id_ed25519" `
+  root@<HOST>:/root/outputs/<RUN_ID>-provenance.tar.gz `
+  "X:\Projects\AIs\Turing\Publication\3 Implementation\Runs\<RUN_ID>-provenance.tar.gz"
+```
+
+Verify local hashes with:
+
+```powershell
+Get-FileHash "X:\Projects\AIs\Turing\Publication\3 Implementation\Runs\<RUN_ID>-essential.tar.gz" -Algorithm SHA256
+Get-FileHash "X:\Projects\AIs\Turing\Publication\3 Implementation\Runs\<RUN_ID>-provenance.tar.gz" -Algorithm SHA256
+```
+
+## 8. Useful Recovery Commands
 
 If I lose shell env vars:
 
