@@ -247,3 +247,87 @@ def prune_non_minimal_nodes_cf(
             break
 
     return removed_nodes
+
+
+@torch.no_grad()
+def prune_non_minimal_nodes_suppression(
+    inference: Any,
+    sae_bank: Any,
+    avg_acts: torch.Tensor,
+    circuit: Circuit,
+    neg_tokens: torch.Tensor,
+    pos_tokens: torch.Tensor,
+    seed_layer: int,
+    seed_kind: str,
+    seed_latent_idx: int,
+    pos_argmax: Optional[torch.Tensor] = None,
+    threshold: float = 0.05,
+    circuit_layers: Optional[Set[int]] = None,
+    max_candidates_per_iter: int = 32,
+    max_iterations: int = 50,
+) -> List[str]:
+    """
+    Iterative minimality pruning using positive-context suppression as the LOO signal.
+
+    This is the suppression-oriented dual of ``prune_non_minimal_nodes_cf``:
+    nodes are retained only if removing them meaningfully reduces the circuit's
+    ability to suppress the seed on positive contexts.
+    """
+    removed_nodes: List[str] = []
+
+    for _iter in range(max_iterations):
+        _, base_sup = evaluate_counterfactual_faithfulness(
+            inference, sae_bank, avg_acts, circuit,
+            neg_tokens=neg_tokens,
+            pos_tokens=pos_tokens,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            pos_argmax=pos_argmax,
+            circuit_layers=circuit_layers,
+        )
+
+        candidates: List[tuple] = []
+        for node_uuid, node in circuit.nodes.items():
+            if node.metadata.get("role") == "seed":
+                continue
+            score = float(node.metadata.get("attribution_score") or 0.0)
+            candidates.append((score, node_uuid))
+
+        if not candidates:
+            break
+
+        candidates.sort(key=lambda x: x[0])
+        eval_candidates = [uuid for _, uuid in candidates[:max_candidates_per_iter]]
+
+        loo_scores: Dict[str, float] = {}
+        original_nodes = circuit.nodes
+        for node_uuid in eval_candidates:
+            circuit.nodes = {k: v for k, v in original_nodes.items() if k != node_uuid}
+            _, loo_sup = evaluate_counterfactual_faithfulness(
+                inference, sae_bank, avg_acts, circuit,
+                neg_tokens=neg_tokens,
+                pos_tokens=pos_tokens,
+                seed_layer=seed_layer,
+                seed_kind=seed_kind,
+                seed_latent_idx=seed_latent_idx,
+                pos_argmax=pos_argmax,
+                circuit_layers=circuit_layers,
+            )
+            loo_scores[node_uuid] = base_sup - loo_sup
+            circuit.nodes = original_nodes
+
+        least_uuid = min(loo_scores, key=lambda u: loo_scores[u])
+        least_drop = loo_scores[least_uuid]
+
+        if least_drop < threshold:
+            circuit.nodes.pop(least_uuid)
+            circuit.edges = [
+                e for e in circuit.edges
+                if e.source_uuid != least_uuid and e.target_uuid != least_uuid
+            ]
+            removed_nodes.append(least_uuid)
+        else:
+            break
+
+    return removed_nodes

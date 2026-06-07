@@ -165,7 +165,7 @@ def evaluate_node_presence(
         if fid.kind in _INELIGIBLE_KINDS:
             continue
         key = (fid.layer, fid.kind)
-        if role == "counterfactual_activator":
+        if role in ("counterfactual_activator", "ablation_support"):
             activator_map.setdefault(key, []).append(fid.index)
         elif role == "counterfactual_inhibitor":
             inhibitor_map.setdefault(key, []).append(fid.index)

@@ -3,7 +3,7 @@ weights:
   sae_path: "models/TuringLLM/SAE" # Directory containing SAE weights (sae-attn/, sae-mlp/, sae-resid/)
 data:
   dataset_path: "data" # Directory containing tokenized .npy data shards
-  n_shards: 4 # Number of data shards to process
+  n_shards: 3030 # Number of data shards to process
   batch_size: 512 # Sequences per batch during inference
 hardware:
   multi_gpu: false # true = use all available GPUs, false = single primary GPU
@@ -280,6 +280,17 @@ discovery:
     pruning_threshold: 0 # Faithfulness drop threshold for pruning (0 = disabled)
     min_faithfulness: 0.2 # Min upstream_faithfulness to accept
     node_presence_eval: true # Run posctx node presence/absence eval after circuit acceptance
+
+  # Ablation Gradient Discovery: positive-context necessity discovery.
+  # Finds active upstream latents whose ablation is predicted to suppress the seed.
+  ablation_gradient:
+    top_k_supports: 12 # Top-K support latents per scope unit
+    top_k_scope: "layer_kind" # "global" = single ranked list; "layer_kind" = top-K per (layer, kind)
+    support_threshold: 0.01 # Min activation × loss-gradient ablation-benefit score
+    min_active_count: 1 # Min global lifetime firing count
+    max_neg_sequences: 16 # Neg/baseline sequences used by suppression eval
+    pruning_threshold: 0.0 # Suppression-score drop threshold for pruning (0 = disabled)
+    min_suppression_score: 0.2 # Min positive-context suppression score to accept
 
   # SAE-adapted Circuit Tracing Baseline: builds a prompt-local direct-effects adjacency
   # matrix over all active SAE latents (attn/mlp/resid), propagates influence from target-token

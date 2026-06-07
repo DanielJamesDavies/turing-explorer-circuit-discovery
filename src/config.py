@@ -545,6 +545,24 @@ class CounterfactualGradientConfig(BaseModel):
             raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
         return v
 
+class AblationGradientConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    top_k_supports: int = 12
+    top_k_scope: str = "layer_kind"   # "global" | "layer_kind"
+    support_threshold: float = 0.01
+    min_active_count: int = 1
+    max_neg_sequences: int = 16
+    pruning_threshold: float = 0.0
+    min_suppression_score: float = 0.2
+
+    @field_validator("top_k_scope")
+    @classmethod
+    def validate_top_k_scope(cls, v: str) -> str:
+        allowed = ["global", "layer_kind"]
+        if v not in allowed:
+            raise ValueError(f"top_k_scope must be one of {allowed}, got {v!r}")
+        return v
+
 class CircuitTracerBaselineConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     probe_batch_size: int = 1        # sequences per forward pass (keep low for 16 GB VRAM)
@@ -672,6 +690,7 @@ class DiscoveryConfig(BaseModel):
     gradient_upstream: GradientUpstreamConfig = Field(default_factory=GradientUpstreamConfig)
     layerwise_gradient_upstream: LayerwiseGradientUpstreamConfig = Field(default_factory=LayerwiseGradientUpstreamConfig)
     counterfactual_gradient: CounterfactualGradientConfig = Field(default_factory=CounterfactualGradientConfig)
+    ablation_gradient: AblationGradientConfig = Field(default_factory=AblationGradientConfig)
     circuit_tracer_baseline: CircuitTracerBaselineConfig = Field(default_factory=CircuitTracerBaselineConfig)
     cluster_contrast: ClusterContrastConfig = Field(default_factory=ClusterContrastConfig)
 

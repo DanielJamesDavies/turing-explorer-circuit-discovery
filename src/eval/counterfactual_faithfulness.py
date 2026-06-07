@@ -217,7 +217,7 @@ def evaluate_counterfactual_faithfulness(
         # residual stream at the measurement point.
         if key == (seed_layer, seed_kind):
             continue
-        if role == "counterfactual_activator":
+        if role in ("counterfactual_activator", "ablation_support"):
             activator_fids.setdefault(key, []).append(fid.index)
         elif role == "counterfactual_inhibitor":
             inhibitor_fids.setdefault(key, set()).add(fid.index)

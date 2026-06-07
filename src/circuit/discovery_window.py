@@ -35,6 +35,7 @@ from circuit.discovery.differential_activation import DifferentialActivation
 from circuit.discovery.gradient_upstream import GradientUpstreamDiscovery
 from circuit.discovery.layerwise_gradient_upstream import LayerwiseGradientUpstreamDiscovery
 from circuit.discovery.counterfactual_gradient import CounterfactualGradientDiscovery
+from circuit.discovery.ablation_gradient import AblationGradientDiscovery
 from circuit.discovery.circuit_tracer_baseline import CircuitTracerBaseline
 
 
@@ -56,6 +57,7 @@ METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
     "gradient_upstream": GradientUpstreamDiscovery,
     "layerwise_gradient_upstream": LayerwiseGradientUpstreamDiscovery,
     "counterfactual_gradient": CounterfactualGradientDiscovery,
+    "ablation_gradient": AblationGradientDiscovery,
     "circuit_tracer_baseline": CircuitTracerBaseline,
 }
 
@@ -87,6 +89,7 @@ def _build_methods(
       "gradient_upstream"                    — backwards gradient BFS with per-node context switching
       "layerwise_gradient_upstream"          — layer-by-layer sweep attributing against all upstream layers (not just direct predecessors)
       "counterfactual_gradient"              — gradient attribution on contrast sequences; neg_mode config controls source: "close" (hard negatives), "random" (uniform), or "distant" (max SAE cosine distance from posctx)
+      "ablation_gradient"                    — positive-context necessity discovery; ranks active upstream latents whose ablation should suppress the seed
       "circuit_tracer_baseline"              — direct-effects adjacency matrix + Neumann influence propagation (Attribution Graphs analogue)
       "cluster_contrast"                     — seed-free: clusters neg_ctx sequences, KL-gradient attribution per cluster
     """
@@ -337,6 +340,7 @@ class DiscoveryWindow:
             "completeness",
             "counterfactual_faithfulness",
             "posctx_suppression_score",
+            "ablation_suppression_score",
         )
         evals = circuit.metadata.setdefault("evals", {})
         for key in _EVAL_KEYS:

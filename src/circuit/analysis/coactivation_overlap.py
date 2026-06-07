@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _INHIBITOR_ROLES = {"counterfactual_inhibitor"}
-_ACTIVATOR_ROLES = {"counterfactual_activator"}
+_ACTIVATOR_ROLES = {"counterfactual_activator", "ablation_support"}
 
 
 class CoactivationOverlapAnalysis(CircuitAnalysis):
