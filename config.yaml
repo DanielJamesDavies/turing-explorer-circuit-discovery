@@ -284,6 +284,8 @@ discovery:
   # Ablation Gradient Discovery: positive-context necessity discovery.
   # Finds active upstream latents whose ablation is predicted to suppress the seed.
   ablation_gradient:
+    neg_mode: "close" # "close" | "random" | "distant"; controls neg/baseline sequences used for eval
+    distant_pool_size: 512 # sequences to sample and rank for neg_mode=distant
     top_k_supports: 12 # Top-K support latents per scope unit
     top_k_scope: "layer_kind" # "global" = single ranked list; "layer_kind" = top-K per (layer, kind)
     support_threshold: 0.01 # Min activation × loss-gradient ablation-benefit score
@@ -291,6 +293,23 @@ discovery:
     max_neg_sequences: 16 # Neg/baseline sequences used by suppression eval
     pruning_threshold: 0.0 # Suppression-score drop threshold for pruning (0 = disabled)
     min_suppression_score: 0.2 # Min positive-context suppression score to accept
+
+  # Hybrid Gradient Discovery: run counterfactual_gradient and ablation_gradient
+  # normally for the same seed, then fuse any returned circuits by FeatureID and
+  # re-evaluate the fused circuit. Enable by adding "hybrid_gradient" to methods.
+  hybrid_gradient:
+    run_counterfactual: true # Run the counterfactual-gradient source method
+    run_ablation: true # Run the ablation-gradient source method
+    min_counterfactual_faithfulness: 0.2 # CF score threshold for hybrid acceptance
+    min_suppression_score: 0.2 # Positive-context suppression threshold for hybrid acceptance
+    acceptance_mode: "either" # "cf" | "suppression" | "both" | "either"
+    pruning_enabled: false # If true, prune the fused circuit before final acceptance
+    pruning_method: "leave_one_out" # "leave_one_out" = causal leave-one-out pruning; "sfc_threshold" = cheap metadata threshold pruning
+    pruning_threshold: 0.0 # Leave-one-out score-drop threshold for pruning
+    pruning_objective: "both" # Leave-one-out only: "cf" | "suppression" | "both"
+    sfc_node_threshold: 0.01 # SFC-style pruning: min |node attribution_score| to keep a non-seed node
+    sfc_edge_threshold: 0.01 # SFC-style pruning: min |edge weight| to keep an edge
+    sfc_score_mode: "abs" # SFC-style pruning score mode; currently only "abs"
 
   # SAE-adapted Circuit Tracing Baseline: builds a prompt-local direct-effects adjacency
   # matrix over all active SAE latents (attn/mlp/resid), propagates influence from target-token

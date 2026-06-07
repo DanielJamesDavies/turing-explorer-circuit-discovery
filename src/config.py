@@ -547,6 +547,8 @@ class CounterfactualGradientConfig(BaseModel):
 
 class AblationGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    neg_mode: str = "close"        # "close" | "random" | "distant"
+    distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_supports: int = 12
     top_k_scope: str = "layer_kind"   # "global" | "layer_kind"
     support_threshold: float = 0.01
@@ -555,12 +557,67 @@ class AblationGradientConfig(BaseModel):
     pruning_threshold: float = 0.0
     min_suppression_score: float = 0.2
 
+    @field_validator("neg_mode")
+    @classmethod
+    def validate_neg_mode(cls, v: str) -> str:
+        allowed = ["close", "random", "distant"]
+        if v not in allowed:
+            raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
+        return v
+
     @field_validator("top_k_scope")
     @classmethod
     def validate_top_k_scope(cls, v: str) -> str:
         allowed = ["global", "layer_kind"]
         if v not in allowed:
             raise ValueError(f"top_k_scope must be one of {allowed}, got {v!r}")
+        return v
+
+class HybridGradientConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    run_counterfactual: bool = True
+    run_ablation: bool = True
+    min_counterfactual_faithfulness: float = 0.2
+    min_suppression_score: float = 0.2
+    acceptance_mode: str = "either"  # "cf" | "suppression" | "both" | "either"
+    pruning_enabled: bool = False
+    pruning_method: str = "leave_one_out"  # "leave_one_out" | "sfc_threshold"
+    pruning_threshold: float = 0.0
+    pruning_objective: str = "both"  # "cf" | "suppression" | "both"
+    sfc_node_threshold: float = 0.01
+    sfc_edge_threshold: float = 0.01
+    sfc_score_mode: str = "abs"  # "abs"
+
+    @field_validator("acceptance_mode")
+    @classmethod
+    def validate_acceptance_mode(cls, v: str) -> str:
+        allowed = ["cf", "suppression", "both", "either"]
+        if v not in allowed:
+            raise ValueError(f"acceptance_mode must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("pruning_objective")
+    @classmethod
+    def validate_pruning_objective(cls, v: str) -> str:
+        allowed = ["cf", "suppression", "both"]
+        if v not in allowed:
+            raise ValueError(f"pruning_objective must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("pruning_method")
+    @classmethod
+    def validate_pruning_method(cls, v: str) -> str:
+        allowed = ["leave_one_out", "sfc_threshold"]
+        if v not in allowed:
+            raise ValueError(f"pruning_method must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("sfc_score_mode")
+    @classmethod
+    def validate_sfc_score_mode(cls, v: str) -> str:
+        allowed = ["abs"]
+        if v not in allowed:
+            raise ValueError(f"sfc_score_mode must be one of {allowed}, got {v!r}")
         return v
 
 class CircuitTracerBaselineConfig(BaseModel):
@@ -691,6 +748,7 @@ class DiscoveryConfig(BaseModel):
     layerwise_gradient_upstream: LayerwiseGradientUpstreamConfig = Field(default_factory=LayerwiseGradientUpstreamConfig)
     counterfactual_gradient: CounterfactualGradientConfig = Field(default_factory=CounterfactualGradientConfig)
     ablation_gradient: AblationGradientConfig = Field(default_factory=AblationGradientConfig)
+    hybrid_gradient: HybridGradientConfig = Field(default_factory=HybridGradientConfig)
     circuit_tracer_baseline: CircuitTracerBaselineConfig = Field(default_factory=CircuitTracerBaselineConfig)
     cluster_contrast: ClusterContrastConfig = Field(default_factory=ClusterContrastConfig)
 

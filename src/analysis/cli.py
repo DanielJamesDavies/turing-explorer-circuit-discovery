@@ -16,6 +16,7 @@ from analysis.circuits import (
     plot_circuit_seed_coact_hops,
     plot_top_ctx_circuit_vs_coact_frequency,
     run_circuit_suite,
+    run_gradient_method_neg_mode_grid,
     run_pruned_hop_evals,
 )
 from analysis.coactivation import (
@@ -34,6 +35,7 @@ from analysis.coactivation import (
     plot_same_cross_distribution,
     plot_sorted_pmi_decay,
     plot_threshold_counts,
+    plot_top_ctx_logit_effect,
     plot_top_ctx_sequence_overlap,
     plot_top_coact_hubs,
     run_coactivation_suite,
@@ -74,6 +76,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "mutual-coact-graph",
             "hub-corrected-coacts",
             "mutual-neighbor-similarity",
+            "top-ctx-logit-effect",
             "top-ctx-sequence-overlap",
             "circuit-coact-overlap",
             "circuit-latent-commonality",
@@ -81,6 +84,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "circuit-seed-coact-hops",
             "top-ctx-circuit-vs-coact-frequency",
             "gradient-distribution",
+            "gradient-method-neg-mode-grid-run",
             "pruned-hop-eval-results",
             "pruned-hop-eval-run",
             "pruned-hop-eval-spec",
@@ -111,6 +115,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=128,
         help="Sample size for sampled circuit experiments.",
+    )
+    parser.add_argument(
+        "--top-ctx-batch-size",
+        type=int,
+        default=16,
+        help="Top-context sequence count per latent for top-ctx logit-effect analysis.",
     )
     parser.add_argument(
         "--rare-max-pct",
@@ -197,6 +207,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             sample_size=args.sample_size,
         )
         output_paths = [result.figure_path, result.summary_path, result.table_path]
+    elif args.suite == "circuits" and args.plot == "gradient-method-neg-mode-grid-run":
+        result = run_gradient_method_neg_mode_grid(
+            args.run_root,
+            output_root=args.output_root,
+            sample_size=args.sample_size,
+        )
+        output_paths = [result["rows"], result["summary"]]
     elif args.suite == "circuits" and args.plot == "pruned-hop-eval-spec":
         result = plot_pruned_hop_eval_spec(
             args.run_root,
@@ -239,10 +256,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             "mutual-coact-graph": plot_mutual_coact_graph,
             "hub-corrected-coacts": plot_hub_corrected_coacts,
             "mutual-neighbor-similarity": plot_mutual_neighbor_similarity,
+            "top-ctx-logit-effect": plot_top_ctx_logit_effect,
             "top-ctx-sequence-overlap": plot_top_ctx_sequence_overlap,
             "coact-degrees": plot_coact_degrees,
         }
-        result = plotters[args.plot](args.run_root, output_root=args.output_root)
+        if args.plot == "top-ctx-logit-effect":
+            result = plot_top_ctx_logit_effect(
+                args.run_root,
+                output_root=args.output_root,
+                sample_size=args.sample_size,
+                top_ctx_batch_size=args.top_ctx_batch_size,
+            )
+        else:
+            result = plotters[args.plot](args.run_root, output_root=args.output_root)
         output_paths = [result.figure_path, result.summary_path, result.table_path]
     else:
         raise ValueError(f"unsupported suite/plot combination: {args.suite}/{args.plot}")

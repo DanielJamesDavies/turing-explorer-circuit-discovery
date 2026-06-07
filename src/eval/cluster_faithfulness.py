@@ -29,6 +29,7 @@ import torch.nn.functional as F
 from typing import Any, Dict, Set, Tuple
 
 from model.hooks import multi_patch
+from sae.dense import sparse_topk_to_dense, target_latent_activations
 from store.circuits import Circuit
 
 
@@ -89,8 +90,7 @@ class _ClusterInjectionPatcher:
         target_dtype = x.dtype
 
         top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-        all_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        all_latents.scatter_(-1, top_indices.long(), top_acts.to(target_dtype))
+        all_latents = sparse_topk_to_dense(top_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
 
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
         error = x - full_recon
@@ -187,8 +187,7 @@ def evaluate_cluster_faithfulness(
             sums   = act_sums.setdefault(key, {})
             counts = act_counts.setdefault(key, {})
             for lat_idx in activator_fids[key]:
-                is_t    = (ti == lat_idx)
-                t_dense = torch.where(is_t, ta, torch.zeros_like(ta)).sum(-1)  # [B, T]
+                t_dense = target_latent_activations(ta, ti, lat_idx)  # [B, T]
                 val = t_dense[:, -1].sum().item()   # sum over batch (averaged later)
                 n   = t_dense.shape[0]
                 sums[lat_idx]   = sums.get(lat_idx, 0.0) + val

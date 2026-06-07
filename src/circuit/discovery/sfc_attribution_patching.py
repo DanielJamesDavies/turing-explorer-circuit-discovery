@@ -16,6 +16,7 @@ from eval.completeness import evaluate_completeness
 from eval.minimality import prune_non_minimal_nodes
 from pipeline.component_index import split_component_idx
 from model.hooks import multi_patch, multi_stop_grad
+from sae.dense import sparse_topk_to_dense
 
 
 @dataclass
@@ -43,9 +44,7 @@ class TopKState:
 
     def to_sparse_act(self, d_sae: int) -> SparseAct:
         """Expands sparse [B, T, k] representation to dense [B, T, d_sae] SparseAct."""
-        B, T, _ = self.vals.shape
-        act = torch.zeros(B, T, d_sae, device=self.device, dtype=torch.float32)
-        act.scatter_(-1, self.idx, self.vals)
+        act = sparse_topk_to_dense(self.vals, self.idx, d_sae, dtype=torch.float32)
         return SparseAct(act=act, res=self.res.clone())
 
 
@@ -420,10 +419,8 @@ class SFCAttributionPatching(DiscoveryMethod):
             for kind_idx, kind in enumerate(self.sae_bank.kinds):
                 act = activations[kind_idx]
                 top_acts, top_idx = self.sae_bank.encode(act, kind, layer_idx)
-                B, T, _ = act.shape
                 dtype = act.dtype
-                dense = torch.zeros(B, T, d_sae, device=act.device, dtype=dtype)
-                dense.scatter_(-1, top_idx.long(), top_acts.to(dtype))
+                dense = sparse_topk_to_dense(top_acts, top_idx, d_sae, dtype=dtype)
                 x_hat = self.sae_bank.decode(dense, kind, layer_idx)
                 states[(layer_idx, kind)] = TopKState(
                     vals=top_acts.detach().float(),

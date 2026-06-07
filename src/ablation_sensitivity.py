@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Tuple
 from data.loader import DataLoader
 from model.inference import Inference
 from sae.bank import SAEBank
+from sae.dense import target_latent_activations
 from store.context import top_ctx, mid_ctx, neg_ctx
 from store.top_coactivation import top_coactivation
 from store.circuits import Circuit, CircuitNode
@@ -207,9 +208,7 @@ class AblationSensitivityTool:
                     top_acts, top_indices = self.bank.encode(act, kind, layer_idx)
                     
                     for latent_idx, result_idx in by_lk[lk]:
-                        # Find if latent_idx is in the top-K
-                        is_target = (top_indices == latent_idx)
-                        target_acts = torch.where(is_target, top_acts, torch.zeros_like(top_acts)).sum(dim=-1)
+                        target_acts = target_latent_activations(top_acts, top_indices, latent_idx)
                         # Extract value at pos_argmax for each batch item
                         vals = target_acts[torch.arange(B), pos_argmax.to(target_acts.device)]
                         results[result_idx] = vals.cpu()

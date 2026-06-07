@@ -1,6 +1,7 @@
 import torch
 from typing import Dict, Any, List, Tuple, Optional, Union
 from sae.bank import SAEBank
+from sae.dense import sparse_topk_to_dense
 from model.hooks import multi_patch
 from circuit.types.sparse_act import SparseAct
 from circuit.types.feature_id import FeatureID
@@ -105,8 +106,7 @@ class SAEGraphInstrument:
         target_dtype = x.dtype
 
         # Construct full sparse feature tensor (needed for joint feature+residual attribution)
-        f = torch.zeros(B, T, d_sae, device=x.device, dtype=target_dtype)
-        f.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(target_dtype))
+        f = sparse_topk_to_dense(top_acts, top_indices, d_sae, dtype=target_dtype)
 
         # 2. Decode and compute residual
         #    Use the graph-connected f so the encoder path stays differentiable

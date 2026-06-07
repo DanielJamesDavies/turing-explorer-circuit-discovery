@@ -10,6 +10,7 @@ from pipeline.component_index import component_idx as build_component_idx, split
 from store.logit_context import logit_ctx
 from store.top_coactivation import top_coactivation
 from store.context import mid_ctx, neg_ctx
+from sae.dense import target_latent_activations
 from sae.topk_sae import SAEConfig
 
 
@@ -239,9 +240,9 @@ class Display:
                         top_indices = latents[1]
                         for info in relevant:
                             l_idx = info["latent_idx"]
+                            target_acts = target_latent_activations(top_acts, top_indices, l_idx)
                             for b_idx, seq_id in enumerate(batch_ids.tolist()):
-                                mask = (top_indices[b_idx] == l_idx)
-                                seq_token_acts = (top_acts[b_idx] * mask).sum(dim=-1)
+                                seq_token_acts = target_acts[b_idx]
                                 token_activations_map[(seq_id, comp_idx, l_idx)] = seq_token_acts
 
             for batch_ids, batch_tokens in loader.get_batches_by_ids(sorted(needed_sequences)):

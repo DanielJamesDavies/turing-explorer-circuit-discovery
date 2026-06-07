@@ -48,6 +48,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from store.circuits import Circuit
 from model.hooks import multi_patch
+from sae.dense import sparse_topk_to_dense, target_latent_activations
 
 
 class CounterfactualInterventionPatcher:
@@ -105,8 +106,7 @@ class CounterfactualInterventionPatcher:
         # natural response to the modified upstream residual stream.
         if layer_idx == self.seed_layer and kind == self.seed_kind:
             top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-            is_seed = (top_indices == self.seed_latent_idx)
-            seed_dense = torch.where(is_seed, top_acts, torch.zeros_like(top_acts)).sum(-1)  # [B, T]
+            seed_dense = target_latent_activations(top_acts, top_indices, self.seed_latent_idx)  # [B, T]
             n_active = int((seed_dense > 0).sum().item())
             print(
                 f"      [CF-Capture] Layer {layer_idx} {kind} "
@@ -134,8 +134,7 @@ class CounterfactualInterventionPatcher:
 
         # Build dense latent tensor from natural top-k encoding
         top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-        all_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        all_latents.scatter_(-1, top_indices.long(), top_acts.to(target_dtype))
+        all_latents = sparse_topk_to_dense(top_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
 
         # Preserve the SAE error term from the unmodified encoding
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
@@ -246,8 +245,7 @@ def evaluate_counterfactual_faithfulness(
         if layer_idx == seed_layer and seed_kind in kind_to_idx:
             act = activations[kind_to_idx[seed_kind]]
             ta, ti = sae_bank.encode(act, seed_kind, layer_idx)
-            is_s = (ti == seed_latent_idx)
-            s_dense = torch.where(is_s, ta, torch.zeros_like(ta)).sum(-1)  # [B, T]
+            s_dense = target_latent_activations(ta, ti, seed_latent_idx)  # [B, T]
             Bx = s_dense.shape[0]
             if pos_argmax is not None:
                 pa = pos_argmax[:Bx].to(s_dense.device).clamp(0, s_dense.shape[1] - 1)
@@ -266,8 +264,7 @@ def evaluate_counterfactual_faithfulness(
             Bx, Tx = ta.shape[:2]
             targets = activator_targets.setdefault(key, {})
             for latent_idx in activator_fids[key]:
-                is_t = (ti == latent_idx)
-                t_dense = torch.where(is_t, ta, torch.zeros_like(ta)).sum(-1)  # [B, T]
+                t_dense = target_latent_activations(ta, ti, latent_idx)  # [B, T]
                 if pos_argmax is not None:
                     pa = pos_argmax[:Bx].to(t_dense.device).clamp(0, Tx - 1)
                     tval = t_dense[torch.arange(Bx, device=t_dense.device), pa].mean().item()
@@ -301,8 +298,7 @@ def evaluate_counterfactual_faithfulness(
         if layer_idx == seed_layer and seed_kind in kind_to_idx:
             act = activations[kind_to_idx[seed_kind]]
             ta, ti = sae_bank.encode(act, seed_kind, layer_idx)
-            is_s = (ti == seed_latent_idx)
-            s_dense = torch.where(is_s, ta, torch.zeros_like(ta)).sum(-1)
+            s_dense = target_latent_activations(ta, ti, seed_latent_idx)
             Bx = s_dense.shape[0]
             if neg_argmax is not None:
                 actual_B = min(Bx, neg_argmax.shape[0])
@@ -322,8 +318,7 @@ def evaluate_counterfactual_faithfulness(
             Bx, Tx = ta.shape[:2]
             targets = inhibitor_targets.setdefault(key, {})
             for latent_idx in inhibitor_fids[key]:
-                is_t = (ti == latent_idx)
-                t_dense = torch.where(is_t, ta, torch.zeros_like(ta)).sum(-1)
+                t_dense = target_latent_activations(ta, ti, latent_idx)
                 if neg_argmax is not None:
                     actual_B = min(Bx, neg_argmax.shape[0])
                     pa = neg_argmax[:actual_B].to(t_dense.device).clamp(0, Tx - 1)

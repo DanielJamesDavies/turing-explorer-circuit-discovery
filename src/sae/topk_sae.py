@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from config import config
+from .dense import sparse_topk_to_dense
 from .fused_exact_topk import linear_relu_topk_exact as _linear_relu_topk_exact
 from .fused_linear_relu import is_available as _cublaslt_available, linear_relu as _linear_relu
 from .triton_topk import (
@@ -211,8 +212,7 @@ class SAE(nn.Module):
         Reconstructs the sparse encoded_acts tensor for the decoder.
         """
         top_acts, top_indices = self.encode(x)
-        encoded_acts = torch.zeros(*x.shape[:-1], self.d_sae, device=x.device, dtype=top_acts.dtype)
-        encoded_acts.scatter_(dim=-1, index=top_indices, src=top_acts)
+        encoded_acts = sparse_topk_to_dense(top_acts, top_indices, self.d_sae)
         reconstruction = self.decode(encoded_acts)
         return reconstruction, encoded_acts
 

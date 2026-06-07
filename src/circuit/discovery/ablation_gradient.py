@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Set, cast
 import torch
 
 from .base import DiscoveryMethod
-from .counterfactual_gradient import SeedProjectionInstrument
+from .counterfactual_gradient import CounterfactualGradientDiscovery, SeedProjectionInstrument
 from circuit.instrument.attribution import compute_latent_ablation_scores
 from circuit.types.feature_id import FeatureID
 from config import config
@@ -39,6 +39,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.ablation_gradient
+        self.neg_mode = cast(str, cfg.neg_mode)
+        self.distant_pool_size = cast(int, cfg.distant_pool_size)
         self.top_k_supports = top_k_supports if top_k_supports is not None else cast(int, cfg.top_k_supports)
         self.top_k_scope = top_k_scope if top_k_scope is not None else cast(str, cfg.top_k_scope)
         self.support_threshold = (
@@ -143,6 +145,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
             seed_latent_idx,
             probe_data.neg_tokens,
             pos_tokens_eval,
+            pos_argmax_eval,
+            logger,
         )
         circuit_layers: Set[int] = {
             node.feature_id.layer
@@ -288,16 +292,45 @@ class AblationGradientDiscovery(DiscoveryMethod):
 
         return latent_stats.active_count
 
+    def _get_posctx_sae_mean(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        pos_tokens_eval: torch.Tensor,
+        pos_argmax_eval: torch.Tensor,
+    ) -> torch.Tensor:
+        return CounterfactualGradientDiscovery._get_posctx_sae_mean(
+            self,
+            seed_comp_idx,
+            seed_latent_idx,
+            pos_tokens_eval,
+            pos_argmax_eval,
+        )
+
     def _get_eval_neg_tokens(
         self,
         seed_comp_idx: int,
         seed_latent_idx: int,
         stored_neg_tokens: torch.Tensor,
         pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        logger: CircuitLogger,
     ) -> torch.Tensor:
         max_neg = max(1, int(self.max_neg_sequences))
-        if stored_neg_tokens.shape[0] > 0:
+        if self.neg_mode == "close" and stored_neg_tokens.shape[0] > 0:
             return stored_neg_tokens[:max_neg].to(self.sae_bank.device)
+        if self.neg_mode == "distant":
+            tokens = CounterfactualGradientDiscovery._get_distant_tokens(
+                self,
+                seed_comp_idx,
+                seed_latent_idx,
+                pos_tokens,
+                pos_argmax,
+                logger,
+            )
+            if tokens is not None:
+                return tokens
+            logger.note("neg_mode=distant unavailable for ablation eval; falling back to random")
         vocab_size = int(self.inference.model.config.vocab_size)
         generator = torch.Generator(device=self.sae_bank.device)
         generator.manual_seed(int(seed_comp_idx) * 1_000_003 + int(seed_latent_idx) + 17)

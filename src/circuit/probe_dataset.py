@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from store.context import Context
 from data.loader import DataLoader
 from sae.bank import SAEBank
+from sae.dense import target_latent_activations
 from pipeline.component_index import split_component_idx
 
 @dataclass
@@ -171,13 +172,8 @@ class ProbeDatasetBuilder:
                 # We want to find which T had the highest activation for latent_idx
                 # top_indices is [B, T, K], top_acts is [B, T, K]
                 
-                # Find if latent_idx is in the top-K for each (batch, token)
-                # is_target: [B, T, K] bool
-                is_target = (top_indices == latent_idx)
-                
-                # Extract activation values where it is the target, else 0
-                # target_acts: [B, T]
-                target_acts = torch.where(is_target, top_acts, torch.zeros_like(top_acts)).sum(dim=-1)
+                # Extract activation values for the target latent.
+                target_acts = target_latent_activations(top_acts, top_indices, latent_idx)
                 
                 # 3. Find argmax over T
                 # batch_argmax: [B]

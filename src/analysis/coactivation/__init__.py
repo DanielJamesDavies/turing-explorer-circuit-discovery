@@ -19,6 +19,7 @@ from .profile_similarity_distribution import plot_profile_similarity_distributio
 from .same_cross_distribution import plot_same_cross_distribution
 from .sorted_pmi_decay import plot_sorted_pmi_decay
 from .threshold_counts import plot_threshold_counts
+from .top_ctx_logit_effect import plot_top_ctx_logit_effect
 from .top_ctx_sequence_overlap import plot_top_ctx_sequence_overlap
 from .top_coact_hubs import plot_top_coact_hubs
 
@@ -67,6 +68,7 @@ __all__ = [
     "plot_same_cross_distribution",
     "plot_sorted_pmi_decay",
     "plot_threshold_counts",
+    "plot_top_ctx_logit_effect",
     "plot_top_ctx_sequence_overlap",
     "plot_top_coact_hubs",
     "run_coactivation_suite",

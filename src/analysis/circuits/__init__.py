@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .coact_overlap import plot_circuit_coact_overlap
 from .gradient_distribution import plot_gradient_distribution
+from .gradient_method_neg_mode_grid_runner import run_gradient_method_neg_mode_grid
 from .latent_commonality import plot_circuit_latent_commonality
 from .node_hop_overlap import plot_circuit_node_hop_overlap
 from .pruned_hop_eval_runner import run_pruned_hop_evals
@@ -37,6 +38,7 @@ __all__ = [
     "plot_pruned_hop_eval_results",
     "plot_pruned_hop_eval_spec",
     "plot_top_ctx_circuit_vs_coact_frequency",
+    "run_gradient_method_neg_mode_grid",
     "run_pruned_hop_evals",
     "run_circuit_suite",
 ]

@@ -1,6 +1,7 @@
 import torch
 from typing import Dict, Any, Optional, Set, Iterable
 from sae.bank import SAEBank
+from sae.dense import sparse_topk_to_dense
 from store.circuits import Circuit
 from model.hooks import multi_patch
 from pipeline.component_index import component_idx
@@ -178,8 +179,7 @@ class CircuitPatcher:
         top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
 
         # 2. Full SAE reconstruction to compute error term
-        all_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        all_latents.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(target_dtype))
+        all_latents = sparse_topk_to_dense(top_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
         error = x - full_recon
 
@@ -193,8 +193,7 @@ class CircuitPatcher:
             live_acts = torch.where(~is_in_circuit, top_acts, torch.zeros_like(top_acts))
         
         # 4. Decode the filtered features
-        circuit_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        circuit_latents.scatter_(dim=-1, index=top_indices.long(), src=live_acts.to(target_dtype))
+        circuit_latents = sparse_topk_to_dense(live_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
         circuit_recon = self.bank.decode(circuit_latents, kind, layer_idx)
         
         # 5. circuit features + background (linear part only) + preserved error term

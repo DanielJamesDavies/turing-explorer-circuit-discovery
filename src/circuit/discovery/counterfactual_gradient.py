@@ -13,6 +13,7 @@ from circuit.instrument.attribution import compute_latent_counterfactual_scores
 from circuit.types.feature_id import FeatureID
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
+from sae.dense import target_latent_activations
 
 
 class SeedProjectionInstrument(SAEGraphInstrument):
@@ -288,7 +289,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             f"{len(circuit.edges)} edges | circuit_layers={sorted(circuit_layers)}"
         )
 
-        # Minimality pruning (optional) — uses cf_faith as the LOO signal
+        # Minimality pruning (optional) — uses cf_faith as the leave-one-out signal
         if self.pruning_threshold > 0:
             n_before = len(circuit.nodes)
             prune_non_minimal_nodes_cf(
@@ -533,10 +534,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                     B_loc = top_acts.shape[0]
 
                     # Max seed activation per sequence (0 if seed never in top-k)
-                    is_seed = (top_indices == _sli)
-                    seed_act_vals = torch.where(
-                        is_seed, top_acts, torch.zeros_like(top_acts)
-                    ).sum(dim=-1)  # [B, T]
+                    seed_act_vals = target_latent_activations(top_acts, top_indices, _sli)  # [B, T]
                     _sa.append(seed_act_vals.max(dim=-1).values.float().cpu())  # [B]
 
                     # Scatter-sum over all (T, K) positions → [B, d_sae]
@@ -633,8 +631,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 return
             act = activations[seed_kind_idx]
             top_acts, top_indices = self.sae_bank.encode(act, seed_kind, layer_idx)
-            is_target = (top_indices == seed_latent_idx)
-            target_acts = torch.where(is_target, top_acts, torch.zeros_like(top_acts)).sum(dim=-1)  # [B, T]
+            target_acts = target_latent_activations(top_acts, top_indices, seed_latent_idx)  # [B, T]
             B = target_acts.shape[0]
             batch_idx = torch.arange(B, device=target_acts.device)
             pa = pos_argmax[:B].to(target_acts.device).clamp(0, target_acts.shape[1] - 1)

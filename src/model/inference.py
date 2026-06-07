@@ -112,27 +112,34 @@ class Inference:
 
         sdpa_ctx = sdpa_kernel(SDPBackend.FLASH_ATTENTION) if self.device.type == "cuda" else nullcontext()
         grad_ctx = torch.enable_grad() if grad_enabled else torch.no_grad()
+        restore_compile = patcher is not None and self._compiled
+        if restore_compile:
+            self.disable_compile()
 
-        for i in range(num_gen):
-            with obs.track_forward():
-                with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):
-                    with grad_ctx, sdpa_ctx:
-                        logits, _ = self.model(tokens, return_all_logits=(all_logits and i == 0))
-            
-            if return_activations:
-                # If generating multiple tokens, only keep the last token's activations 
-                # to maintain consistent tensor shapes for stacking.
-                step_activations = acts.tensor
-                if step_activations is not None and num_gen > 1:
-                    step_activations = step_activations[:, :, :, -1:, :]
-                activations.append(step_activations)
-            
-            if i < num_gen - 1 or tokenize_final:
-                probs = F.softmax(logits[:, -1, :], dim=-1)
-                topk_probs, topk_indices = torch.topk(probs, k=12, dim=-1)
-                ix = torch.multinomial(topk_probs, 1, generator=sample_rng)
-                xcol = torch.gather(topk_indices, -1, ix)
-                tokens = torch.cat((tokens, xcol), dim=1)
+        try:
+            for i in range(num_gen):
+                with obs.track_forward():
+                    with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):
+                        with grad_ctx, sdpa_ctx:
+                            logits, _ = self.model(tokens, return_all_logits=(all_logits and i == 0))
+                
+                if return_activations:
+                    # If generating multiple tokens, only keep the last token's activations 
+                    # to maintain consistent tensor shapes for stacking.
+                    step_activations = acts.tensor
+                    if step_activations is not None and num_gen > 1:
+                        step_activations = step_activations[:, :, :, -1:, :]
+                    activations.append(step_activations)
+                
+                if i < num_gen - 1 or tokenize_final:
+                    probs = F.softmax(logits[:, -1, :], dim=-1)
+                    topk_probs, topk_indices = torch.topk(probs, k=12, dim=-1)
+                    ix = torch.multinomial(topk_probs, 1, generator=sample_rng)
+                    xcol = torch.gather(topk_indices, -1, ix)
+                    tokens = torch.cat((tokens, xcol), dim=1)
+        finally:
+            if restore_compile:
+                self.enable_compile()
 
         # [G, B, L, K, T, N] -> [B, L, K, G, T, N]
         # G=Generations, B=Batch, L=Layer, K=Kind, T=Token, N=Neuron

@@ -19,7 +19,7 @@ def evaluate_minimality(
     Checks for "dead weight" in a circuit. 
     A circuit is minimal if removing any single node significantly reduces faithfulness.
     
-    Logic: Perform "Leave-One-Out" (LOO) ablation for every node in the circuit.
+    Logic: Perform leave-one-out ablation for every node in the circuit.
     Returns a dictionary mapping node UUIDs to their importance (faithfulness drop when removed).
     
     Args:
@@ -37,7 +37,7 @@ def evaluate_minimality(
     # 1. Base faithfulness with the complete circuit
     base_faithfulness = evaluate_faithfulness(inference, sae_bank, avg_acts, circuit, tokens, pos_argmax, max_layer=max_layer, circuit_layers=circuit_layers)
 
-    # 2. Leave-One-Out Ablation for each node
+    # 2. Leave-one-out ablation for each node
     node_importance = {}
     original_nodes = circuit.nodes
 
@@ -156,7 +156,7 @@ def prune_non_minimal_nodes_cf(
     Counterfactual-faithfulness variant of iterative minimality pruning.
 
     Identical logic to ``prune_non_minimal_nodes`` but uses
-    ``evaluate_counterfactual_faithfulness`` (cf_faith score) as the LOO
+    ``evaluate_counterfactual_faithfulness`` (cf_faith score) as the leave-one-out
     signal instead of logit-level faithfulness.  This keeps the pruning
     objective aligned with how ``CounterfactualGradientDiscovery`` scores
     circuits: nodes are retained only if removing them meaningfully reduces
@@ -177,7 +177,7 @@ def prune_non_minimal_nodes_cf(
         threshold:               Remove a node if its absence drops cf_faith
                                  by less than this value.
         circuit_layers:          Layers at which to apply CF interventions.
-        max_candidates_per_iter: Max LOO evals per iteration (default 32).
+        max_candidates_per_iter: Max leave-one-out evals per iteration (default 32).
                                  Prevents O(N²) cost on large circuits.
         max_iterations:          Hard cap on pruning rounds (default 50).
 
@@ -213,7 +213,7 @@ def prune_non_minimal_nodes_cf(
         candidates.sort(key=lambda x: x[0])
         eval_candidates = [uuid for _, uuid in candidates[:max_candidates_per_iter]]
 
-        # LOO: find the node among eval_candidates whose removal costs least
+        # Leave-one-out: find the node among eval_candidates whose removal costs least
         loo_scores: Dict[str, float] = {}
         original_nodes = circuit.nodes
         for node_uuid in eval_candidates:
@@ -267,7 +267,7 @@ def prune_non_minimal_nodes_suppression(
     max_iterations: int = 50,
 ) -> List[str]:
     """
-    Iterative minimality pruning using positive-context suppression as the LOO signal.
+    Iterative minimality pruning using positive-context suppression as the leave-one-out signal.
 
     This is the suppression-oriented dual of ``prune_non_minimal_nodes_cf``:
     nodes are retained only if removing them meaningfully reduces the circuit's

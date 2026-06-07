@@ -3,6 +3,7 @@ import sys
 from typing import Optional, Any, Set
 from store.circuits import Circuit
 from circuit.instrument.patcher import CircuitPatcher
+from sae.dense import sparse_topk_to_dense, target_latent_activations
 
 class SeedActivationCapturePatcher(CircuitPatcher):
     """
@@ -58,9 +59,7 @@ class SeedActivationCapturePatcher(CircuitPatcher):
 
         # 3. Capture seed latent activation before patching alters the residual stream
         if layer_idx == self.seed_layer and kind == self.seed_kind:
-            mask = (top_indices == self.seed_latent_idx)  # [B, T, K]
-            seed_acts = torch.where(mask, top_acts, torch.zeros_like(top_acts))
-            seed_acts_dense = seed_acts.sum(dim=-1)  # [B, T]
+            seed_acts_dense = target_latent_activations(top_acts, top_indices, self.seed_latent_idx)  # [B, T]
             
             # Debug: check if seed is active in top-k
             n_active = (seed_acts_dense > 0).sum().item()
@@ -88,8 +87,7 @@ class SeedActivationCapturePatcher(CircuitPatcher):
                 sys.stdout.flush()
 
         # 4. Apply patching (same logic as CircuitPatcher.transform, no second encode)
-        all_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        all_latents.scatter_(dim=-1, index=top_indices.long(), src=top_acts.to(target_dtype))
+        all_latents = sparse_topk_to_dense(top_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
         error = x - full_recon
 
@@ -100,8 +98,7 @@ class SeedActivationCapturePatcher(CircuitPatcher):
         else:
             live_acts = torch.where(~is_in_circuit, top_acts, torch.zeros_like(top_acts))
 
-        circuit_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        circuit_latents.scatter_(dim=-1, index=top_indices.long(), src=live_acts.to(target_dtype))
+        circuit_latents = sparse_topk_to_dense(live_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
         circuit_recon = self.bank.decode(circuit_latents, kind, layer_idx)
 
         bg = self.background_tensors[(layer_idx, kind)].to(x.device, dtype=target_dtype)

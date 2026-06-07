@@ -40,6 +40,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from store.circuits import Circuit
 from model.hooks import multi_patch
+from sae.dense import sparse_topk_to_dense, target_latent_activations
 
 _INELIGIBLE_KINDS: Set[str] = {"logit", "token", "error"}
 
@@ -88,16 +89,14 @@ class _CircuitSufficiencyPatcher:
         # ── Capture seed activation (before any modification at this layer) ─
         if layer_idx == self.seed_layer and kind == self.seed_kind:
             top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-            is_seed = (top_indices == self.seed_latent_idx)
-            seed_dense = torch.where(is_seed, top_acts, torch.zeros_like(top_acts)).sum(-1)
+            seed_dense = target_latent_activations(top_acts, top_indices, self.seed_latent_idx)
             self.captured_activation = seed_dense.mean().item()
             # Return x unchanged — the seed's layer is only measured, not masked
             return x
 
         # ── Circuit-isolation masking ──────────────────────────────────────
         top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
-        all_latents = torch.zeros(B, T, self.bank.d_sae, device=x.device, dtype=target_dtype)
-        all_latents.scatter_(-1, top_indices.long(), top_acts.to(target_dtype))
+        all_latents = sparse_topk_to_dense(top_acts, top_indices, self.bank.d_sae, dtype=target_dtype)
 
         # Preserve the reconstruction error from the unmodified natural encoding
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
@@ -191,8 +190,7 @@ def evaluate_node_presence(
         if seed_fid is not None and layer_idx == seed_fid.layer and seed_fid.kind in kind_to_idx:
             act = activations[kind_to_idx[seed_fid.kind]]
             ta, ti = sae_bank.encode(act, seed_fid.kind, layer_idx)
-            is_s = (ti == seed_fid.index)
-            s_dense = torch.where(is_s, ta, torch.zeros_like(ta)).sum(-1)  # [B, T]
+            s_dense = target_latent_activations(ta, ti, seed_fid.index)  # [B, T]
             a_posctx_buf.append(s_dense.mean().item())
 
         # Per-node presence detection

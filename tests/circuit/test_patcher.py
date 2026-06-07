@@ -22,6 +22,7 @@ import pytest
 import torch
 
 from circuit.instrument.patcher import CircuitPatcher
+from sae.dense import sparse_topk_to_dense
 from store.circuits import Circuit, CircuitNode
 
 # Dimensions match conftest constants.
@@ -46,9 +47,7 @@ def _comp_idx(layer: int, kind: str) -> int:
 
 def _scatter(top_acts: torch.Tensor, top_indices: torch.Tensor) -> torch.Tensor:
     """Scatter top-k activations into a dense [B, T, D_SAE] tensor."""
-    dense = torch.zeros(*top_acts.shape[:-1], D_SAE)
-    dense.scatter_(-1, top_indices.long(), top_acts.float())
-    return dense
+    return sparse_topk_to_dense(top_acts, top_indices, D_SAE, dtype=torch.float32)
 
 
 def _make_circuit_at(layer: int, kind: str, latent_idx: int, role: str = "upstream") -> Circuit:
@@ -272,6 +271,23 @@ class TestPatchingForwardMode:
         x = torch.randn(B, T, D_MODEL)
         result = patcher.transform(layer, kind, x)
         assert not torch.allclose(result, x, atol=1e-3)
+
+    def test_null_circuit_ablates_real_latent_zero_despite_duplicate_padding(self, mock_sae_bank, avg_acts_zero):
+        layer, kind = 0, "attn"
+        x = torch.randn(B, T, D_MODEL)
+        top_acts = torch.zeros(B, T, K_SAE)
+        top_indices = torch.zeros(B, T, K_SAE, dtype=torch.long)
+        top_acts[..., 0] = 1.0
+        original_encode = mock_sae_bank.encode
+        mock_sae_bank.encode = lambda _x, _kind, _layer: (top_acts, top_indices)
+
+        try:
+            patcher = CircuitPatcher(mock_sae_bank, None, avg_acts_zero)
+            result = patcher.transform(layer, kind, x)
+        finally:
+            mock_sae_bank.encode = original_encode
+
+        assert not torch.allclose(result, x, atol=1e-5)
 
     def test_partial_circuit_output_between_null_and_full(
         self, mock_sae_bank, avg_acts_zero
