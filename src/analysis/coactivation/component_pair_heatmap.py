@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import FIGSIZE_SQUARE, SEQUENTIAL_CMAP, configure_matplotlib, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .sorted_pmi_decay import SUITE_NAME
 
@@ -107,8 +107,9 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     high_rate = torch.tensor(stats["high_rate"], dtype=torch.float32)
     threshold = stats["threshold"]
 
-    fig, ax = plt.subplots(figsize=(9, 7))
-    image = ax.imshow(high_rate.numpy(), cmap="viridis", vmin=0.0, vmax=1.0, aspect="auto")
+    fig, ax = plt.subplots(figsize=FIGSIZE_SQUARE)
+    image = ax.imshow(high_rate.numpy(), cmap=SEQUENTIAL_CMAP, vmin=0.0, vmax=1.0, aspect="auto")
+    ax.grid(False)
     ax.set_title(f"Component Pair High-PMI Rate (PMI > {threshold:g})")
     ax.set_xlabel("Coacting component")
     ax.set_ylabel("Target component")
@@ -118,9 +119,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     ax.tick_params(axis="y", labelsize=7)
     cbar = fig.colorbar(image, ax=ax)
     cbar.set_label("Fraction of stored coacts above threshold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

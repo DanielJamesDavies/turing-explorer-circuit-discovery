@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BLUE, FIGSIZE_WIDE, INK_MUTED, configure_matplotlib, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .sorted_pmi_decay import SUITE_NAME
 
@@ -97,15 +97,13 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(bin_right, list)
 
     width = float(bin_right[0]) - float(bin_left[0])
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(centers, density, width=width, color="#2f6f9f", alpha=0.78, align="center")
-    ax.axvline(0.0, color="#111111", linewidth=1.0, alpha=0.6)
+    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
+    ax.bar(centers, density, width=width, color=BLUE, align="center")
+    ax.axvline(0.0, color=INK_MUTED, linewidth=1.0)
     ax.set_title("Coactivation PMI Score Distribution")
     ax.set_xlabel("PMI score")
     ax.set_ylabel("Fraction of stored coactivation scores")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

@@ -12,7 +12,16 @@ import torch
 from analysis.coactivation.data import load_top_coactivation
 from analysis.coactivation.graph_utils import build_high_pmi_edges, high_pmi_in_degree
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    BLUE,
+    SERIES2,
+    configure_matplotlib,
+    panel_figsize,
+    round_bars,
+    save_figure,
+    style_suptitle,
+    styled_legend,
+)
 from store.circuits import Circuit
 from .coact_overlap import SUITE_NAME
 from .node_hop_overlap import (
@@ -255,24 +264,23 @@ def _write_plot(path: Path, spec: dict[str, object]) -> None:
         p90s.append(_quantile(ordered, 0.9) if ordered else 0.0)
         node_means.append(float(sum(nodes) / len(nodes)) if nodes else 0.0)
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    fig, axes = plt.subplots(1, 2, figsize=panel_figsize(1, 2))
     x = range(len(hop_labels))
-    axes[0].bar([pos - 0.18 for pos in x], means, width=0.36, color="#2f6f9f", alpha=0.85, label="mean")
-    axes[0].bar([pos + 0.18 for pos in x], p90s, width=0.36, color="#b45f06", alpha=0.85, label="p90")
+    axes[0].bar([pos - 0.18 for pos in x], means, width=0.3, color=SERIES2[0], label="mean")
+    axes[0].bar([pos + 0.18 for pos in x], p90s, width=0.3, color=SERIES2[1], label="p90")
     axes[0].set_title("Circuit Latents Retained In Hop-Pruned Variants")
     axes[0].set_ylabel("Circuit latents retained (%)")
     axes[0].set_xticks(list(x))
     axes[0].set_xticklabels(hop_labels)
-    axes[0].legend(loc="upper left")
+    styled_legend(axes[0], loc="upper left")
 
-    axes[1].plot(hop_labels, node_means, marker="o", linewidth=2.0, color="#38761d")
+    axes[1].plot(hop_labels, node_means, marker="o", linewidth=2.0, color=BLUE)
     axes[1].set_title("Mean Pruned Circuit Size")
     axes[1].set_ylabel("Retained nodes including seed")
     axes[1].set_xlabel("Pruned variant")
-    fig.suptitle("Pruned Hop Eval Spec: 128 Circuit Sample", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[0])
+    style_suptitle(fig, "Pruned Hop Eval Spec: 128 Circuit Sample")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, spec: dict[str, object]) -> None:

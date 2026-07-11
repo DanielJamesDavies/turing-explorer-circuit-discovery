@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import FIGSIZE_WIDE, SERIES2, configure_matplotlib, save_figure, styled_legend
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .profile_utils import deterministic_sample_indices
 from .sorted_pmi_decay import SUITE_NAME
@@ -167,17 +167,15 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(same_density, list)
     assert isinstance(cross_density, list)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(centers, same_density, linewidth=2.0, label="same target component", color="#2f6f9f")
-    ax.plot(centers, cross_density, linewidth=2.0, label="cross target component", color="#b45f06")
+    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
+    ax.plot(centers, same_density, linewidth=2.0, label="same target component", color=SERIES2[0])
+    ax.plot(centers, cross_density, linewidth=2.0, label="cross target component", color=SERIES2[1])
     ax.set_title(f"Top-{top_k} Coact ID Jaccard Overlap")
     ax.set_xlabel("Jaccard overlap of sorted top coact ID sets")
     ax.set_ylabel("Density within sampled pair type")
     ax.set_xlim(0.0, 1.0)
-    ax.legend(loc="upper right")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    styled_legend(ax, loc="upper right")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

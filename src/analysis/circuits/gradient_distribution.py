@@ -12,7 +12,17 @@ import torch
 
 from analysis.coactivation.data import load_top_coactivation
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    BLUE,
+    INK_MUTED,
+    SERIES2,
+    configure_matplotlib,
+    panel_figsize,
+    save_figure,
+    style_suptitle,
+    styled_boxplot,
+    styled_legend,
+)
 from circuit.instrument.attribution import compute_feature_gradient
 from circuit.instrument.sae_graph import SAEGraphInstrument
 from circuit.probe_dataset import ProbeDatasetBuilder
@@ -517,17 +527,17 @@ def _write_plot(path: Path, stats: Mapping[str, object]) -> None:
     plt = configure_matplotlib()
     rows = [row for row in stats["rows"] if row["group"] in ("coact", "circuit", "random")]
     groups = ["random", "coact", "circuit"]
-    colors = {"random": "#777777", "coact": "#ff7f0e", "circuit": "#1f77b4"}
+    colors = {"random": INK_MUTED, "coact": SERIES2[1], "circuit": SERIES2[0]}
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
     for group in groups:
         vals = [float(row["log10_abs_gradient"]) for row in rows if row["group"] == group]
         if vals:
-            axes[0, 0].hist(vals, bins=50, alpha=0.5, label=group, color=colors[group])
+            axes[0, 0].hist(vals, bins=50, alpha=0.6, label=group, color=colors[group])
     axes[0, 0].set_title("Gradient magnitude distribution")
     axes[0, 0].set_xlabel("log10(abs(seed gradient) + 1e-12)")
     axes[0, 0].set_ylabel("Latent count")
-    axes[0, 0].legend(loc="best")
+    styled_legend(axes[0, 0], loc="best")
 
     for group in groups:
         vals = sorted(float(row["abs_gradient"]) for row in rows if row["group"] == group)
@@ -538,7 +548,7 @@ def _write_plot(path: Path, stats: Mapping[str, object]) -> None:
     axes[0, 1].set_title("ECDF of absolute gradient")
     axes[0, 1].set_xlabel("abs(seed gradient)")
     axes[0, 1].set_ylabel("Cumulative fraction")
-    axes[0, 1].legend(loc="best")
+    styled_legend(axes[0, 1], loc="best")
 
     seed_rows = stats["seed_rows"]
     assert isinstance(seed_rows, list)
@@ -554,8 +564,8 @@ def _write_plot(path: Path, stats: Mapping[str, object]) -> None:
             box_data.append(vals)
             box_labels.append(label)
     if box_data:
-        axes[1, 0].boxplot(box_data, labels=box_labels, showfliers=False)
-    axes[1, 0].axhline(1.0, color="#444444", linestyle="--", linewidth=1.0)
+        styled_boxplot(axes[1, 0], box_data, box_labels, [BLUE] * len(box_data))
+    axes[1, 0].axhline(1.0, color=INK_MUTED, linestyle="--", linewidth=1.0)
     axes[1, 0].set_yscale("log")
     axes[1, 0].set_title("Per-seed mean abs-gradient ratios")
     axes[1, 0].set_ylabel("Ratio")
@@ -568,16 +578,15 @@ def _write_plot(path: Path, stats: Mapping[str, object]) -> None:
             s=14,
             alpha=0.5,
             color=colors["coact"],
+            edgecolors="none",
         )
     axes[1, 1].set_yscale("symlog", linthresh=1e-10)
     axes[1, 1].set_title("Coact PMI vs seed-gradient magnitude")
     axes[1, 1].set_xlabel("PMI/top-coact score")
     axes[1, 1].set_ylabel("abs(seed gradient)")
 
-    fig.suptitle("Seed Gradient Distributions: Random vs Coact vs Circuit Nodes", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    style_suptitle(fig, "Seed Gradient Distributions: Random vs Coact vs Circuit Nodes")
+    save_figure(fig, path)
 
 
 def _build_summary(store_path: Path, coact_path: Path, stats: Mapping[str, object]) -> dict[str, object]:

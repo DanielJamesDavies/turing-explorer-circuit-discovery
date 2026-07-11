@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
+import torch
+
 from pipeline.distributed.manifest import load_manifest, save_manifest
+from store.context import build_global_sequence_ids_tensor
 from store.neg_context import NegCtxStats
 
 from .inputs import BuildNegCtxFn, _empty_neg_context_like, load_negative_context_inputs
@@ -98,6 +101,7 @@ def run_negative_context_stage(
         raise
     inputs.paths.run_root.mkdir(parents=True, exist_ok=True)
     output_neg_ctx.save(inputs.paths.neg_ctx)
+    torch.save(build_global_sequence_ids_tensor(output_neg_ctx.ctx_seq_idx), inputs.paths.global_negctx_ids)
     stats.save(str(inputs.paths.run_root / "neg_ctx_stats.json"))
     sanity_report = compat.build_negative_context_sanity_report(
         inputs.paths,
@@ -114,6 +118,7 @@ def run_negative_context_stage(
         metadata,
         artifacts={
             "neg_ctx": str(inputs.paths.neg_ctx),
+            "global_negctx_ids": str(inputs.paths.global_negctx_ids),
             "neg_ctx_stats": str(inputs.paths.run_root / "neg_ctx_stats.json"),
             "sanity_report": str(part_dir / "neg_ctx_sanity_report.json"),
         },

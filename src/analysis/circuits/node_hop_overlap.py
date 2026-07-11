@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from statistics import mean, median
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -13,7 +12,18 @@ from analysis.coactivation.coact_degrees import _expand_frontier, _summary
 from analysis.coactivation.data import TopCoactivationArtifact, load_top_coactivation
 from analysis.coactivation.graph_utils import build_high_pmi_edges, high_pmi_in_degree
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    SEQUENTIAL_CMAP,
+    SERIES2,
+    SERIES3,
+    configure_matplotlib,
+    ordinal_blues,
+    panel_figsize,
+    round_bars,
+    save_figure,
+    style_suptitle,
+    styled_legend,
+)
 from circuit.types.feature_id import FeatureID
 from store.circuits import Circuit
 from .coact_overlap import SUITE_NAME
@@ -288,7 +298,7 @@ def _add_overlap_columns(row: dict[str, Any], prefix: str, hop: int, reachable: 
 
 def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
     max_hops = int(stats["max_hops"])
     hops = list(range(1, max_hops + 1))
     labels = [f"{hop} hop" for hop in hops]
@@ -303,24 +313,23 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(inhibitor_summary, dict)
     assert isinstance(rows, list)
 
-    axes[0, 0].bar([pos - 0.18 for pos in x], [all_summary[str(hop)]["p50"] for hop in hops], width=0.36, color="#2f6f9f", alpha=0.85, label="p50")
-    axes[0, 0].bar([pos + 0.18 for pos in x], [all_summary[str(hop)]["p90"] for hop in hops], width=0.36, color="#b45f06", alpha=0.85, label="p90")
+    axes[0, 0].bar([pos - 0.18 for pos in x], [all_summary[str(hop)]["p50"] for hop in hops], width=0.3, color=SERIES2[0], label="p50")
+    axes[0, 0].bar([pos + 0.18 for pos in x], [all_summary[str(hop)]["p90"] for hop in hops], width=0.3, color=SERIES2[1], label="p90")
     axes[0, 0].set_title("Circuit Latents Recovered By Coact Hops")
     axes[0, 0].set_ylabel("Circuit latents recovered (%)")
     axes[0, 0].set_xticks(list(x))
     axes[0, 0].set_xticklabels(labels)
-    axes[0, 0].legend(loc="upper left")
+    styled_legend(axes[0, 0], loc="upper left")
 
-    axes[0, 1].plot(labels, [all_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="all nodes", color="#2f6f9f")
-    axes[0, 1].plot(labels, [activator_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="activators", color="#b45f06")
-    axes[0, 1].plot(labels, [inhibitor_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="inhibitors", color="#38761d")
+    axes[0, 1].plot(labels, [all_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="all nodes", color=SERIES3[0])
+    axes[0, 1].plot(labels, [activator_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="activators", color=SERIES3[1])
+    axes[0, 1].plot(labels, [inhibitor_summary[str(hop)]["mean"] for hop in hops], marker="o", linewidth=2.0, label="inhibitors", color=SERIES3[2])
     axes[0, 1].set_title("Mean Recovery By Role")
     axes[0, 1].set_ylabel("Circuit latents recovered (%)")
-    axes[0, 1].legend(loc="upper left")
+    styled_legend(axes[0, 1], loc="upper left")
 
     selected_hops = sorted({1, min(3, max_hops), max_hops})
-    colors = ["#2f6f9f", "#b45f06", "#38761d"]
-    for hop, color in zip(selected_hops, colors):
+    for hop, color in zip(selected_hops, ordinal_blues(len(selected_hops))):
         axes[1, 0].hist(
             [float(row[f"all_hop{hop}_pct"]) for row in rows],
             bins=50,
@@ -331,7 +340,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1, 0].set_title("Per-Circuit Recovery Distribution")
     axes[1, 0].set_xlabel("Circuit latents recovered (%)")
     axes[1, 0].set_ylabel("Circuit count")
-    axes[1, 0].legend(loc="upper right")
+    styled_legend(axes[1, 0], loc="upper right")
 
     faithfulness = [float(row["counterfactual_faithfulness"]) for row in rows]
     final_hop = [float(row[f"all_hop{max_hops}_pct"]) for row in rows]
@@ -341,7 +350,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
         faithfulness,
         s=sizes,
         c=[float(row[f"inhibitor_hop{max_hops}_pct"]) for row in rows],
-        cmap="viridis",
+        cmap=SEQUENTIAL_CMAP,
         alpha=0.75,
         edgecolors="none",
     )
@@ -350,10 +359,9 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1, 1].set_ylabel("Counterfactual faithfulness")
     fig.colorbar(scatter, ax=axes[1, 1], label=f"Inhibitor recovery within {max_hops} hops (%)")
 
-    fig.suptitle("Exact Circuit Node Recovery From Coact Hops", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[0, 0])
+    style_suptitle(fig, "Exact Circuit Node Recovery From Coact Hops")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

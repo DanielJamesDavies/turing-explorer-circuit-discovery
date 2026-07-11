@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import INK_MUTED, SERIES2, configure_matplotlib, save_figure
 from .component_pair_heatmap import compute_component_pair_heatmap
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .sorted_pmi_decay import SUITE_NAME
@@ -114,10 +114,10 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
 
     fig, ax = plt.subplots(figsize=(10, 12))
     for component in target_components:
-        ax.scatter(0.0, target_y[component], s=55, color="#2f6f9f", zorder=3)
+        ax.scatter(0.0, target_y[component], s=55, color=SERIES2[0], zorder=3)
         ax.text(-0.05, target_y[component], str(component), ha="right", va="center", fontsize=8)
     for component in coact_components:
-        ax.scatter(1.0, coact_y[component], s=55, color="#b45f06", zorder=3)
+        ax.scatter(1.0, coact_y[component], s=55, color=SERIES2[1], zorder=3)
         ax.text(1.05, coact_y[component], str(component), ha="left", va="center", fontsize=8)
 
     for edge in edges:
@@ -125,7 +125,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
         dest_y = coact_y[int(edge["coact_component"])]
         width = 0.4 + 4.0 * (float(edge["high_count"]) / max_count)
         alpha = 0.15 + 0.65 * min(float(edge["high_rate"]), 1.0)
-        ax.plot([0.0, 1.0], [source_y, dest_y], color="#555555", linewidth=width, alpha=alpha)
+        ax.plot([0.0, 1.0], [source_y, dest_y], color=INK_MUTED, linewidth=width, alpha=alpha)
 
     ax.set_title(f"Strongest Component Pair Coactivation Edges (PMI > {threshold:g})")
     ax.text(0.0, 36.4, "Target component", ha="center", va="bottom", fontsize=12, weight="bold")
@@ -135,9 +135,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     ax.set_xticks([])
     ax.set_yticks([])
     ax.grid(False)
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

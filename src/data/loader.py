@@ -1,8 +1,9 @@
 import os
 import math
+import time
 import numpy as np
 import torch
-from typing import List, Generator, Union, Optional, cast, Tuple, Dict
+from typing import List, Generator, Union, Optional, cast, Tuple, Dict, Any
 from config import config
 
 class DataLoader:
@@ -23,6 +24,11 @@ class DataLoader:
         self.shard_id_ranges: List[Tuple[int, int]] = []
         self._shard_indices: List[np.ndarray] = []
         self._shard_sequence_counts = self._load_sequence_counts()
+        self._token_cache_ids: Optional[torch.Tensor] = None
+        self._token_cache_tokens: Optional[torch.Tensor] = None
+        self._token_cache_id_to_row: Dict[int, int] = {}
+        self._token_cache_max_length: Optional[int] = None
+        self._token_cache_metadata: Dict[str, Any] = {}
 
     def _get_shard_files(self) -> List[str]:
         """Lists and sorts all .npy shard files in the data directory."""
@@ -291,6 +297,247 @@ class DataLoader:
             batch_tokens = self._batch_to_tensor(batch_tokens_list, pad_to_max, max_length, device=(self.device if device is None else device))
             batch_ids = torch.tensor(batch_ids_list, device=self.device, dtype=torch.int32)
             yield batch_ids, batch_tokens
+
+    def get_batches_by_ids_grouped(
+        self,
+        sequence_ids: list[int],
+        pad_to_max: bool = True,
+        max_length: int = 64,
+        device: Optional[torch.device] = None,
+        restore_order: bool = True,
+    ) -> Generator[Tuple[torch.Tensor, Union[torch.Tensor, List[torch.Tensor]]], None, None]:
+        """
+        Load specific IDs grouped by shard to reduce mmap churn.
+
+        When restore_order is true, returned batches preserve the original input
+        order after the shard-local reads complete. This lets callers optimize IO
+        without changing ranked-selection semantics.
+        """
+        grouped: Dict[int, List[Tuple[int, int, int]]] = {}
+        for rank, seq_id in enumerate(sequence_ids):
+            located = self._locate_sequence_id(seq_id)
+            if located is None:
+                continue
+            shard_idx, start_id_in_shard = located
+            grouped.setdefault(shard_idx, []).append((rank, seq_id, seq_id - start_id_in_shard))
+
+        loaded: List[Tuple[int, int, np.ndarray]] = []
+        for shard_idx in sorted(grouped):
+            shard_path = os.path.join(self.data_path, self.shard_files[shard_idx])
+            shard = np.load(shard_path, mmap_mode="r")
+            shard_index = self._shard_indices[shard_idx]
+            for rank, seq_id, local_idx in grouped[shard_idx]:
+                if 0 <= local_idx < len(shard_index):
+                    start_pos, end_pos = shard_index[local_idx]
+                    loaded.append((rank, seq_id, shard[start_pos:end_pos].copy()))
+
+        if restore_order:
+            loaded.sort(key=lambda item: item[0])
+
+        batch_tokens_list: List[np.ndarray] = []
+        batch_ids_list: List[int] = []
+        for _rank, seq_id, seq in loaded:
+            batch_tokens_list.append(seq)
+            batch_ids_list.append(seq_id)
+            if len(batch_tokens_list) == self.batch_size:
+                batch_tokens = self._batch_to_tensor(batch_tokens_list, pad_to_max, max_length, device=(self.device if device is None else device))
+                batch_ids = torch.tensor(batch_ids_list, device=self.device, dtype=torch.int32)
+                yield batch_ids, batch_tokens
+                batch_tokens_list, batch_ids_list = [], []
+
+        if batch_tokens_list:
+            batch_tokens = self._batch_to_tensor(batch_tokens_list, pad_to_max, max_length, device=(self.device if device is None else device))
+            batch_ids = torch.tensor(batch_ids_list, device=self.device, dtype=torch.int32)
+            yield batch_ids, batch_tokens
+
+    def preload_sequence_tokens(
+        self,
+        sequence_ids: list[int],
+        max_length: int = 64,
+        dtype: torch.dtype = torch.int32,
+        max_bytes: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Preload selected sequence tokens into a CPU RAM cache.
+
+        The cache is intentionally CPU-resident. Callers gather from it and only
+        move the requested window to the accelerator, avoiding repeated scattered
+        mmap reads during negctx filtering.
+        """
+        started = time.perf_counter()
+        requested_ids = [int(seq_id) for seq_id in sequence_ids]
+        requested_count = len(requested_ids)
+        estimated_bytes = requested_count * int(max_length) * torch.empty((), dtype=dtype).element_size()
+        if max_bytes is not None and estimated_bytes > int(max_bytes):
+            raise MemoryError(
+                f"Requested token cache would use about {estimated_bytes} bytes, "
+                f"exceeding limit {int(max_bytes)} bytes"
+            )
+
+        grouped: Dict[int, List[Tuple[int, int, int]]] = {}
+        sorted_requests = sorted((seq_id, rank) for rank, seq_id in enumerate(requested_ids))
+        shard_idx = 0
+        for seq_id, rank in sorted_requests:
+            while shard_idx < len(self.shard_id_ranges):
+                start_id, end_id = self.shard_id_ranges[shard_idx]
+                if start_id == -1 or seq_id > end_id:
+                    shard_idx += 1
+                    continue
+                break
+            if shard_idx >= len(self.shard_id_ranges):
+                break
+            start_id, end_id = self.shard_id_ranges[shard_idx]
+            if start_id <= seq_id <= end_id:
+                grouped.setdefault(shard_idx, []).append((rank, seq_id, seq_id - start_id))
+
+        located_count = sum(len(entries) for entries in grouped.values())
+        cached_tokens = torch.zeros((located_count, max_length), dtype=dtype)
+        loaded_by_rank: List[Tuple[int, int, int]] = []
+        output_row = 0
+        for shard_idx in sorted(grouped):
+            shard_path = os.path.join(self.data_path, self.shard_files[shard_idx])
+            # Preload is a one-time cache build; reading each small shard fully is
+            # much faster than many tiny mmap-backed copies on mounted filesystems.
+            shard = np.load(shard_path, mmap_mode=None)
+            shard_index = self._shard_indices[shard_idx]
+            for rank, seq_id, local_idx in grouped[shard_idx]:
+                if 0 <= local_idx < len(shard_index):
+                    start_pos, end_pos = shard_index[local_idx]
+                    seq = shard[start_pos:end_pos]
+                    length = min(len(seq), int(max_length))
+                    if length > 0:
+                        cached_tokens[output_row, :length] = torch.as_tensor(
+                            seq[:length],
+                            dtype=dtype,
+                        )
+                    loaded_by_rank.append((rank, int(seq_id), output_row))
+                    output_row += 1
+
+        cached_tokens = cached_tokens[:output_row].contiguous()
+        loaded_by_rank.sort(key=lambda item: item[0])
+        if output_row:
+            ordered_rows = torch.tensor([row for _rank, _seq_id, row in loaded_by_rank], dtype=torch.long)
+            cached_tokens = cached_tokens.index_select(0, ordered_rows).contiguous()
+            loaded_ids = [seq_id for _rank, seq_id, _row in loaded_by_rank]
+            cached_ids = torch.tensor(loaded_ids, dtype=torch.int64)
+        else:
+            loaded_ids = []
+            cached_ids = torch.zeros((0,), dtype=torch.int64)
+
+        actual_bytes = int(cached_tokens.numel() * cached_tokens.element_size())
+        if max_bytes is not None and actual_bytes > int(max_bytes):
+            raise MemoryError(
+                f"Loaded token cache uses {actual_bytes} bytes, exceeding limit {int(max_bytes)} bytes"
+            )
+
+        self._token_cache_ids = cached_ids
+        self._token_cache_tokens = cached_tokens
+        self._token_cache_id_to_row = {int(seq_id): row for row, seq_id in enumerate(loaded_ids)}
+        self._token_cache_max_length = int(max_length)
+        self._token_cache_metadata = {
+            "requested_count": requested_count,
+            "loaded_count": len(loaded_ids),
+            "max_length": int(max_length),
+            "dtype": str(dtype).replace("torch.", ""),
+            "bytes": actual_bytes,
+            "estimated_bytes": int(estimated_bytes),
+            "duration_s": time.perf_counter() - started,
+        }
+        return dict(self._token_cache_metadata)
+
+    def has_token_cache(self, max_length: int = 64) -> bool:
+        return (
+            self._token_cache_tokens is not None
+            and self._token_cache_ids is not None
+            and self._token_cache_max_length is not None
+            and int(self._token_cache_max_length) >= int(max_length)
+        )
+
+    def token_cache_metadata(self) -> Dict[str, Any]:
+        return dict(self._token_cache_metadata)
+
+    def get_cached_tokens_by_ids(
+        self,
+        sequence_ids: list[int],
+        max_length: int = 64,
+        device: Optional[torch.device] = None,
+    ) -> Tuple[List[int], torch.Tensor, List[int]]:
+        """
+        Return cached tokens for requested IDs in requested order plus cache misses.
+        """
+        if not self.has_token_cache(max_length=max_length):
+            return [], torch.zeros((0, max_length), dtype=torch.long, device=(self.device if device is None else device)), [int(seq_id) for seq_id in sequence_ids]
+
+        assert self._token_cache_tokens is not None
+        hit_ids: List[int] = []
+        miss_ids: List[int] = []
+        row_indices: List[int] = []
+        for seq_id in sequence_ids:
+            seq_id_int = int(seq_id)
+            row = self._token_cache_id_to_row.get(seq_id_int)
+            if row is None:
+                miss_ids.append(seq_id_int)
+            else:
+                hit_ids.append(seq_id_int)
+                row_indices.append(int(row))
+
+        target_device = self.device if device is None else device
+        if not row_indices:
+            return hit_ids, torch.zeros((0, max_length), dtype=torch.long, device=target_device), miss_ids
+
+        rows = torch.tensor(row_indices, dtype=torch.long)
+        tokens = self._token_cache_tokens.index_select(0, rows)
+        tokens = self._format_cached_tokens(tokens, max_length=max_length, device=target_device)
+        return hit_ids, tokens, miss_ids
+
+    def get_cached_batches_by_ids(
+        self,
+        sequence_ids: list[int],
+        max_length: int = 64,
+        device: Optional[torch.device] = None,
+    ) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
+        hit_ids, tokens, _miss_ids = self.get_cached_tokens_by_ids(
+            sequence_ids,
+            max_length=max_length,
+            device=device,
+        )
+        if not hit_ids:
+            return
+        for start in range(0, len(hit_ids), max(1, int(self.batch_size))):
+            batch_ids = hit_ids[start : start + max(1, int(self.batch_size))]
+            batch_tokens = tokens[start : start + len(batch_ids)]
+            yield torch.tensor(batch_ids, device=self.device, dtype=torch.int32), batch_tokens
+
+    def clear_token_cache(self) -> None:
+        self._token_cache_ids = None
+        self._token_cache_tokens = None
+        self._token_cache_id_to_row = {}
+        self._token_cache_max_length = None
+        self._token_cache_metadata = {}
+
+    def _format_cached_tokens(
+        self,
+        tokens: torch.Tensor,
+        *,
+        max_length: int,
+        device: Optional[torch.device],
+    ) -> torch.Tensor:
+        if tokens.shape[1] > int(max_length):
+            tokens = tokens[:, : int(max_length)]
+        elif tokens.shape[1] < int(max_length):
+            padded = torch.zeros((tokens.shape[0], int(max_length)), dtype=tokens.dtype)
+            padded[:, : tokens.shape[1]] = tokens
+            tokens = padded
+        tokens = tokens.to(dtype=torch.long)
+        if device is not None:
+            tokens = tokens.to(device, non_blocking=self.pin_memory)
+        return tokens
+
+    def _locate_sequence_id(self, sequence_id: int) -> Optional[Tuple[int, int]]:
+        for shard_idx, (start_id, end_id) in enumerate(self.shard_id_ranges):
+            if start_id <= sequence_id <= end_id:
+                return shard_idx, start_id
+        return None
 
     def _batch_to_tensor(
         self,

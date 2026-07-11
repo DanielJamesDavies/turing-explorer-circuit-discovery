@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 
 import torch
@@ -15,6 +16,7 @@ from eval.minimality import prune_non_minimal_nodes_cf, prune_non_minimal_nodes_
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from store.circuits import Circuit, CircuitEdge, CircuitNode
+from utils.neg_context_selector import NegContextSelector
 
 
 class HybridGradientDiscovery(DiscoveryMethod):
@@ -47,6 +49,7 @@ class HybridGradientDiscovery(DiscoveryMethod):
         self.sfc_edge_threshold = float(cfg.sfc_edge_threshold)
         self.sfc_score_mode = cast(str, cfg.sfc_score_mode)
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self._last_neg_selection_metadata: dict[str, Any] = {}
 
         self.counterfactual_method = CounterfactualGradientDiscovery(
             inference, sae_bank, avg_acts, probe_builder
@@ -115,6 +118,12 @@ class HybridGradientDiscovery(DiscoveryMethod):
             return None
 
         logger.stage("fused circuit", len(fused.nodes), len(fused.edges))
+        pre_prune_source_overlap = compute_source_overlap(
+            fused,
+            seed_comp_idx=seed_comp_idx,
+            seed_latent_idx=seed_latent_idx,
+            kinds=kinds,
+        )
 
         probe_data = self.build_probe_dataset(seed_comp_idx, seed_latent_idx)
         if probe_data.pos_tokens.shape[0] == 0:
@@ -123,23 +132,15 @@ class HybridGradientDiscovery(DiscoveryMethod):
 
         pos_tokens_eval = probe_data.pos_tokens[: self.probe_batch_size]
         pos_argmax_eval = probe_data.pos_argmax[: self.probe_batch_size]
-        neg_tokens_eval = self.counterfactual_method._get_neg_tokens(
-            probe_data,
+        neg_selection = self._select_neg_context(
             seed_comp_idx,
             seed_latent_idx,
-            pos_tokens_eval,
-            pos_argmax_eval,
             logger,
         )
-        if neg_tokens_eval is None:
-            neg_tokens_eval = self.ablation_method._get_eval_neg_tokens(
-                seed_comp_idx,
-                seed_latent_idx,
-                probe_data.neg_tokens,
-                pos_tokens_eval,
-                pos_argmax_eval,
-                logger,
-            )
+        if neg_selection is None:
+            return None
+        neg_tokens_eval = neg_selection.tokens
+        self._last_neg_selection_metadata = neg_selection.metadata
 
         circuit_layers = _circuit_layers(fused)
         pre_prune_nodes = len(fused.nodes)
@@ -175,6 +176,12 @@ class HybridGradientDiscovery(DiscoveryMethod):
                 ),
             )
 
+        post_prune_source_overlap = compute_source_overlap(
+            fused,
+            seed_comp_idx=seed_comp_idx,
+            seed_latent_idx=seed_latent_idx,
+            kinds=kinds,
+        )
         cf_faith, sup_score = evaluate_counterfactual_faithfulness(
             self.inference,
             self.sae_bank,
@@ -218,7 +225,20 @@ class HybridGradientDiscovery(DiscoveryMethod):
                 "pre_prune_edge_count": pre_prune_edges,
                 "post_prune_node_count": len(fused.nodes),
                 "post_prune_edge_count": len(fused.edges),
+                "source_overlap": {
+                    "pre_prune": pre_prune_source_overlap,
+                    "post_prune": post_prune_source_overlap,
+                },
+                **_flat_source_overlap_metadata(
+                    pre_prune_source_overlap,
+                    prefix="source",
+                ),
+                **_flat_source_overlap_metadata(
+                    post_prune_source_overlap,
+                    prefix="post_prune",
+                ),
                 "neg_mode": self.counterfactual_method.neg_mode,
+                "neg_selection": dict(self._last_neg_selection_metadata),
             }
         )
 
@@ -243,6 +263,54 @@ class HybridGradientDiscovery(DiscoveryMethod):
         if self.acceptance_mode == "both":
             return cf_ok and sup_ok
         return cf_ok or sup_ok
+
+    def _select_neg_context(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        logger: CircuitLogger,
+    ):
+        mode = self.counterfactual_method.neg_mode
+        cfg = config.discovery.neg_context_selection
+        candidate_pool_size = (
+            self.counterfactual_method.distant_pool_size
+            if mode == "distant"
+            else cfg.candidate_pool_size
+        )
+        selection = self._neg_context_selector().select(
+            seed_comp_idx,
+            seed_latent_idx,
+            mode,
+            max_sequences=self.counterfactual_method.max_neg_sequences,
+            batch_size=self.counterfactual_method.neg_batch_size,
+            candidate_pool_size=candidate_pool_size,
+            exact=bool(cfg.exact_negctx_ranking),
+            non_activation_threshold=float(cfg.non_activation_threshold),
+            selection_seed=int(cfg.selection_seed),
+            filter_batch_size=int(cfg.filter_batch_size),
+            load_window_size=int(cfg.load_window_size),
+            logger=logger,
+        )
+        if selection is None:
+            logger.reject(f"neg_mode={mode}: no hybrid eval negative sequences available")
+        return selection
+
+    def _neg_context_selector(self) -> NegContextSelector:
+        from store.context import mid_ctx, neg_ctx, top_ctx
+        from store.seq_repr import seq_repr
+
+        if seq_repr is None:
+            raise RuntimeError("seq_repr must be loaded before negative-context selection")
+
+        return NegContextSelector(
+            self.inference,
+            self.sae_bank,
+            self.probe_builder.loader,
+            neg_ctx,
+            seq_repr,
+            top_ctx,
+            mid_ctx,
+        )
 
     def _prune(
         self,
@@ -369,6 +437,75 @@ def fuse_circuits_by_feature_id(
     if seed_fid not in fid_to_node:
         raise ValueError(f"fused circuit missing seed {seed_fid}")
     return fused
+
+
+def compute_source_overlap(
+    circuit: Circuit,
+    *,
+    seed_comp_idx: int,
+    seed_latent_idx: int,
+    kinds: List[str],
+) -> Dict[str, Any]:
+    n_kinds = len(kinds)
+    seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+    seed_fid = FeatureID(seed_layer, kinds[seed_kind_idx], seed_latent_idx)
+    buckets: dict[str, list[FeatureID]] = {
+        "cf_only": [],
+        "ablation_only": [],
+        "intersection": [],
+        "unknown": [],
+    }
+    by_layer: dict[str, dict[str, int]] = defaultdict(_empty_overlap_counts)
+    by_kind: dict[str, dict[str, int]] = defaultdict(_empty_overlap_counts)
+    by_role: dict[str, dict[str, int]] = defaultdict(_empty_overlap_counts)
+    seed_count = 0
+
+    for node in circuit.nodes.values():
+        fid = node.feature_id
+        if fid is None:
+            continue
+        if fid == seed_fid or node.metadata.get("role") == "seed":
+            seed_count += 1
+            continue
+        bucket = _source_overlap_bucket(node.metadata.get("source_methods", []))
+        buckets[bucket].append(fid)
+        _increment_overlap_group(by_layer[str(fid.layer)], bucket)
+        _increment_overlap_group(by_kind[str(fid.kind)], bucket)
+        roles = node.metadata.get("roles")
+        if isinstance(roles, list) and roles:
+            role_key = "+".join(str(role) for role in sorted(roles))
+        else:
+            role_key = str(node.metadata.get("role", "unknown"))
+        _increment_overlap_group(by_role[role_key], bucket)
+
+    counts = {
+        "cf_only_node_count": len(buckets["cf_only"]),
+        "ablation_only_node_count": len(buckets["ablation_only"]),
+        "intersection_node_count": len(buckets["intersection"]),
+        "unknown_node_count": len(buckets["unknown"]),
+        "seed_node_count": seed_count,
+    }
+    cf_count = counts["cf_only_node_count"] + counts["intersection_node_count"]
+    ablation_count = counts["ablation_only_node_count"] + counts["intersection_node_count"]
+    union_count = (
+        counts["cf_only_node_count"]
+        + counts["ablation_only_node_count"]
+        + counts["intersection_node_count"]
+    )
+    counts.update(
+        {
+            "cf_node_count": cf_count,
+            "ablation_node_count": ablation_count,
+            "union_node_count": union_count,
+            "jaccard": (counts["intersection_node_count"] / union_count) if union_count else 0.0,
+        }
+    )
+    return {
+        **counts,
+        "by_layer": dict(sorted(by_layer.items(), key=lambda item: int(item[0]))),
+        "by_kind": {kind: by_kind[kind] for kind in kinds if kind in by_kind},
+        "by_role": dict(sorted(by_role.items())),
+    }
 
 
 def prune_sfc_threshold(
@@ -572,6 +709,52 @@ def _merge_edge_metadata(target: Dict[str, Any], incoming: Dict[str, Any], metho
             target["weight"] = weight
 
 
+def _source_overlap_bucket(source_methods_value: Any) -> str:
+    source_methods = (
+        {str(method) for method in source_methods_value if method is not None}
+        if isinstance(source_methods_value, list)
+        else set()
+    )
+    has_cf = CounterfactualGradientDiscovery.method_name in source_methods
+    has_ablation = AblationGradientDiscovery.method_name in source_methods
+    if has_cf and has_ablation:
+        return "intersection"
+    if has_cf:
+        return "cf_only"
+    if has_ablation:
+        return "ablation_only"
+    return "unknown"
+
+
+def _empty_overlap_counts() -> dict[str, int]:
+    return {
+        "cf_only_node_count": 0,
+        "ablation_only_node_count": 0,
+        "intersection_node_count": 0,
+        "unknown_node_count": 0,
+        "union_node_count": 0,
+    }
+
+
+def _increment_overlap_group(group: dict[str, int], bucket: str) -> None:
+    key = f"{bucket}_node_count"
+    group[key] = int(group.get(key, 0)) + 1
+    if bucket != "unknown":
+        group["union_node_count"] = int(group.get("union_node_count", 0)) + 1
+
+
+def _flat_source_overlap_metadata(overlap: Dict[str, Any], *, prefix: str) -> Dict[str, Any]:
+    return {
+        f"{prefix}_cf_node_count": overlap.get("cf_node_count", 0),
+        f"{prefix}_ablation_node_count": overlap.get("ablation_node_count", 0),
+        f"{prefix}_intersection_node_count": overlap.get("intersection_node_count", 0),
+        f"{prefix}_union_node_count": overlap.get("union_node_count", 0),
+        f"{prefix}_cf_only_node_count": overlap.get("cf_only_node_count", 0),
+        f"{prefix}_ablation_only_node_count": overlap.get("ablation_only_node_count", 0),
+        f"{prefix}_jaccard": overlap.get("jaccard", 0.0),
+    }
+
+
 def _circuit_layers(circuit: Circuit) -> Set[int]:
     return {
         node.feature_id.layer
@@ -582,6 +765,7 @@ def _circuit_layers(circuit: Circuit) -> Set[int]:
 
 __all__ = [
     "HybridGradientDiscovery",
+    "compute_source_overlap",
     "fuse_circuits_by_feature_id",
     "prune_non_minimal_nodes_both",
 ]

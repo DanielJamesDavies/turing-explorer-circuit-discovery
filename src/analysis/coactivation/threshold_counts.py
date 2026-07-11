@@ -9,7 +9,7 @@ from typing import Sequence
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import FIGSIZE_WIDE, configure_matplotlib, ordinal_blues, save_figure, styled_legend
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .sorted_pmi_decay import SUITE_NAME
 
@@ -110,22 +110,21 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(rows, list)
     assert isinstance(summaries, dict)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for threshold_key, summary in summaries.items():
+    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
+    threshold_colors = ordinal_blues(len(summaries))
+    for (threshold_key, summary), color in zip(summaries.items(), threshold_colors):
         threshold_rows = [row for row in rows if row["threshold_key"] == threshold_key]
         x = [row["strong_coact_count"] for row in threshold_rows]
         y = [row["target_fraction"] for row in threshold_rows]
         label = f"PMI > {summary['threshold']:g}"
-        ax.plot(x, y, linewidth=1.8, label=label)
+        ax.plot(x, y, linewidth=1.8, color=color, label=label)
 
     ax.set_title("Strong Coactivation Counts Per Target")
     ax.set_xlabel("Number of stored coacts above PMI threshold")
     ax.set_ylabel("Fraction of target latents")
     ax.set_xlim(0, stats["top_k"])
-    ax.legend(loc="upper right")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    styled_legend(ax, loc="upper right")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

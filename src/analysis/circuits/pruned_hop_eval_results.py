@@ -10,7 +10,7 @@ from statistics import mean
 from typing import Any
 
 from analysis.io import analysis_output_dirs, resolve_run_root, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import SERIES2, configure_matplotlib, panel_figsize, save_figure, style_suptitle, styled_legend
 from .coact_overlap import SUITE_NAME
 
 
@@ -120,11 +120,11 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     labels = [f"hop{hop}" for hop in hops]
     x = range(len(labels))
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    axes[0].plot(labels, stats["faithfulness_mean"], marker="o", linewidth=2.0, label="pruned cf faith")
+    fig, axes = plt.subplots(1, 2, figsize=panel_figsize(1, 2))
+    axes[0].plot(labels, stats["faithfulness_mean"], marker="o", linewidth=2.0, color=SERIES2[0], label="pruned cf faith")
     axes[0].axhline(
         float(stats["full_counterfactual_faithfulness_mean"]),
-        color="#b45f06",
+        color=SERIES2[1],
         linestyle="--",
         linewidth=2.0,
         label="full circuit mean",
@@ -133,12 +133,12 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[0].set_ylabel("Eval score")
     axes[0].set_xticks(list(x))
     axes[0].set_xticklabels(labels)
-    axes[0].legend(loc="best")
+    styled_legend(axes[0], loc="best")
 
-    axes[1].plot(labels, stats["suppression_mean"], marker="o", linewidth=2.0, label="pruned suppression")
+    axes[1].plot(labels, stats["suppression_mean"], marker="o", linewidth=2.0, color=SERIES2[0], label="pruned suppression")
     axes[1].axhline(
         float(stats["full_posctx_suppression_score_mean"]),
-        color="#b45f06",
+        color=SERIES2[1],
         linestyle="--",
         linewidth=2.0,
         label="full circuit mean",
@@ -147,11 +147,9 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1].set_ylabel("Eval score")
     axes[1].set_xticks(list(x))
     axes[1].set_xticklabels(labels)
-    axes[1].legend(loc="best")
-    fig.suptitle("Pruned-Hop Eval Comparison", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    styled_legend(axes[1], loc="best")
+    style_suptitle(fig, "Pruned-Hop Eval Comparison")
+    save_figure(fig, path)
 
 
 def _build_summary(table_path: Path, stats: dict[str, object]) -> dict[str, object]:

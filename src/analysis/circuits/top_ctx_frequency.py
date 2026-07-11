@@ -12,7 +12,7 @@ import torch
 from analysis.coactivation.data import load_top_coactivation
 from analysis.coactivation.graph_utils import load_top_context
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BLUE, INK_MUTED, SERIES2, configure_matplotlib, panel_figsize, save_figure, style_suptitle, styled_boxplot, styled_legend
 from store.circuits import Circuit
 from .coact_overlap import SUITE_NAME
 from .node_hop_overlap import DEFAULT_KINDS, _circuit_node_sets, load_circuit_store, resolve_circuit_store_path
@@ -167,39 +167,37 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     top_ctx_k = int(stats["top_ctx_k"])
     bins = list(range(0, top_ctx_k + 2))
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    axes[0, 0].hist(circuit_counts, bins=bins, alpha=0.65, label="circuit nodes", color="#1f77b4")
-    axes[0, 0].hist(coact_counts, bins=bins, alpha=0.55, label="coact nodes", color="#ff7f0e")
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
+    axes[0, 0].hist(circuit_counts, bins=bins, alpha=0.6, label="circuit nodes", color=SERIES2[0])
+    axes[0, 0].hist(coact_counts, bins=bins, alpha=0.6, label="coact nodes", color=SERIES2[1])
     axes[0, 0].set_yscale("log")
     axes[0, 0].set_title("Top-ctx overlap count distribution")
     axes[0, 0].set_xlabel(f"Shared seed top-ctx sequences out of {top_ctx_k}")
     axes[0, 0].set_ylabel("Latent-pair count (log)")
-    axes[0, 0].legend(loc="best")
+    styled_legend(axes[0, 0], loc="best")
 
-    _plot_cdf(axes[0, 1], circuit_counts, "circuit nodes", "#1f77b4")
-    _plot_cdf(axes[0, 1], coact_counts, "coact nodes", "#ff7f0e")
+    _plot_cdf(axes[0, 1], circuit_counts, "circuit nodes", SERIES2[0])
+    _plot_cdf(axes[0, 1], coact_counts, "coact nodes", SERIES2[1])
     axes[0, 1].set_title("Cumulative distribution")
     axes[0, 1].set_xlabel(f"Shared seed top-ctx sequences out of {top_ctx_k}")
     axes[0, 1].set_ylabel("Cumulative fraction")
-    axes[0, 1].legend(loc="best")
+    styled_legend(axes[0, 1], loc="best")
 
     circuit_means = [float(row["circuit_mean_overlap_count"]) for row in rows]
     coact_means = [float(row["coact_mean_overlap_count"]) for row in rows]
-    axes[1, 0].boxplot([circuit_means, coact_means], labels=["circuit", "coact"], showfliers=False)
+    styled_boxplot(axes[1, 0], [circuit_means, coact_means], ["circuit", "coact"], list(SERIES2))
     axes[1, 0].set_title("Per-seed mean overlap")
     axes[1, 0].set_ylabel("Mean shared top-ctx sequences")
 
-    axes[1, 1].scatter(coact_means, circuit_means, s=14, alpha=0.45, color="#2ca02c")
+    axes[1, 1].scatter(coact_means, circuit_means, s=14, alpha=0.45, color=BLUE, edgecolors="none")
     max_mean = max(circuit_means + coact_means + [1.0])
-    axes[1, 1].plot([0, max_mean], [0, max_mean], linestyle="--", color="#666666", linewidth=1.0)
+    axes[1, 1].plot([0, max_mean], [0, max_mean], linestyle="--", color=INK_MUTED, linewidth=1.0)
     axes[1, 1].set_title("Per-seed circuit vs coact mean")
     axes[1, 1].set_xlabel("Coact-node mean overlap")
     axes[1, 1].set_ylabel("Circuit-node mean overlap")
 
-    fig.suptitle("Top-Context Frequency: Circuit Nodes vs Coact Nodes", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    style_suptitle(fig, "Top-Context Frequency: Circuit Nodes vs Coact Nodes")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

@@ -10,10 +10,12 @@ from eval.minimality import prune_non_minimal_nodes_cf
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 from circuit.instrument.sae_graph import SAEGraphInstrument
 from circuit.instrument.attribution import compute_latent_counterfactual_scores
+from circuit.instrument.ig_baseline import extract_signed_roles, integrated_baseline_scores
 from circuit.types.feature_id import FeatureID
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from sae.dense import target_latent_activations
+from utils.neg_context_selector import NegContextSelector
 
 
 class SeedProjectionInstrument(SAEGraphInstrument):
@@ -72,7 +74,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
 
     - ``"close"``   — hard negatives from neg_ctx: semantically similar to posctx
                       but with the seed absent (original behaviour).
-    - ``"random"``  — uniformly random token sequences drawn from the vocabulary.
+    - ``"random"``  — random real corpus sequences from the saved global neg_ctx set.
     - ``"distant"`` — corpus sequences most distant from posctx in SAE latent space
                       at the seed's layer, filtered to non-activating sequences.
                       (Implemented in Phase 3.)
@@ -104,10 +106,17 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         max_neg_sequences: Optional[int] = None,
         pruning_threshold: Optional[float] = None,
         min_faithfulness: Optional[float] = None,
+        attribution_mode: Optional[str] = None,
+        ig_steps: Optional[int] = None,
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.counterfactual_gradient
 
+        self.attribution_mode = (
+            attribution_mode if attribution_mode is not None
+            else cast(str, cfg.attribution_mode)
+        )
+        self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
         self.neg_mode = cast(str, cfg.neg_mode)
         self.distant_pool_size = cast(int, cfg.distant_pool_size)
         self.top_k_activators = (
@@ -148,6 +157,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             else cast(float, cfg.min_faithfulness)
         )
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self._last_neg_selection_metadata: dict[str, Any] = {}
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
@@ -182,7 +192,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             probe_data.neg_tokens.shape[0],
         )
 
-        # 2. Posctx eval slice — needed before _get_neg_tokens so "distant" can use it
+        # 2. Posctx eval slice — used for seed target activation and circuit evaluation.
         pos_tokens_eval = probe_data.pos_tokens[:self.probe_batch_size]
         pos_argmax_eval = probe_data.pos_argmax[:self.probe_batch_size]
 
@@ -190,7 +200,6 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         neg_tokens = self._get_neg_tokens(
             probe_data,
             seed_comp_idx, seed_latent_idx,
-            pos_tokens_eval, pos_argmax_eval,
             logger,
         )
         if neg_tokens is None:
@@ -217,12 +226,23 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             f"inhibitor: {effective_inhibitor_threshold:.4f}"
         )
 
-        # 6. Contrast-sequence gradient pass
-        activator_scores, inhibitor_scores = self._run_contrast_hop(
-            seed_comp_idx, seed_latent_idx, neg_tokens, target_act_pos, logger
-        )
+        # 6. Attribution pass. "local" runs the contrast-sequence gradient
+        # hop at the live negctx input; "ig_baseline" attributes along the
+        # mean-ablation-floor -> natural-posctx path instead (SFC-style),
+        # in which case negctx is used only by the evaluation step.
+        if self.attribution_mode == "ig_baseline":
+            activator_scores, inhibitor_scores = self._run_ig_baseline_hop(
+                seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval,
+                target_act_pos, logger,
+            )
+            pass_label = "ig_baseline grad pass"
+        else:
+            activator_scores, inhibitor_scores = self._run_contrast_hop(
+                seed_comp_idx, seed_latent_idx, neg_tokens, target_act_pos, logger
+            )
+            pass_label = f"{self.neg_mode} grad pass"
         logger.stage(
-            f"{self.neg_mode} grad pass",
+            pass_label,
             1, 0,
             note=(
                 f"{len(activator_scores)} absent activators, "
@@ -345,6 +365,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             "n_inhibitors": n_inhibitors,
             "discovery_method": self.method_name,
             "neg_mode": self.neg_mode,
+            "neg_selection": dict(self._last_neg_selection_metadata),
         })
         logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
@@ -355,258 +376,74 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         probe_data: Any,
         seed_comp_idx: int,
         seed_latent_idx: int,
-        pos_tokens_eval: torch.Tensor,
-        pos_argmax_eval: torch.Tensor,
         logger: CircuitLogger,
     ) -> Optional[torch.Tensor]:
         """
         Returns the contrast token batch ``[N, 64]`` for the gradient attribution pass,
         according to ``self.neg_mode``:
 
-        - ``"close"``   — hard negatives from neg_ctx (up to ``max_neg_sequences``).
-                          Returns ``None`` if none are available.
-        - ``"random"``  — ``max_neg_sequences`` uniformly random token sequences.
-        - ``"distant"`` — corpus sequences most distant from posctx in SAE latent space.
+        - ``"close"``   — closest non-activating sequences from global neg_ctx.
+        - ``"random"``  — random real sequences from global neg_ctx.
+        - ``"distant"`` — most distant non-activating sequences from global neg_ctx.
         """
-        if self.neg_mode == "close":
-            tokens = probe_data.neg_tokens[:self.max_neg_sequences]
-            if tokens.shape[0] == 0:
-                logger.reject("no negctx sequences available (neg_mode=close)")
-                return None
-            logger.note(f"neg_mode=close: {tokens.shape[0]} hard-negative sequences")
-            return tokens
+        del probe_data
+        selection = self._select_neg_context(
+            seed_comp_idx,
+            seed_latent_idx,
+            self.neg_mode,
+            self.max_neg_sequences,
+            self.neg_batch_size,
+            logger,
+        )
+        if selection is None:
+            return None
+        self._last_neg_selection_metadata = selection.metadata
+        return selection.tokens
 
-        if self.neg_mode == "random":
-            vocab_size: int = self.inference.model.config.vocab_size
-            tokens = torch.randint(
-                0,
-                vocab_size,
-                (self.max_neg_sequences, 64),
-                device=self.sae_bank.device,
-            )
-            logger.note(
-                f"neg_mode=random: {tokens.shape[0]} × 64 random tokens "
-                f"(vocab_size={vocab_size})"
-            )
-            return tokens
-
-        if self.neg_mode == "distant":
-            return self._get_distant_tokens(
-                seed_comp_idx, seed_latent_idx,
-                pos_tokens_eval, pos_argmax_eval,
-                logger,
-            )
-
-        raise ValueError(f"Unknown neg_mode: {self.neg_mode!r}")
-
-    def _get_posctx_sae_mean(
+    def _select_neg_context(
         self,
         seed_comp_idx: int,
         seed_latent_idx: int,
-        pos_tokens_eval: torch.Tensor,
-        pos_argmax_eval: torch.Tensor,
-    ) -> torch.Tensor:
-        """
-        Runs a no-grad forward on pos_tokens_eval and returns a ``[d_sae]`` float tensor
-        representing the mean SAE activation at ``(seed_layer, seed_kind)`` evaluated at
-        each sequence's ``pos_argmax`` position, averaged over the batch.
-
-        Used as the posctx reference vector for cosine-distance ranking in "distant" mode.
-        """
-        n_kinds = len(self.sae_bank.kinds)
-        kinds = self.sae_bank.kinds
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
-        seed_kind = kinds[seed_kind_idx]
-        d_sae = self.sae_bank.d_sae
-
-        accumulated: list = []
-
-        def capture_hook(layer_idx: int, activations: tuple) -> None:
-            if layer_idx != seed_layer:
-                return
-            act = activations[seed_kind_idx]
-            top_acts, top_indices = self.sae_bank.encode(act, seed_kind, layer_idx)
-            # top_acts, top_indices: [B, T, K]
-            B = top_acts.shape[0]
-            batch_idx = torch.arange(B, device=top_acts.device)
-            pa = pos_argmax_eval[:B].to(top_acts.device).clamp(0, top_acts.shape[1] - 1)
-            # Select activations at the pos_argmax position → [B, K]
-            acts_at = top_acts[batch_idx, pa, :]
-            idx_at = top_indices[batch_idx, pa, :]
-            # Scatter into dense [B, d_sae] then mean over batch
-            out = torch.zeros(B, d_sae, device=top_acts.device, dtype=torch.float32)
-            out.scatter_add_(1, idx_at, acts_at.float())
-            accumulated.append(out.mean(dim=0).cpu())  # [d_sae]
-
-        self.inference.disable_compile()
-        try:
-            with torch.no_grad():
-                self.inference.forward(
-                    pos_tokens_eval,
-                    activations_callback=capture_hook,
-                    return_activations=False,
-                    tokenize_final=False,
-                )
-        finally:
-            self.inference.enable_compile()
-
-        if not accumulated:
-            return torch.zeros(d_sae, dtype=torch.float32)
-        return accumulated[0]
-
-    def _get_distant_tokens(
-        self,
-        seed_comp_idx: int,
-        seed_latent_idx: int,
-        pos_tokens_eval: torch.Tensor,
-        pos_argmax_eval: torch.Tensor,
+        mode: str,
+        max_neg_sequences: int,
+        batch_size: int,
         logger: CircuitLogger,
-    ) -> Optional[torch.Tensor]:
-        """
-        Implements ``neg_mode="distant"``: samples ``distant_pool_size`` sequences from
-        the full corpus, filters to those where the seed never activates, then returns
-        the ``max_neg_sequences`` most distant from posctx in SAE latent space at
-        ``(seed_layer, seed_kind)``.
-
-        Distance metric: cosine distance between each pool sequence's scatter-summed SAE
-        activation vector (summed over all token positions) and the posctx mean SAE
-        activation vector (computed at ``pos_argmax`` positions).  Higher cosine distance
-        = more different from posctx → better contrast signal.
-
-        The pool forward passes are microbatched at ``probe_batch_size`` to stay within
-        VRAM budget.
-        """
-        n_kinds = len(self.sae_bank.kinds)
-        kinds = self.sae_bank.kinds
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
-        seed_kind = kinds[seed_kind_idx]
-        d_sae = self.sae_bank.d_sae
-        loader = self.probe_builder.loader
-
-        # 1. Sample random IDs from the full corpus
-        valid_ranges = [(s, e) for s, e in loader.shard_id_ranges if s > 0]
-        if not valid_ranges:
-            logger.reject("neg_mode=distant: no valid shard ID ranges in data loader")
-            return None
-        min_id = min(s for s, _ in valid_ranges)
-        max_id = max(e for _, e in valid_ranges)
-        sampled_ids = torch.randint(
-            min_id, max_id + 1, (self.distant_pool_size,)
-        ).tolist()
-
-        # 2. Load the pool tokens [P, 64]
-        all_batches = list(
-            loader.get_batches_by_ids(sampled_ids, max_length=64)
+    ):
+        cfg = config.discovery.neg_context_selection
+        candidate_pool_size = (
+            self.distant_pool_size if mode == "distant" else cfg.candidate_pool_size
         )
-        if not all_batches:
-            logger.reject("neg_mode=distant: could not load any sequences from pool")
-            return None
-        pool_tokens = torch.cat(
-            [batch_tokens for _, batch_tokens in all_batches], dim=0
-        )  # [P, 64], on loader.device
-
-        # 3. Microbatched no-grad forward: capture seed activation and SAE vectors
-        seed_acts_list: list = []  # max seed activation per sequence [B]
-        sae_vecs_list: list = []   # scatter-summed SAE activation per sequence [B, d_sae]
-
-        self.inference.disable_compile()
-        try:
-            for batch_start in range(0, pool_tokens.shape[0], self.probe_batch_size):
-                batch = pool_tokens[batch_start : batch_start + self.probe_batch_size]
-                batch = batch.to(self.sae_bank.device)
-
-                _seed_acts: list = []
-                _sae_vecs: list = []
-
-                def _pool_hook(layer_idx: int, activations: tuple,
-                               _sl: int = seed_layer,
-                               _ski: int = seed_kind_idx,
-                               _sk: str = seed_kind,
-                               _sli: int = seed_latent_idx,
-                               _dsae: int = d_sae,
-                               _sa: list = _seed_acts,
-                               _sv: list = _sae_vecs) -> None:
-                    if layer_idx != _sl:
-                        return
-                    act = activations[_ski]
-                    top_acts, top_indices = self.sae_bank.encode(act, _sk, _sl)
-                    # top_acts, top_indices: [B, T, K]
-                    B_loc = top_acts.shape[0]
-
-                    # Max seed activation per sequence (0 if seed never in top-k)
-                    seed_act_vals = target_latent_activations(top_acts, top_indices, _sli)  # [B, T]
-                    _sa.append(seed_act_vals.max(dim=-1).values.float().cpu())  # [B]
-
-                    # Scatter-sum over all (T, K) positions → [B, d_sae]
-                    out = torch.zeros(
-                        B_loc, _dsae, device=top_acts.device, dtype=torch.float32
-                    )
-                    out.scatter_add_(
-                        1,
-                        top_indices.view(B_loc, -1),
-                        top_acts.float().view(B_loc, -1),
-                    )
-                    _sv.append(out.cpu())  # [B, d_sae]
-
-                with torch.no_grad():
-                    self.inference.forward(
-                        batch,
-                        activations_callback=_pool_hook,
-                        return_activations=False,
-                        tokenize_final=False,
-                    )
-
-                if _seed_acts:
-                    seed_acts_list.append(_seed_acts[0])
-                    sae_vecs_list.append(_sae_vecs[0])
-        finally:
-            self.inference.enable_compile()
-
-        if not seed_acts_list:
-            logger.reject("neg_mode=distant: no SAE activations captured from pool")
-            return None
-
-        seed_acts = torch.cat(seed_acts_list, dim=0)  # [P]
-        sae_vecs = torch.cat(sae_vecs_list, dim=0)    # [P, d_sae]
-
-        # 4. Filter to sequences where the seed never fires (activation == 0)
-        non_act_mask = (seed_acts <= 0)
-        n_filtered = int(non_act_mask.sum().item())
-        logger.note(
-            f"neg_mode=distant: pool={pool_tokens.shape[0]}, "
-            f"non-activating={n_filtered}"
+        return self._neg_context_selector().select(
+            seed_comp_idx,
+            seed_latent_idx,
+            mode,
+            max_sequences=max_neg_sequences,
+            batch_size=batch_size,
+            candidate_pool_size=candidate_pool_size,
+            exact=bool(cfg.exact_negctx_ranking),
+            non_activation_threshold=float(cfg.non_activation_threshold),
+            selection_seed=int(cfg.selection_seed),
+            filter_batch_size=int(cfg.filter_batch_size),
+            load_window_size=int(cfg.load_window_size),
+            logger=logger,
         )
 
-        if n_filtered == 0:
-            logger.reject("neg_mode=distant: no non-activating sequences in pool")
-            return None
+    def _neg_context_selector(self) -> NegContextSelector:
+        from store.context import mid_ctx, neg_ctx, top_ctx
+        from store.seq_repr import seq_repr
 
-        filtered_tokens = pool_tokens[non_act_mask]  # [F, 64]
-        filtered_vecs = sae_vecs[non_act_mask]        # [F, d_sae]
+        if seq_repr is None:
+            raise RuntimeError("seq_repr must be loaded before negative-context selection")
 
-        # 5. Posctx SAE mean as the reference vector [d_sae]
-        posctx_mean = self._get_posctx_sae_mean(
-            seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval
+        return NegContextSelector(
+            self.inference,
+            self.sae_bank,
+            self.probe_builder.loader,
+            neg_ctx,
+            seq_repr,
+            top_ctx,
+            mid_ctx,
         )
-
-        # 6. Cosine distance — rank most distant first, select top-N
-        eps = 1e-8
-        pos_norm = posctx_mean / (posctx_mean.norm() + eps)          # [d_sae]
-        seq_norms = filtered_vecs / (filtered_vecs.norm(dim=-1, keepdim=True) + eps)  # [F, d_sae]
-        cosine_sim = seq_norms @ pos_norm                              # [F]
-        cosine_dist = 1.0 - cosine_sim                                 # [F], higher = more distant
-
-        n_select = min(self.max_neg_sequences, filtered_tokens.shape[0])
-        _, top_idx = torch.topk(cosine_dist, k=n_select)
-
-        selected_tokens = filtered_tokens[top_idx].to(self.sae_bank.device)  # [N, 64]
-        dist_range = cosine_dist[top_idx]
-        logger.note(
-            f"neg_mode=distant: selected {selected_tokens.shape[0]} sequences | "
-            f"cosine_dist [{dist_range.min():.3f}, {dist_range.max():.3f}]"
-        )
-
-        return selected_tokens
 
     def _get_posctx_activation(
         self,
@@ -651,6 +488,67 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             self.inference.enable_compile()
 
         return float(captured[0]) if captured else 0.0
+
+    def _run_ig_baseline_hop(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        target_act_pos: float,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
+        """SFC-style integrated-gradients attribution (Marks et al. 2025)
+        along the mean-ablation-floor -> natural-posctx path, so candidate
+        scores linearise the circuit-only counterfactual. Positive IG
+        contributions are activator candidates, negative are inhibitors."""
+
+        from eval.ablation_faithfulness import collect_site_means, upstream_sites
+
+        n_kinds = len(self.sae_bank.kinds)
+        kinds = self.sae_bank.kinds
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = kinds[seed_kind_idx]
+
+        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
+        if not sites:
+            logger.note("ig_baseline: seed has no upstream sites")
+            return {}, {}
+        site_floors = collect_site_means(self.inference, self.sae_bank, pos_tokens, sites)
+
+        sae = self.sae_bank.saes[seed_kind][seed_layer]
+        w_seed = sae.encoder.weight[seed_latent_idx].detach()
+        b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
+
+        scores_by_site, metric_floor, metric_natural = integrated_baseline_scores(
+            self.inference,
+            self.sae_bank,
+            tokens=pos_tokens,
+            substitute_sites=sites,
+            site_floors=site_floors,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            w_seed=w_seed,
+            b_seed=b_seed,
+            pos_argmax=pos_argmax,
+            objective="gap",
+            target_act=target_act_pos,
+            ig_steps=self.ig_steps,
+        )
+        logger.note(
+            f"ig_baseline: metric floor {metric_floor:.4f} -> natural {metric_natural:.4f} "
+            f"over {len(sites)} sites, {self.ig_steps} steps"
+        )
+        return extract_signed_roles(
+            scores_by_site,
+            kinds=list(kinds),
+            n_kinds=n_kinds,
+            top_k_positive=self.top_k_activators,
+            top_k_negative=self.top_k_inhibitors,
+            min_active_count=self.min_active_count,
+            active_count=latent_stats.active_count,
+            top_k_scope=self.top_k_scope,
+        )
 
     def _run_contrast_hop(
         self,

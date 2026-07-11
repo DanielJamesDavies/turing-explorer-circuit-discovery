@@ -135,12 +135,18 @@ These methods are important even if they are not the most sophisticated, because
 
 This family is valuable because it is closer to causal diagnosis than unconditional co-activation. A feature that appears everywhere the seed appears may still be incidental. A feature that sharply distinguishes seed-present from seed-absent contexts is often a better mechanistic clue.
 
-`counterfactual_gradient` goes a step further. Instead of merely comparing activation totals between positive and negative sets, it runs gradient attribution on contrast sequences where the seed is inactive. The method is designed to discover:
+`counterfactual_gradient` goes a step further. Instead of merely comparing activation totals between positive and negative sets, it runs gradient attribution on **contrast sequences** where the seed is inactive. Discovery asks which upstream features would push the seed toward its positive-context activation level; evaluation then tests that claim on positive contexts. The method is designed to discover:
 
 - **absent activators**: upstream features that would likely make the seed fire if they were present
 - **present inhibitors**: features that are actively suppressing the seed in the current negative examples
 
-The repository supports different negative modes here, including close negatives from stored negative contexts, random negatives, and more distant negatives chosen from the corpus. This gives the method flexibility in how "counterfactual" is defined.
+Because the seed is often absent from SAE top-k on contrast sequences, attribution uses the seed's **encoder pre-activation** (via `SeedProjectionInstrument`) rather than sparse top-k activation, so gradients still flow when the seed never fires. The loss pushes contrast pre-activation toward the seed's mean activation on positive contexts.
+
+The repository supports different negative modes for the contrast pass, including close negatives from stored negative contexts, random negatives, and more distant negatives chosen from the corpus by SAE cosine distance from positive contexts. This gives the method flexibility in how "counterfactual" is defined.
+
+`ablation_gradient` complements counterfactual gradient by asking the opposite question on **positive contexts** where the seed already fires: which active upstream features should be ablated to suppress it? It runs a gradient pass on positive probe sequences, scores upstream latents by first-order ablation benefit (`activation × gradient`), and keeps high-scoring features as **ablation supports**. Where counterfactual gradient finds what would activate the seed when it is absent, ablation gradient finds what causally drives it when it is present.
+
+`hybrid_gradient` runs counterfactual and ablation gradient as separate discovery passes, then **fuses** any returned circuits into one candidate by feature ID. Nodes and edges from both sources are merged, with per-method attribution scores and roles preserved. The fused circuit is optionally pruned (leave-one-out or threshold-based), then re-evaluated. Acceptance can require counterfactual faithfulness, suppression score, both, or either, depending on configuration. This method is useful when a mechanism may include both contrast-side activators/inhibitors and positive-context support features.
 
 ### 6. Upstream gradient tracing methods
 
@@ -172,9 +178,17 @@ Several related metrics appear alongside faithfulness:
 - **sufficiency** asks whether the circuit alone is enough to recover the desired behavior
 - **completeness** asks whether removing the circuit damages the original model
 - **minimality** prunes away redundant nodes by leave-one-out testing
-- **counterfactual or cluster-specific metrics** evaluate methods whose targets are not ordinary end-logit reconstruction
+- **counterfactual faithfulness** and **posctx suppression score** evaluate the counterfactual-gradient family by intervention on seed activation rather than end-logit reconstruction
+- **cluster-specific metrics** evaluate seed-free methods such as `cluster_contrast`
 
-Different methods use slightly different acceptance gates. Gradient-based upstream methods often use upstream faithfulness because their direct target is the seed's activation. Sparse expansion methods often use kind-local faithfulness because they deliberately focus on one subset of component kinds while allowing others to pass through.
+The counterfactual evaluation pair works by patching SAE activations on probe sequences:
+
+- **counterfactual faithfulness** asks whether injecting discovered activators and suppressing inhibitors on contrast contexts can make the seed fire as it does on positive contexts
+- **posctx suppression score** asks whether suppressing activators and injecting inhibitors on positive contexts can silence the seed
+
+`counterfactual_gradient` accepts circuits primarily on counterfactual faithfulness. `ablation_gradient` accepts on posctx suppression score. `hybrid_gradient` can require either metric, both, or a configurable combination.
+
+Different methods use slightly different acceptance gates. Gradient-based upstream methods often use upstream faithfulness because their direct target is the seed's activation. Sparse expansion methods often use kind-local faithfulness because they deliberately focus on one subset of component kinds while allowing others to pass through. The counterfactual/ablation/hybrid trio uses seed-intervention scores rather than logit faithfulness.
 
 Once a circuit is accepted, the repository can also run post-analysis methods to characterize it. These include:
 

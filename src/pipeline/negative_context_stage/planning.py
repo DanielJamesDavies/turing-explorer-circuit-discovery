@@ -77,6 +77,7 @@ def classify_negative_context_stage(
         return NegativeContextStageClassification("missing", "completed marker missing")
     required_outputs = [
         root / "neg_ctx.pt",
+        root / "global_negctx_ids.pt",
         root / "neg_ctx_stats.json",
         part_dir / "neg_ctx_sanity_report.json",
     ]

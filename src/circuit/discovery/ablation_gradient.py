@@ -4,8 +4,9 @@ from typing import Any, Dict, Optional, Set, cast
 import torch
 
 from .base import DiscoveryMethod
-from .counterfactual_gradient import CounterfactualGradientDiscovery, SeedProjectionInstrument
+from .counterfactual_gradient import SeedProjectionInstrument
 from circuit.instrument.attribution import compute_latent_ablation_scores
+from circuit.instrument.ig_baseline import extract_signed_roles, integrated_baseline_scores
 from circuit.types.feature_id import FeatureID
 from config import config
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
@@ -13,6 +14,7 @@ from eval.minimality import prune_non_minimal_nodes_suppression
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from store.circuits import Circuit, CircuitNode
+from utils.neg_context_selector import NegContextSelector
 
 
 class AblationGradientDiscovery(DiscoveryMethod):
@@ -36,9 +38,16 @@ class AblationGradientDiscovery(DiscoveryMethod):
         max_neg_sequences: Optional[int] = None,
         pruning_threshold: Optional[float] = None,
         min_suppression_score: Optional[float] = None,
+        attribution_mode: Optional[str] = None,
+        ig_steps: Optional[int] = None,
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.ablation_gradient
+        self.attribution_mode = (
+            attribution_mode if attribution_mode is not None
+            else cast(str, cfg.attribution_mode)
+        )
+        self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
         self.neg_mode = cast(str, cfg.neg_mode)
         self.distant_pool_size = cast(int, cfg.distant_pool_size)
         self.top_k_supports = top_k_supports if top_k_supports is not None else cast(int, cfg.top_k_supports)
@@ -59,6 +68,7 @@ class AblationGradientDiscovery(DiscoveryMethod):
             else cast(float, cfg.min_suppression_score)
         )
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self._last_neg_selection_metadata: dict[str, Any] = {}
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
@@ -144,10 +154,10 @@ class AblationGradientDiscovery(DiscoveryMethod):
             seed_comp_idx,
             seed_latent_idx,
             probe_data.neg_tokens,
-            pos_tokens_eval,
-            pos_argmax_eval,
             logger,
         )
+        if neg_tokens_eval is None:
+            return None
         circuit_layers: Set[int] = {
             node.feature_id.layer
             for node in circuit.nodes.values()
@@ -217,6 +227,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
                 "n_edges": len(circuit.edges),
                 "n_supports": n_supports,
                 "discovery_method": self.method_name,
+                "neg_mode": self.neg_mode,
+                "neg_selection": dict(self._last_neg_selection_metadata),
                 "target_loss": target_loss,
                 "target_pre_act": target_pre_act,
             }
@@ -240,6 +252,11 @@ class AblationGradientDiscovery(DiscoveryMethod):
         sae = self.sae_bank.saes[seed_kind][seed_layer]
         w_seed = sae.encoder.weight[seed_latent_idx].detach()
         b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
+
+        if self.attribution_mode == "ig_baseline":
+            return self._run_ig_baseline_hop(
+                seed_layer, seed_kind, w_seed, b_seed, pos_tokens, pos_argmax, logger
+            )
 
         instrument = SeedProjectionInstrument(self.sae_bank, seed_layer, seed_kind, w_seed, b_seed)
         was_compiled = self.inference._compiled
@@ -287,57 +304,112 @@ class AblationGradientDiscovery(DiscoveryMethod):
                 torch.cuda.empty_cache()
             gc.collect()
 
+    def _run_ig_baseline_hop(
+        self,
+        seed_layer: int,
+        seed_kind: str,
+        w_seed: torch.Tensor,
+        b_seed: torch.Tensor,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        logger: CircuitLogger,
+    ) -> tuple[Dict[FeatureID, float], float, float]:
+        """SFC-style integrated-gradients attribution (Marks et al. 2025)
+        along the mean-ablation-floor -> natural path, with the seed's drive
+        (pre-activation at probe positions) as the metric. Positive IG
+        contributions are the support candidates."""
+
+        from eval.ablation_faithfulness import collect_site_means, upstream_sites
+
+        kinds = self.sae_bank.kinds
+        n_kinds = len(kinds)
+        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
+        if not sites:
+            logger.note("ig_baseline: seed has no upstream sites")
+            return {}, 0.0, 0.0
+        site_floors = collect_site_means(self.inference, self.sae_bank, pos_tokens, sites)
+
+        scores_by_site, metric_floor, metric_natural = integrated_baseline_scores(
+            self.inference,
+            self.sae_bank,
+            tokens=pos_tokens,
+            substitute_sites=sites,
+            site_floors=site_floors,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            w_seed=w_seed,
+            b_seed=b_seed,
+            pos_argmax=pos_argmax,
+            objective="drive",
+            ig_steps=self.ig_steps,
+        )
+        logger.note(
+            f"ig_baseline: drive floor {metric_floor:.4f} -> natural {metric_natural:.4f} "
+            f"over {len(sites)} sites, {self.ig_steps} steps"
+        )
+        supports, _ = extract_signed_roles(
+            scores_by_site,
+            kinds=list(kinds),
+            n_kinds=n_kinds,
+            top_k_positive=self.top_k_supports,
+            top_k_negative=0,
+            min_active_count=self.min_active_count,
+            active_count=self._active_count(),
+            top_k_scope=self.top_k_scope,
+        )
+        return supports, metric_floor, metric_natural
+
     def _active_count(self) -> torch.Tensor:
         from store.latent_stats import latent_stats
 
         return latent_stats.active_count
-
-    def _get_posctx_sae_mean(
-        self,
-        seed_comp_idx: int,
-        seed_latent_idx: int,
-        pos_tokens_eval: torch.Tensor,
-        pos_argmax_eval: torch.Tensor,
-    ) -> torch.Tensor:
-        return CounterfactualGradientDiscovery._get_posctx_sae_mean(
-            self,
-            seed_comp_idx,
-            seed_latent_idx,
-            pos_tokens_eval,
-            pos_argmax_eval,
-        )
 
     def _get_eval_neg_tokens(
         self,
         seed_comp_idx: int,
         seed_latent_idx: int,
         stored_neg_tokens: torch.Tensor,
-        pos_tokens: torch.Tensor,
-        pos_argmax: torch.Tensor,
         logger: CircuitLogger,
-    ) -> torch.Tensor:
+    ) -> Optional[torch.Tensor]:
+        del stored_neg_tokens
         max_neg = max(1, int(self.max_neg_sequences))
-        if self.neg_mode == "close" and stored_neg_tokens.shape[0] > 0:
-            return stored_neg_tokens[:max_neg].to(self.sae_bank.device)
-        if self.neg_mode == "distant":
-            tokens = CounterfactualGradientDiscovery._get_distant_tokens(
-                self,
-                seed_comp_idx,
-                seed_latent_idx,
-                pos_tokens,
-                pos_argmax,
-                logger,
-            )
-            if tokens is not None:
-                return tokens
-            logger.note("neg_mode=distant unavailable for ablation eval; falling back to random")
-        vocab_size = int(self.inference.model.config.vocab_size)
-        generator = torch.Generator(device=self.sae_bank.device)
-        generator.manual_seed(int(seed_comp_idx) * 1_000_003 + int(seed_latent_idx) + 17)
-        return torch.randint(
-            0,
-            vocab_size,
-            (max_neg, int(pos_tokens.shape[1])),
-            device=self.sae_bank.device,
-            generator=generator,
+        cfg = config.discovery.neg_context_selection
+        candidate_pool_size = (
+            self.distant_pool_size if self.neg_mode == "distant" else cfg.candidate_pool_size
+        )
+        selection = self._neg_context_selector().select(
+            seed_comp_idx,
+            seed_latent_idx,
+            self.neg_mode,
+            max_sequences=max_neg,
+            batch_size=max(1, int(config.discovery.probe_batch_size)),
+            candidate_pool_size=candidate_pool_size,
+            exact=bool(cfg.exact_negctx_ranking),
+            non_activation_threshold=float(cfg.non_activation_threshold),
+            selection_seed=int(cfg.selection_seed),
+            filter_batch_size=int(cfg.filter_batch_size),
+            load_window_size=int(cfg.load_window_size),
+            logger=logger,
+        )
+        if selection is None:
+            logger.reject(f"neg_mode={self.neg_mode}: no eval negative sequences available")
+            return None
+        self._last_neg_selection_metadata = selection.metadata
+        return selection.tokens
+
+    def _neg_context_selector(self) -> NegContextSelector:
+        from store.context import mid_ctx, neg_ctx, top_ctx
+        from store.seq_repr import seq_repr
+
+        if seq_repr is None:
+            raise RuntimeError("seq_repr must be loaded before negative-context selection")
+
+        return NegContextSelector(
+            self.inference,
+            self.sae_bank,
+            self.probe_builder.loader,
+            neg_ctx,
+            seq_repr,
+            top_ctx,
+            mid_ctx,
         )

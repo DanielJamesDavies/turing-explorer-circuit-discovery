@@ -9,7 +9,7 @@ from typing import Sequence
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BLUE, BLUE_LIGHT, FIGSIZE_WIDE, INK, INK_MUTED, SERIES2, configure_matplotlib, save_figure, styled_legend
 from .data import TopCoactivationArtifact, load_top_coactivation
 
 SUITE_NAME = "coactivation-distributions"
@@ -115,24 +115,22 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     p99 = quantiles.get("p99")
     mean = stats["mean"]
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
     if p01 is not None and p99 is not None:
-        ax.fill_between(ranks, p01, p99, color="#7aa6c2", alpha=0.16, label="p01-p99")
+        ax.fill_between(ranks, p01, p99, color=BLUE_LIGHT, alpha=0.18, linewidth=0, label="p01-p99")
     if p10 is not None and p90 is not None:
-        ax.fill_between(ranks, p10, p90, color="#2f6f9f", alpha=0.24, label="p10-p90")
+        ax.fill_between(ranks, p10, p90, color=BLUE, alpha=0.28, linewidth=0, label="p10-p90")
     if p50 is not None:
-        ax.plot(ranks, p50, color="#111111", linewidth=2.2, label="median")
-    ax.plot(ranks, mean, color="#b45f06", linewidth=1.4, linestyle="--", label="mean")
+        ax.plot(ranks, p50, color=INK, linewidth=2.2, label="median")
+    ax.plot(ranks, mean, color=SERIES2[1], linewidth=1.4, linestyle="--", label="mean")
 
-    ax.axhline(0.0, color="#555555", linewidth=0.9, alpha=0.55)
+    ax.axhline(0.0, color=INK_MUTED, linewidth=0.9)
     ax.set_title("Sorted Coactivation PMI Decay")
     ax.set_xlabel("Coactivation rank after sorting by PMI")
     ax.set_ylabel("PMI score")
     ax.set_xlim(1, max(ranks))
-    ax.legend(loc="upper right")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    styled_legend(ax, loc="upper right")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

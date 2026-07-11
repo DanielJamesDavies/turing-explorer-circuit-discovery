@@ -524,6 +524,14 @@ class TopCoactAttrDiscoveryConfig(BaseModel):
 class CounterfactualGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
+    # Attribution mode: "local" = single-point gradient at the live contrast
+    # input (original behaviour); "ig_baseline" = integrated gradients along
+    # the path from the mean-ablated floor to the natural posctx state
+    # (recipe from Sparse Feature Circuits, Marks et al. 2025: IE_ig against
+    # the patch baseline), so selection linearises the circuit-only
+    # counterfactual that ablation faithfulness evaluates.
+    attribution_mode: str = "local"   # "local" | "ig_baseline"
+    ig_steps: int = 10                # interpolation steps for ig_baseline
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_activators: int = 8
     top_k_inhibitors: int = 8
@@ -545,9 +553,20 @@ class CounterfactualGradientConfig(BaseModel):
             raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
         return v
 
+    @field_validator("attribution_mode")
+    @classmethod
+    def validate_attribution_mode(cls, v: str) -> str:
+        allowed = ["local", "ig_baseline"]
+        if v not in allowed:
+            raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
+        return v
+
 class AblationGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
+    # See CounterfactualGradientConfig.attribution_mode.
+    attribution_mode: str = "local"   # "local" | "ig_baseline"
+    ig_steps: int = 10                # interpolation steps for ig_baseline
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_supports: int = 12
     top_k_scope: str = "layer_kind"   # "global" | "layer_kind"
@@ -571,6 +590,14 @@ class AblationGradientConfig(BaseModel):
         allowed = ["global", "layer_kind"]
         if v not in allowed:
             raise ValueError(f"top_k_scope must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("attribution_mode")
+    @classmethod
+    def validate_attribution_mode(cls, v: str) -> str:
+        allowed = ["local", "ig_baseline"]
+        if v not in allowed:
+            raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
 
 class HybridGradientConfig(BaseModel):
@@ -675,6 +702,47 @@ class ClusterContrastConfig(BaseModel):
             raise ValueError(f"top_k_scope must be one of {allowed}, got {v!r}")
         return v
 
+class NegContextSelectionConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    candidate_pool_size: Optional[int] = None
+    exact_negctx_ranking: bool = False
+    non_activation_threshold: float = 0.0
+    selection_seed: int = 17
+    filter_batch_size: int = 128
+    load_window_size: int = 1024
+    preload_negctx_tokens: bool = True
+    token_cache_max_gb: float = 10.0
+    token_cache_dtype: str = "int32"
+
+    @field_validator("candidate_pool_size")
+    @classmethod
+    def validate_candidate_pool_size(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 0:
+            raise ValueError("candidate_pool_size must be null or > 0")
+        return v
+
+    @field_validator("filter_batch_size", "load_window_size")
+    @classmethod
+    def validate_positive_selection_sizes(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("neg-context selection sizes must be > 0")
+        return v
+
+    @field_validator("token_cache_max_gb")
+    @classmethod
+    def validate_token_cache_max_gb(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("token_cache_max_gb must be > 0")
+        return v
+
+    @field_validator("token_cache_dtype")
+    @classmethod
+    def validate_token_cache_dtype(cls, v: str) -> str:
+        allowed = {"int32", "int64"}
+        if v not in allowed:
+            raise ValueError(f"token_cache_dtype must be one of {sorted(allowed)}")
+        return v
+
 class SeedFilterConfig(BaseModel):
     """Constrains which seeds CandidateSelector returns by layer and/or kind.
 
@@ -729,6 +797,7 @@ class DiscoveryConfig(BaseModel):
         "stratified_random", "circuit_yield",
     ])
     seed_filter: SeedFilterConfig = Field(default_factory=SeedFilterConfig)
+    neg_context_selection: NegContextSelectionConfig = Field(default_factory=NegContextSelectionConfig)
 
     coactivation_statistical: CoactivationStatisticalConfig = Field(default_factory=CoactivationStatisticalConfig)
     logit_attribution: LogitAttributionConfig = Field(default_factory=LogitAttributionConfig)

@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import SERIES2, configure_matplotlib, panel_figsize, round_bars, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .graph_utils import build_high_pmi_edges, high_pmi_in_degree, top_edges_by_score
 from .sorted_pmi_decay import SUITE_NAME
@@ -126,22 +126,22 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(corrected_counts, list)
 
     x = list(range(len(raw_counts)))
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    axes[0].bar(x, raw_counts, color="#2f6f9f", alpha=0.85)
+    fig, axes = plt.subplots(1, 2, figsize=panel_figsize(1, 2))
+    axes[0].bar(x, raw_counts, width=0.72, color=SERIES2[0])
     axes[0].set_title("Top Raw PMI Edges: Destination Components")
     axes[0].set_xlabel("Destination component")
     axes[0].set_ylabel("Count in top edge list")
     axes[0].set_xticks(x)
     axes[0].tick_params(axis="x", labelsize=7)
-    axes[1].bar(x, corrected_counts, color="#b45f06", alpha=0.85)
+    axes[1].bar(x, corrected_counts, width=0.72, color=SERIES2[1])
     axes[1].set_title("Top Hub-Corrected Edges: Destination Components")
     axes[1].set_xlabel("Destination component")
     axes[1].set_ylabel("Count in top edge list")
     axes[1].set_xticks(x)
     axes[1].tick_params(axis="x", labelsize=7)
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[0])
+    round_bars(axes[1])
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

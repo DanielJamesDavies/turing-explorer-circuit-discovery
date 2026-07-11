@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BLUE, configure_matplotlib, integer_ticks, round_bars, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .sorted_pmi_decay import SUITE_NAME
 
@@ -126,22 +126,24 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     fig, axes = plt.subplots(2, 1, figsize=(12, 9), gridspec_kw={"height_ratios": [2.0, 1.2]})
     hub_labels = [f"{row['component']}:{row['latent']}" for row in top_hubs[:25]]
     hub_counts = [row["high_pmi_count"] for row in top_hubs[:25]]
-    axes[0].bar(range(len(hub_counts)), hub_counts, color="#2f6f9f", alpha=0.85)
+    axes[0].bar(range(len(hub_counts)), hub_counts, width=0.72, color=BLUE)
     axes[0].set_title(f"Top Coacting Latent Hubs (PMI > {threshold:g})")
     axes[0].set_xlabel("Coacting latent (component:latent)")
     axes[0].set_ylabel("High-PMI appearances")
     axes[0].set_xticks(range(len(hub_labels)))
     axes[0].set_xticklabels(hub_labels, rotation=75, ha="right", fontsize=8)
+    integer_ticks(axes[0])
 
-    axes[1].bar(range(len(component_counts)), component_counts, color="#b45f06", alpha=0.85)
+    axes[1].bar(range(len(component_counts)), component_counts, width=0.72, color=BLUE)
     axes[1].set_title("High-PMI Coact Appearances By Coacting Component")
     axes[1].set_xlabel("Coacting component")
     axes[1].set_ylabel("High-PMI appearances")
     axes[1].set_xticks(range(len(component_counts)))
     axes[1].tick_params(axis="x", labelsize=8)
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    integer_ticks(axes[1])
+    round_bars(axes[0])
+    round_bars(axes[1])
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

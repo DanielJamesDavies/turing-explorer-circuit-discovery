@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import CLUSTER_CMAP, FIGSIZE_SQUARE, configure_matplotlib, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .profile_utils import build_hashed_coact_profiles, deterministic_sample_indices
 from .sorted_pmi_decay import SUITE_NAME
@@ -158,16 +158,14 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(labels, list)
     assert isinstance(explained, list)
 
-    fig, ax = plt.subplots(figsize=(9, 7))
-    scatter = ax.scatter(pc1, pc2, c=labels, cmap="tab20", s=4, alpha=0.55, linewidths=0)
+    fig, ax = plt.subplots(figsize=FIGSIZE_SQUARE)
+    scatter = ax.scatter(pc1, pc2, c=labels, cmap=CLUSTER_CMAP, s=4, alpha=0.55, linewidths=0)
     ax.set_title("Sampled Latent Coact-Profile Clusters")
     ax.set_xlabel(f"PC1 ({explained[0] * 100:.1f}% variance)")
     ax.set_ylabel(f"PC2 ({explained[1] * 100:.1f}% variance)")
     cbar = fig.colorbar(scatter, ax=ax)
     cbar.set_label("Cluster")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

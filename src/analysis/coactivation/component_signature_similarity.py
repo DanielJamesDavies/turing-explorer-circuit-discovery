@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import FIGSIZE_SQUARE, SEQUENTIAL_CMAP, configure_matplotlib, save_figure
 from .component_pair_heatmap import compute_component_pair_heatmap
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .profile_utils import normalize_rows
@@ -86,8 +86,9 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     similarity = torch.tensor(stats["similarity"], dtype=torch.float32)
     threshold = stats["threshold"]
 
-    fig, ax = plt.subplots(figsize=(8, 7))
-    image = ax.imshow(similarity.numpy(), cmap="magma", vmin=0.0, vmax=1.0)
+    fig, ax = plt.subplots(figsize=FIGSIZE_SQUARE)
+    image = ax.imshow(similarity.numpy(), cmap=SEQUENTIAL_CMAP, vmin=0.0, vmax=1.0)
+    ax.grid(False)
     ax.set_title(f"Target Component Coact-Signature Similarity (PMI > {threshold:g})")
     ax.set_xlabel("Target component")
     ax.set_ylabel("Target component")
@@ -97,9 +98,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     ax.tick_params(axis="y", labelsize=7)
     cbar = fig.colorbar(image, ax=ax)
     cbar.set_label("Cosine similarity of coact-component signatures")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

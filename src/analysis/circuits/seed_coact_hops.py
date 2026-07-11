@@ -9,7 +9,16 @@ from typing import Any
 import torch
 
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    SEQUENTIAL_CMAP,
+    SERIES2,
+    configure_matplotlib,
+    panel_figsize,
+    round_bars,
+    save_figure,
+    style_suptitle,
+    styled_legend,
+)
 from analysis.coactivation.coact_degrees import _expand_frontier, _summary
 from analysis.coactivation.data import TopCoactivationArtifact, load_top_coactivation
 from analysis.coactivation.graph_utils import build_high_pmi_edges, high_pmi_in_degree
@@ -205,7 +214,7 @@ def _reachability_for_source(
 
 def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
 
     pruned_summary = stats["pruned_reach_summary"]
     unpruned_summary = stats["unpruned_reach_summary"]
@@ -214,13 +223,13 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     hops = [1, 2, 3]
     labels = [f"{hop} hop" for hop in hops]
     x = range(len(hops))
-    axes[0, 0].bar([pos - 0.18 for pos in x], [pruned_summary[str(hop)]["p90"] for hop in hops], width=0.36, color="#2f6f9f", alpha=0.85, label="hub-pruned p90")
-    axes[0, 0].bar([pos + 0.18 for pos in x], [unpruned_summary[str(hop)]["p90"] for hop in hops], width=0.36, color="#b45f06", alpha=0.85, label="unpruned p90")
+    axes[0, 0].bar([pos - 0.18 for pos in x], [pruned_summary[str(hop)]["p90"] for hop in hops], width=0.3, color=SERIES2[0], label="hub-pruned p90")
+    axes[0, 0].bar([pos + 0.18 for pos in x], [unpruned_summary[str(hop)]["p90"] for hop in hops], width=0.3, color=SERIES2[1], label="unpruned p90")
     axes[0, 0].set_title("Circuit Seed Reachability By Hop")
     axes[0, 0].set_xticks(list(x))
     axes[0, 0].set_xticklabels(labels)
     axes[0, 0].set_ylabel("Reachable coact latents")
-    axes[0, 0].legend(loc="upper left")
+    styled_legend(axes[0, 0], loc="upper left")
 
     coact_overlap = stats["coact_overlap"]
     faithfulness = stats["faithfulness"]
@@ -236,26 +245,25 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     unpruned_hop3 = [int(row["unpruned_hop3_reachable"]) for row in table_rows]
     sizes = [max(8.0, min(float(node) / 8.0, 80.0)) for node in nodes]
 
-    scatter = axes[0, 1].scatter(pruned_hop3, faithfulness, s=sizes, c=coact_overlap, cmap="viridis", alpha=0.75, edgecolors="none")
+    scatter = axes[0, 1].scatter(pruned_hop3, faithfulness, s=sizes, c=coact_overlap, cmap=SEQUENTIAL_CMAP, alpha=0.75, edgecolors="none")
     axes[0, 1].set_title("Pruned 3-Hop Reach vs Faithfulness")
     axes[0, 1].set_xlabel("Seed 3-hop reachable latents, hub-pruned")
     axes[0, 1].set_ylabel("Counterfactual faithfulness")
     fig.colorbar(scatter, ax=axes[0, 1], label="Direct circuit-node coact overlap (%)")
 
-    axes[1, 0].scatter(unpruned_hop3, coact_overlap, s=sizes, c=faithfulness, cmap="plasma", alpha=0.75, edgecolors="none")
+    axes[1, 0].scatter(unpruned_hop3, coact_overlap, s=sizes, c=faithfulness, cmap=SEQUENTIAL_CMAP, alpha=0.75, edgecolors="none")
     axes[1, 0].set_title("Unpruned 3-Hop Reach vs Direct Node Overlap")
     axes[1, 0].set_xlabel("Seed 3-hop reachable latents, unpruned")
     axes[1, 0].set_ylabel("Circuit nodes in seed top coacts (%)")
 
-    axes[1, 1].scatter(unpruned_hop3, internode_density, s=sizes, c=coact_overlap, cmap="viridis", alpha=0.75, edgecolors="none")
+    axes[1, 1].scatter(unpruned_hop3, internode_density, s=sizes, c=coact_overlap, cmap=SEQUENTIAL_CMAP, alpha=0.75, edgecolors="none")
     axes[1, 1].set_title("Unpruned 3-Hop Reach vs Internode Coact Density")
     axes[1, 1].set_xlabel("Seed 3-hop reachable latents, unpruned")
     axes[1, 1].set_ylabel("Internode mutual coact density (%)")
 
-    fig.suptitle("Circuit Seed Degrees Of Coactivation", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[0, 0])
+    style_suptitle(fig, "Circuit Seed Degrees Of Coactivation")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

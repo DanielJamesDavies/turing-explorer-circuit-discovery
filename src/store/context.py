@@ -53,6 +53,11 @@ def compute_seq_scores(
     return scores.T  # [d_sae, batch]
 
 
+def build_global_sequence_ids_tensor(ctx_seq_idx: torch.Tensor) -> torch.Tensor:
+    raw = ctx_seq_idx.reshape(-1).detach().cpu().to(torch.int64)
+    return torch.unique(raw[raw > 0], sorted=True)
+
+
 class Context:
 
     ctx_seq_idx    = _AutoAllocTensor()
@@ -88,6 +93,8 @@ class Context:
             self.val_dtype = torch.bfloat16
 
         self._allocated = False
+        self._global_seq_ids_cache: Optional[torch.Tensor] = None
+        self._global_seq_ids_cache_key: Optional[Tuple[int, Tuple[int, ...]]] = None
 
     def allocate(self, device: Optional[torch.device] = None) -> None:
         if self._allocated:
@@ -120,6 +127,43 @@ class Context:
                 (self.num_components, self.d_sae), dtype=torch.int64,
             )
         self._allocated = True
+        self.clear_global_sequence_ids_cache()
+
+    def clear_global_sequence_ids_cache(self) -> None:
+        self._global_seq_ids_cache = None
+        self._global_seq_ids_cache_key = None
+
+    def _global_sequence_ids_cache_key(self) -> Tuple[int, Tuple[int, ...]]:
+        if not self._allocated:
+            return (0, ())
+        return (
+            int(self.ctx_seq_idx.data_ptr()),
+            tuple(int(dim) for dim in self.ctx_seq_idx.shape),
+        )
+
+    def cached_global_sequence_ids(self) -> Optional[torch.Tensor]:
+        if self._global_seq_ids_cache is None:
+            return None
+        if self._global_seq_ids_cache_key != self._global_sequence_ids_cache_key():
+            self.clear_global_sequence_ids_cache()
+            return None
+        return self._global_seq_ids_cache
+
+    def set_global_sequence_ids_cache(self, sequence_ids: torch.Tensor) -> torch.Tensor:
+        ids = sequence_ids.detach().cpu().to(torch.int64).reshape(-1)
+        if ids.numel() > 0:
+            ids = torch.unique(ids[ids > 0], sorted=True)
+        else:
+            ids = torch.zeros(0, dtype=torch.int64)
+        self._global_seq_ids_cache = ids
+        self._global_seq_ids_cache_key = self._global_sequence_ids_cache_key()
+        return ids
+
+    def global_sequence_ids_tensor(self) -> torch.Tensor:
+        cached = self.cached_global_sequence_ids()
+        if cached is not None:
+            return cached
+        return self.set_global_sequence_ids_cache(build_global_sequence_ids_tensor(self.ctx_seq_idx))
 
     # ------------------------------------------------------------------
     # Public update entry point
@@ -273,6 +317,7 @@ class Context:
     def load(self, path: str) -> None:
         checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         self.allocate()
+        self.clear_global_sequence_ids_cache()
         self.ctx_seq_idx.copy_(checkpoint["ctx_seq_idx"])
         self.ctx_seq_val.copy_(checkpoint["ctx_seq_val"])
         if self.ctx_type == "mid":

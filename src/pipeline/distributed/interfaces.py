@@ -17,6 +17,7 @@ CANONICAL_ARTIFACT_FILENAMES = {
     "seq_repr": "seq_repr.pt",
     "logit_ctx": "logit_ctx.pt",
     "neg_ctx": "neg_ctx.pt",
+    "global_negctx_ids": "global_negctx_ids.pt",
     "top_coactivation": "top_coactivation.pt",
     "candidates": "candidates.pt",
     "search_cache": "search_cache.parquet",
@@ -47,6 +48,7 @@ class PipelineOutputPaths:
     seq_repr: Path
     logit_ctx: Path
     neg_ctx: Path
+    global_negctx_ids: Path
     top_coactivation: Path
     candidates: Path
     search_cache: Path
@@ -67,6 +69,7 @@ def build_output_paths(run_root: str | Path = "outputs") -> PipelineOutputPaths:
         seq_repr=root / CANONICAL_ARTIFACT_FILENAMES["seq_repr"],
         logit_ctx=root / CANONICAL_ARTIFACT_FILENAMES["logit_ctx"],
         neg_ctx=root / CANONICAL_ARTIFACT_FILENAMES["neg_ctx"],
+        global_negctx_ids=root / CANONICAL_ARTIFACT_FILENAMES["global_negctx_ids"],
         top_coactivation=root / CANONICAL_ARTIFACT_FILENAMES["top_coactivation"],
         candidates=root / CANONICAL_ARTIFACT_FILENAMES["candidates"],
         search_cache=root / CANONICAL_ARTIFACT_FILENAMES["search_cache"],

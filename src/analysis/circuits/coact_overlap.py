@@ -9,7 +9,17 @@ from statistics import mean, median
 from typing import Any
 
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    BLUE,
+    INK,
+    INK_MUTED,
+    SEQUENTIAL_CMAP,
+    configure_matplotlib,
+    panel_figsize,
+    save_figure,
+    style_suptitle,
+    styled_boxplot,
+)
 
 SUITE_NAME = "circuit-coactivation"
 
@@ -20,6 +30,7 @@ class CircuitCoactOverlapResult:
     summary_path: Path
     table_path: Path
     summary: dict[str, object]
+    paper_figure_path: Path | None = None
 
 
 def plot_circuit_coact_overlap(
@@ -35,14 +46,19 @@ def plot_circuit_coact_overlap(
     stats = compute_circuit_coact_overlap(rows)
     output_dirs = analysis_output_dirs(root, SUITE_NAME, output_root=output_root)
     figure_path = output_dirs["figures"] / "circuit-coact-overlap.png"
+    paper_figure_path = output_dirs["figures"] / "circuit-coact-overlap-paper.png"
     table_path = output_dirs["tables"] / "circuit-coact-overlap-top-circuits.csv"
     output_summary_path = output_dirs["summaries"] / "circuit-coact-overlap.json"
 
     _write_plot(figure_path, stats)
+    _write_paper_plot(paper_figure_path, stats)
     _write_table(table_path, stats)
     summary = _build_summary(summary_path, stats)
+    summary["paper_figure_path"] = str(paper_figure_path)
     write_json(output_summary_path, summary)
-    return CircuitCoactOverlapResult(figure_path, output_summary_path, table_path, summary)
+    return CircuitCoactOverlapResult(
+        figure_path, output_summary_path, table_path, summary, paper_figure_path=paper_figure_path
+    )
 
 
 def load_circuit_summary_rows(path: str | Path) -> list[dict[str, Any]]:
@@ -142,22 +158,23 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     assert isinstance(faithfulness, list)
     assert isinstance(nodes, list)
 
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
     bins = 50
-    axes[0, 0].hist(coact_overlap, bins=bins, color="#2f6f9f", alpha=0.85)
+    axes[0, 0].hist(coact_overlap, bins=bins, color=BLUE)
     axes[0, 0].set_title("Seed Coact Overlap With Circuit Nodes")
     axes[0, 0].set_xlabel("Circuit nodes in seed top coacts (%)")
     axes[0, 0].set_ylabel("Circuit count")
 
-    axes[0, 1].boxplot(
+    styled_boxplot(
+        axes[0, 1],
         [coact_overlap, activator_overlap, inhibitor_overlap],
-        labels=["all nodes", "activators", "inhibitors"],
-        showfliers=False,
+        ["all nodes", "activators", "inhibitors"],
+        [BLUE] * 3,
     )
     axes[0, 1].set_title("Coact Overlap By Circuit Node Role")
     axes[0, 1].set_ylabel("Nodes in seed top coacts (%)")
 
-    axes[1, 0].hist(internode_density, bins=bins, color="#b45f06", alpha=0.85)
+    axes[1, 0].hist(internode_density, bins=bins, color=BLUE)
     axes[1, 0].set_title("Mutual Coact Density Among Circuit Nodes")
     axes[1, 0].set_xlabel("Mutually coacting node pairs (%)")
     axes[1, 0].set_ylabel("Circuit count")
@@ -168,7 +185,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
         faithfulness,
         s=sizes,
         c=internode_density,
-        cmap="viridis",
+        cmap=SEQUENTIAL_CMAP,
         alpha=0.75,
         edgecolors="none",
     )
@@ -177,10 +194,77 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1, 1].set_ylabel("Counterfactual faithfulness")
     fig.colorbar(scatter, ax=axes[1, 1], label="Internode mutual coact density (%)")
 
-    fig.suptitle("Coactivation Overlap With Discovered Circuit Nodes", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    style_suptitle(fig, "Coactivation Overlap With Discovered Circuit Nodes")
+    save_figure(fig, path)
+
+
+def _write_paper_plot(path: Path, stats: dict[str, object]) -> None:
+    """Compact two-panel variant for the paper's non-recoverability claim."""
+
+    plt = configure_matplotlib()
+    coact_overlap = stats["coact_overlap"]
+    faithfulness = stats["faithfulness"]
+    coact_summary = stats["coact_summary"]
+    correlations = stats["correlations"]
+    assert isinstance(coact_overlap, list)
+    assert isinstance(faithfulness, list)
+    assert isinstance(coact_summary, dict)
+    assert isinstance(correlations, dict)
+
+    fig, axes = plt.subplots(1, 2, figsize=panel_figsize(1, 2))
+
+    axes[0].hist(coact_overlap, bins=60, color=BLUE)
+    mean_overlap = float(coact_summary["mean"])
+    axes[0].axvline(mean_overlap, color=INK, linestyle="--", linewidth=1.4)
+    axes[0].annotate(
+        f"mean = {mean_overlap:.1f}%",
+        (mean_overlap, 1.0),
+        xycoords=("data", "axes fraction"),
+        xytext=(6, -14),
+        textcoords="offset points",
+        fontsize=10.5,
+        fontweight="medium",
+        color=INK,
+    )
+    axes[0].set_title("Seed Coact Overlap Is Near Zero")
+    axes[0].set_xlabel("Circuit nodes in seed top coacts (%)")
+    axes[0].set_ylabel("Circuit count")
+
+    axes[1].scatter(coact_overlap, faithfulness, s=10, color=BLUE, alpha=0.35, edgecolors="none")
+    pearson_r = float(correlations["coact_overlap_vs_faithfulness"])
+    y_cap = 2.0
+    clipped = sum(1 for value in faithfulness if float(value) > y_cap)
+    axes[1].set_ylim(min(-0.1, min(float(v) for v in faithfulness)), y_cap)
+    acceptance_floor = min(float(value) for value in faithfulness)
+    axes[1].axhline(acceptance_floor, color=INK_MUTED, linestyle=(0, (4, 3)), linewidth=1.2)
+    axes[1].annotate(
+        f"acceptance threshold ({acceptance_floor:.2f})",
+        (0.02, acceptance_floor),
+        xycoords=("axes fraction", "data"),
+        xytext=(0, -13),
+        textcoords="offset points",
+        fontsize=9.5,
+        fontweight="medium",
+        color=INK_MUTED,
+    )
+    note = f"Pearson r = {pearson_r:.2f} (all points)"
+    if clipped:
+        note += f"\n{clipped} points above axis"
+    axes[1].annotate(
+        note,
+        (0.97, 0.95),
+        xycoords="axes fraction",
+        ha="right",
+        va="top",
+        fontsize=10.5,
+        fontweight="medium",
+        color=INK_MUTED,
+    )
+    axes[1].set_title("Overlap Does Not Predict Faithfulness")
+    axes[1].set_xlabel("Circuit nodes in seed top coacts (%)")
+    axes[1].set_ylabel("Counterfactual faithfulness")
+
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

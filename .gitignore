@@ -17,6 +17,7 @@ src/native/build/
 /data/
 outputs/
 profile_trace/
+/paper/*
 
 # Editor
 .cursor/
@@ -24,3 +25,4 @@ profile_trace/
 .venv
 /models
 AGENTS.md
+/analysis-restyled

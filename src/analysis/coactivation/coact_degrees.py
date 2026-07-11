@@ -9,7 +9,17 @@ from statistics import mean, median
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    BLUE,
+    SERIES2,
+    configure_matplotlib,
+    integer_ticks,
+    panel_figsize,
+    round_bars,
+    save_figure,
+    style_suptitle,
+    styled_legend,
+)
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .graph_utils import build_high_pmi_edges, high_pmi_in_degree
 from .profile_utils import deterministic_sample_indices
@@ -296,7 +306,7 @@ def _hub_discounted_overlap(left: set[int], right: set[int], in_degree: torch.Te
 
 def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
 
     reach_summary = stats["reach_summary"]
     new_summary = stats["new_summary"]
@@ -309,26 +319,28 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     reach_p50 = [reach_summary[str(hop)]["p50"] for hop in hops]
     reach_p90 = [reach_summary[str(hop)]["p90"] for hop in hops]
     x = range(len(hops))
-    axes[0, 0].bar([pos - 0.18 for pos in x], reach_p50, width=0.36, color="#2f6f9f", alpha=0.85, label="p50")
-    axes[0, 0].bar([pos + 0.18 for pos in x], reach_p90, width=0.36, color="#b45f06", alpha=0.85, label="p90")
+    axes[0, 0].bar([pos - 0.18 for pos in x], reach_p50, width=0.3, color=SERIES2[0], label="p50")
+    axes[0, 0].bar([pos + 0.18 for pos in x], reach_p90, width=0.3, color=SERIES2[1], label="p90")
     axes[0, 0].set_title("Unique Latents Reachable By Hop")
     axes[0, 0].set_xticks(list(x))
     axes[0, 0].set_xticklabels(labels)
     axes[0, 0].set_ylabel("Cumulative reachable latents")
-    axes[0, 0].legend(loc="upper left")
+    styled_legend(axes[0, 0], loc="upper left")
+    integer_ticks(axes[0, 0])
 
     new_p50 = [new_summary[str(hop)]["p50"] for hop in hops]
     new_p90 = [new_summary[str(hop)]["p90"] for hop in hops]
-    axes[0, 1].bar([pos - 0.18 for pos in x], new_p50, width=0.36, color="#2f6f9f", alpha=0.85, label="p50")
-    axes[0, 1].bar([pos + 0.18 for pos in x], new_p90, width=0.36, color="#b45f06", alpha=0.85, label="p90")
+    axes[0, 1].bar([pos - 0.18 for pos in x], new_p50, width=0.3, color=SERIES2[0], label="p50")
+    axes[0, 1].bar([pos + 0.18 for pos in x], new_p90, width=0.3, color=SERIES2[1], label="p90")
     axes[0, 1].set_title("New Latents Added At Each Hop")
     axes[0, 1].set_xticks(list(x))
     axes[0, 1].set_xticklabels(labels)
     axes[0, 1].set_ylabel("New reachable latents")
-    axes[0, 1].legend(loc="upper left")
+    styled_legend(axes[0, 1], loc="upper left")
+    integer_ticks(axes[0, 1])
 
     same_component_mean = [same_component_summary[str(hop)]["mean"] for hop in hops]
-    axes[1, 0].plot(labels, same_component_mean, marker="o", linewidth=2.0, color="#2f6f9f")
+    axes[1, 0].plot(labels, same_component_mean, marker="o", linewidth=2.0, color=BLUE)
     axes[1, 0].set_title("Component Locality By Hop")
     axes[1, 0].set_ylabel("Mean fraction in source component")
     axes[1, 0].set_ylim(bottom=0.0)
@@ -337,22 +349,22 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     cross_scores = stats["two_hop_cross_component_scores"]
     assert isinstance(same_scores, list)
     assert isinstance(cross_scores, list)
-    axes[1, 1].hist(same_scores, bins=50, alpha=0.75, color="#2f6f9f", label="same component")
-    axes[1, 1].hist(cross_scores, bins=50, alpha=0.75, color="#b45f06", label="cross component")
+    axes[1, 1].hist(same_scores, bins=50, alpha=0.6, color=SERIES2[0], label="same component")
+    axes[1, 1].hist(cross_scores, bins=50, alpha=0.6, color=SERIES2[1], label="cross component")
     axes[1, 1].set_title("Hub-Discounted Shared 2-Hop Neighborhood")
     axes[1, 1].set_xlabel("Shared 2-hop neighbor score")
     axes[1, 1].set_ylabel("Sampled pair count")
-    axes[1, 1].legend(loc="upper right")
+    styled_legend(axes[1, 1], loc="upper right")
 
-    fig.suptitle("Degrees Of Coactivation", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[0, 0])
+    round_bars(axes[0, 1])
+    style_suptitle(fig, "Degrees Of Coactivation")
+    save_figure(fig, path)
 
 
 def _write_comparison_plot(path: Path, *, pruned_stats: dict[str, object], unpruned_stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 3, figsize=panel_figsize(1, 3))
     hops = [1, 2, 3]
     labels = [f"{hop} hop" for hop in hops]
     x = range(len(hops))
@@ -364,46 +376,42 @@ def _write_comparison_plot(path: Path, *, pruned_stats: dict[str, object], unpru
     axes[0].bar(
         [pos - 0.18 for pos in x],
         [pruned_reach[str(hop)]["p90"] for hop in hops],
-        width=0.36,
-        color="#2f6f9f",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[0],
         label="hub-pruned p90",
     )
     axes[0].bar(
         [pos + 0.18 for pos in x],
         [unpruned_reach[str(hop)]["p90"] for hop in hops],
-        width=0.36,
-        color="#b45f06",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[1],
         label="unpruned p90",
     )
     axes[0].set_title("Reachability P90")
     axes[0].set_xticks(list(x))
     axes[0].set_xticklabels(labels)
     axes[0].set_ylabel("Cumulative reachable latents")
-    axes[0].legend(loc="upper left")
+    styled_legend(axes[0], loc="upper left")
 
     axes[1].bar(
         [pos - 0.18 for pos in x],
         [pruned_reach[str(hop)]["mean"] for hop in hops],
-        width=0.36,
-        color="#2f6f9f",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[0],
         label="hub-pruned mean",
     )
     axes[1].bar(
         [pos + 0.18 for pos in x],
         [unpruned_reach[str(hop)]["mean"] for hop in hops],
-        width=0.36,
-        color="#b45f06",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[1],
         label="unpruned mean",
     )
     axes[1].set_title("Reachability Mean")
     axes[1].set_xticks(list(x))
     axes[1].set_xticklabels(labels)
     axes[1].set_ylabel("Cumulative reachable latents")
-    axes[1].legend(loc="upper left")
+    styled_legend(axes[1], loc="upper left")
 
     labels_2hop = ["same comp", "cross comp"]
     pruned_scores = [
@@ -415,18 +423,18 @@ def _write_comparison_plot(path: Path, *, pruned_stats: dict[str, object], unpru
         unpruned_stats["two_hop_cross_summary"]["max"],
     ]
     x2 = range(len(labels_2hop))
-    axes[2].bar([pos - 0.18 for pos in x2], pruned_scores, width=0.36, color="#2f6f9f", alpha=0.85, label="hub-pruned")
-    axes[2].bar([pos + 0.18 for pos in x2], unpruned_scores, width=0.36, color="#b45f06", alpha=0.85, label="unpruned")
+    axes[2].bar([pos - 0.18 for pos in x2], pruned_scores, width=0.3, color=SERIES2[0], label="hub-pruned")
+    axes[2].bar([pos + 0.18 for pos in x2], unpruned_scores, width=0.3, color=SERIES2[1], label="unpruned")
     axes[2].set_title("Strongest Shared 2-Hop Neighborhood")
     axes[2].set_xticks(list(x2))
     axes[2].set_xticklabels(labels_2hop)
     axes[2].set_ylabel("Max hub-discounted score")
-    axes[2].legend(loc="upper left")
+    styled_legend(axes[2], loc="upper left")
 
-    fig.suptitle("Hub-Pruned vs Unpruned Coactivation Degrees", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    for axis in axes:
+        round_bars(axis)
+    style_suptitle(fig, "Hub-Pruned vs Unpruned Coactivation Degrees")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

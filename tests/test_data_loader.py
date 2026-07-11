@@ -175,3 +175,57 @@ def test_get_batches_by_ids_preserves_requested_order_and_skips_missing_ids(
             max_length=5,
         ),
     )
+
+
+def test_get_batches_by_ids_grouped_restores_requested_order(synthetic_shards):
+    loader = DataLoader(torch.device("cpu"), skip_first_token=True)
+
+    grouped_batches = list(loader.get_batches_by_ids_grouped([4, 1, 999, 3], max_length=5))
+    normal_batches = list(loader.get_batches_by_ids([4, 1, 999, 3], max_length=5))
+    grouped_ids = torch.cat([batch_ids.cpu() for batch_ids, _tokens in grouped_batches], dim=0)
+    grouped_tokens = torch.cat([tokens.cpu() for _batch_ids, tokens in grouped_batches], dim=0)
+    normal_ids = torch.cat([batch_ids.cpu() for batch_ids, _tokens in normal_batches], dim=0)
+    normal_tokens = torch.cat([tokens.cpu() for _batch_ids, tokens in normal_batches], dim=0)
+
+    assert grouped_ids.tolist() == [4, 1, 3]
+    assert grouped_ids.tolist() == normal_ids.tolist()
+    assert torch.equal(grouped_tokens, normal_tokens)
+
+
+def test_preload_sequence_tokens_serves_cached_tokens_in_requested_order(synthetic_shards):
+    loader = DataLoader(torch.device("cpu"), skip_first_token=True)
+
+    metadata = loader.preload_sequence_tokens([4, 1, 999, 3], max_length=5, dtype=torch.int32)
+    cached_ids, cached_tokens, miss_ids = loader.get_cached_tokens_by_ids([4, 1, 999, 3], max_length=5)
+    normal_batches = list(loader.get_batches_by_ids([4, 1, 999, 3], max_length=5))
+    normal_ids = torch.cat([batch_ids.cpu() for batch_ids, _tokens in normal_batches], dim=0)
+    normal_tokens = torch.cat([tokens.cpu() for _batch_ids, tokens in normal_batches], dim=0)
+
+    assert metadata["requested_count"] == 4
+    assert metadata["loaded_count"] == 3
+    assert metadata["dtype"] == "int32"
+    assert metadata["bytes"] == 3 * 5 * torch.empty((), dtype=torch.int32).element_size()
+    assert cached_ids == [4, 1, 3]
+    assert miss_ids == [999]
+    assert cached_ids == normal_ids.tolist()
+    assert torch.equal(cached_tokens.cpu(), normal_tokens)
+
+
+def test_cached_tokens_report_partial_misses(synthetic_shards):
+    loader = DataLoader(torch.device("cpu"), skip_first_token=True)
+    loader.preload_sequence_tokens([1, 3], max_length=5, dtype=torch.int32)
+
+    cached_ids, cached_tokens, miss_ids = loader.get_cached_tokens_by_ids([4, 1, 3, 999], max_length=5)
+
+    assert cached_ids == [1, 3]
+    assert miss_ids == [4, 999]
+    assert torch.equal(
+        cached_tokens.cpu(),
+        _padded(
+            [
+                np.asarray([11, 12], dtype=np.int64),
+                np.asarray([41, 42, 43], dtype=np.int64),
+            ],
+            max_length=5,
+        ),
+    )

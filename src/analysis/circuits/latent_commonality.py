@@ -9,7 +9,7 @@ from statistics import mean, median
 from typing import Any, Mapping, Sequence
 
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BLUE, SEQUENTIAL_CMAP, configure_matplotlib, ordinal_blues, panel_figsize, save_figure, style_suptitle, styled_legend
 from circuit.types.feature_id import FeatureID
 from store.circuits import Circuit
 
@@ -270,10 +270,10 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     circuit_rows = stats["circuit_rows"]
     assert isinstance(circuit_rows, list)
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
     if commonality:
         bins = range(1, max(commonality) + 2)
-        axes[0, 0].hist(commonality, bins=bins, color="#2f6f9f", alpha=0.85)
+        axes[0, 0].hist(commonality, bins=bins, color=BLUE)
         axes[0, 0].set_yscale("log")
     axes[0, 0].set_title("Latent Commonality Across Circuits")
     axes[0, 0].set_xlabel("Circuits containing latent")
@@ -285,18 +285,18 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[0, 1].set_ylabel("Fraction of unique latents")
 
     bucket_labels = ["singleton", "rare", "shared", "common"]
-    bucket_colors = ["#7f7f7f", "#2f6f9f", "#b45f06", "#38761d"]
+    bucket_colors = ordinal_blues(len(bucket_labels))
     positions = range(len(circuit_rows))
     bottoms = [0.0 for _ in circuit_rows]
     for label, color in zip(bucket_labels, bucket_colors):
         values = [float(row[f"{label}_latent_pct"]) for row in circuit_rows]
-        axes[1, 0].bar(positions, values, bottom=bottoms, width=1.0, color=color, alpha=0.85, label=label)
+        axes[1, 0].bar(positions, values, bottom=bottoms, width=1.0, color=color, label=label)
         bottoms = [bottom + value for bottom, value in zip(bottoms, values)]
     axes[1, 0].set_title("Per-Circuit Composition By Latent Rarity")
     axes[1, 0].set_xlabel("Circuit, sorted by UUID")
     axes[1, 0].set_ylabel("Circuit latents (%)")
     axes[1, 0].set_xticks([])
-    axes[1, 0].legend(loc="upper right")
+    styled_legend(axes[1, 0], loc="upper right")
 
     sizes = [max(10.0, min(float(row["circuit_latent_count"]) / 4.0, 90.0)) for row in circuit_rows]
     scatter = axes[1, 1].scatter(
@@ -304,7 +304,7 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
         [float(row["counterfactual_faithfulness"]) for row in circuit_rows],
         s=sizes,
         c=[float(row["common_latent_pct"]) for row in circuit_rows],
-        cmap="viridis",
+        cmap=SEQUENTIAL_CMAP,
         alpha=0.75,
         edgecolors="none",
     )
@@ -313,10 +313,8 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1, 1].set_ylabel("Counterfactual faithfulness")
     fig.colorbar(scatter, ax=axes[1, 1], label="Common latents in circuit (%)")
 
-    fig.suptitle("Latent Commonality Between Discovered Circuits", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    style_suptitle(fig, "Latent Commonality Between Discovered Circuits")
+    save_figure(fig, path)
 
 
 def _plot_cdf(ax: Any, values: list[int]) -> None:
@@ -324,7 +322,7 @@ def _plot_cdf(ax: Any, values: list[int]) -> None:
         return
     ordered = sorted(values)
     y = [(idx + 1) / len(ordered) for idx in range(len(ordered))]
-    ax.step(ordered, y, where="post", color="#b45f06", linewidth=2.0)
+    ax.step(ordered, y, where="post", color=BLUE, linewidth=2.0)
     ax.set_ylim(0.0, 1.02)
 
 

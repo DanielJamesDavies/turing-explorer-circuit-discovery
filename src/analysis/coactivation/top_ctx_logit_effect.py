@@ -11,7 +11,16 @@ import torch
 import torch.nn.functional as F
 
 from analysis.io import analysis_output_dirs, resolve_run_root, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    BLUE,
+    SEQUENTIAL_CMAP,
+    SERIES2,
+    configure_matplotlib,
+    panel_figsize,
+    save_figure,
+    style_suptitle,
+    styled_boxplot,
+)
 from circuit.probe_dataset import ProbeDatasetBuilder
 from circuit.types.feature_id import FeatureID
 from data.loader import DataLoader
@@ -577,19 +586,19 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
     rows = [row for row in stats["rows"] if not row.get("skipped_reason")]
     assert isinstance(rows, list)
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=panel_figsize(2, 2))
 
     kl_values = [float(row["kl_baseline_to_ablated"]) for row in rows]
-    axes[0, 0].hist(kl_values, bins=40, color="#2f6f9f", alpha=0.85)
+    axes[0, 0].hist(kl_values, bins=40, color=BLUE)
     axes[0, 0].set_title("Top-Context Logit Effect")
     axes[0, 0].set_xlabel("Mean KL(P baseline || P ablated)")
     axes[0, 0].set_ylabel("Latent count")
 
-    axes[0, 1].scatter(
+    scatter = axes[0, 1].scatter(
         [float(row["baseline_target_activation_at_probe"]) for row in rows],
         kl_values,
         c=[int(row["layer"]) for row in rows],
-        cmap="viridis",
+        cmap=SEQUENTIAL_CMAP,
         s=20,
         alpha=0.75,
         edgecolors="none",
@@ -597,12 +606,13 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[0, 1].set_title("Live Activation vs Logit Effect")
     axes[0, 1].set_xlabel("Baseline target activation at probe")
     axes[0, 1].set_ylabel("Mean KL")
+    fig.colorbar(scatter, ax=axes[0, 1], label="Layer")
 
     by_kind = {kind: [float(row["kl_baseline_to_ablated"]) for row in rows if row["kind"] == kind] for kind in DEFAULT_KINDS}
     labels = [kind for kind, values in by_kind.items() if values]
     values = [by_kind[kind] for kind in labels]
     if values:
-        axes[1, 0].boxplot(values, labels=labels, showfliers=False)
+        styled_boxplot(axes[1, 0], values, labels, [BLUE] * len(labels))
     axes[1, 0].set_title("Logit Effect By SAE Kind")
     axes[1, 0].set_ylabel("Mean KL")
 
@@ -612,28 +622,27 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     axes[1, 1].bar(
         [str(layer) for layer in layers],
         [float(layer_summary[layer]["kl_mean"]) for layer in layers],
-        color="#b45f06",
-        alpha=0.75,
+        color=SERIES2[0],
         label="mean KL",
     )
     ax2 = axes[1, 1].twinx()
     ax2.plot(
         [str(layer) for layer in layers],
         [float(layer_summary[layer]["top1_changed_pct_mean"]) for layer in layers],
-        color="#38761d",
+        color=SERIES2[1],
         marker="o",
         linewidth=1.8,
         label="top-1 changed %",
     )
+    ax2.spines["right"].set_visible(True)
+    ax2.grid(False)
     axes[1, 1].set_title("Layer Summary")
     axes[1, 1].set_xlabel("Layer")
-    axes[1, 1].set_ylabel("Mean KL")
-    ax2.set_ylabel("Top-1 changed (%)")
+    axes[1, 1].set_ylabel("Mean KL", color=SERIES2[0])
+    ax2.set_ylabel("Top-1 changed (%)", color=SERIES2[1])
 
-    fig.suptitle("Latent Effect On Top-Context Logit Distributions", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    style_suptitle(fig, "Latent Effect On Top-Context Logit Distributions")
+    save_figure(fig, path)
 
 
 def _build_summary(root: Path, stats: dict[str, object]) -> dict[str, object]:

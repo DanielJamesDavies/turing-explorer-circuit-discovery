@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from circuit.discovery.hybrid_gradient import (
     HybridGradientDiscovery,
+    compute_source_overlap,
     fuse_circuits_by_feature_id,
     prune_non_minimal_nodes_both,
     prune_sfc_threshold,
@@ -124,6 +125,53 @@ def test_fuse_circuits_deduplicates_nodes_by_feature_id_and_remaps_edges():
     for edge in fused.edges:
         assert edge.source_uuid in fused.nodes
         assert edge.target_uuid in fused.nodes
+
+
+def test_compute_source_overlap_counts_source_sets_and_excludes_seed():
+    seed = FeatureID(0, "attn", 10)
+    shared = FeatureID(0, "mlp", 20)
+    cf_only = FeatureID(0, "resid", 30)
+    ablation_only = FeatureID(1, "mlp", 40)
+    cf = _circuit(
+        "counterfactual_gradient",
+        seed,
+        [
+            (shared, "counterfactual_activator", 0.5),
+            (cf_only, "counterfactual_inhibitor", -0.7),
+        ],
+    )
+    ablation = _circuit(
+        "ablation_gradient",
+        seed,
+        [
+            (shared, "ablation_support", 0.9),
+            (ablation_only, "ablation_support", 0.3),
+        ],
+    )
+    fused = fuse_circuits_by_feature_id(
+        [("counterfactual_gradient", cf), ("ablation_gradient", ablation)],
+        seed_comp_idx=0,
+        seed_latent_idx=10,
+        kinds=KINDS,
+    )
+
+    overlap = compute_source_overlap(
+        fused,
+        seed_comp_idx=0,
+        seed_latent_idx=10,
+        kinds=KINDS,
+    )
+
+    assert overlap["seed_node_count"] == 1
+    assert overlap["cf_node_count"] == 2
+    assert overlap["ablation_node_count"] == 2
+    assert overlap["cf_only_node_count"] == 1
+    assert overlap["ablation_only_node_count"] == 1
+    assert overlap["intersection_node_count"] == 1
+    assert overlap["union_node_count"] == 3
+    assert overlap["jaccard"] == pytest.approx(1 / 3)
+    assert overlap["by_kind"]["mlp"]["intersection_node_count"] == 1
+    assert overlap["by_layer"]["0"]["cf_only_node_count"] == 1
 
 
 def test_fuse_circuits_rejects_mismatched_seed():

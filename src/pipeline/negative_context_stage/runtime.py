@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import torch
+
+from store.context import build_global_sequence_ids_tensor
 from store.neg_context import NegCtxStats
 
 
@@ -23,6 +26,7 @@ def build_negative_contexts(output_root: str | Path = "outputs") -> None:
         )
         output_paths.run_root.mkdir(parents=True, exist_ok=True)
         compat.neg_ctx.save(str(output_paths.neg_ctx))
+        torch.save(build_global_sequence_ids_tensor(compat.neg_ctx.ctx_seq_idx), output_paths.global_negctx_ids)
         neg_stats.save(str(output_paths.run_root / "neg_ctx_stats.json"))
         neg_stats.print_summary(compat.neg_ctx.num_ctx_sequences)
         print(f"  ✓ neg_ctx built and saved to {output_paths.neg_ctx}")

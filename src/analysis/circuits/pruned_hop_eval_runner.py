@@ -21,6 +21,8 @@ from pipeline.discovery_artifacts import load_discovery_artifacts
 from sae.bank import SAEBank
 from store.circuits import Circuit
 from store.context import mid_ctx, neg_ctx, top_ctx
+from store import seq_repr as seq_repr_store
+from utils.neg_context_selector import NegContextSelector
 from .coact_overlap import SUITE_NAME
 
 RESULT_FIELDS = [
@@ -125,7 +127,11 @@ def _build_probe(probe_builder: ProbeDatasetBuilder, circuit: Circuit) -> dict[s
     n_pos = min(int(config.discovery.probe_batch_size or 16), int(probe_data.pos_tokens.shape[0]))
     pos_tokens = probe_data.pos_tokens[:n_pos].to(probe_builder.bank.device)
     pos_argmax = probe_data.pos_argmax[:n_pos].to(probe_builder.bank.device)
-    neg_tokens = _neg_tokens_for_eval(probe_builder, circuit, probe_data.neg_tokens, pos_tokens)
+    neg_tokens = _neg_tokens_for_eval(
+        probe_builder,
+        circuit,
+        probe_data.neg_tokens,
+    )
     return {"pos_tokens": pos_tokens, "neg_tokens": neg_tokens, "pos_argmax": pos_argmax}
 
 
@@ -133,22 +139,43 @@ def _neg_tokens_for_eval(
     probe_builder: ProbeDatasetBuilder,
     circuit: Circuit,
     stored_neg_tokens: torch.Tensor,
-    pos_tokens: torch.Tensor,
 ) -> torch.Tensor:
     max_neg = int(config.discovery.counterfactual_gradient.max_neg_sequences or 4)
     neg_mode = str(circuit.metadata.get("neg_mode", config.discovery.counterfactual_gradient.neg_mode))
-    if neg_mode == "random":
-        seed = int(circuit.metadata.get("seed_comp", 0)) * 1_000_003 + int(circuit.metadata.get("seed_latent", 0))
-        generator = torch.Generator(device=probe_builder.bank.device)
-        generator.manual_seed(seed)
-        vocab_size = int(probe_builder.inference.model.config.vocab_size)
-        return torch.randint(
-            0,
-            vocab_size,
-            (max_neg, int(pos_tokens.shape[1])),
-            device=probe_builder.bank.device,
-            generator=generator,
-        )
+    seed_comp = int(circuit.metadata.get("seed_comp", 0))
+    seed_latent = int(circuit.metadata.get("seed_latent", 0))
+    cfg = config.discovery.neg_context_selection
+    if seq_repr_store.seq_repr is None:
+        raise RuntimeError("seq_repr must be loaded before negative-context selection")
+    selector = NegContextSelector(
+        probe_builder.inference,
+        probe_builder.bank,
+        probe_builder.loader,
+        neg_ctx,
+        seq_repr_store.seq_repr,
+        top_ctx,
+        mid_ctx,
+    )
+    candidate_pool_size = (
+        int(config.discovery.counterfactual_gradient.distant_pool_size or 512)
+        if neg_mode == "distant"
+        else cfg.candidate_pool_size
+    )
+    selection = selector.select(
+        seed_comp,
+        seed_latent,
+        neg_mode,
+        max_sequences=max_neg,
+        batch_size=max(1, int(config.discovery.counterfactual_gradient.neg_batch_size or 4)),
+        candidate_pool_size=candidate_pool_size,
+        exact=bool(cfg.exact_negctx_ranking),
+        non_activation_threshold=float(cfg.non_activation_threshold),
+        selection_seed=int(cfg.selection_seed),
+        filter_batch_size=int(cfg.filter_batch_size),
+        load_window_size=int(cfg.load_window_size),
+    )
+    if selection is not None:
+        return selection.tokens
     return stored_neg_tokens[:max_neg].to(probe_builder.bank.device)
 
 

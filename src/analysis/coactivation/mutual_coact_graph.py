@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import BAR_WIDTH, BLUE, SEQUENTIAL_CMAP, configure_matplotlib, panel_figsize, round_bars, save_figure
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .graph_utils import build_high_pmi_edges, edge_codes
 from .sorted_pmi_decay import SUITE_NAME
@@ -133,8 +133,9 @@ def compute_mutual_coact_graph(
 def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
     component_pair_counts = torch.tensor(stats["component_pair_counts"], dtype=torch.float32)
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    image = axes[0].imshow(component_pair_counts.numpy(), cmap="viridis", aspect="auto")
+    fig, axes = plt.subplots(1, 2, figsize=panel_figsize(1, 2))
+    image = axes[0].imshow(component_pair_counts.numpy(), cmap=SEQUENTIAL_CMAP, aspect="auto")
+    axes[0].grid(False)
     axes[0].set_title("Mutual Coact Pairs By Component")
     axes[0].set_xlabel("Component")
     axes[0].set_ylabel("Component")
@@ -147,14 +148,13 @@ def _write_plot(path: Path, stats: dict[str, object]) -> None:
     top_pairs = stats["top_pairs"]
     labels = [f"{row['source_component']}:{row['source_latent']}<->{row['dest_component']}:{row['dest_latent']}" for row in top_pairs[:15]]
     strengths = [row["mutual_strength"] for row in top_pairs[:15]]
-    axes[1].bar(range(len(strengths)), strengths, color="#2f6f9f", alpha=0.85)
+    axes[1].bar(range(len(strengths)), strengths, width=BAR_WIDTH, color=BLUE)
     axes[1].set_title("Strongest Mutual Latent Pairs")
     axes[1].set_ylabel("min(PMI A->B, PMI B->A)")
     axes[1].set_xticks(range(len(labels)))
     axes[1].set_xticklabels(labels, rotation=75, ha="right", fontsize=7)
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[1])
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

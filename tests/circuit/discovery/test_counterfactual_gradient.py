@@ -506,6 +506,7 @@ class TestCounterfactualGradientDiscovery:
         dependencies mocked out.
 
         - probe_data is returned by build_probe_dataset.
+        - _get_neg_tokens is mocked to represent centralized selector output.
         - _get_posctx_activation returns 1.0.
         - _run_contrast_hop returns (activator_fids_and_scores, inhibitor_fids_and_scores).
         - evaluate_counterfactual_faithfulness returns (cf_faith, suppression_score).
@@ -528,6 +529,9 @@ class TestCounterfactualGradientDiscovery:
             mock_ls.active_count = mock_active_count
 
             algo._get_posctx_activation = MagicMock(return_value=1.0)
+            algo._get_neg_tokens = MagicMock(
+                return_value=probe_data.neg_tokens if probe_data.neg_tokens.shape[0] > 0 else None
+            )
             algo._run_contrast_hop = MagicMock(
                 return_value=(activator_fids_and_scores, inhibitor_fids_and_scores)
             )

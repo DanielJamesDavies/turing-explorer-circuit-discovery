@@ -8,7 +8,16 @@ from pathlib import Path
 import torch
 
 from analysis.io import analysis_output_dirs, write_csv, write_json
-from analysis.style import configure_matplotlib
+from analysis.style import (
+    FIGSIZE_WIDE,
+    SERIES2,
+    configure_matplotlib,
+    panel_figsize,
+    round_bars,
+    save_figure,
+    style_suptitle,
+    styled_legend,
+)
 from .data import TopCoactivationArtifact, load_top_coactivation
 from .graph_utils import build_high_pmi_edges, deterministic_edge_sample, load_top_context
 from .sorted_pmi_decay import SUITE_NAME
@@ -141,16 +150,14 @@ def _random_baseline_pairs(num_latents: int, count: int) -> tuple[torch.Tensor, 
 def _write_plot(path: Path, stats: dict[str, object]) -> None:
     plt = configure_matplotlib()
     centers = [(left + right) / 2.0 for left, right in zip(stats["bin_left"], stats["bin_right"])]
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(centers, stats["coact_density"], linewidth=2.0, color="#2f6f9f", label="high-PMI coacting pairs")
-    ax.plot(centers, stats["random_density"], linewidth=2.0, color="#b45f06", label="random latent pairs")
+    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
+    ax.plot(centers, stats["coact_density"], linewidth=2.0, color=SERIES2[0], label="high-PMI coacting pairs")
+    ax.plot(centers, stats["random_density"], linewidth=2.0, color=SERIES2[1], label="random latent pairs")
     ax.set_title("Exact Top-Context Sequence Overlap")
     ax.set_xlabel("Shared top_ctx sequence count")
     ax.set_ylabel("Density within pair type")
-    ax.legend(loc="upper right")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    styled_legend(ax, loc="upper right")
+    save_figure(fig, path)
 
 
 def _write_readable_plot(path: Path, stats: dict[str, object]) -> None:
@@ -172,40 +179,40 @@ def _write_readable_plot(path: Path, stats: dict[str, object]) -> None:
     coact_survival = _survival_density(coact_counts)
     random_survival = _survival_density(random_counts)
 
-    fig, axes = plt.subplots(2, 3, figsize=(16, 9))
-    axes[0, 0].semilogy(centers, coact_density, linewidth=2.0, color="#2f6f9f", label="high-PMI coacting pairs")
-    axes[0, 0].semilogy(centers, random_density, linewidth=2.0, color="#b45f06", label="random latent pairs")
+    fig, axes = plt.subplots(2, 3, figsize=panel_figsize(2, 3))
+    axes[0, 0].semilogy(centers, coact_density, linewidth=2.0, color=SERIES2[0], label="high-PMI coacting pairs")
+    axes[0, 0].semilogy(centers, random_density, linewidth=2.0, color=SERIES2[1], label="random latent pairs")
     axes[0, 0].set_title("Full Distribution (Log Y)")
     axes[0, 0].set_xlabel("Shared top_ctx sequence count")
     axes[0, 0].set_ylabel("Density")
-    axes[0, 0].legend(loc="upper right")
+    styled_legend(axes[0, 0], loc="upper right")
 
     nonzero = [idx for idx, center in enumerate(centers) if center > 0.5]
     axes[0, 1].plot(
         [centers[idx] for idx in nonzero],
         [coact_density[idx] for idx in nonzero],
         linewidth=2.0,
-        color="#2f6f9f",
+        color=SERIES2[0],
         label="high-PMI coacting pairs",
     )
     axes[0, 1].plot(
         [centers[idx] for idx in nonzero],
         [random_density[idx] for idx in nonzero],
         linewidth=2.0,
-        color="#b45f06",
+        color=SERIES2[1],
         label="random latent pairs",
     )
     axes[0, 1].set_title("Nonzero Overlap Only")
     axes[0, 1].set_xlabel("Shared top_ctx sequence count")
     axes[0, 1].set_ylabel("Density")
-    axes[0, 1].legend(loc="upper right")
+    styled_legend(axes[0, 1], loc="upper right")
 
-    axes[0, 2].semilogy(centers, coact_survival, linewidth=2.0, color="#2f6f9f", label="high-PMI coacting pairs")
-    axes[0, 2].semilogy(centers, random_survival, linewidth=2.0, color="#b45f06", label="random latent pairs")
+    axes[0, 2].semilogy(centers, coact_survival, linewidth=2.0, color=SERIES2[0], label="high-PMI coacting pairs")
+    axes[0, 2].semilogy(centers, random_survival, linewidth=2.0, color=SERIES2[1], label="random latent pairs")
     axes[0, 2].set_title("Survival Curve: P(overlap >= x)")
     axes[0, 2].set_xlabel("Shared top_ctx sequence count")
     axes[0, 2].set_ylabel("Fraction of pairs")
-    axes[0, 2].legend(loc="upper right")
+    styled_legend(axes[0, 2], loc="upper right")
 
     coact_summary = stats["coact_summary"]
     random_summary = stats["random_summary"]
@@ -221,35 +228,33 @@ def _write_readable_plot(path: Path, stats: dict[str, object]) -> None:
         float(random_summary["overlap_p90"]),
     ]
     x = range(len(labels))
-    axes[1, 0].bar([pos - 0.18 for pos in x], coact_values, width=0.36, color="#2f6f9f", alpha=0.85, label="coacting")
-    axes[1, 0].bar([pos + 0.18 for pos in x], random_values, width=0.36, color="#b45f06", alpha=0.85, label="random")
+    axes[1, 0].bar([pos - 0.18 for pos in x], coact_values, width=0.3, color=SERIES2[0], label="coacting")
+    axes[1, 0].bar([pos + 0.18 for pos in x], random_values, width=0.3, color=SERIES2[1], label="random")
     axes[1, 0].set_title("Overlap Count Summary")
     axes[1, 0].set_xticks(list(x))
     axes[1, 0].set_xticklabels(labels, rotation=20, ha="right")
-    axes[1, 0].legend(loc="upper right")
+    styled_legend(axes[1, 0], loc="upper right")
 
     jaccard_labels = ["mean Jaccard"]
     jaccard_x = range(len(jaccard_labels))
     axes[1, 1].bar(
         [pos - 0.18 for pos in jaccard_x],
         [float(coact_summary["jaccard_mean"])],
-        width=0.36,
-        color="#2f6f9f",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[0],
         label="coacting",
     )
     axes[1, 1].bar(
         [pos + 0.18 for pos in jaccard_x],
         [float(random_summary["jaccard_mean"])],
-        width=0.36,
-        color="#b45f06",
-        alpha=0.85,
+        width=0.3,
+        color=SERIES2[1],
         label="random",
     )
     axes[1, 1].set_title("Mean Jaccard Summary")
     axes[1, 1].set_xticks(list(jaccard_x))
     axes[1, 1].set_xticklabels(jaccard_labels, rotation=20, ha="right")
-    axes[1, 1].legend(loc="upper right")
+    styled_legend(axes[1, 1], loc="upper right")
 
     axes[1, 2].axis("off")
     axes[1, 2].text(
@@ -270,10 +275,10 @@ def _write_readable_plot(path: Path, stats: dict[str, object]) -> None:
         fontsize=11,
     )
 
-    fig.suptitle("Exact Top-Context Sequence Overlap: Readable Views", fontsize=16, fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
+    round_bars(axes[1, 0])
+    round_bars(axes[1, 1])
+    style_suptitle(fig, "Exact Top-Context Sequence Overlap: Readable Views")
+    save_figure(fig, path)
 
 
 def _write_table(path: Path, stats: dict[str, object]) -> None:

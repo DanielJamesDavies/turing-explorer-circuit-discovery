@@ -31,6 +31,17 @@ def _write_discovery_artifacts(run_root: Path, *, mode: str | None = None) -> No
         )
     torch.save(
         {
+            "repr_buf": torch.ones((5, 3), dtype=torch.float16),
+            "repr_mode": "mean_pool",
+            "repr_dim": 3,
+            "n_seqs": 4,
+            "n_stored": 4,
+            "is_capped": False,
+        },
+        run_root / "seq_repr.pt",
+    )
+    torch.save(
+        {
             "latent_counts": torch.ones(shape, dtype=torch.int64),
             "top_tokens": torch.ones(ctx_shape, dtype=torch.int32),
             "top_probs": torch.ones(ctx_shape, dtype=torch.float32),
@@ -125,3 +136,60 @@ def test_load_discovery_artifacts_uses_shared_store_loaders(monkeypatch, tmp_pat
         "logit_ctx": run_root / "logit_ctx.pt",
         "top_coactivation": run_root / "top_coactivation.pt",
     }
+    from store import seq_repr as seq_repr_store
+
+    assert seq_repr_store.seq_repr is not None
+    assert seq_repr_store.seq_repr.get_repr(torch.tensor([1, 4])).shape == (2, 3)
+
+
+def test_load_discovery_artifacts_attaches_optional_global_negctx_ids(tmp_path):
+    run_root = tmp_path / "run"
+    _write_discovery_artifacts(run_root)
+    torch.save(torch.tensor([3, 1, 2, 3], dtype=torch.int64), run_root / "global_negctx_ids.pt")
+    seen = {}
+
+    class FakeStore:
+        def __init__(self, key):
+            self.key = key
+
+        def load(self, path):
+            seen[self.key] = Path(path)
+
+    class FakeNegStore(FakeStore):
+        def __init__(self):
+            super().__init__("neg_ctx")
+            self.cached = None
+
+        def set_global_sequence_ids_cache(self, sequence_ids):
+            self.cached = torch.unique(sequence_ids.detach().cpu().to(torch.int64), sorted=True)
+            return self.cached
+
+        def cached_global_sequence_ids(self):
+            return self.cached
+
+    fake_neg_ctx = FakeNegStore()
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        monkeypatch.setattr("pipeline.discovery_artifacts.latent_stats", FakeStore("latent_stats"))
+        monkeypatch.setattr("pipeline.discovery_artifacts.top_ctx", FakeStore("top_ctx"))
+        monkeypatch.setattr("pipeline.discovery_artifacts.mid_ctx", FakeStore("mid_ctx"))
+        monkeypatch.setattr("pipeline.discovery_artifacts.neg_ctx", fake_neg_ctx)
+        monkeypatch.setattr("pipeline.discovery_artifacts.logit_ctx", FakeStore("logit_ctx"))
+        monkeypatch.setattr("pipeline.discovery_artifacts.top_coactivation", FakeStore("top_coactivation"))
+
+        load_discovery_artifacts(run_root, candidates_path=run_root / "candidates.pt")
+    finally:
+        monkeypatch.undo()
+
+    cached = fake_neg_ctx.cached_global_sequence_ids()
+    assert cached is not None
+    assert cached.tolist() == [1, 2, 3]
+
+
+def test_validate_discovery_artifacts_requires_seq_repr(tmp_path):
+    run_root = tmp_path / "run"
+    _write_discovery_artifacts(run_root)
+    (run_root / "seq_repr.pt").unlink()
+
+    with pytest.raises(FileNotFoundError, match="seq_repr.pt"):
+        validate_discovery_artifacts(run_root, candidates_path=run_root / "candidates.pt")
