@@ -149,8 +149,6 @@ def run_gradient_size_sweep(
         method_instances: Dict[tuple[str, str], Any] = {}
         for name in methods:
             for mode in attribution_modes:
-                if name == "hybrid_gradient" and mode != "local":
-                    continue
                 method_instances[(name, mode)] = _build_mode_method(
                     name, mode, inference, bank, avg_acts, probe_builder
                 )
@@ -401,18 +399,28 @@ def _build_mode_method(
         return AblationGradientDiscovery(
             inference, bank, avg_acts, probe_builder, attribution_mode=attribution_mode
         )
-    if attribution_mode != "local":
-        raise ValueError(f"{name} does not support attribution_mode={attribution_mode!r}")
-    return _build_method(name, inference, bank, avg_acts, probe_builder)
+    # Hybrid composes cf+abl sub-methods that read attribution_mode from
+    # config at construction; pin it for the build, then restore.
+    cf_cfg, ab_cfg = config.discovery.counterfactual_gradient, config.discovery.ablation_gradient
+    saved = (cf_cfg.attribution_mode, ab_cfg.attribution_mode)
+    try:
+        cf_cfg.attribution_mode = attribution_mode
+        ab_cfg.attribution_mode = attribution_mode
+        return _build_method(name, inference, bank, avg_acts, probe_builder)
+    finally:
+        cf_cfg.attribution_mode, ab_cfg.attribution_mode = saved
 
 
 def _circuit_depth_stats(circuit: Circuit) -> Dict[str, Any]:
-    """Graph-hop depth of nodes from the seed along circuit edges.
+    """Longest-path depth of nodes to the seed along circuit edges.
 
-    Depth = shortest hop count from a node to the seed following edge
+    Depth = the LONGEST hop count from a node to the seed following edge
     direction (source -> target). A pure star circuit measures depth 1 for
-    every node; closure modes that add node-to-node edges will show deeper
-    chains. n_internal_edges counts edges whose target is not the seed."""
+    every node; once direct-effect edges wire members together, depth
+    measures chain length even though star edges (depth-1 shortcuts to the
+    seed) are preserved. n_internal_edges counts edges whose target is not
+    the seed. Cycles (impossible for site-ordered edges) are guarded by
+    treating in-progress nodes as dead ends."""
 
     seed_uuid = next(
         (uuid for uuid, node in circuit.nodes.items() if node.metadata.get("role") == "seed"),
@@ -421,26 +429,36 @@ def _circuit_depth_stats(circuit: Circuit) -> Dict[str, Any]:
     if seed_uuid is None or not circuit.edges:
         return {"node_depth_max": 0, "node_depth_mean": 0.0, "n_internal_edges": 0}
 
-    # Reverse adjacency: for BFS outward from the seed, walk target -> sources.
-    sources_by_target: Dict[str, list[str]] = {}
+    targets_by_source: Dict[str, list[str]] = {}
     n_internal = 0
     for edge in circuit.edges:
-        sources_by_target.setdefault(edge.target_uuid, []).append(edge.source_uuid)
+        targets_by_source.setdefault(edge.source_uuid, []).append(edge.target_uuid)
         if edge.target_uuid != seed_uuid:
             n_internal += 1
 
-    depths: Dict[str, int] = {seed_uuid: 0}
-    frontier = [seed_uuid]
-    while frontier:
-        next_frontier: list[str] = []
-        for uuid in frontier:
-            for source in sources_by_target.get(uuid, ()):
-                if source not in depths:
-                    depths[source] = depths[uuid] + 1
-                    next_frontier.append(source)
-        frontier = next_frontier
+    memo: Dict[str, float] = {seed_uuid: 0}
+    in_progress: set[str] = set()
 
-    non_seed_depths = [depth for uuid, depth in depths.items() if uuid != seed_uuid]
+    def longest_to_seed(uuid: str) -> float:
+        if uuid in memo:
+            return memo[uuid]
+        if uuid in in_progress:
+            return float("-inf")
+        in_progress.add(uuid)
+        best = float("-inf")
+        for target in targets_by_source.get(uuid, ()):
+            downstream = longest_to_seed(target)
+            if downstream + 1 > best:
+                best = downstream + 1
+        in_progress.discard(uuid)
+        memo[uuid] = best
+        return best
+
+    non_seed_depths = [
+        int(depth)
+        for uuid in circuit.nodes
+        if uuid != seed_uuid and (depth := longest_to_seed(uuid)) > float("-inf")
+    ]
     if not non_seed_depths:
         return {"node_depth_max": 0, "node_depth_mean": 0.0, "n_internal_edges": n_internal}
     return {
