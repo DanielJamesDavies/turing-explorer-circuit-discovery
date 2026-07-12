@@ -386,6 +386,98 @@ class TestEvaluateAblationFaithfulness:
 # ---------------------------------------------------------------------------
 
 
+class TestFloorSource:
+    def _loader(self, tokens):
+        loader = MagicMock()
+        loader.get_batches.return_value = iter([(None, tokens)])
+        return loader
+
+    def test_posctx_source_returns_means_unchanged(self, monkeypatch):
+        from config import config as cfg
+        from eval.ablation_faithfulness import resolve_site_floors
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", "posctx")
+        means = {(0, "attn"): torch.ones(D_SAE)}
+        out = resolve_site_floors(MagicMock(), ControlledSAEBank(), {(0, "attn")}, posctx_means=means)
+        assert out is means
+
+    def test_global_source_uses_corpus_sample_and_caches(self, monkeypatch):
+        from config import config as cfg
+        import eval.ablation_faithfulness as module
+        import eval.floors as floors_module
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", "global")
+        monkeypatch.setattr(floors_module, "_GLOBAL_FLOOR_CACHE", {})
+        bank = ControlledSAEBank(seed_act=3.0)
+        bank.device = torch.device("cpu")
+        inf, _ = _make_stub_inference(bank, (3.0, 99.0))
+        loader = self._loader(torch.zeros(B, T, dtype=torch.long))
+
+        sites = {(SEED_LAYER, SEED_KIND)}
+        floors = module.resolve_site_floors(
+            inf, bank, sites, posctx_means={}, loader=loader,
+        )
+        assert floors[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(3.0, abs=1e-5)
+        # Second call hits the cache: no new batch, no new forward.
+        floors2 = module.resolve_site_floors(inf, bank, sites, posctx_means={}, loader=loader)
+        assert loader.get_batches.call_count == 1
+        assert inf.forward.call_count == 1
+        assert torch.allclose(floors2[(SEED_LAYER, SEED_KIND)], floors[(SEED_LAYER, SEED_KIND)])
+
+    def test_farthest_point_sample_picks_spread(self):
+        from eval.ablation_faithfulness import _farthest_point_sample
+
+        # Three clusters on the unit circle; FPS from index 0 must visit the
+        # two other clusters before returning to cluster A.
+        reprs = torch.tensor([
+            [1.0, 0.0], [0.999, 0.01],            # cluster A
+            [-1.0, 0.0], [-0.999, 0.01],          # cluster B (opposite)
+            [0.0, 1.0], [0.01, 0.999],            # cluster C (orthogonal)
+        ])
+        chosen = _farthest_point_sample(reprs, 3)
+        assert chosen[0] == 0
+        assert chosen[1] in (2, 3)
+        assert chosen[2] in (4, 5)
+        assert len(_farthest_point_sample(reprs, 99)) == 6  # capped at pool
+
+    def test_diverse_source_samples_pool_and_caches(self, monkeypatch):
+        from config import config as cfg
+        import eval.ablation_faithfulness as module
+        import eval.floors as floors_module
+        import store.seq_repr as seq_repr_module
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", "diverse")
+        monkeypatch.setattr(floors_module, "_GLOBAL_FLOOR_CACHE", {})
+
+        repr_store = MagicMock()
+        repr_store.get_repr.side_effect = lambda ids: torch.randn(len(ids), 8)
+        monkeypatch.setattr(seq_repr_module, "seq_repr", repr_store)
+
+        bank = ControlledSAEBank(seed_act=2.5)
+        bank.device = torch.device("cpu")
+        inf, _ = _make_stub_inference(bank, (2.5, 99.0))
+        tokens = torch.zeros(B, T, dtype=torch.long)
+        loader = MagicMock()
+        loader.get_batches.side_effect = lambda **k: iter([(torch.arange(B), tokens)])
+        loader.get_batches_by_ids.side_effect = lambda ids, **k: iter([(torch.tensor(ids), tokens)])
+
+        sites = {(SEED_LAYER, SEED_KIND)}
+        floors = module.resolve_site_floors(inf, bank, sites, posctx_means={}, loader=loader)
+        assert floors[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(2.5, abs=1e-5)
+        # Cached under its own source key, separate from "global".
+        assert "diverse" in floors_module._GLOBAL_FLOOR_CACHE
+        module.resolve_site_floors(inf, bank, sites, posctx_means={}, loader=loader)
+        assert inf.forward.call_count == 1
+
+    def test_global_source_without_loader_raises(self, monkeypatch):
+        from config import config as cfg
+        from eval.ablation_faithfulness import resolve_site_floors
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", "global")
+        with pytest.raises(ValueError):
+            resolve_site_floors(MagicMock(), ControlledSAEBank(), {(0, "attn")}, posctx_means={})
+
+
 class TestAnchors:
     def test_collect_site_anchors_returns_means_and_pins(self):
         bank = ControlledSAEBank(seed_act=4.0)

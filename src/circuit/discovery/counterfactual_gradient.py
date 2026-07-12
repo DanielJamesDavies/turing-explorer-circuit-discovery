@@ -117,6 +117,11 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             else cast(str, cfg.attribution_mode)
         )
         self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
+        self.restoration_rounds = cast(int, cfg.restoration.rounds)
+        self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
+        self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
+        self.negative_roles = cast(str, cfg.negative_roles)
+        self._last_restoration = None
         self.neg_mode = cast(str, cfg.neg_mode)
         self.distant_pool_size = cast(int, cfg.distant_pool_size)
         self.top_k_activators = (
@@ -236,11 +241,23 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 target_act_pos, logger,
             )
             pass_label = "ig_baseline grad pass"
+        elif self.attribution_mode == "restoration":
+            activator_scores, inhibitor_scores = self._run_restoration_hop(
+                seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval,
+                target_act_pos, logger,
+            )
+            pass_label = "restoration selection"
         else:
             activator_scores, inhibitor_scores = self._run_contrast_hop(
                 seed_comp_idx, seed_latent_idx, neg_tokens, target_act_pos, logger
             )
             pass_label = f"{self.neg_mode} grad pass"
+        if self.negative_roles == "exclude":
+            # Activator-only circuits: the ablation study of the inhibitors'
+            # contribution. ig/restoration hops already avoid spending
+            # selection budget on negatives in this mode; this guard covers
+            # local mode (whose attribution returns both roles regardless).
+            inhibitor_scores = {}
         logger.stage(
             pass_label,
             1, 0,
@@ -297,6 +314,11 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         if len(circuit.nodes) <= 1:
             logger.reject("no activators or inhibitors passed threshold")
             return None
+
+        if self.attribution_mode == "restoration" and self._last_restoration is not None:
+            from circuit.instrument.restoration import stamp_restoration_provenance
+
+            stamp_restoration_provenance(circuit, self._last_restoration)
 
         # 9. Evaluation — runs on posctx, layer-bounded to seed_layer
         circuit_layers: Set[int] = {
@@ -489,6 +511,51 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
 
         return float(captured[0]) if captured else 0.0
 
+    def _run_restoration_hop(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        target_act_pos: float,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
+        """Iterative greedy restoration from the mean-ablation floor
+        (single-point gradient per round at the current restored state;
+        connected restoration). See RestorationConfig."""
+
+        from circuit.instrument.restoration import run_restoration_selection
+
+        n_kinds = len(self.sae_bank.kinds)
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = self.sae_bank.kinds[seed_kind_idx]
+
+        positives, negatives, result = run_restoration_selection(
+            self.inference,
+            self.sae_bank,
+            tokens=pos_tokens,
+            pos_argmax=pos_argmax,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            target_act=target_act_pos,
+            rounds=self.restoration_rounds,
+            per_round_k=self.restoration_per_round_k,
+            certificate_tol=self.restoration_certificate_tol,
+            allow_negative=self.negative_roles == "include",
+            loader=self.probe_builder.loader,
+        )
+        self._last_restoration = result
+        if result is None:
+            logger.note("restoration: seed has no upstream sites")
+        else:
+            logger.note(
+                f"restoration: rounds_used={result.rounds_used} "
+                f"stopped_early={result.stopped_early} "
+                f"metric {result.metric_trajectory[0]:.4f} -> {result.metric_trajectory[-1]:.4f}"
+            )
+        return positives, negatives
+
     def _run_ig_baseline_hop(
         self,
         seed_comp_idx: int,
@@ -514,7 +581,13 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         if not sites:
             logger.note("ig_baseline: seed has no upstream sites")
             return {}, {}
+        from eval.ablation_faithfulness import resolve_site_floors
+
         site_floors = collect_site_means(self.inference, self.sae_bank, pos_tokens, sites)
+        site_floors = resolve_site_floors(
+            self.inference, self.sae_bank, sites,
+            posctx_means=site_floors, loader=self.probe_builder.loader,
+        )
 
         sae = self.sae_bank.saes[seed_kind][seed_layer]
         w_seed = sae.encoder.weight[seed_latent_idx].detach()
@@ -544,7 +617,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             kinds=list(kinds),
             n_kinds=n_kinds,
             top_k_positive=self.top_k_activators,
-            top_k_negative=self.top_k_inhibitors,
+            top_k_negative=self.top_k_inhibitors if self.negative_roles == "include" else 0,
             min_active_count=self.min_active_count,
             active_count=latent_stats.active_count,
             top_k_scope=self.top_k_scope,

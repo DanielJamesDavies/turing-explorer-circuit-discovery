@@ -178,77 +178,17 @@ def measure_seed_activation(
     return float(values[0]) if values else 0.0
 
 
-@torch.no_grad()
-def collect_site_anchors(
-    inference: Any,
-    sae_bank: Any,
-    tokens: torch.Tensor,
-    sites: Set[Tuple[int, str]],
-    argmax: Optional[torch.Tensor] = None,
-) -> Tuple[Dict[Tuple[int, str], torch.Tensor], Dict[Tuple[int, str], torch.Tensor]]:
-    """One clean forward pass returning, per site, both anchors:
-
-    - means [d_sae]: mean dense latent vector over all (batch, position)
-      slots, zeros included — the "average value over data from D" of SFC's
-      mean ablation.
-    - pins [d_sae]: mean dense latent vector at the probe positions — the
-      clean-run values used to pin kept latents (phi_cf injection semantics).
-      With no argmax, pins fall back to the position mean.
-    """
-
-    kind_to_idx = {k: i for i, k in enumerate(sae_bank.kinds)}
-    means: Dict[Tuple[int, str], torch.Tensor] = {}
-    pins: Dict[Tuple[int, str], torch.Tensor] = {}
-    argmax_cpu = argmax.detach().cpu() if argmax is not None else None
-
-    def hook(layer_idx: int, activations: tuple) -> None:
-        for kind in sae_bank.kinds:
-            if (layer_idx, kind) not in sites:
-                continue
-            act = activations[kind_to_idx[kind]]
-            ta, ti = sae_bank.encode(act, kind, layer_idx)
-            dense = sparse_topk_to_dense(ta, ti, sae_bank.d_sae, dtype=torch.float32)
-            means[(layer_idx, kind)] = dense.mean(dim=(0, 1)).detach()
-            if argmax_cpu is not None:
-                Bx, Tx = dense.shape[:2]
-                actual_B = min(Bx, argmax_cpu.shape[0])
-                pa = argmax_cpu[:actual_B].to(dense.device).clamp(0, Tx - 1)
-                pins[(layer_idx, kind)] = (
-                    dense[:actual_B][torch.arange(actual_B, device=dense.device), pa]
-                    .mean(dim=0)
-                    .detach()
-                )
-            else:
-                pins[(layer_idx, kind)] = means[(layer_idx, kind)]
-
-    inference.disable_compile()
-    try:
-        inference.forward(
-            tokens,
-            activations_callback=hook,
-            return_activations=False,
-            tokenize_final=False,
-        )
-    finally:
-        inference.enable_compile()
-
-    missing = sites - set(means)
-    if missing:
-        raise RuntimeError(f"site anchors missing for sites: {sorted(missing)}")
-    return means, pins
-
-
-@torch.no_grad()
-def collect_site_means(
-    inference: Any,
-    sae_bank: Any,
-    tokens: torch.Tensor,
-    sites: Set[Tuple[int, str]],
-) -> Dict[Tuple[int, str], torch.Tensor]:
-    """Mean dense latent vector [d_sae] per site over a clean forward pass."""
-
-    means, _ = collect_site_anchors(inference, sae_bank, tokens, sites)
-    return means
+# Floors and site anchors moved to eval.floors (method-agnostic home for
+# every mean-ablation consumer); re-exported here for compatibility.
+from eval.floors import (  # noqa: F401  (re-exports)
+    _GLOBAL_FLOOR_CACHE,
+    _farthest_point_sample,
+    collect_diverse_site_floors,
+    collect_global_site_floors,
+    collect_site_anchors,
+    collect_site_means,
+    resolve_site_floors,
+)
 
 
 def upstream_sites(sae_bank: Any, seed_layer: int, seed_kind: str) -> Set[Tuple[int, str]]:

@@ -48,6 +48,13 @@ class AblationGradientDiscovery(DiscoveryMethod):
             else cast(str, cfg.attribution_mode)
         )
         self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
+        self.restoration_rounds = cast(int, cfg.restoration.rounds)
+        self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
+        self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
+        self.negative_roles = cast(str, cfg.negative_roles)
+        self.top_k_inhibitors = cast(int, cfg.top_k_inhibitors)
+        self._last_restoration = None
+        self._pending_inhibitors: Dict[FeatureID, float] = {}
         self.neg_mode = cast(str, cfg.neg_mode)
         self.distant_pool_size = cast(int, cfg.distant_pool_size)
         self.top_k_supports = top_k_supports if top_k_supports is not None else cast(int, cfg.top_k_supports)
@@ -140,15 +147,39 @@ class AblationGradientDiscovery(DiscoveryMethod):
             circuit.add_edge(fid_to_uuid[upstream_fid], seed_node.uuid, weight=score)
             n_supports += 1
 
+        # Restoration "include" mode: negative-role selections were restored
+        # during the loop, so delivering them keeps the circuit identical to
+        # the state the selection trajectory (and its certificate) describes.
+        n_inhibitors = 0
+        if self._pending_inhibitors:
+            for upstream_fid, score in self._pending_inhibitors.items():
+                if upstream_fid not in fid_to_uuid:
+                    node = CircuitNode(
+                        metadata={
+                            "feature_id": upstream_fid,
+                            "role": "counterfactual_inhibitor",
+                            "attribution_score": score,
+                        }
+                    )
+                    circuit.add_node(node)
+                    fid_to_uuid[upstream_fid] = node.uuid
+                circuit.add_edge(fid_to_uuid[upstream_fid], seed_node.uuid, weight=score)
+                n_inhibitors += 1
+
         logger.stage(
             "circuit assembly",
             len(circuit.nodes),
             len(circuit.edges),
-            note=f"{n_supports} supports after thresholding",
+            note=f"{n_supports} supports, {n_inhibitors} inhibitors after thresholding",
         )
         if len(circuit.nodes) <= 1:
             logger.reject("no supports passed threshold")
             return None
+
+        if self.attribution_mode == "restoration" and self._last_restoration is not None:
+            from circuit.instrument.restoration import stamp_restoration_provenance
+
+            stamp_restoration_provenance(circuit, self._last_restoration)
 
         neg_tokens_eval = self._get_eval_neg_tokens(
             seed_comp_idx,
@@ -253,9 +284,16 @@ class AblationGradientDiscovery(DiscoveryMethod):
         w_seed = sae.encoder.weight[seed_latent_idx].detach()
         b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
 
+        # Reset per seed: assembly delivers whatever the mode's hop stashes.
+        self._pending_inhibitors = {}
+
         if self.attribution_mode == "ig_baseline":
             return self._run_ig_baseline_hop(
                 seed_layer, seed_kind, w_seed, b_seed, pos_tokens, pos_argmax, logger
+            )
+        if self.attribution_mode == "restoration":
+            return self._run_restoration_hop(
+                seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
             )
 
         instrument = SeedProjectionInstrument(self.sae_bank, seed_layer, seed_kind, w_seed, b_seed)
@@ -284,6 +322,11 @@ class AblationGradientDiscovery(DiscoveryMethod):
                 logger.note("near-zero positive-context ablation loss — skipping")
                 return {}, target_loss, target_pre_act
 
+            if self.negative_roles == "include":
+                logger.note(
+                    "negative_roles=include not yet supported in local mode "
+                    "(attribution util selects supports only); proceeding supports-only"
+                )
             scores = compute_latent_ablation_scores(
                 graph=instrument.graph,
                 target_scalar=loss,
@@ -319,7 +362,11 @@ class AblationGradientDiscovery(DiscoveryMethod):
         (pre-activation at probe positions) as the metric. Positive IG
         contributions are the support candidates."""
 
-        from eval.ablation_faithfulness import collect_site_means, upstream_sites
+        from eval.ablation_faithfulness import (
+            collect_site_means,
+            resolve_site_floors,
+            upstream_sites,
+        )
 
         kinds = self.sae_bank.kinds
         n_kinds = len(kinds)
@@ -328,6 +375,10 @@ class AblationGradientDiscovery(DiscoveryMethod):
             logger.note("ig_baseline: seed has no upstream sites")
             return {}, 0.0, 0.0
         site_floors = collect_site_means(self.inference, self.sae_bank, pos_tokens, sites)
+        site_floors = resolve_site_floors(
+            self.inference, self.sae_bank, sites,
+            posctx_means=site_floors, loader=self.probe_builder.loader,
+        )
 
         scores_by_site, metric_floor, metric_natural = integrated_baseline_scores(
             self.inference,
@@ -347,17 +398,68 @@ class AblationGradientDiscovery(DiscoveryMethod):
             f"ig_baseline: drive floor {metric_floor:.4f} -> natural {metric_natural:.4f} "
             f"over {len(sites)} sites, {self.ig_steps} steps"
         )
-        supports, _ = extract_signed_roles(
+        include_negatives = self.negative_roles == "include"
+        supports, negatives = extract_signed_roles(
             scores_by_site,
             kinds=list(kinds),
             n_kinds=n_kinds,
             top_k_positive=self.top_k_supports,
-            top_k_negative=0,
+            top_k_negative=self.top_k_inhibitors if include_negatives else 0,
             min_active_count=self.min_active_count,
             active_count=self._active_count(),
             top_k_scope=self.top_k_scope,
         )
+        if include_negatives:
+            self._pending_inhibitors = negatives
         return supports, metric_floor, metric_natural
+
+    def _run_restoration_hop(
+        self,
+        seed_layer: int,
+        seed_kind: str,
+        seed_latent_idx: int,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        logger: CircuitLogger,
+    ) -> tuple[Dict[FeatureID, float], float, float]:
+        """Iterative greedy restoration from the mean-ablation floor.
+        Positive-role selections are the supports; the gap target is the
+        seed's clean posctx activation (measured in one pass)."""
+
+        from circuit.instrument.restoration import run_restoration_selection
+        from eval.ablation_faithfulness import measure_seed_activation
+
+        target_act = measure_seed_activation(
+            self.inference, self.sae_bank, pos_tokens,
+            seed_layer, seed_kind, seed_latent_idx, pos_argmax,
+        )
+        include_negatives = self.negative_roles == "include"
+        positives, negatives, result = run_restoration_selection(
+            self.inference,
+            self.sae_bank,
+            tokens=pos_tokens,
+            pos_argmax=pos_argmax,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            target_act=target_act,
+            rounds=self.restoration_rounds,
+            per_round_k=self.restoration_per_round_k,
+            certificate_tol=self.restoration_certificate_tol,
+            allow_negative=include_negatives,
+            loader=self.probe_builder.loader,
+        )
+        self._last_restoration = result
+        self._pending_inhibitors = negatives if include_negatives else {}
+        if result is None:
+            logger.note("restoration: seed has no upstream sites")
+            return {}, 0.0, 0.0
+        logger.note(
+            f"restoration({self.negative_roles}): "
+            f"rounds_used={result.rounds_used} stopped_early={result.stopped_early} "
+            f"{len(positives)} supports, {len(negatives)} inhibitors"
+        )
+        return positives, result.metric_trajectory[0], result.metric_trajectory[-1]
 
     def _active_count(self) -> torch.Tensor:
         from store.latent_stats import latent_stats

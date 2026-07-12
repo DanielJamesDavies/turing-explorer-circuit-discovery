@@ -521,6 +521,19 @@ class TopCoactAttrDiscoveryConfig(BaseModel):
     max_hops: int = 2
     pruning_threshold: float = 0.01
 
+class RestorationConfig(BaseModel):
+    """Parameters for attribution_mode="restoration": iterative greedy
+    restoration from the mean-ablation floor (single-point gradient per
+    round at the current restored state; connected restoration semantics).
+    Only read when the mode is active."""
+
+    model_config = ConfigDict(extra='forbid')
+    rounds: int = 8
+    per_round_k: int = 64             # global (all-site) budget per round
+    certificate_tol: float = 0.05     # relative: stop when |gap| <= tol * target
+    final_ig_polish: bool = False     # one IG pass over the final set
+
+
 class CounterfactualGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
@@ -529,8 +542,16 @@ class CounterfactualGradientConfig(BaseModel):
     # the path from the mean-ablated floor to the natural posctx state
     # (recipe from Sparse Feature Circuits, Marks et al. 2025: IE_ig against
     # the patch baseline), so selection linearises the circuit-only
-    # counterfactual that ablation faithfulness evaluates.
-    attribution_mode: str = "local"   # "local" | "ig_baseline"
+    # counterfactual that ablation faithfulness evaluates; "restoration" =
+    # iterative re-linearisation along the greedy restoration trajectory
+    # (state-dependent schedule; see RestorationConfig).
+    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration"
+    restoration: RestorationConfig = Field(default_factory=RestorationConfig)
+    # Method-level: may counterfactual-gradient circuits carry
+    # inhibitor-role members? "include" is the method's classic signed-roles
+    # identity; "exclude" builds activator-only circuits (the ablation study
+    # of the inhibitors' contribution). Honoured by all three modes.
+    negative_roles: str = "include"   # "include" | "exclude"
     ig_steps: int = 10                # interpolation steps for ig_baseline
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_activators: int = 8
@@ -556,16 +577,39 @@ class CounterfactualGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        allowed = ["local", "ig_baseline"]
+        allowed = ["local", "ig_baseline", "restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("negative_roles")
+    @classmethod
+    def validate_negative_roles(cls, v: str) -> str:
+        allowed = ["include", "exclude"]
+        if v not in allowed:
+            raise ValueError(f"negative_roles must be one of {allowed}, got {v!r}")
         return v
 
 class AblationGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
     # See CounterfactualGradientConfig.attribution_mode.
-    attribution_mode: str = "local"   # "local" | "ig_baseline"
+    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration"
+    restoration: RestorationConfig = Field(default_factory=RestorationConfig)
+    # Method-level: may ablation-gradient circuits carry inhibitor-role
+    # members (negative-scored latents) alongside supports? Honoured by the
+    # ig_baseline and restoration modes; local mode's attribution util
+    # selects supports only and logs a note when "include" is requested.
+    negative_roles: str = "exclude"   # "include" | "exclude"
+    top_k_inhibitors: int = 12        # per selection scope, when included
+
+    @field_validator("negative_roles")
+    @classmethod
+    def validate_negative_roles(cls, v: str) -> str:
+        allowed = ["include", "exclude"]
+        if v not in allowed:
+            raise ValueError(f"negative_roles must be one of {allowed}, got {v!r}")
+        return v
     ig_steps: int = 10                # interpolation steps for ig_baseline
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_supports: int = 12
@@ -595,7 +639,7 @@ class AblationGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        allowed = ["local", "ig_baseline"]
+        allowed = ["local", "ig_baseline", "restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -773,6 +817,24 @@ class DiscoveryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_seeds: int = 128
     probe_batch_size: int = 16
+    # Shared floor knob for every consumer of mean-ablation floors
+    # (ig_baseline, restoration, ablation-faithfulness evals):
+    # "posctx" = per-seed means over the seed's positive probe batch
+    # (SFC's distribution-matched baseline); "global" = seed-independent
+    # means over a sample of random corpus sequences (colder floor, no
+    # evaluation-distribution leakage), cached once per process.
+    # "diverse" = farthest-point sample over stored sequence representations
+    # (coverage-weighted: a different floor semantics from "global"'s
+    # density-weighted corpus expectation, not a variance-reduced estimate).
+    floor_source: str = "posctx"     # "posctx" | "global" | "diverse"
+
+    @field_validator("floor_source")
+    @classmethod
+    def validate_floor_source(cls, v: str) -> str:
+        allowed = ["posctx", "global", "diverse"]
+        if v not in allowed:
+            raise ValueError(f"floor_source must be one of {allowed}, got {v!r}")
+        return v
     neg_ctx_eval_max: int = 16
     min_faithfulness: float = 0.2
     min_active_count: int = 1

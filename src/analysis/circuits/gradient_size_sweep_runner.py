@@ -91,6 +91,9 @@ def run_gradient_size_sweep(
     methods: Sequence[str] = GRID_METHODS,
     m_values: Sequence[int] = M_VALUES,
     attribution_modes: Sequence[str] = ("local",),
+    abl_negative_roles: str = "exclude",
+    cf_negative_roles: str = "include",
+    floor_source: str = "posctx",
 ) -> dict[str, Path]:
     root = resolve_run_root(run_root)
     output_dirs = analysis_output_dirs(root, SUITE_NAME, output_root=output_root)
@@ -141,6 +144,9 @@ def run_gradient_size_sweep(
             print(f"[size-sweep] resuming: {len(rows)} rows, {len(done)} seed-method blocks done", flush=True)
 
     original = _apply_sweep_config(max_per_site=max(int(m) for m in m_values))
+    config.discovery.ablation_gradient.negative_roles = abl_negative_roles
+    config.discovery.counterfactual_gradient.negative_roles = cf_negative_roles
+    config.discovery.floor_source = floor_source
     try:
         # Config must be mutated before construction: methods (and hybrid's
         # internal sub-methods) read gate/pruning settings at __init__ time.
@@ -212,6 +218,12 @@ def run_gradient_size_sweep(
             in_scope = upstream_sites(bank, int(layer), kind)
             site_means, pin_values = collect_site_anchors(
                 inference, bank, pos_tokens_eval, in_scope, pos_argmax_eval
+            )
+            # Shared floor knob (pins always stay posctx).
+            from eval.ablation_faithfulness import resolve_site_floors
+
+            site_means = resolve_site_floors(
+                inference, bank, in_scope, posctx_means=site_means, loader=loader
             )
             a_empty = circuit_only_activation(
                 inference,
@@ -364,6 +376,9 @@ def run_gradient_size_sweep(
         "truncation": "per_site_per_role",
         "methods": list(methods),
         "attribution_modes": list(attribution_modes),
+        "abl_negative_roles": abl_negative_roles,
+        "cf_negative_roles": cf_negative_roles,
+        "floor_source": floor_source,
         "n_rows": len(rows),
         "gates_disabled": True,
         "pruning_disabled": True,
@@ -629,7 +644,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--methods", nargs="+", default=list(GRID_METHODS), choices=GRID_METHODS)
     parser.add_argument("--m-values", nargs="+", type=int, default=list(M_VALUES))
     parser.add_argument(
-        "--attribution-modes", nargs="+", default=["local"], choices=["local", "ig_baseline"]
+        "--attribution-modes",
+        nargs="+",
+        default=["local"],
+        choices=["local", "ig_baseline", "restoration"],
+    )
+    parser.add_argument(
+        "--abl-negative-roles",
+        default="exclude",
+        choices=["include", "exclude"],
+    )
+    parser.add_argument(
+        "--cf-negative-roles",
+        default="include",
+        choices=["include", "exclude"],
+    )
+    parser.add_argument(
+        "--floor-source",
+        default="posctx",
+        choices=["posctx", "global", "diverse"],
     )
     return parser
 
@@ -643,6 +676,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         methods=args.methods,
         m_values=args.m_values,
         attribution_modes=args.attribution_modes,
+        abl_negative_roles=args.abl_negative_roles,
+        cf_negative_roles=args.cf_negative_roles,
+        floor_source=args.floor_source,
     )
     for path in outputs.values():
         print(path)
