@@ -100,7 +100,13 @@ def run_gradient_size_sweep(
     floor_source: str = "posctx",
     restoration_rounds: int | None = None,
     restoration_per_round_k: int | None = None,
+    restoration_final_ig_polish: bool = False,
+    restoration_truncation: str = "round_prefix",
 ) -> dict[str, Path]:
+    if restoration_truncation not in ("round_prefix", "per_site"):
+        raise ValueError(
+            f"restoration_truncation must be 'round_prefix' or 'per_site', got {restoration_truncation!r}"
+        )
     root = resolve_run_root(run_root)
     output_dirs = analysis_output_dirs(root, SUITE_NAME, output_root=output_root)
     rows_path = output_dirs["tables"] / "gradient-size-sweep.csv"
@@ -153,6 +159,7 @@ def run_gradient_size_sweep(
         max_per_site=max(int(m) for m in m_values),
         restoration_rounds=restoration_rounds,
         restoration_per_round_k=restoration_per_round_k,
+        restoration_final_ig_polish=restoration_final_ig_polish,
     )
     config.discovery.ablation_gradient.negative_roles = abl_negative_roles
     config.discovery.counterfactual_gradient.negative_roles = cf_negative_roles
@@ -288,9 +295,14 @@ def run_gradient_size_sweep(
                 n_ranked = sum(len(group) for group in site_groups.values())
                 # Restoration circuits are nested by selection round, so the
                 # round prefixes give the natural per-seed size axis; other
-                # modes use the per-site m truncations.
+                # modes use the per-site m truncations. restoration_truncation
+                # "per_site" forces score-ranked truncation for restoration
+                # modes too — required to measure ranking changes such as
+                # final_ig_polish, which round prefixes ignore by design.
                 round_prefixes = (
-                    _restoration_round_prefixes(circuit) if attr_mode in ROUND_PREFIX_MODES else []
+                    _restoration_round_prefixes(circuit)
+                    if attr_mode in ROUND_PREFIX_MODES and restoration_truncation == "round_prefix"
+                    else []
                 )
                 truncations: list[tuple[dict[str, Any], Circuit, int]] = []
                 if round_prefixes:
@@ -411,6 +423,8 @@ def run_gradient_size_sweep(
         # Effective values (config defaults when the CLI flag was omitted).
         "restoration_rounds": effective_restoration_rounds,
         "restoration_per_round_k": effective_restoration_per_round_k,
+        "restoration_final_ig_polish": restoration_final_ig_polish,
+        "restoration_truncation": restoration_truncation,
         "n_rows": len(rows),
         "gates_disabled": True,
         "pruning_disabled": True,
@@ -520,6 +534,7 @@ def _apply_sweep_config(
     max_per_site: int,
     restoration_rounds: int | None = None,
     restoration_per_round_k: int | None = None,
+    restoration_final_ig_polish: bool | None = None,
 ) -> dict[str, Any]:
     cf = config.discovery.counterfactual_gradient
     ab = config.discovery.ablation_gradient
@@ -544,6 +559,8 @@ def _apply_sweep_config(
         "cf_restoration_per_round_k": cf.restoration.per_round_k,
         "ab_restoration_rounds": ab.restoration.rounds,
         "ab_restoration_per_round_k": ab.restoration.per_round_k,
+        "cf_restoration_final_ig_polish": cf.restoration.final_ig_polish,
+        "ab_restoration_final_ig_polish": ab.restoration.final_ig_polish,
     }
     cf.neg_mode = SWEEP_NEG_MODE
     cf.min_faithfulness = -100.0
@@ -570,6 +587,9 @@ def _apply_sweep_config(
     if restoration_per_round_k is not None:
         cf.restoration.per_round_k = restoration_per_round_k
         ab.restoration.per_round_k = restoration_per_round_k
+    if restoration_final_ig_polish is not None:
+        cf.restoration.final_ig_polish = restoration_final_ig_polish
+        ab.restoration.final_ig_polish = restoration_final_ig_polish
     return original
 
 
@@ -596,6 +616,8 @@ def _restore_sweep_config(original: Mapping[str, Any]) -> None:
     cf.restoration.per_round_k = original["cf_restoration_per_round_k"]
     ab.restoration.rounds = original["ab_restoration_rounds"]
     ab.restoration.per_round_k = original["ab_restoration_per_round_k"]
+    cf.restoration.final_ig_polish = original["cf_restoration_final_ig_polish"]
+    ab.restoration.final_ig_polish = original["ab_restoration_final_ig_polish"]
 
 
 def _build_eval_contexts(
@@ -766,6 +788,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Override restoration per-round node budget (default: method config, currently 64).",
     )
+    parser.add_argument(
+        "--restoration-final-ig-polish",
+        action="store_true",
+        help="Enable the post-selection IG re-scoring pass (ranking only) for "
+        "restoration/ig_restoration circuits in both methods.",
+    )
+    parser.add_argument(
+        "--restoration-truncation",
+        default="round_prefix",
+        choices=["round_prefix", "per_site"],
+        help="How restoration-mode circuits are truncated for evaluation: nested round "
+        "prefixes (default) or score-ranked per-site top-m — the latter is required to "
+        "measure ranking effects such as final_ig_polish.",
+    )
     return parser
 
 
@@ -783,6 +819,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         floor_source=args.floor_source,
         restoration_rounds=args.restoration_rounds,
         restoration_per_round_k=args.restoration_per_round_k,
+        restoration_final_ig_polish=args.restoration_final_ig_polish,
+        restoration_truncation=args.restoration_truncation,
     )
     for path in outputs.values():
         print(path)

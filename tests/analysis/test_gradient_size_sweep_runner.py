@@ -88,6 +88,29 @@ def test_apply_sweep_config_leaves_restoration_budget_untouched_by_default():
         _restore_sweep_config(saved)
 
 
+def test_apply_sweep_config_final_ig_polish_override_and_restore():
+    cf = config.discovery.counterfactual_gradient
+    ab = config.discovery.ablation_gradient
+    original_cf, original_ab = cf.restoration.final_ig_polish, ab.restoration.final_ig_polish
+
+    saved = _apply_sweep_config(max_per_site=32, restoration_final_ig_polish=True)
+    try:
+        assert cf.restoration.final_ig_polish is True
+        assert ab.restoration.final_ig_polish is True
+    finally:
+        _restore_sweep_config(saved)
+
+    assert cf.restoration.final_ig_polish == original_cf
+    assert ab.restoration.final_ig_polish == original_ab
+
+
+def test_run_rejects_bogus_restoration_truncation():
+    from analysis.circuits.gradient_size_sweep_runner import run_gradient_size_sweep
+
+    with pytest.raises(ValueError, match="restoration_truncation"):
+        run_gradient_size_sweep("nonexistent", restoration_truncation="bogus")
+
+
 def _restoration_circuit():
     """seed + two round-1 nodes + one round-2 node + one unstamped node."""
     circuit = Circuit(name="restored")
