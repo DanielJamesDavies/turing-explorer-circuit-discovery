@@ -522,16 +522,24 @@ class TopCoactAttrDiscoveryConfig(BaseModel):
     pruning_threshold: float = 0.01
 
 class RestorationConfig(BaseModel):
-    """Parameters for attribution_mode="restoration": iterative greedy
-    restoration from the mean-ablation floor (single-point gradient per
-    round at the current restored state; connected restoration semantics).
-    Only read when the mode is active."""
+    """Parameters for the iterative greedy restoration loop, shared by
+    attribution_mode="restoration" (single-point gradient per round at the
+    current restored state) and "ig_restoration" (per-round integrated
+    gradients along the floor->natural path, restored latents connected).
+    Only read when one of those modes is active."""
 
     model_config = ConfigDict(extra='forbid')
     rounds: int = 8
     per_round_k: int = 64             # global (all-site) budget per round
     certificate_tol: float = 0.05     # relative: stop when |gap| <= tol * target
-    final_ig_polish: bool = False     # one IG pass over the final set
+    ig_steps: int = 4                 # alpha samples per round for "ig_restoration"
+                                      # (grid {i/N}; alpha=0 always sampled: it
+                                      # supplies the loop metric/certificate)
+    # One IG re-scoring pass over the final selected set (restoration and
+    # ig_restoration): membership unchanged, only ranking scores replaced so
+    # truncation reflects the complete circuit rather than the round-by-round
+    # state each node was scored in. Uses the method-level ig_steps.
+    final_ig_polish: bool = False
 
 
 class CounterfactualGradientConfig(BaseModel):
@@ -544,8 +552,10 @@ class CounterfactualGradientConfig(BaseModel):
     # the patch baseline), so selection linearises the circuit-only
     # counterfactual that ablation faithfulness evaluates; "restoration" =
     # iterative re-linearisation along the greedy restoration trajectory
-    # (state-dependent schedule; see RestorationConfig).
-    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration"
+    # (state-dependent schedule; see RestorationConfig); "ig_restoration" =
+    # the restoration loop with per-round integrated-gradients scoring
+    # (state-dependent schedule + path-integrated credit).
+    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration"
     restoration: RestorationConfig = Field(default_factory=RestorationConfig)
     # Method-level: may counterfactual-gradient circuits carry
     # inhibitor-role members? "include" is the method's classic signed-roles
@@ -577,7 +587,7 @@ class CounterfactualGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        allowed = ["local", "ig_baseline", "restoration"]
+        allowed = ["local", "ig_baseline", "restoration", "ig_restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -594,7 +604,7 @@ class AblationGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
     # See CounterfactualGradientConfig.attribution_mode.
-    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration"
+    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration"
     restoration: RestorationConfig = Field(default_factory=RestorationConfig)
     # Method-level: may ablation-gradient circuits carry inhibitor-role
     # members (negative-scored latents) alongside supports? Honoured by the
@@ -639,7 +649,7 @@ class AblationGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        allowed = ["local", "ig_baseline", "restoration"]
+        allowed = ["local", "ig_baseline", "restoration", "ig_restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v

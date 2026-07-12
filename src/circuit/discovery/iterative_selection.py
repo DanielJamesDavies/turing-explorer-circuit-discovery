@@ -15,7 +15,7 @@ loss is within tol of zero).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 Site = Tuple[int, str]
 Candidate = Tuple[Site, int]  # ((layer, kind), latent_idx)
@@ -32,6 +32,9 @@ class IterativeSelectionResult:
     metric_trajectory: List[float] = field(default_factory=list)
     rounds_used: int = 0
     stopped_early: bool = False
+    # Filled by final_ig_polish: consistent full-circuit IG re-scores for the
+    # selected candidates (ranking only — membership stays loop-scored).
+    polish_scores: Optional[Dict[Candidate, float]] = None
 
 
 def run_iterative_selection(

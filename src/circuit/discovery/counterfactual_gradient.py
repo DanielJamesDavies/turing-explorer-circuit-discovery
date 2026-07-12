@@ -120,6 +120,8 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         self.restoration_rounds = cast(int, cfg.restoration.rounds)
         self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
         self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
+        self.restoration_ig_steps = cast(int, cfg.restoration.ig_steps)
+        self.restoration_final_ig_polish = cast(bool, cfg.restoration.final_ig_polish)
         self.negative_roles = cast(str, cfg.negative_roles)
         self._last_restoration = None
         self.neg_mode = cast(str, cfg.neg_mode)
@@ -241,12 +243,12 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 target_act_pos, logger,
             )
             pass_label = "ig_baseline grad pass"
-        elif self.attribution_mode == "restoration":
+        elif self.attribution_mode in ("restoration", "ig_restoration"):
             activator_scores, inhibitor_scores = self._run_restoration_hop(
                 seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval,
                 target_act_pos, logger,
             )
-            pass_label = "restoration selection"
+            pass_label = f"{self.attribution_mode} selection"
         else:
             activator_scores, inhibitor_scores = self._run_contrast_hop(
                 seed_comp_idx, seed_latent_idx, neg_tokens, target_act_pos, logger
@@ -315,7 +317,10 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             logger.reject("no activators or inhibitors passed threshold")
             return None
 
-        if self.attribution_mode == "restoration" and self._last_restoration is not None:
+        if (
+            self.attribution_mode in ("restoration", "ig_restoration")
+            and self._last_restoration is not None
+        ):
             from circuit.instrument.restoration import stamp_restoration_provenance
 
             stamp_restoration_provenance(circuit, self._last_restoration)
@@ -544,6 +549,10 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             certificate_tol=self.restoration_certificate_tol,
             allow_negative=self.negative_roles == "include",
             loader=self.probe_builder.loader,
+            scorer="ig" if self.attribution_mode == "ig_restoration" else "point",
+            ig_steps=self.restoration_ig_steps,
+            final_ig_polish=self.restoration_final_ig_polish,
+            polish_ig_steps=self.ig_steps,
         )
         self._last_restoration = result
         if result is None:

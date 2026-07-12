@@ -51,6 +51,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
         self.restoration_rounds = cast(int, cfg.restoration.rounds)
         self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
         self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
+        self.restoration_ig_steps = cast(int, cfg.restoration.ig_steps)
+        self.restoration_final_ig_polish = cast(bool, cfg.restoration.final_ig_polish)
         self.negative_roles = cast(str, cfg.negative_roles)
         self.top_k_inhibitors = cast(int, cfg.top_k_inhibitors)
         self._last_restoration = None
@@ -176,7 +178,10 @@ class AblationGradientDiscovery(DiscoveryMethod):
             logger.reject("no supports passed threshold")
             return None
 
-        if self.attribution_mode == "restoration" and self._last_restoration is not None:
+        if (
+            self.attribution_mode in ("restoration", "ig_restoration")
+            and self._last_restoration is not None
+        ):
             from circuit.instrument.restoration import stamp_restoration_provenance
 
             stamp_restoration_provenance(circuit, self._last_restoration)
@@ -291,7 +296,7 @@ class AblationGradientDiscovery(DiscoveryMethod):
             return self._run_ig_baseline_hop(
                 seed_layer, seed_kind, w_seed, b_seed, pos_tokens, pos_argmax, logger
             )
-        if self.attribution_mode == "restoration":
+        if self.attribution_mode in ("restoration", "ig_restoration"):
             return self._run_restoration_hop(
                 seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
             )
@@ -448,6 +453,10 @@ class AblationGradientDiscovery(DiscoveryMethod):
             certificate_tol=self.restoration_certificate_tol,
             allow_negative=include_negatives,
             loader=self.probe_builder.loader,
+            scorer="ig" if self.attribution_mode == "ig_restoration" else "point",
+            ig_steps=self.restoration_ig_steps,
+            final_ig_polish=self.restoration_final_ig_polish,
+            polish_ig_steps=self.ig_steps,
         )
         self._last_restoration = result
         self._pending_inhibitors = negatives if include_negatives else {}

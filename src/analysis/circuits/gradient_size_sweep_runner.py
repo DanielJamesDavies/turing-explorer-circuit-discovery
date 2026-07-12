@@ -56,6 +56,9 @@ from .gradient_method_neg_mode_grid_runner import (
 SUITE_NAME = "gradient-size-sweep"
 M_VALUES = (2, 4, 8, 12, 16, 32, 64, 128)
 SWEEP_NEG_MODE = "random"
+# Modes whose circuits carry selected_round provenance and are therefore
+# evaluated at round prefixes instead of m truncations.
+ROUND_PREFIX_MODES = frozenset({"restoration", "ig_restoration"})
 ROW_FIELDS = [
     "method",
     "attribution_mode",
@@ -69,6 +72,7 @@ ROW_FIELDS = [
     "circuit_nodes_total",
     "circuit_nodes_ranked",
     "m",
+    "round_prefix",
     "nodes_used",
     "counterfactual_faithfulness",
     "posctx_suppression_score",
@@ -94,6 +98,8 @@ def run_gradient_size_sweep(
     abl_negative_roles: str = "exclude",
     cf_negative_roles: str = "include",
     floor_source: str = "posctx",
+    restoration_rounds: int | None = None,
+    restoration_per_round_k: int | None = None,
 ) -> dict[str, Path]:
     root = resolve_run_root(run_root)
     output_dirs = analysis_output_dirs(root, SUITE_NAME, output_root=output_root)
@@ -143,10 +149,17 @@ def run_gradient_size_sweep(
         if rows:
             print(f"[size-sweep] resuming: {len(rows)} rows, {len(done)} seed-method blocks done", flush=True)
 
-    original = _apply_sweep_config(max_per_site=max(int(m) for m in m_values))
+    original = _apply_sweep_config(
+        max_per_site=max(int(m) for m in m_values),
+        restoration_rounds=restoration_rounds,
+        restoration_per_round_k=restoration_per_round_k,
+    )
     config.discovery.ablation_gradient.negative_roles = abl_negative_roles
     config.discovery.counterfactual_gradient.negative_roles = cf_negative_roles
     config.discovery.floor_source = floor_source
+    # Effective values for the summary (captured before restore undoes them).
+    effective_restoration_rounds = config.discovery.counterfactual_gradient.restoration.rounds
+    effective_restoration_per_round_k = config.discovery.counterfactual_gradient.restoration.per_round_k
     try:
         # Config must be mutated before construction: methods (and hybrid's
         # internal sub-methods) read gate/pruning settings at __init__ time.
@@ -273,10 +286,26 @@ def run_gradient_size_sweep(
                 depth_stats = _circuit_depth_stats(circuit)
                 site_groups = _site_role_groups(circuit)
                 n_ranked = sum(len(group) for group in site_groups.values())
+                # Restoration circuits are nested by selection round, so the
+                # round prefixes give the natural per-seed size axis; other
+                # modes use the per-site m truncations.
+                round_prefixes = (
+                    _restoration_round_prefixes(circuit) if attr_mode in ROUND_PREFIX_MODES else []
+                )
+                truncations: list[tuple[dict[str, Any], Circuit, int]] = []
+                if round_prefixes:
+                    for round_prefix in round_prefixes:
+                        sub_circuit, n_use = _round_prefix_circuit(circuit, round_prefix)
+                        truncations.append(
+                            ({"m": "", "round_prefix": round_prefix}, sub_circuit, n_use)
+                        )
+                else:
+                    for m in m_values:
+                        sub_circuit, n_use = _truncated_circuit_per_site(circuit, site_groups, int(m))
+                        truncations.append(({"m": int(m), "round_prefix": ""}, sub_circuit, n_use))
                 previous_n = None
                 previous_scores = None
-                for m in m_values:
-                    sub_circuit, n_use = _truncated_circuit_per_site(circuit, site_groups, int(m))
+                for truncation_label, sub_circuit, n_use in truncations:
                     eval_start = time.perf_counter()
                     if n_use == previous_n and previous_scores is not None:
                         cf_faith, sup_score, abl_faith, pinned_abl = previous_scores
@@ -341,7 +370,7 @@ def run_gradient_size_sweep(
                             **depth_stats,
                             "circuit_nodes_total": len(circuit.nodes),
                             "circuit_nodes_ranked": n_ranked,
-                            "m": int(m),
+                            **truncation_label,
                             "nodes_used": n_use,
                             "counterfactual_faithfulness": cf_faith,
                             "posctx_suppression_score": sup_score,
@@ -379,6 +408,9 @@ def run_gradient_size_sweep(
         "abl_negative_roles": abl_negative_roles,
         "cf_negative_roles": cf_negative_roles,
         "floor_source": floor_source,
+        # Effective values (config defaults when the CLI flag was omitted).
+        "restoration_rounds": effective_restoration_rounds,
+        "restoration_per_round_k": effective_restoration_per_round_k,
         "n_rows": len(rows),
         "gates_disabled": True,
         "pruning_disabled": True,
@@ -483,7 +515,12 @@ def _circuit_depth_stats(circuit: Circuit) -> Dict[str, Any]:
     }
 
 
-def _apply_sweep_config(*, max_per_site: int) -> dict[str, Any]:
+def _apply_sweep_config(
+    *,
+    max_per_site: int,
+    restoration_rounds: int | None = None,
+    restoration_per_round_k: int | None = None,
+) -> dict[str, Any]:
     cf = config.discovery.counterfactual_gradient
     ab = config.discovery.ablation_gradient
     hy = config.discovery.hybrid_gradient
@@ -503,6 +540,10 @@ def _apply_sweep_config(*, max_per_site: int) -> dict[str, Any]:
         "hy_min_counterfactual_faithfulness": hy.min_counterfactual_faithfulness,
         "hy_min_suppression_score": hy.min_suppression_score,
         "hy_pruning_enabled": hy.pruning_enabled,
+        "cf_restoration_rounds": cf.restoration.rounds,
+        "cf_restoration_per_round_k": cf.restoration.per_round_k,
+        "ab_restoration_rounds": ab.restoration.rounds,
+        "ab_restoration_per_round_k": ab.restoration.per_round_k,
     }
     cf.neg_mode = SWEEP_NEG_MODE
     cf.min_faithfulness = -100.0
@@ -521,6 +562,14 @@ def _apply_sweep_config(*, max_per_site: int) -> dict[str, Any]:
     hy.min_counterfactual_faithfulness = -100.0
     hy.min_suppression_score = -100.0
     hy.pruning_enabled = False
+    # Budget parity for restoration mode: None leaves the method default
+    # (8 rounds x 64/round = 512 nodes) untouched.
+    if restoration_rounds is not None:
+        cf.restoration.rounds = restoration_rounds
+        ab.restoration.rounds = restoration_rounds
+    if restoration_per_round_k is not None:
+        cf.restoration.per_round_k = restoration_per_round_k
+        ab.restoration.per_round_k = restoration_per_round_k
     return original
 
 
@@ -543,6 +592,10 @@ def _restore_sweep_config(original: Mapping[str, Any]) -> None:
     hy.min_counterfactual_faithfulness = original["hy_min_counterfactual_faithfulness"]
     hy.min_suppression_score = original["hy_min_suppression_score"]
     hy.pruning_enabled = original["hy_pruning_enabled"]
+    cf.restoration.rounds = original["cf_restoration_rounds"]
+    cf.restoration.per_round_k = original["cf_restoration_per_round_k"]
+    ab.restoration.rounds = original["ab_restoration_rounds"]
+    ab.restoration.per_round_k = original["ab_restoration_per_round_k"]
 
 
 def _build_eval_contexts(
@@ -628,6 +681,42 @@ def _truncated_circuit_per_site(
     return sub, n_use
 
 
+def _round_prefix_circuit(circuit: Circuit, round_prefix: int) -> tuple[Circuit, int]:
+    """Restoration circuits are nested by selection round: the sub-circuit of
+    nodes with selected_round <= round_prefix is exactly the circuit the loop
+    had restored after that round. Gives restoration a per-seed size axis
+    analogous to the per-site m truncations (nodes without selected_round
+    provenance, e.g. the seed, are kept only if they are the seed)."""
+
+    sub = Circuit(name=f"{circuit.name}_r{round_prefix}")
+    n_use = 0
+    for node in circuit.nodes.values():
+        if node.metadata.get("role") == "seed":
+            sub.nodes[node.uuid] = node
+            continue
+        selected_round = node.metadata.get("selected_round")
+        if selected_round is not None and int(selected_round) <= round_prefix:
+            sub.nodes[node.uuid] = node
+            n_use += 1
+    kept = set(sub.nodes)
+    sub.edges = [edge for edge in circuit.edges if edge.source_uuid in kept and edge.target_uuid in kept]
+    return sub, n_use
+
+
+def _restoration_round_prefixes(circuit: Circuit) -> list[int]:
+    """Round prefixes to evaluate: 1..rounds_used when provenance is present."""
+
+    rounds_used = circuit.metadata.get("restoration_rounds_used")
+    if not rounds_used:
+        return []
+    has_round_nodes = any(
+        node.metadata.get("selected_round") is not None for node in circuit.nodes.values()
+    )
+    if not has_round_nodes:
+        return []
+    return list(range(1, int(rounds_used) + 1))
+
+
 def _write_rows(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -647,7 +736,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--attribution-modes",
         nargs="+",
         default=["local"],
-        choices=["local", "ig_baseline", "restoration"],
+        choices=["local", "ig_baseline", "restoration", "ig_restoration"],
     )
     parser.add_argument(
         "--abl-negative-roles",
@@ -664,6 +753,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="posctx",
         choices=["posctx", "global", "diverse"],
     )
+    parser.add_argument(
+        "--restoration-rounds",
+        type=int,
+        default=None,
+        help="Override restoration rounds (default: method config, currently 8). "
+        "Applies to both cf_grad and abl_grad for budget parity.",
+    )
+    parser.add_argument(
+        "--restoration-per-round-k",
+        type=int,
+        default=None,
+        help="Override restoration per-round node budget (default: method config, currently 64).",
+    )
     return parser
 
 
@@ -679,6 +781,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         abl_negative_roles=args.abl_negative_roles,
         cf_negative_roles=args.cf_negative_roles,
         floor_source=args.floor_source,
+        restoration_rounds=args.restoration_rounds,
+        restoration_per_round_k=args.restoration_per_round_k,
     )
     for path in outputs.values():
         print(path)
