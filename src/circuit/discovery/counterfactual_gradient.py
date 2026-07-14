@@ -7,6 +7,7 @@ from config import config
 from store.circuits import Circuit, CircuitNode
 from store.latent_stats import latent_stats
 from eval.minimality import prune_non_minimal_nodes_cf
+from eval.magnitude_prune import prune_by_magnitude_bisection
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 from circuit.instrument.sae_graph import SAEGraphInstrument
 from circuit.instrument.attribution import compute_latent_counterfactual_scores
@@ -123,6 +124,17 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         self.restoration_ig_steps = cast(int, cfg.restoration.ig_steps)
         self.restoration_final_ig_polish = cast(bool, cfg.restoration.final_ig_polish)
         self.negative_roles = cast(str, cfg.negative_roles)
+        self.position_aware = cast(bool, config.discovery.position_aware)
+        self.position_aware_top_n = cast(int, config.discovery.position_aware_top_n)
+        self.position_aware_select = cast(str, config.discovery.position_aware_select)
+        self.position_aware_threshold = cast(float, config.discovery.position_aware_threshold)
+        self.position_aware_position_weight = cast(bool, config.discovery.position_aware_position_weight)
+        self.position_aware_scope = cast(str, config.discovery.position_aware_scope)
+        self.magnitude_prune = cast(bool, config.discovery.magnitude_prune)
+        self.magnitude_prune_tolerance = cast(float, config.discovery.magnitude_prune_tolerance)
+        self.magnitude_prune_target = cast(float, config.discovery.magnitude_prune_target)
+        self.magnitude_prune_min_keep = cast(int, config.discovery.magnitude_prune_min_keep)
+        self.magnitude_prune_objective = cast(str, config.discovery.magnitude_prune_objective)
         self._last_restoration = None
         self.neg_mode = cast(str, cfg.neg_mode)
         self.distant_pool_size = cast(int, cfg.distant_pool_size)
@@ -237,7 +249,12 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         # hop at the live negctx input; "ig_baseline" attributes along the
         # mean-ablation-floor -> natural-posctx path instead (SFC-style),
         # in which case negctx is used only by the evaluation step.
-        if self.attribution_mode == "ig_baseline":
+        if self.position_aware:
+            activator_scores, inhibitor_scores = self._run_position_aware_hop(
+                seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval, logger,
+            )
+            pass_label = "position-aware selection"
+        elif self.attribution_mode == "ig_baseline":
             activator_scores, inhibitor_scores = self._run_ig_baseline_hop(
                 seed_comp_idx, seed_latent_idx, pos_tokens_eval, pos_argmax_eval,
                 target_act_pos, logger,
@@ -359,6 +376,26 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 "after pruning", len(circuit.nodes), len(circuit.edges),
                 note=f"removed {n_before - len(circuit.nodes)} nodes",
             )
+
+        # Global magnitude prune (optional) — scalable free-φ bisection, for the
+        # large position-aware allowed sets that LOO minimality cannot touch.
+        if self.magnitude_prune:
+            prune_by_magnitude_bisection(
+                self.inference, self.sae_bank, circuit,
+                pos_tokens=pos_tokens_eval,
+                seed_layer=seed_layer, seed_kind=seed_kind, seed_latent_idx=seed_latent_idx,
+                pos_argmax=pos_argmax_eval,
+                tolerance=self.magnitude_prune_tolerance,
+                target=self.magnitude_prune_target,
+                min_keep=self.magnitude_prune_min_keep,
+                objective=self.magnitude_prune_objective,
+                logger=logger,
+            )
+            circuit_layers = {
+                node.feature_id.layer
+                for node in circuit.nodes.values()
+                if node.feature_id is not None
+            }
 
         cf_faith, sup_score = evaluate_counterfactual_faithfulness(
             self.inference, self.sae_bank, self.avg_acts, circuit,
@@ -564,6 +601,44 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 f"metric {result.metric_trajectory[0]:.4f} -> {result.metric_trajectory[-1]:.4f}"
             )
         return positives, negatives
+
+    def _run_position_aware_hop(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
+        """Position-aware allowed-set selection: keep the token-position axis
+        of the attribution and union each prefix position's top-N latents,
+        instead of collapsing positions to a fixed top-k. Returns activator /
+        inhibitor score dicts shaped like the other hops."""
+
+        from circuit.instrument.position_aware import position_aware_membership
+        from eval.ablation_faithfulness import upstream_sites
+
+        n_kinds = len(self.sae_bank.kinds)
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = self.sae_bank.kinds[seed_kind_idx]
+        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
+        activators, inhibitors = position_aware_membership(
+            self.inference, self.sae_bank,
+            tokens=pos_tokens, sites=sites,
+            seed_layer=seed_layer, seed_kind=seed_kind, seed_latent_idx=seed_latent_idx,
+            pos_argmax=pos_argmax, top_n=self.position_aware_top_n,
+            select=self.position_aware_select, threshold=self.position_aware_threshold,
+            position_weight=self.position_aware_position_weight, scope=self.position_aware_scope,
+            negative_roles=self.negative_roles == "include",
+        )
+        sel = (f"top_n={self.position_aware_top_n}" if self.position_aware_select == "top_n"
+               else f"select={self.position_aware_select} threshold={self.position_aware_threshold}")
+        sel += f" scope={self.position_aware_scope}" + (" +posw" if self.position_aware_position_weight else "")
+        logger.note(
+            f"position-aware: {len(activators)} activators + {len(inhibitors)} inhibitors "
+            f"({sel})"
+        )
+        return activators, inhibitors
 
     def _run_ig_baseline_hop(
         self,

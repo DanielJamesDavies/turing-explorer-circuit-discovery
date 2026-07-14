@@ -41,15 +41,23 @@ def collect_site_anchors(
     tokens: torch.Tensor,
     sites: Set[Site],
     argmax: Optional[torch.Tensor] = None,
+    pin_position_specific: bool = False,
 ) -> Tuple[Dict[Site, torch.Tensor], Dict[Site, torch.Tensor]]:
     """One clean forward pass returning, per site, both anchors:
 
     - means [d_sae]: mean dense latent vector over all (batch, position)
       slots, zeros included — the "average value over data from D" of SFC's
       mean ablation.
-    - pins [d_sae]: mean dense latent vector at the probe positions — the
-      clean-run values used to pin kept latents (phi_cf injection semantics).
-      With no argmax, pins fall back to the position mean.
+    - pins: the clean-run values used to pin kept latents. Two shapes:
+      * collapsed (default) — [d_sae], the mean dense vector at the probe
+        positions (phi_cf injection semantics; falls back to the position
+        mean when argmax is None). One value per latent, applied at every
+        position.
+      * position-specific (``pin_position_specific=True``) — [B, T, d_sae],
+        the full clean dense stream, so kept latents are pinned to their
+        actual per-position clean value. This is the correct pin for
+        position-aware / allowed-set circuits (a collapsed pin discards the
+        position axis the seed reads); stored on CPU to bound memory.
     """
 
     kind_to_idx = {k: i for i, k in enumerate(sae_bank.kinds)}
@@ -65,7 +73,11 @@ def collect_site_anchors(
             ta, ti = sae_bank.encode(act, kind, layer_idx)
             dense = sparse_topk_to_dense(ta, ti, sae_bank.d_sae, dtype=torch.float32)
             means[(layer_idx, kind)] = dense.mean(dim=(0, 1)).detach()
-            if argmax_cpu is not None:
+            if pin_position_specific:
+                # full [B, T, d_sae] clean stream (CPU-resident to bound memory);
+                # the patcher moves each site to device as it runs.
+                pins[(layer_idx, kind)] = dense.detach().cpu()
+            elif argmax_cpu is not None:
                 Bx, Tx = dense.shape[:2]
                 actual_B = min(Bx, argmax_cpu.shape[0])
                 pa = argmax_cpu[:actual_B].to(dense.device).clamp(0, Tx - 1)

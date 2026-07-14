@@ -72,6 +72,8 @@ class CircuitOnlyPatcher:
         pos_argmax: Optional[torch.Tensor] = None,
         site_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
         pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
+        respect_topk: bool = False,
+        topk: int = 128,
     ) -> None:
         self.bank = bank
         self.keep_indices = keep_indices
@@ -82,6 +84,15 @@ class CircuitOnlyPatcher:
         self.pos_argmax = pos_argmax.detach().cpu() if pos_argmax is not None else None
         self.site_means = site_means
         self.pin_values = pin_values
+        # respect_topk keeps the reconstructed stream in the model's natural
+        # k-sparse regime: kept latents fire at their values (may exceed k),
+        # and only the top (k - #kept-active) NON-kept latents (by mean) fill
+        # the rest per position; all others are exactly zero. Default off
+        # reproduces the classic dense mean-field ablation (every non-kept
+        # latent at its mean), which is SFC-standard but runs the model on a
+        # stream it would never produce.
+        self.respect_topk = respect_topk
+        self.topk = topk
         self.captured_activation: Optional[float] = None
 
     def __call__(self, model: Any):
@@ -114,25 +125,76 @@ class CircuitOnlyPatcher:
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
         error = x - full_recon
 
-        if self.site_means is not None:
-            mean_vector = self.site_means[(layer_idx, kind)].to(
-                device=all_latents.device, dtype=all_latents.dtype
-            )
-            patched = mean_vector.expand_as(all_latents).clone()
-        else:
-            patched = torch.zeros_like(all_latents)
+        mean_vector = (
+            self.site_means[(layer_idx, kind)].to(device=all_latents.device, dtype=all_latents.dtype)
+            if self.site_means is not None
+            else None
+        )
         keep = self.keep_indices.get((layer_idx, kind))
-        if keep:
-            keep_tensor = torch.tensor(sorted(keep), device=all_latents.device, dtype=torch.long)
+        keep_tensor = (
+            torch.tensor(sorted(keep), device=all_latents.device, dtype=torch.long) if keep else None
+        )
+
+        def kept_values() -> Optional[torch.Tensor]:
+            if keep_tensor is None:
+                return None
             if self.pin_values is not None:
                 pins = self.pin_values[(layer_idx, kind)].to(
                     device=all_latents.device, dtype=all_latents.dtype
                 )
-                patched[:, :, keep_tensor] = pins[keep_tensor]
-            else:
-                patched[:, :, keep_tensor] = all_latents[:, :, keep_tensor]
+                if pins.dim() == 1:
+                    # collapsed pin [d_sae]: one value per latent, broadcasts
+                    # across [B, T, len(keep)].
+                    return pins[keep_tensor]
+                # position-specific pin [B, T, d_sae]: per-position clean value.
+                B_, T_ = all_latents.shape[:2]
+                return pins[:B_, :T_][:, :, keep_tensor]
+            return all_latents[:, :, keep_tensor]
+
+        if self.respect_topk and mean_vector is not None:
+            patched = self._respect_topk_fill(all_latents, mean_vector, keep_tensor, kept_values())
+        else:
+            patched = (
+                mean_vector.expand_as(all_latents).clone()
+                if mean_vector is not None
+                else torch.zeros_like(all_latents)
+            )
+            if keep_tensor is not None:
+                patched[:, :, keep_tensor] = kept_values()
 
         return self.bank.decode(patched, kind, layer_idx) + error
+
+    def _respect_topk_fill(
+        self,
+        all_latents: torch.Tensor,
+        mean_vector: torch.Tensor,
+        keep_tensor: Optional[torch.Tensor],
+        kept_values: Optional[torch.Tensor],
+    ) -> torch.Tensor:
+        """k-sparse ablation: kept latents at their values (may exceed k);
+        the top (k - #kept-active) NON-kept latents (ranked by mean) fill the
+        remaining budget per position at their mean; all others exactly zero."""
+
+        patched = torch.zeros_like(all_latents)
+        if keep_tensor is not None:
+            patched[:, :, keep_tensor] = kept_values
+        # Active kept latents per (batch, position).
+        n_kept_active = (patched != 0).sum(dim=-1)  # [B, T]
+        budget = (self.topk - n_kept_active).clamp(min=0)  # [B, T]
+        # Rank non-kept latents by mean magnitude (kept excluded from fill).
+        mean_rank = mean_vector.clone().to(torch.float32)
+        if keep_tensor is not None:
+            mean_rank[keep_tensor] = float("-inf")
+        ranked = torch.argsort(mean_rank, descending=True)  # [d_sae]
+        max_b = int(budget.max().item())
+        if max_b > 0:
+            fill_latents = ranked[:max_b]  # [max_b]
+            fill_means = mean_vector[fill_latents]  # [max_b]
+            rank_ids = torch.arange(max_b, device=all_latents.device)
+            active = rank_ids.view(1, 1, max_b) < budget.unsqueeze(-1)  # [B, T, max_b]
+            vals = fill_means.view(1, 1, -1) * active.to(fill_means.dtype)
+            patched[:, :, fill_latents] = vals.to(patched.dtype)
+        return patched
 
 
 @torch.no_grad()
@@ -219,6 +281,8 @@ def circuit_only_activation(
     pos_argmax: Optional[torch.Tensor] = None,
     site_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
+    respect_topk: bool = False,
+    topk: int = 128,
 ) -> float:
     """One forward pass with everything outside ``keep_indices`` ablated."""
 
@@ -229,6 +293,8 @@ def circuit_only_activation(
         seed_layer=seed_layer,
         seed_kind=seed_kind,
         seed_latent_idx=seed_latent_idx,
+        respect_topk=respect_topk,
+        topk=topk,
         pos_argmax=pos_argmax,
         site_means=site_means,
         pin_values=pin_values,
@@ -262,6 +328,8 @@ def evaluate_ablation_faithfulness(
     pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     a_posctx: Optional[float] = None,
     a_empty: Optional[float] = None,
+    respect_topk: bool = False,
+    topk: int = 128,
 ) -> Tuple[float, float]:
     """
     Circuit-only sufficiency on positive contexts, SFC-normalised.
@@ -316,6 +384,8 @@ def evaluate_ablation_faithfulness(
             seed_latent_idx,
             pos_argmax,
             site_means,
+            respect_topk=respect_topk,
+            topk=topk,
         )
 
     a_circuit_only = circuit_only_activation(
@@ -330,6 +400,8 @@ def evaluate_ablation_faithfulness(
         pos_argmax,
         site_means,
         pin_values,
+        respect_topk=respect_topk,
+        topk=topk,
     )
 
     denom = a_posctx - a_empty

@@ -13,6 +13,7 @@ from circuit.types.feature_id import FeatureID
 from config import config
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 from eval.minimality import prune_non_minimal_nodes_cf, prune_non_minimal_nodes_suppression
+from eval.magnitude_prune import prune_by_magnitude_bisection
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from store.circuits import Circuit, CircuitEdge, CircuitNode
@@ -49,6 +50,11 @@ class HybridGradientDiscovery(DiscoveryMethod):
         self.sfc_edge_threshold = float(cfg.sfc_edge_threshold)
         self.sfc_score_mode = cast(str, cfg.sfc_score_mode)
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self.magnitude_prune = cast(bool, config.discovery.magnitude_prune)
+        self.magnitude_prune_tolerance = cast(float, config.discovery.magnitude_prune_tolerance)
+        self.magnitude_prune_target = cast(float, config.discovery.magnitude_prune_target)
+        self.magnitude_prune_min_keep = cast(int, config.discovery.magnitude_prune_min_keep)
+        self.magnitude_prune_objective = cast(str, config.discovery.magnitude_prune_objective)
         self._last_neg_selection_metadata: dict[str, Any] = {}
 
         self.counterfactual_method = CounterfactualGradientDiscovery(
@@ -57,6 +63,10 @@ class HybridGradientDiscovery(DiscoveryMethod):
         self.ablation_method = AblationGradientDiscovery(
             inference, sae_bank, avg_acts, probe_builder
         )
+        # Prune the fused union once (below), not each source pre-fusion — a joint
+        # prune can drop redundancy that spans the two sources.
+        self.counterfactual_method.magnitude_prune = False
+        self.ablation_method.magnitude_prune = False
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
@@ -175,6 +185,22 @@ class HybridGradientDiscovery(DiscoveryMethod):
                     f"removed={len(removed)}"
                 ),
             )
+
+        # Global magnitude prune (optional) — scalable free-φ bisection over the
+        # fused union, for the large position-aware allowed sets.
+        if self.magnitude_prune:
+            prune_by_magnitude_bisection(
+                self.inference, self.sae_bank, fused,
+                pos_tokens=pos_tokens_eval,
+                seed_layer=seed_layer, seed_kind=seed_kind, seed_latent_idx=seed_latent_idx,
+                pos_argmax=pos_argmax_eval,
+                tolerance=self.magnitude_prune_tolerance,
+                target=self.magnitude_prune_target,
+                min_keep=self.magnitude_prune_min_keep,
+                objective=self.magnitude_prune_objective,
+                logger=logger,
+            )
+            circuit_layers = _circuit_layers(fused)
 
         post_prune_source_overlap = compute_source_overlap(
             fused,

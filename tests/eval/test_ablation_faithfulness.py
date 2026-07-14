@@ -87,7 +87,8 @@ def _natural_dense(bank, x, kind, layer):
     return sparse_topk_to_dense(ta, ti, bank.d_sae, dtype=x.dtype)
 
 
-def _make_patcher(bank, keep=None, in_scope=None, site_means=None, pin_values=None):
+def _make_patcher(bank, keep=None, in_scope=None, site_means=None, pin_values=None,
+                  respect_topk=False, topk=128):
     return CircuitOnlyPatcher(
         bank=bank,
         keep_indices=keep or {},
@@ -97,6 +98,8 @@ def _make_patcher(bank, keep=None, in_scope=None, site_means=None, pin_values=No
         seed_latent_idx=SEED_LATENT,
         site_means=site_means,
         pin_values=pin_values,
+        respect_topk=respect_topk,
+        topk=topk,
     )
 
 
@@ -115,6 +118,51 @@ class TestCircuitOnlyPatcher:
         x = torch.randn(B, T, D_MODEL)
         out = patcher.transform(0, "attn", x)
         assert torch.allclose(out, x, atol=1e-5)
+
+    def test_respect_topk_fill_empty_keep_is_k_sparse(self, mock_sae_bank):
+        """respect_topk with nothing kept: the patched latent vector has at
+        most `topk` nonzero entries per position, all from the top-mean
+        latents at their mean value."""
+        K = 4
+        patcher = _make_patcher(mock_sae_bank, keep={}, respect_topk=True, topk=K)
+        all_latents = torch.zeros(B, T, D_SAE)  # empty keep -> kept_values None
+        mean_vector = torch.zeros(D_SAE)
+        mean_vector[[3, 7, 11, 19, 23, 29]] = torch.tensor([0.9, 0.8, 0.7, 0.6, 0.5, 0.4])
+        patched = patcher._respect_topk_fill(all_latents, mean_vector, None, None)
+        # at most K nonzero per (batch, position)
+        assert int((patched != 0).sum(-1).max().item()) == K
+        # the K active latents are the top-K by mean (3,7,11,19), at their means
+        active = (patched[0, 0] != 0).nonzero().squeeze(1).tolist()
+        assert sorted(active) == [3, 7, 11, 19]
+        assert torch.isclose(patched[0, 0, 3], torch.tensor(0.9))
+
+    def test_respect_topk_keep_all_is_identity(self, mock_sae_bank):
+        """respect_topk keep-all: kept fills the whole budget, no mean fill,
+        patched == natural latents (so the stream reconstructs to x)."""
+        keep = {(0, "attn"): set(range(D_SAE))}
+        patcher = _make_patcher(
+            mock_sae_bank, keep=keep, in_scope={(0, "attn")},
+            site_means={(0, "attn"): torch.rand(D_SAE)}, respect_topk=True, topk=4,
+        )
+        x = torch.randn(B, T, D_MODEL)
+        out = patcher.transform(0, "attn", x)
+        assert torch.allclose(out, x, atol=1e-5)
+
+    def test_respect_topk_budget_leaves_room_for_kept(self, mock_sae_bank):
+        """Active kept latents consume the budget: total active == topk when
+        fewer than topk kept latents fire."""
+        K = 4
+        patcher = _make_patcher(mock_sae_bank, keep={}, respect_topk=True, topk=K)
+        all_latents = torch.zeros(B, T, D_SAE)
+        all_latents[:, :, 5] = 2.0  # one kept latent fires everywhere
+        mean_vector = torch.zeros(D_SAE)
+        mean_vector[[1, 2, 3, 8, 9]] = torch.tensor([0.9, 0.8, 0.7, 0.6, 0.5])
+        keep_tensor = torch.tensor([5])
+        kept_values = all_latents[:, :, keep_tensor]
+        patched = patcher._respect_topk_fill(all_latents, mean_vector, keep_tensor, kept_values)
+        assert int((patched != 0).sum(-1).max().item()) == K  # 1 kept + 3 fill
+        assert torch.isclose(patched[0, 0, 5], torch.tensor(2.0))  # kept preserved
+        assert patched[0, 0, 5] != 0
 
     def test_keep_none_zero_mode_leaves_floor_plus_error(self, mock_sae_bank):
         """With nothing kept (zero mode) the output must equal
@@ -192,6 +240,33 @@ class TestCircuitOnlyPatcher:
         expected_latents = mean_vector.expand_as(dense).clone()
         keep_tensor = torch.tensor(sorted(kept))
         expected_latents[:, :, keep_tensor] = pin_vector[keep_tensor]
+        expected = (
+            mock_sae_bank.decode(expected_latents, "attn", 0)
+            + x
+            - mock_sae_bank.decode(dense, "attn", 0)
+        )
+        out = patcher.transform(0, "attn", x)
+        assert torch.allclose(out, expected, atol=1e-5)
+
+    def test_pinned_position_specific_pins_per_position(self, mock_sae_bank):
+        """A 3-D pin tensor [B, T, d_sae] pins kept latents to their own
+        per-position value (not a single broadcast vector); non-kept keep the
+        mean floor."""
+        x = torch.randn(B, T, D_MODEL)
+        dense = _natural_dense(mock_sae_bank, x, "attn", 0)
+        kept = {3, 11}
+        mean_vector = torch.rand(D_SAE) * 0.5
+        pin_pos = torch.rand(B, T, D_SAE) * 3.0  # distinct value per (b, t, latent)
+        patcher = _make_patcher(
+            mock_sae_bank,
+            keep={(0, "attn"): kept},
+            in_scope={(0, "attn")},
+            site_means={(0, "attn"): mean_vector},
+            pin_values={(0, "attn"): pin_pos},
+        )
+        expected_latents = mean_vector.expand_as(dense).clone()
+        keep_tensor = torch.tensor(sorted(kept))
+        expected_latents[:, :, keep_tensor] = pin_pos[:, :, keep_tensor]
         expected = (
             mock_sae_bank.decode(expected_latents, "attn", 0)
             + x

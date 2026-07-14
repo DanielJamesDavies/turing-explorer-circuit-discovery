@@ -1,9 +1,10 @@
 """Direct-effect edge attribution between selected circuit nodes.
 
-Implements the edge-weight recipe of Sparse Feature Circuits (Marks et al.,
-2025, App. B, Eq. 12): the weight of an edge u -> d is the indirect effect
-of u on the metric via its DIRECT effect on d, excluding paths mediated by
-any other feature node:
+Implements the edge-weight construction of Sparse Feature Circuits (Marks
+et al., 2025): the weight of an edge u -> d is the indirect effect of u on
+the metric via its DIRECT effect on d, excluding paths mediated by any other
+feature node. (SFC's term is "edge weights"; we call these "direct-effect
+edges" in prose. Cite the paper plainly, not by appendix letter.)
 
     w(u -> d) = grad_d(m) * grad_{u, stop(M)}(d) * (u_natural - u_baseline)
 
@@ -109,7 +110,7 @@ def attach_direct_edges(
         anchors = {site: graph.get_latents(*site)[0].act for site in anchor_sites}
         anchor_list = [anchors[site] for site in anchor_sites]
 
-        # Backward 0: node gradient fields (Eq. 12 first factor), graph kept.
+        # Backward 0: node gradient fields (the grad_d(m) factor), graph kept.
         node_grads = torch.autograd.grad(
             metric, anchor_list, retain_graph=True, allow_unused=True
         )

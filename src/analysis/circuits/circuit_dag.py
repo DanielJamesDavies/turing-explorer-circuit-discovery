@@ -5,8 +5,8 @@ Layout follows the Sparse Feature Circuits convention (Marks et al. 2025,
 circuit_plotting.py): one row per (layer, kind) site ascending so the seed
 sits at the top, signed edges coloured by direction of effect with width
 proportional to |direct-effect weight|. Only ``kind="direct_effect"`` edges
-(SFC App. B) are drawn — discovery's member->seed star edges are attribution
-bookkeeping, not structure.
+(direct-effect edges, SFC's edge weights) are drawn — discovery's member->seed
+star edges are attribution bookkeeping, not structure.
 
 Input: a dict of wired Circuits serialized by the case-study wiring script
 (discovery with edges attached in-memory via attach_direct_edges), e.g.

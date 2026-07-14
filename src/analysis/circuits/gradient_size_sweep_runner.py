@@ -102,11 +102,22 @@ def run_gradient_size_sweep(
     restoration_per_round_k: int | None = None,
     restoration_final_ig_polish: bool = False,
     restoration_truncation: str = "round_prefix",
+    respect_topk: bool = False,
+    pinned_position_specific: bool = True,
 ) -> dict[str, Path]:
     if restoration_truncation not in ("round_prefix", "per_site"):
         raise ValueError(
             f"restoration_truncation must be 'round_prefix' or 'per_site', got {restoration_truncation!r}"
         )
+    # Validate modes: compound "cfmode+ablmode" is hybrid-only; plain modes
+    # must be recognised. parse_hybrid_mode raises on unknown parts.
+    for mode in attribution_modes:
+        cf_mode, ab_mode = parse_hybrid_mode(mode)
+        if cf_mode != ab_mode and any(m != "hybrid_gradient" for m in methods):
+            raise ValueError(
+                f"compound attribution mode {mode!r} is only valid for hybrid_gradient; "
+                f"got methods {list(methods)}"
+            )
     root = resolve_run_root(run_root)
     output_dirs = analysis_output_dirs(root, SUITE_NAME, output_root=output_root)
     rows_path = output_dirs["tables"] / "gradient-size-sweep.csv"
@@ -237,7 +248,8 @@ def run_gradient_size_sweep(
             )
             in_scope = upstream_sites(bank, int(layer), kind)
             site_means, pin_values = collect_site_anchors(
-                inference, bank, pos_tokens_eval, in_scope, pos_argmax_eval
+                inference, bank, pos_tokens_eval, in_scope, pos_argmax_eval,
+                pin_position_specific=pinned_position_specific,
             )
             # Shared floor knob (pins always stay posctx).
             from eval.ablation_faithfulness import resolve_site_floors
@@ -256,6 +268,7 @@ def run_gradient_size_sweep(
                 latent_idx,
                 pos_argmax_eval,
                 site_means,
+                respect_topk=respect_topk,
             )
 
             for method_name, attr_mode in combos_todo:
@@ -354,6 +367,7 @@ def run_gradient_size_sweep(
                             site_means=site_means,
                             a_posctx=a_posctx,
                             a_empty=a_empty,
+                            respect_topk=respect_topk,
                         )
                         pinned_abl, _ = evaluate_ablation_faithfulness(
                             inference,
@@ -370,6 +384,7 @@ def run_gradient_size_sweep(
                             pin_values=pin_values,
                             a_posctx=a_posctx,
                             a_empty=a_empty,
+                            respect_topk=respect_topk,
                         )
                         previous_n = n_use
                         previous_scores = (cf_faith, sup_score, abl_faith, pinned_abl)
@@ -425,6 +440,7 @@ def run_gradient_size_sweep(
         "restoration_per_round_k": effective_restoration_per_round_k,
         "restoration_final_ig_polish": restoration_final_ig_polish,
         "restoration_truncation": restoration_truncation,
+        "respect_topk": respect_topk,
         "n_rows": len(rows),
         "gates_disabled": True,
         "pruning_disabled": True,
@@ -438,6 +454,28 @@ def run_gradient_size_sweep(
     return {"rows": rows_path, "summary": summary_path}
 
 
+ATTRIBUTION_MODES = ("local", "ig_baseline", "restoration", "ig_restoration")
+
+
+def parse_hybrid_mode(mode: str) -> tuple[str, str]:
+    """A hybrid attribution mode is either plain (both sub-methods share it,
+    e.g. "ig_baseline") or compound "cfmode+ablmode" (e.g.
+    "restoration+ig_baseline" = cf sub-method restoration, abl sub-method
+    ig_baseline). Sub-methods read independent config fields, so hybrid can
+    pair each with a different mode. Returns (cf_mode, abl_mode)."""
+
+    if "+" in mode:
+        cf_mode, ab_mode = (part.strip() for part in mode.split("+", 1))
+    else:
+        cf_mode = ab_mode = mode
+    for part in (cf_mode, ab_mode):
+        if part not in ATTRIBUTION_MODES:
+            raise ValueError(
+                f"attribution mode {part!r} (in {mode!r}) must be one of {ATTRIBUTION_MODES}"
+            )
+    return cf_mode, ab_mode
+
+
 def _build_mode_method(
     name: str,
     attribution_mode: str,
@@ -446,8 +484,9 @@ def _build_mode_method(
     avg_acts: torch.Tensor,
     probe_builder: Any,
 ):
-    """Build a discovery method pinned to an attribution mode. Hybrid takes
-    no override (its sub-methods read config) and only runs in "local"."""
+    """Build a discovery method pinned to an attribution mode. For hybrid the
+    mode may be compound ("cfmode+ablmode") so each sub-method runs a
+    different attribution mode; a plain mode is applied to both."""
 
     from circuit.discovery.ablation_gradient import AblationGradientDiscovery
     from circuit.discovery.counterfactual_gradient import CounterfactualGradientDiscovery
@@ -461,12 +500,14 @@ def _build_mode_method(
             inference, bank, avg_acts, probe_builder, attribution_mode=attribution_mode
         )
     # Hybrid composes cf+abl sub-methods that read attribution_mode from
-    # config at construction; pin it for the build, then restore.
+    # their own config fields at construction; pin each for the build, then
+    # restore. Compound modes let the two sub-methods differ.
+    cf_mode, ab_mode = parse_hybrid_mode(attribution_mode)
     cf_cfg, ab_cfg = config.discovery.counterfactual_gradient, config.discovery.ablation_gradient
     saved = (cf_cfg.attribution_mode, ab_cfg.attribution_mode)
     try:
-        cf_cfg.attribution_mode = attribution_mode
-        ab_cfg.attribution_mode = attribution_mode
+        cf_cfg.attribution_mode = cf_mode
+        ab_cfg.attribution_mode = ab_mode
         return _build_method(name, inference, bank, avg_acts, probe_builder)
     finally:
         cf_cfg.attribution_mode, ab_cfg.attribution_mode = saved
@@ -758,7 +799,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--attribution-modes",
         nargs="+",
         default=["local"],
-        choices=["local", "ig_baseline", "restoration", "ig_restoration"],
+        help="Attribution modes: local | ig_baseline | restoration | ig_restoration. "
+        "For hybrid, a compound 'cfmode+ablmode' (e.g. 'restoration+ig_baseline') runs "
+        "the cf and abl sub-methods in different modes.",
     )
     parser.add_argument(
         "--abl-negative-roles",
@@ -802,6 +845,23 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "prefixes (default) or score-ranked per-site top-m — the latter is required to "
         "measure ranking effects such as final_ig_polish.",
     )
+    parser.add_argument(
+        "--respect-topk",
+        action="store_true",
+        help="Ablation keeps the reconstructed stream in the model's natural k-sparse "
+        "regime (kept latents + top non-kept by mean up to k, rest 0) instead of the "
+        "classic dense mean-field. More faithful; raises free-φabl by removing the "
+        "suppressive dense background.",
+    )
+    parser.add_argument(
+        "--pinned-collapsed",
+        action="store_true",
+        help="Pin kept latents to a single position-collapsed clean vector (the old "
+        "default) instead of their per-position clean values. The default "
+        "(position-specific) is the correct pinned decomposition for position-aware "
+        "circuits — a collapsed pin discards the position axis the seed reads and reads "
+        "~0 for deep seeds.",
+    )
     return parser
 
 
@@ -821,6 +881,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         restoration_per_round_k=args.restoration_per_round_k,
         restoration_final_ig_polish=args.restoration_final_ig_polish,
         restoration_truncation=args.restoration_truncation,
+        respect_topk=args.respect_topk,
+        pinned_position_specific=not args.pinned_collapsed,
     )
     for path in outputs.values():
         print(path)

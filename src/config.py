@@ -837,6 +837,53 @@ class DiscoveryConfig(BaseModel):
     # (coverage-weighted: a different floor semantics from "global"'s
     # density-weighted corpus expectation, not a variance-reduced estimate).
     floor_source: str = "posctx"     # "posctx" | "global" | "diverse"
+    # Position-aware allowed-set selection (orthogonal to attribution_mode).
+    # When true, discovery keeps the token-position axis of the gradient
+    # attribution and selects the allowed set as the union, over each seed's
+    # causal prefix, of every position's top-N latents by |attribution| —
+    # instead of collapsing positions to one fixed top-k set. Circuit stays a
+    # flat membership set; only the selection rule changes. Fixes the
+    # position-aggregation ("star") sufficiency gap for deep seeds.
+    position_aware: bool = False
+    position_aware_top_n: int = 64   # per-position latents unioned into the set
+    # Per-position selection rule for the allowed set (only used when
+    # position_aware is true). "top_n" keeps a fixed count per position
+    # (position_aware_top_n). The threshold rules keep a *variable* count by
+    # |attribution|, to shrink the union ("menu") when the per-position
+    # attribution is peaked:
+    #   "abs"      -> keep latents with |attr| >= position_aware_threshold
+    #                 (global absolute cut; threshold in raw attribution units).
+    #   "relative" -> keep |attr| >= threshold * max_latent|attr| at that
+    #                 position (scale-free fraction, threshold in [0, 1]).
+    #   "mass"     -> keep the smallest set covering `threshold` of that
+    #                 position's total |attr| mass (cumulative, threshold in (0, 1]).
+    position_aware_select: str = "top_n"   # "top_n" | "abs" | "relative" | "mass"
+    position_aware_threshold: float = 0.0  # meaning depends on position_aware_select
+    # Soft position weighting: scale each (position, site) block's attributions by
+    # its normalised read-strength so latents at weakly-read positions score lower
+    # (a gradient proxy for attention routing). Down-weight, not a hard drop; pairs
+    # with position_aware_select="abs" and the magnitude prune.
+    position_aware_position_weight: bool = False
+    # Membership scope: "aggregate" unions over the probe batch (one circuit for
+    # the seed); "per_instance" builds it from a single sequence (the per-input
+    # "meal"-sized circuit).
+    position_aware_scope: str = "aggregate"   # "aggregate" | "per_instance"
+    # Global magnitude prune (post-assembly, method-agnostic — cf / abl / hybrid).
+    # Ranks every non-seed member by |attribution_score| and keeps the smallest
+    # top-K prefix whose circuit-only (free-phi) sufficiency still meets a target,
+    # found by bisection over K (~log2(N) forward passes) — scalable to the large
+    # position-aware allowed sets where leave-one-out minimality is intractable.
+    magnitude_prune: bool = False
+    # Keep-target: if magnitude_prune_target > 0 it is an absolute phi floor;
+    # otherwise the floor is (full-circuit phi - magnitude_prune_tolerance).
+    magnitude_prune_tolerance: float = 0.05
+    magnitude_prune_target: float = 0.0
+    magnitude_prune_min_keep: int = 1      # never prune below this many members
+    # Which sufficiency the prune preserves — the drivers/closure decomposition:
+    # "free" (default) keeps a self-contained CLOSED circuit (free-phi); "pinned"
+    # keeps the causal DRIVERS only (pinned-phi, kept latents clamped to clean
+    # position-specific values) — compact when the closure tax is high.
+    magnitude_prune_objective: str = "free"   # "free" | "pinned"
 
     @field_validator("floor_source")
     @classmethod
@@ -844,6 +891,57 @@ class DiscoveryConfig(BaseModel):
         allowed = ["posctx", "global", "diverse"]
         if v not in allowed:
             raise ValueError(f"floor_source must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("position_aware_top_n")
+    @classmethod
+    def validate_position_aware_top_n(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"position_aware_top_n must be >= 1, got {v}")
+        return v
+
+    @field_validator("position_aware_select")
+    @classmethod
+    def validate_position_aware_select(cls, v: str) -> str:
+        allowed = ["top_n", "abs", "relative", "mass"]
+        if v not in allowed:
+            raise ValueError(f"position_aware_select must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("position_aware_scope")
+    @classmethod
+    def validate_position_aware_scope(cls, v: str) -> str:
+        allowed = ["aggregate", "per_instance"]
+        if v not in allowed:
+            raise ValueError(f"position_aware_scope must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("position_aware_threshold")
+    @classmethod
+    def validate_position_aware_threshold(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError(f"position_aware_threshold must be >= 0, got {v}")
+        return v
+
+    @field_validator("magnitude_prune_tolerance", "magnitude_prune_target")
+    @classmethod
+    def validate_magnitude_prune_phi(cls, v: float) -> float:
+        if not (0.0 <= v <= 1.0):
+            raise ValueError(f"magnitude_prune tolerance/target must be in [0, 1], got {v}")
+        return v
+
+    @field_validator("magnitude_prune_min_keep")
+    @classmethod
+    def validate_magnitude_prune_min_keep(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"magnitude_prune_min_keep must be >= 1, got {v}")
+        return v
+
+    @field_validator("magnitude_prune_objective")
+    @classmethod
+    def validate_magnitude_prune_objective(cls, v: str) -> str:
+        if v not in ("free", "pinned"):
+            raise ValueError(f"magnitude_prune_objective must be 'free' or 'pinned', got {v!r}")
         return v
     neg_ctx_eval_max: int = 16
     min_faithfulness: float = 0.2

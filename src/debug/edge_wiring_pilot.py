@@ -1,5 +1,5 @@
-"""Retro-wiring pilot: attach direct-effect edges (SFC App. B) to freshly
-discovered circuits and measure chain depth.
+"""Retro-wiring pilot: attach direct-effect edges (SFC's edge weights) to
+freshly discovered circuits and measure chain depth.
 
 For a small seed sample, discovers circuits with local and ig_baseline
 attribution (gates off, as in the sweeps), truncates to the deployed

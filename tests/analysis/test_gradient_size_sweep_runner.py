@@ -111,6 +111,29 @@ def test_run_rejects_bogus_restoration_truncation():
         run_gradient_size_sweep("nonexistent", restoration_truncation="bogus")
 
 
+def test_parse_hybrid_mode_plain_and_compound():
+    from analysis.circuits.gradient_size_sweep_runner import parse_hybrid_mode
+
+    assert parse_hybrid_mode("ig_baseline") == ("ig_baseline", "ig_baseline")
+    assert parse_hybrid_mode("restoration+ig_baseline") == ("restoration", "ig_baseline")
+    assert parse_hybrid_mode("ig_restoration + local") == ("ig_restoration", "local")
+    with pytest.raises(ValueError, match="must be one of"):
+        parse_hybrid_mode("restoration+bogus")
+    with pytest.raises(ValueError, match="must be one of"):
+        parse_hybrid_mode("nonsense")
+
+
+def test_run_rejects_compound_mode_for_non_hybrid():
+    from analysis.circuits.gradient_size_sweep_runner import run_gradient_size_sweep
+
+    with pytest.raises(ValueError, match="only valid for hybrid"):
+        run_gradient_size_sweep(
+            "nonexistent",
+            methods=["counterfactual_gradient"],
+            attribution_modes=["restoration+ig_baseline"],
+        )
+
+
 def _restoration_circuit():
     """seed + two round-1 nodes + one round-2 node + one unstamped node."""
     circuit = Circuit(name="restored")
