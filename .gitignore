@@ -18,6 +18,7 @@ src/native/build/
 outputs/
 profile_trace/
 /paper/*
+/paper-backups/*
 
 # Editor
 .cursor/
