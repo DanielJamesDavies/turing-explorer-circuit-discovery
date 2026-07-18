@@ -489,8 +489,12 @@ def _build_mode_method(
     different attribution mode; a plain mode is applied to both."""
 
     from circuit.discovery.ablation_gradient import AblationGradientDiscovery
+    from circuit.discovery.activation_gradient import ActivationGradientDiscovery
     from circuit.discovery.counterfactual_gradient import CounterfactualGradientDiscovery
 
+    if name == "activation_gradient":
+        # A top-level method (posctx grad x natural union) — no attribution_mode.
+        return ActivationGradientDiscovery(inference, bank, avg_acts, probe_builder)
     if name == "counterfactual_gradient":
         return CounterfactualGradientDiscovery(
             inference, bank, avg_acts, probe_builder, attribution_mode=attribution_mode

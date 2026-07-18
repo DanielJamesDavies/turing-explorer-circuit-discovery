@@ -51,6 +51,46 @@ from model.hooks import multi_patch
 from sae.dense import sparse_topk_to_dense, target_latent_activations
 
 
+def _batch_latent_targets(
+    ta: torch.Tensor,
+    ti: torch.Tensor,
+    latent_ids: List[int],
+    argmax: Optional[torch.Tensor],
+    d_sae: int,
+) -> Dict[int, float]:
+    """Mean activation at the probe positions for MANY latents in one op.
+
+    Equivalent to looping ``target_latent_activations`` + probe-mean per
+    latent, but with a single scatter and a single GPU->CPU sync — the
+    per-latent loop launched one kernel AND one blocking .item() per member,
+    which at PA-circuit sizes (100k+ members) was ~1 ms/member of pure
+    launch/sync overhead (measured: the cf eval scaled linearly to 386 s at
+    362k members with GPU utilisation collapsed to ~14%).
+
+    The scatter uses amax reduction against a zero base: identical semantics
+    to sparse_topk_to_dense / target_latent_activations (top-k activations
+    are non-negative; padded index-0 slots carry 0 and lose the max to any
+    genuine activation).
+    """
+    Bx, Tx = ta.shape[:2]
+    device = ta.device
+    if argmax is not None:
+        actual_B = min(Bx, argmax.shape[0])
+        pa = argmax[:actual_B].to(device).clamp(0, Tx - 1)
+        rows = torch.arange(actual_B, device=device)
+        rows_a = ta[:actual_B][rows, pa]  # [B, k]
+        rows_i = ti[:actual_B][rows, pa]  # [B, k]
+    else:
+        rows_a = ta.reshape(-1, ta.shape[-1])
+        rows_i = ti.reshape(-1, ti.shape[-1])
+    dense = torch.zeros(rows_a.shape[0], d_sae, device=device, dtype=torch.float32)
+    dense.scatter_reduce_(1, rows_i.long(), rows_a.to(torch.float32),
+                          reduce="amax", include_self=True)
+    idx = torch.tensor(latent_ids, device=device, dtype=torch.long)
+    vals = dense[:, idx].mean(dim=0)
+    return {int(l): float(v) for l, v in zip(latent_ids, vals.cpu().tolist())}
+
+
 class CounterfactualInterventionPatcher:
     """
     A forward-pass hook that injects activator activations and suppresses
@@ -91,6 +131,20 @@ class CounterfactualInterventionPatcher:
         self.pos_argmax = pos_argmax.detach().cpu() if pos_argmax is not None else None
         self.circuit_layers = circuit_layers
         self.captured_activation: Optional[float] = None
+        # Precomputed per-site index/value tensors so the intervention is one
+        # advanced-index write per site instead of one kernel launch per
+        # member (the per-latent loop was ~1 ms/member at PA-circuit sizes).
+        self._act_tensors: Dict[Tuple[int, str], Tuple[torch.Tensor, torch.Tensor]] = {}
+        for key, targets in activator_targets.items():
+            if targets:
+                self._act_tensors[key] = (
+                    torch.tensor(list(targets.keys()), dtype=torch.long),
+                    torch.tensor(list(targets.values()), dtype=torch.float32),
+                )
+        self._inh_tensors: Dict[Tuple[int, str], torch.Tensor] = {
+            key: torch.tensor(sorted(idxs), dtype=torch.long)
+            for key, idxs in inhibitor_indices.items() if idxs
+        }
 
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
@@ -140,14 +194,17 @@ class CounterfactualInterventionPatcher:
         full_recon = self.bank.decode(all_latents, kind, layer_idx)
         error = x - full_recon
 
-        # Apply the interventions to a copy of the latent tensor
+        # Apply the interventions to a copy of the latent tensor — one
+        # advanced-index write per role per site (vals [n] broadcasts over
+        # [B, T, n]), not one kernel per member.
         patched = all_latents.clone()
-        if has_act:
-            for idx, val in self.activator_targets[(layer_idx, kind)].items():
-                patched[:, :, idx] = float(val)
-        if has_inh:
-            for idx in self.inhibitor_indices[(layer_idx, kind)]:
-                patched[:, :, idx] = 0.0
+        act_pair = self._act_tensors.get((layer_idx, kind))
+        if act_pair is not None:
+            act_idx, act_vals = act_pair
+            patched[:, :, act_idx.to(x.device)] = act_vals.to(x.device, target_dtype)
+        inh_idx = self._inh_tensors.get((layer_idx, kind))
+        if inh_idx is not None:
+            patched[:, :, inh_idx.to(x.device)] = 0.0
 
         return self.bank.decode(patched, kind, layer_idx) + error
 
@@ -254,23 +311,18 @@ def evaluate_counterfactual_faithfulness(
                 val = s_dense.mean().item()
             a_posctx_buf.append(val)
 
-        # Per-activator target activations at probe positions
+        # Per-activator target activations at probe positions — one scatter +
+        # one sync per site for ALL of the site's activators.
         for kind in kinds:
             key = (layer_idx, kind)
             if key not in activator_fids:
                 continue
             act = activations[kind_to_idx[kind]]
             ta, ti = sae_bank.encode(act, kind, layer_idx)
-            Bx, Tx = ta.shape[:2]
-            targets = activator_targets.setdefault(key, {})
-            for latent_idx in activator_fids[key]:
-                t_dense = target_latent_activations(ta, ti, latent_idx)  # [B, T]
-                if pos_argmax is not None:
-                    pa = pos_argmax[:Bx].to(t_dense.device).clamp(0, Tx - 1)
-                    tval = t_dense[torch.arange(Bx, device=t_dense.device), pa].mean().item()
-                else:
-                    tval = t_dense.mean().item()
-                targets[latent_idx] = tval
+            activator_targets.setdefault(key, {}).update(
+                _batch_latent_targets(ta, ti, activator_fids[key], pos_argmax,
+                                      sae_bank.d_sae)
+            )
 
     inference.disable_compile()
     try:
@@ -308,24 +360,18 @@ def evaluate_counterfactual_faithfulness(
                 val = s_dense.mean().item()
             a_baseline_buf.append(val)
 
-        # Per-inhibitor target activations at negctx probe positions
+        # Per-inhibitor target activations at negctx probe positions — one
+        # scatter + one sync per site for ALL of the site's inhibitors.
         for kind in kinds:
             key = (layer_idx, kind)
             if key not in inhibitor_fids:
                 continue
             act = activations[kind_to_idx[kind]]
             ta, ti = sae_bank.encode(act, kind, layer_idx)
-            Bx, Tx = ta.shape[:2]
-            targets = inhibitor_targets.setdefault(key, {})
-            for latent_idx in inhibitor_fids[key]:
-                t_dense = target_latent_activations(ta, ti, latent_idx)
-                if neg_argmax is not None:
-                    actual_B = min(Bx, neg_argmax.shape[0])
-                    pa = neg_argmax[:actual_B].to(t_dense.device).clamp(0, Tx - 1)
-                    tval = t_dense[:actual_B][torch.arange(actual_B, device=t_dense.device), pa].mean().item()
-                else:
-                    tval = t_dense.mean().item()
-                targets[latent_idx] = tval
+            inhibitor_targets.setdefault(key, {}).update(
+                _batch_latent_targets(ta, ti, sorted(inhibitor_fids[key]), neg_argmax,
+                                      sae_bank.d_sae)
+            )
 
     inference.disable_compile()
     try:

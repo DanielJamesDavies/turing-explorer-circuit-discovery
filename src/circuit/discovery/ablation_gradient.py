@@ -51,6 +51,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
         self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
         self.restoration_rounds = cast(int, cfg.restoration.rounds)
         self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
+        self.restoration_round_select = cast(str, cfg.restoration.round_select)
+        self.restoration_round_abs_pctl = cast(float, cfg.restoration.round_abs_pctl)
         self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
         self.restoration_ig_steps = cast(int, cfg.restoration.ig_steps)
         self.restoration_final_ig_polish = cast(bool, cfg.restoration.final_ig_polish)
@@ -89,6 +91,9 @@ class AblationGradientDiscovery(DiscoveryMethod):
             else cast(float, cfg.min_suppression_score)
         )
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self.probe_sequence_count = cast(int, config.discovery.probe_sequence_count)
+        self.eval_sequence_count = cast(int, config.discovery.eval_sequence_count)
+        self.eval_batch_size = cast(int, config.discovery.eval_batch_size)
         self._last_neg_selection_metadata: dict[str, Any] = {}
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
@@ -115,8 +120,16 @@ class AblationGradientDiscovery(DiscoveryMethod):
             logger.reject("empty probe dataset (no positive contexts)")
             return None
 
-        pos_tokens_eval = probe_data.pos_tokens[: self.probe_batch_size]
-        pos_argmax_eval = probe_data.pos_argmax[: self.probe_batch_size]
+        # Sequence COUNT vs batch SIZE (see DiscoveryConfig). Discovery and
+        # evaluation each get their own count; batch sizes bound one forward
+        # pass via chunked merging inside the hops/evals that support it
+        # (activation_gradient, ig_baseline, circuit-only evals). The local
+        # and restoration hops hold their whole batch in one grad pass, so
+        # _run_ablation_hop caps those at probe_batch_size internally.
+        pos_tokens_probe = probe_data.pos_tokens[: self.probe_sequence_count]
+        pos_argmax_probe = probe_data.pos_argmax[: self.probe_sequence_count]
+        pos_tokens_eval = probe_data.pos_tokens[: self.eval_sequence_count]
+        pos_argmax_eval = probe_data.pos_argmax[: self.eval_sequence_count]
         logger.header(
             seed_layer,
             seed_kind,
@@ -133,8 +146,8 @@ class AblationGradientDiscovery(DiscoveryMethod):
         support_scores, target_loss, target_pre_act = self._run_ablation_hop(
             seed_comp_idx,
             seed_latent_idx,
-            pos_tokens_eval,
-            pos_argmax_eval,
+            pos_tokens_probe,
+            pos_argmax_probe,
             logger,
         )
         logger.stage(
@@ -323,106 +336,139 @@ class AblationGradientDiscovery(DiscoveryMethod):
         # Reset per seed: assembly delivers whatever the mode's hop stashes.
         self._pending_inhibitors = {}
 
-        if self.position_aware:
-            return self._run_position_aware_hop(
-                seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
-            )
+        # `position_aware` is a MODIFIER on whichever attribution runs below (it
+        # swaps that method's position-collapse for a union over the seed's causal
+        # prefix) — not a method of its own. The baseline-free posctx
+        # grad x natural attribution is its own top-level method now
+        # (ActivationGradientDiscovery), not a mode here.
         if self.attribution_mode == "ig_baseline":
             return self._run_ig_baseline_hop(
                 seed_layer, seed_kind, w_seed, b_seed, pos_tokens, pos_argmax, logger
             )
         if self.attribution_mode in ("restoration", "ig_restoration"):
+            # Full probe_sequence_count: the round scorer chunks internally
+            # at probe_batch_size (see restoration._round_scores).
             return self._run_restoration_hop(
-                seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
+                seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger,
             )
 
-        instrument = SeedProjectionInstrument(self.sae_bank, seed_layer, seed_kind, w_seed, b_seed)
+        # Local mode, microbatched over the probe sequences (sequence count vs
+        # batch size — the same contract as cf's contrast hop): each chunk of
+        # probe_batch_size runs its own grad-enabled pass; classic scores are
+        # averaged across chunks, position-aware memberships merged by
+        # max-|score| (the union's own rule).
+        if self.negative_roles == "include" and not self.position_aware:
+            logger.note(
+                "negative_roles=include not yet supported in local mode "
+                "(attribution util selects supports only); proceeding supports-only"
+            )
+        B_total = int(pos_tokens.shape[0])
+        bs = max(1, int(self.probe_batch_size))
+        all_scores: Dict[FeatureID, list] = {}
+        loss_total = 0.0
+        pre_act_total = 0.0
+        n_seqs_done = 0
         was_compiled = self.inference._compiled
         self.inference.disable_compile()
         try:
-            self.inference.forward(
-                pos_tokens,
-                patcher=instrument,
-                grad_enabled=True,
-                return_activations=False,
-                tokenize_final=False,
-            )
-            if instrument.seed_pre_act is None:
-                logger.note("SeedProjectionInstrument: seed_pre_act is None")
-                return {}, 0.0, 0.0
-
-            B = min(instrument.seed_pre_act.shape[0], pos_argmax.shape[0])
-            batch_idx = torch.arange(B, device=instrument.seed_pre_act.device)
-            pa = pos_argmax[:B].to(instrument.seed_pre_act.device).clamp(0, instrument.seed_pre_act.shape[1] - 1)
-            pre_act_at_peak = instrument.seed_pre_act[:B][batch_idx, pa]
-            loss = (pre_act_at_peak ** 2).mean()
-            target_loss = float(loss.detach().item())
-            target_pre_act = float(pre_act_at_peak.detach().mean().item())
-            if abs(target_loss) < 1e-8:
-                logger.note("near-zero positive-context ablation loss — skipping")
-                return {}, target_loss, target_pre_act
-
-            if self.negative_roles == "include":
-                logger.note(
-                    "negative_roles=include not yet supported in local mode "
-                    "(attribution util selects supports only); proceeding supports-only"
+            for start in range(0, B_total, bs):
+                tokens_chunk = pos_tokens[start:start + bs]
+                argmax_chunk = pos_argmax[start:start + bs]
+                instrument = SeedProjectionInstrument(
+                    self.sae_bank, seed_layer, seed_kind, w_seed, b_seed
                 )
-            scores = compute_latent_ablation_scores(
-                graph=instrument.graph,
-                target_scalar=loss,
-                seed_comp_idx=seed_comp_idx,
-                n_kinds=n_kinds,
-                kinds=kinds,
-                top_k_supports=self.top_k_supports,
-                min_active_count=self.min_active_count,
-                active_count=self._active_count(),
-                top_k_scope=self.top_k_scope,
-            )
-            return scores, target_loss, target_pre_act
+                try:
+                    self.inference.forward(
+                        tokens_chunk,
+                        patcher=instrument,
+                        grad_enabled=True,
+                        return_activations=False,
+                        tokenize_final=False,
+                    )
+                    if instrument.seed_pre_act is None:
+                        logger.note(
+                            f"SeedProjectionInstrument: seed_pre_act is None "
+                            f"(chunk offset {start})"
+                        )
+                        continue
+
+                    B = min(instrument.seed_pre_act.shape[0], argmax_chunk.shape[0])
+                    batch_idx = torch.arange(B, device=instrument.seed_pre_act.device)
+                    pa = argmax_chunk[:B].to(instrument.seed_pre_act.device).clamp(
+                        0, instrument.seed_pre_act.shape[1] - 1
+                    )
+                    pre_act_at_peak = instrument.seed_pre_act[:B][batch_idx, pa]
+                    loss = (pre_act_at_peak ** 2).mean()
+                    chunk_loss = float(loss.detach().item())
+                    loss_total += chunk_loss * B
+                    pre_act_total += float(pre_act_at_peak.detach().mean().item()) * B
+                    n_seqs_done += B
+                    if abs(chunk_loss) < 1e-8:
+                        logger.note(
+                            f"near-zero positive-context ablation loss "
+                            f"(chunk offset {start}) — skipping"
+                        )
+                        continue
+
+                    chunk_scores = compute_latent_ablation_scores(
+                        graph=instrument.graph,
+                        target_scalar=loss,
+                        seed_comp_idx=seed_comp_idx,
+                        n_kinds=n_kinds,
+                        kinds=kinds,
+                        top_k_supports=self.top_k_supports,
+                        min_active_count=self.min_active_count,
+                        active_count=self._active_count(),
+                        top_k_scope=self.top_k_scope,
+                        # Position-aware abl-local: union the position axis over
+                        # the seed's causal prefix instead of .sum(dim=(0, 1)).
+                        # The anchor is the seed's firing peak on posctx. Per
+                        # position the signal is activation_gradient's
+                        # attribution x a positive drive weight, so top_n
+                        # membership should match that method's; abs/abs_pctl
+                        # expose the drive-weighted variant.
+                        position_aware=self._position_aware_spec(argmax_chunk),
+                    )
+                    for fid, score in chunk_scores.items():
+                        all_scores.setdefault(fid, []).append(score)
+                finally:
+                    del instrument
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    gc.collect()
         finally:
-            del instrument
             if was_compiled:
                 self.inference.enable_compile()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            gc.collect()
 
-    def _run_position_aware_hop(
-        self,
-        seed_layer: int,
-        seed_kind: str,
-        seed_latent_idx: int,
-        pos_tokens: torch.Tensor,
-        pos_argmax: torch.Tensor,
-        logger: CircuitLogger,
-    ) -> Tuple[Dict[FeatureID, float], float, float]:
-        """Position-aware allowed-set selection: union each prefix position's
-        top-N attribution latents (supports) rather than collapsing positions.
-        Inhibitors (negative attribution) are stashed for assembly like the
-        other ablation hops."""
+        if n_seqs_done == 0:
+            return {}, 0.0, 0.0
+        target_loss = loss_total / n_seqs_done
+        target_pre_act = pre_act_total / n_seqs_done
+        if self.position_aware:
+            # Union across chunks: a member is a member; keep its largest score.
+            scores = {fid: max(vals) for fid, vals in all_scores.items()}
+        else:
+            # Classic: average scores across chunks (cf contrast-hop contract).
+            scores = {fid: sum(vals) / len(vals) for fid, vals in all_scores.items()}
+        return scores, target_loss, target_pre_act
 
-        from circuit.instrument.position_aware import position_aware_membership
-        from eval.ablation_faithfulness import upstream_sites
+    def _position_aware_spec(self, peaks: torch.Tensor):
+        """PositionAwareSpec for this run, or None when position-awareness is off
+        (in which case the attribution keeps its classic .sum(dim=(0,1))
+        position-collapse). ``peaks`` is the seed's per-sequence anchor position
+        for whichever input this attribution runs on."""
+        if not self.position_aware:
+            return None
+        from circuit.instrument.position_aware import PositionAwareSpec
 
-        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
-        supports, inhibitors = position_aware_membership(
-            self.inference, self.sae_bank,
-            tokens=pos_tokens, sites=sites,
-            seed_layer=seed_layer, seed_kind=seed_kind, seed_latent_idx=seed_latent_idx,
-            pos_argmax=pos_argmax, top_n=self.position_aware_top_n,
-            select=self.position_aware_select, threshold=self.position_aware_threshold,
-            position_weight=self.position_aware_position_weight, scope=self.position_aware_scope,
-            negative_roles=self.negative_roles == "include",
+        return PositionAwareSpec(
+            peaks=peaks,
+            top_n=self.position_aware_top_n,
+            select=self.position_aware_select,
+            threshold=self.position_aware_threshold,
+            position_weight=self.position_aware_position_weight,
+            scope=self.position_aware_scope,
         )
-        self._pending_inhibitors = inhibitors if self.negative_roles == "include" else {}
-        sel = (f"top_n={self.position_aware_top_n}" if self.position_aware_select == "top_n"
-               else f"select={self.position_aware_select} threshold={self.position_aware_threshold}")
-        sel += f" scope={self.position_aware_scope}" + (" +posw" if self.position_aware_position_weight else "")
-        logger.note(
-            f"position-aware: {len(supports)} supports + {len(self._pending_inhibitors)} inhibitors "
-            f"({sel})"
-        )
-        return supports, 0.0, 0.0
 
     def _run_ig_baseline_hop(
         self,
@@ -470,18 +516,29 @@ class AblationGradientDiscovery(DiscoveryMethod):
             pos_argmax=pos_argmax,
             objective="drive",
             ig_steps=self.ig_steps,
+            # Position-aware abl: same floor baseline and IG path, but the upstream
+            # position axis is unioned over the seed's causal prefix instead of
+            # summed away. Scores come back sparse (union members only).
+            position_aware=self._position_aware_spec(pos_argmax),
+            batch_size=self.probe_batch_size,
         )
         logger.note(
             f"ig_baseline: drive floor {metric_floor:.4f} -> natural {metric_natural:.4f} "
             f"over {len(sites)} sites, {self.ig_steps} steps"
+            + (" (position-aware union)" if self.position_aware else "")
         )
         include_negatives = self.negative_roles == "include"
+        # Position-aware scores are already the union — the per-position selection
+        # replaced the ranking, so don't re-truncate with top-m here.
+        no_trunc = int(self.sae_bank.d_sae)
+        top_pos = no_trunc if self.position_aware else self.top_k_supports
+        top_neg = no_trunc if self.position_aware else self.top_k_inhibitors
         supports, negatives = extract_signed_roles(
             scores_by_site,
             kinds=list(kinds),
             n_kinds=n_kinds,
-            top_k_positive=self.top_k_supports,
-            top_k_negative=self.top_k_inhibitors if include_negatives else 0,
+            top_k_positive=top_pos,
+            top_k_negative=top_neg if include_negatives else 0,
             min_active_count=self.min_active_count,
             active_count=self._active_count(),
             top_k_scope=self.top_k_scope,
@@ -529,6 +586,10 @@ class AblationGradientDiscovery(DiscoveryMethod):
             ig_steps=self.restoration_ig_steps,
             final_ig_polish=self.restoration_final_ig_polish,
             polish_ig_steps=self.ig_steps,
+            round_select=self.restoration_round_select,
+            round_abs_pctl=self.restoration_round_abs_pctl,
+            position_aware=self.position_aware,
+            batch_size=self.probe_batch_size,
         )
         self._last_restoration = result
         self._pending_inhibitors = negatives if include_negatives else {}

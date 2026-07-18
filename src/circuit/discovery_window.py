@@ -36,6 +36,7 @@ from circuit.discovery.gradient_upstream import GradientUpstreamDiscovery
 from circuit.discovery.layerwise_gradient_upstream import LayerwiseGradientUpstreamDiscovery
 from circuit.discovery.counterfactual_gradient import CounterfactualGradientDiscovery
 from circuit.discovery.ablation_gradient import AblationGradientDiscovery
+from circuit.discovery.activation_gradient import ActivationGradientDiscovery
 from circuit.discovery.hybrid_gradient import HybridGradientDiscovery
 from circuit.discovery.circuit_tracer_baseline import CircuitTracerBaseline
 
@@ -59,6 +60,7 @@ METHOD_REGISTRY: Dict[str, type[DiscoveryMethod]] = {
     "layerwise_gradient_upstream": LayerwiseGradientUpstreamDiscovery,
     "counterfactual_gradient": CounterfactualGradientDiscovery,
     "ablation_gradient": AblationGradientDiscovery,
+    "activation_gradient": ActivationGradientDiscovery,
     "hybrid_gradient": HybridGradientDiscovery,
     "circuit_tracer_baseline": CircuitTracerBaseline,
 }

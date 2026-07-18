@@ -314,6 +314,21 @@ def _write_discovery_artifacts(run_root: Path) -> None:
         },
         run_root / "top_coactivation.pt",
     )
+    # seq_repr is a required discovery input artifact (used by negctx selection).
+    # Uncapped form: repr_buf must be [n_stored + 1, repr_dim] and n_seqs must
+    # cover the largest ctx_seq_idx above (all ones here, so any n_seqs >= 1 works).
+    seq_n, repr_dim = 4, 3
+    torch.save(
+        {
+            "repr_buf": torch.ones((seq_n + 1, repr_dim), dtype=torch.float32),
+            "repr_mode": "mean_pool",
+            "repr_dim": repr_dim,
+            "n_seqs": seq_n,
+            "n_stored": seq_n,
+            "is_capped": False,
+        },
+        run_root / "seq_repr.pt",
+    )
     torch.save(
         [
             {"comp_idx": 1, "latent_idx": 10},

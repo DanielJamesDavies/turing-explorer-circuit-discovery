@@ -8,6 +8,7 @@ import torch
 
 from circuit.types.feature_id import FeatureID
 
+from .position_aware import PositionAwareSpec
 from .sae_graph import FeatureGraph
 
 
@@ -22,6 +23,8 @@ def compute_latent_counterfactual_scores(
     min_active_count: int,
     active_count: torch.Tensor,
     top_k_scope: str = "global",
+    position_aware: Optional["PositionAwareSpec"] = None,
+    posctx_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
 ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
     """
     Single-backward-pass counterfactual scoring for negctx sequences.
@@ -37,10 +40,12 @@ def compute_latent_counterfactual_scores(
 
     Two score types are extracted from the same set of gradients:
 
-    - activator_scores:  raw gradient sum(dim=(0,1)) — NOT scaled by activation.
-      Positive gradient means "this latent would push the seed pre-activation
-      upward if it were active."  Finds absent activators regardless of whether
-      they are currently firing on negctx.
+    - activator_scores:  the gradient, NOT scaled by the latent's negctx
+      activation.  Positive gradient means "this latent would push the seed
+      pre-activation upward if it were active."  Finds absent activators
+      regardless of whether they are currently firing on negctx.  Supplying
+      ``posctx_values`` scales this by the latent's posctx target instead
+      (see that argument).
 
     - inhibitor_scores:  (acts * grad).sum(dim=(0,1)) where the product is
       negative.  The latent is currently active AND causally suppressing the
@@ -60,6 +65,24 @@ def compute_latent_counterfactual_scores(
                                         sliced to top_k_activators / top_k_inhibitors.
                           "layer_kind" — top-K applied independently per (layer, kind) pair;
                                         results from all pairs are merged without re-ranking.
+        position_aware:   When given (a PositionAwareSpec carrying the seed's per-sequence
+                          anchor positions — here the negctx pre-activation argmax, i.e. the
+                          "would-be firing" position — plus the selection rule), the position
+                          axis is UNIONED over the seed's causal prefix instead of collapsed
+                          with .sum(dim=(0, 1)), and top_k_scope/top_k_* are bypassed. This is
+                          the only difference between classic and position-aware cf: identical
+                          instrument, contrast objective and role semantics.
+        posctx_values:    Optional {(layer, kind) -> [d_sae]} of each latent's posctx target
+                          value. When given, the ACTIVATOR signal becomes grad x posctx_value —
+                          the first-order effect of the intervention counterfactual
+                          faithfulness performs (it injects each activator at its posctx value)
+                          — instead of the bare gradient, which is a per-unit sensitivity the
+                          eval never uses. Latents with no posctx value then score 0 rather
+                          than ranking on a sensitivity they cannot cash in, which restores
+                          k-sparsity to an otherwise dictionary-dense signal. Selected by
+                          ``config.discovery.counterfactual_gradient.activator_signal``.
+                          Must cover every scored site (see body). Inhibitors are unaffected:
+                          acts x grad is already an effect, not a sensitivity.
 
     Returns:
         (activator_scores, inhibitor_scores) — two FeatureID → float dicts.
@@ -97,6 +120,12 @@ def compute_latent_counterfactual_scores(
 
     all_activators: List[Tuple[FeatureID, float]] = []
     all_inhibitors: List[Tuple[FeatureID, float]] = []
+    # Position-aware selection is deferred until every site's gradients are in
+    # hand, so an "abs_pctl" spec can resolve ONE pooled admission threshold
+    # across all sites and both role signals (the validated thresh64 protocol).
+    # Entries hold references into `grads`/the graph — no extra tensor residency.
+    pa_entries: List[Tuple[int, str, torch.Tensor, Optional[torch.Tensor],
+                           Optional[torch.Tensor], Optional[torch.Tensor]]] = []
 
     grad_iter = iter(grads)
     for layer_p, kind_p in upstream_pairs:
@@ -115,9 +144,47 @@ def compute_latent_counterfactual_scores(
             if active_count is not None:
                 count_mask = (active_count[c_idx_p] >= min_active_count).to(grad_act.device)
 
-            # --- Activator scores: raw gradient, NOT scaled by activation ---
+            # --- Activator signal: gradient, or gradient x posctx value ------
+            # First-order IE of the intervention we ACTUALLY perform: the eval
+            # injects each activator at its posctx value, so the effect is
+            # grad x (posctx_value - negctx_value) ~= grad x posctx_value for an
+            # absent activator. Ranking by the bare gradient ranks per-unit
+            # SENSITIVITY instead — a quantity the eval never uses, and one that
+            # is dense over the whole dictionary (no k-sparse structure to bound
+            # the position-aware union).
+            #
+            # Every site reached here carries a gradient and is therefore
+            # upstream of the seed, so posctx_values must cover it. A missing
+            # entry would silently mix scaled and unscaled scores in one
+            # ranking, so fail loudly rather than degrade.
+            pv: Optional[torch.Tensor] = None
+            if posctx_values is not None:
+                if (layer_p, kind_p) not in posctx_values:
+                    raise KeyError(
+                        f"posctx_values is missing scored site ({layer_p}, {kind_p!r}); "
+                        f"has {sorted(posctx_values)}. Mixing scaled and unscaled "
+                        f"activator scores in one ranking is never correct."
+                    )
+                pv = posctx_values[(layer_p, kind_p)].to(grad_act.device, grad_act.dtype)
+
+            # --- Position-aware branch --------------------------------------
+            # The classic path collapses the position axis (.sum(dim=(0, 1)))
+            # before ranking. When a PositionAwareSpec is supplied we keep that
+            # axis instead: each position in the seed's causal prefix selects its
+            # own top-N and the union is taken. Same gradients, same contrast
+            # objective, same activator/inhibitor sign semantics — only the
+            # reduction over positions changes.
+            if position_aware is not None:
+                pa_entries.append((layer_p, kind_p, grad_act, acts_grad.act, count_mask, pv))
+                continue
+
+            # --- Activator scores: NOT scaled by the negctx activation ------
             # Finds absent activators: high positive gradient even when acts ≈ 0.
+            # `pv` (when set) is position-independent, so scaling after the
+            # collapse is identical to scaling before it, and cheaper.
             scores_act = grad_act.sum(dim=(0, 1))  # [d_sae]
+            if pv is not None:
+                scores_act = scores_act * pv
             if count_mask is not None:
                 scores_act = scores_act * count_mask
 
@@ -152,6 +219,36 @@ def compute_latent_counterfactual_scores(
                     sel_idx, topk_vals = neg_nz, neg_vals
                 for idx_int, score in zip(sel_idx.cpu().tolist(), topk_vals.cpu().tolist()):
                     all_inhibitors.append((FeatureID(layer=layer_p, kind=kind_p, index=idx_int), score))
+
+    if position_aware is not None and pa_entries:
+        def _act_attr(grad_act: torch.Tensor, pv: Optional[torch.Tensor]) -> torch.Tensor:
+            return grad_act if pv is None else grad_act * pv.view(1, 1, -1)
+
+        def _attr_stream():
+            # Streamed so each attr tensor is sampled then freed — resolution
+            # never holds more than one product at a time.
+            for (_, _, grad_act, acts, _, pv) in pa_entries:
+                yield _act_attr(grad_act, pv)
+                if acts is not None:
+                    yield acts * grad_act
+
+        spec = position_aware.resolved_for(_attr_stream())
+        for layer_p, kind_p, grad_act, acts, count_mask, pv in pa_entries:
+            for latent, score in spec.select_from(_act_attr(grad_act, pv)).items():
+                if count_mask is not None and not bool(count_mask[latent]):
+                    continue
+                if score > 0:  # absent activator: would push the seed up
+                    all_activators.append(
+                        (FeatureID(layer=layer_p, kind=kind_p, index=latent), float(score))
+                    )
+            if acts is not None:
+                for latent, score in spec.select_from(acts * grad_act).items():
+                    if count_mask is not None and not bool(count_mask[latent]):
+                        continue
+                    if score < 0:  # present inhibitor: active and suppressing
+                        all_inhibitors.append(
+                            (FeatureID(layer=layer_p, kind=kind_p, index=latent), float(score))
+                        )
 
     if top_k_scope == "global":
         # Single ranked list across all (layer, kind) pairs

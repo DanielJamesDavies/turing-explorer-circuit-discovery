@@ -57,7 +57,21 @@ latents:
     top_k_per_component: 12 # Top-K latent IDs to store per sequence per (layer, kind) component
 discovery:
   n_seeds: 16 # Number of seed latents to select for circuit discovery
-  probe_batch_size: 4 # Max sequences through the grad-enabled instrumented forward pass (lower = less VRAM)
+  # Sequence COUNT (how many pos sequences inform the result) vs batch SIZE
+  # (sequences per forward pass, VRAM-bound) are separate knobs; counts above
+  # the batch size run as microbatches and merge.
+  probe_sequence_count: 64 # Pos sequences used by discovery attribution (probe dataset holds up to 64)
+  probe_batch_size: 4 # Max sequences through ONE grad-enabled instrumented forward pass (lower = less VRAM)
+  eval_sequence_count: 64 # Pos sequences used by the faithfulness evals
+  eval_batch_size: 16 # Sequences per no-grad eval forward pass
+  # Position-aware allowed sets (union over the seed's causal prefix instead of
+  # position-collapse). When on, the admission rule below replaces top-k:
+  # "abs_pctl" computes the cut in-run as the threshold-th percentile of the
+  # pass's pooled nonzero |attr| — p90 validated at full width (thresh64,
+  # 2026-07-16): ~size-neutral vs top_n=96 with free closure up 0.06-0.21.
+  position_aware: false
+  position_aware_select: "abs_pctl" # "top_n" | "abs" | "abs_pctl" | "relative" | "mass"
+  position_aware_threshold: 90 # percentile for abs_pctl; raw units for abs; fraction for relative/mass
   neg_ctx_eval_max: 16 # Neg sequences used to build the per-seed ablation baseline for eval (0 = zero ablation)
   min_faithfulness: 0.2 # Minimum faithfulness score for a circuit to be accepted
   min_active_count: 1 # Minimum lifetime firing count for a latent to be considered a candidate
@@ -268,11 +282,28 @@ discovery:
   #   "distant" — corpus sequences most distant from posctx in SAE latent space at seed layer
   counterfactual_gradient:
     neg_mode: "random" # "close" | "random" | "distant"
+    # "local" = single-point contrast gradient at the live negctx input (classic);
+    # "ig_baseline" = SFC-style IG along mean-ablation floor -> natural posctx;
+    # "restoration" / "ig_restoration" = greedy re-linearisation loop;
+    # "activation_gradient" = grad(seed peak) x natural on posctx, no baseline;
+    # "contrastive_ig" = IG along the latent-space path negctx state -> posctx target
+    #                    (the exact estimator of "local", with a completeness certificate).
+    attribution_mode: "local"
+    contrastive_ig_objective: "drive" # "drive" (seed pre-act; well-conditioned certificate) | "gap" (-(pre-act - target)^2, the local hop's objective)
     distant_pool_size: 512 # sequences to sample and rank for neg_mode=distant
     top_k_activators: 12 # Top-K absent activators per scope unit
     top_k_inhibitors: 12 # Top-K present inhibitors per scope unit
     top_k_scope: "layer_kind" # "global" = single ranked list; "layer_kind" = top-K per (layer, kind)
-    activator_threshold: 0.01 # Min raw gradient magnitude
+    # Which quantity ranks absent activators (inhibitors are unaffected):
+    #   "gradient"          = raw dL/df — the seed's per-unit sensitivity (classic behaviour)
+    #   "gradient_x_posctx" = scaled by the latent's posctx target, i.e. the first-order effect
+    #                         of the injection counterfactual faithfulness actually performs.
+    #                         Latents with no posctx value then score 0 instead of ranking on a
+    #                         sensitivity they cannot cash in, which restores k-sparsity to the
+    #                         signal (the raw gradient is dense over the whole dictionary).
+    # NOTE: this changes the SCALE of activator_threshold below — retune it when switching.
+    activator_signal: "gradient"
+    activator_threshold: 0.01 # Min activator score magnitude (scale depends on activator_signal)
     inhibitor_threshold: 0.01 # Min |activation × gradient| for inhibitors
     min_active_count: 1 # Min global lifetime firing count
     max_neg_sequences: 16 # Max contrast sequences for the grad-enabled pass

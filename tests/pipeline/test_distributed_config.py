@@ -247,8 +247,12 @@ def test_invalid_distributed_config_combinations_fail():
         {"mode": "distributed_simple_exact", "worker_count": 2, "devices": [0]},
         {"mode": "distributed_simple_exact", "worker_count": 2, "devices": [0, 0]},
         {
+            # Bounded-approx truncation is only reachable when the candidate-pool
+            # merge is actually in use; under the default weighted_reservoir merge
+            # the candidate-pool policy is inert, so exactness is not threatened.
             "mode": "distributed_simple_exact",
             "worker_count": 1,
+            "mid_ctx_merge": {"mode": "candidate_pool"},
             "mid_ctx_candidate_pool": {"on_truncation": "allow_bounded_approx"},
         },
         {"mode": "distributed_simple_exact", "worker_count": 1, "experimental_acknowledgement": True},

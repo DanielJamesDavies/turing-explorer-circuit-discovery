@@ -36,7 +36,8 @@ def _cache_from(bank, x, site):
     return {site: (ta, ti)}, {site: residual}, dense
 
 
-def _make_instrument(bank, codes, residuals, floors, alpha, w_seed=None, b_seed=None):
+def _make_instrument(bank, codes, residuals, floors, alpha, w_seed=None, b_seed=None,
+                     path="to_natural"):
     return InterpolatedCodeInstrument(
         bank,
         {SITE},
@@ -48,6 +49,7 @@ def _make_instrument(bank, codes, residuals, floors, alpha, w_seed=None, b_seed=
         SEED_KIND,
         w_seed if w_seed is not None else torch.randn(D_MODEL),
         b_seed if b_seed is not None else torch.tensor(0.0),
+        path=path,
     )
 
 
@@ -93,6 +95,52 @@ class TestInterpolatedCodeInstrument:
         grad = torch.autograd.grad(out.sum(), instrument.anchors[SITE])[0]
         assert grad is not None and grad.abs().sum() > 0
 
+    # --- path="from_natural" (contrastive_ig): the direction flip -------------
+
+    def test_from_natural_alpha_zero_reproduces_input(self, mock_sae_bank):
+        """Mirror of test_alpha_one_reproduces_input: on the contrastive path
+        the tokens' own clean state sits at alpha=0, so the output must be x."""
+        x = torch.randn(B, T, D_MODEL)
+        codes, residuals, _ = _cache_from(mock_sae_bank, x, SITE)
+        floors = {SITE: torch.rand(D_SAE)}
+        instrument = _make_instrument(mock_sae_bank, codes, residuals, floors,
+                                      alpha=0.0, path="from_natural")
+        out = instrument.transform(*SITE, x.clone())
+        assert torch.allclose(out, x, atol=1e-5)
+
+    def test_from_natural_alpha_one_is_target_plus_residual(self, mock_sae_bank):
+        """At alpha=1 the injected target replaces the code entirely — this is
+        the cf eval's intervened state (with the clean residual in place)."""
+        x = torch.randn(B, T, D_MODEL)
+        codes, residuals, dense = _cache_from(mock_sae_bank, x, SITE)
+        target = torch.rand(D_SAE)
+        instrument = _make_instrument(mock_sae_bank, codes, residuals, {SITE: target},
+                                      alpha=1.0, path="from_natural")
+        out = instrument.transform(*SITE, x.clone())
+        expected = mock_sae_bank.decode(target.expand_as(dense), "attn", 0) + residuals[SITE]
+        assert torch.allclose(out, expected, atol=1e-5)
+
+    def test_from_natural_delta_is_end_minus_start(self, mock_sae_bank):
+        """deltas must be target - natural on the contrastive path (end - start,
+        direction-agnostic downstream), the negation of the to_natural delta."""
+        x = torch.randn(B, T, D_MODEL)
+        codes, residuals, _ = _cache_from(mock_sae_bank, x, SITE)
+        endpoint = {SITE: torch.rand(D_SAE)}
+        fwd = _make_instrument(mock_sae_bank, codes, residuals, endpoint, 0.5)
+        rev = _make_instrument(mock_sae_bank, codes, residuals, endpoint, 0.5,
+                               path="from_natural")
+        fwd.transform(*SITE, x.clone())
+        rev.transform(*SITE, x.clone())
+        assert torch.allclose(rev.deltas[SITE], -fwd.deltas[SITE], atol=1e-6)
+
+    def test_default_path_is_to_natural(self, mock_sae_bank):
+        instrument = _make_instrument(mock_sae_bank, {}, {}, {}, 0.5)
+        assert instrument.path == "to_natural"
+
+    def test_invalid_path_raises(self, mock_sae_bank):
+        with pytest.raises(ValueError, match="path must be"):
+            _make_instrument(mock_sae_bank, {}, {}, {}, 0.5, path="sideways")
+
 
 # ---------------------------------------------------------------------------
 # Stub inference driving a fully linear pipeline:
@@ -102,13 +150,17 @@ class TestInterpolatedCodeInstrument:
 
 
 def _linear_stub(bank, x0, w_map):
+    """Row 0 of each `tokens` sequence carries its index into x0, so chunked
+    calls (tokens[start:end]) see exactly their own sequences."""
+
     def forward_fn(tokens, activations_callback=None, patcher=None, **kwargs):
+        x = x0[tokens[:, 0]]
         if activations_callback is not None:
-            acts = tuple(x0.clone() for _ in KINDS)
+            acts = tuple(x.clone() for _ in KINDS)
             for layer in range(N_LAYERS):
                 activations_callback(layer, acts)
             return
-        out0 = patcher.transform(*SITE, x0.clone())
+        out0 = patcher.transform(*SITE, x.clone())
         x_seed = out0 @ w_map
         patcher.transform(SEED_LAYER, SEED_KIND, x_seed)
 
@@ -117,27 +169,36 @@ def _linear_stub(bank, x0, w_map):
     return inf
 
 
+def _indexed_tokens(n):
+    tokens = torch.zeros(n, T, dtype=torch.long)
+    tokens[:, 0] = torch.arange(n)
+    return tokens
+
+
 class TestIntegratedBaselineScores:
-    def _run(self, objective="drive", ig_steps=4, target_act=0.0):
+    def _run(self, objective="drive", ig_steps=4, target_act=0.0, path="to_natural",
+             batch_size=None, n_seqs=B):
         torch.manual_seed(7)
         bank = MockSAEBank()
-        x0 = torch.randn(B, T, D_MODEL)
+        x0 = torch.randn(n_seqs, T, D_MODEL)
         w_map = torch.randn(D_MODEL, D_MODEL) * 0.2
         inf = _linear_stub(bank, x0, w_map)
         scores, m_floor, m_nat = integrated_baseline_scores(
             inf,
             bank,
-            tokens=torch.zeros(B, T, dtype=torch.long),
+            tokens=_indexed_tokens(n_seqs),
             substitute_sites={SITE},
             site_floors={SITE: torch.rand(D_SAE) * 0.3},
             seed_layer=SEED_LAYER,
             seed_kind=SEED_KIND,
             w_seed=torch.randn(D_MODEL),
             b_seed=torch.tensor(0.1),
-            pos_argmax=torch.zeros(B, dtype=torch.long),
+            pos_argmax=torch.zeros(n_seqs, dtype=torch.long),
             objective=objective,
             target_act=target_act,
             ig_steps=ig_steps,
+            path=path,
+            batch_size=batch_size,
         )
         return scores, m_floor, m_nat, inf
 
@@ -147,6 +208,66 @@ class TestIntegratedBaselineScores:
         scores, m_floor, m_nat, _ = self._run(objective="drive")
         total = float(scores[SITE].sum().item())
         assert total == pytest.approx(m_nat - m_floor, abs=1e-3)
+
+    def test_completeness_exact_on_contrastive_path(self):
+        """The certificate contrastive_ig is built for: on path="from_natural"
+        the scores must sum to metric(target) - metric(natural) — the seed's
+        actual change under the injection — exactly on a linear pipeline."""
+        scores, m_start, m_end, _ = self._run(objective="drive", path="from_natural")
+        total = float(scores[SITE].sum().item())
+        assert total == pytest.approx(m_end - m_start, abs=1e-3)
+
+    def test_contrastive_path_reverses_endpoint_metrics(self):
+        """Same endpoints traversed in opposite directions: to_natural ends
+        where from_natural starts, and vice versa (deterministic stub)."""
+        _, fwd_start, fwd_end, _ = self._run(objective="drive")
+        _, rev_start, rev_end, _ = self._run(objective="drive", path="from_natural")
+        assert rev_start == pytest.approx(fwd_end, abs=1e-4)
+        assert rev_end == pytest.approx(fwd_start, abs=1e-4)
+
+    def test_contrastive_scores_negate_to_natural_scores(self):
+        """On the SAME straight line the average gradient is identical and
+        delta flips sign, so score(from_natural) == -score(to_natural) on a
+        linear pipeline. Pins the direction flip to the arithmetic."""
+        fwd, _, _, _ = self._run(objective="drive", ig_steps=8)
+        rev, _, _, _ = self._run(objective="drive", ig_steps=8, path="from_natural")
+        assert torch.allclose(rev[SITE], -fwd[SITE], atol=1e-4)
+
+    def test_invalid_path_raises(self):
+        with pytest.raises(ValueError, match="path must be"):
+            self._run(path="sideways")
+
+    # --- Sequence count vs batch size: chunked == single-pass ------------------
+
+    @pytest.mark.parametrize("objective", ["drive", "gap"])
+    def test_chunked_scores_match_single_pass(self, objective):
+        """batch_size microbatching with B_chunk/B_total reweighting must
+        reproduce the single-pass result exactly (per-sequence-mean metrics)."""
+        single, s_start, s_end, _ = self._run(objective=objective, n_seqs=6, target_act=1.0)
+        chunked, c_start, c_end, _ = self._run(objective=objective, n_seqs=6, target_act=1.0,
+                                               batch_size=2)
+        # rtol: the gap metric is O(1e3) here, and the chunk-mean reweighting
+        # changes float rounding order — identical semantics, not identical bits.
+        assert torch.allclose(chunked[SITE], single[SITE], rtol=1e-4, atol=1e-4)
+        assert c_start == pytest.approx(s_start, rel=1e-5, abs=1e-5)
+        assert c_end == pytest.approx(s_end, rel=1e-5, abs=1e-5)
+
+    def test_uneven_chunks_match_single_pass(self):
+        """A trailing short chunk (6 seqs in chunks of 4 -> 4+2) must still
+        merge to the exact single-pass result — the weights, not the chunk
+        count, carry the semantics."""
+        single, s_start, s_end, _ = self._run(n_seqs=6)
+        chunked, c_start, c_end, _ = self._run(n_seqs=6, batch_size=4)
+        assert torch.allclose(chunked[SITE], single[SITE], atol=1e-4)
+        assert c_start == pytest.approx(s_start, abs=1e-5)
+        assert c_end == pytest.approx(s_end, abs=1e-5)
+
+    def test_completeness_holds_under_chunking(self):
+        """The certificate must survive microbatching: chunked scores still sum
+        to metric(end) - metric(start) on the linear pipeline."""
+        scores, m_start, m_end, _ = self._run(n_seqs=6, batch_size=2)
+        total = float(scores[SITE].sum().item())
+        assert total == pytest.approx(m_end - m_start, abs=1e-3)
 
     def test_endpoint_metrics_ordered_passes(self):
         """ig_steps grad passes + 1 endpoint pass + 1 clean caching pass."""

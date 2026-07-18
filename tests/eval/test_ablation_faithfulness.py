@@ -595,3 +595,65 @@ class TestAnchors:
         )
         assert value == pytest.approx(0.75, abs=1e-5)
         assert counter[0] == 1
+
+
+class TestEvalBatchChunking:
+    """Sequence count vs batch size: pos_tokens may carry more sequences than
+    one forward pass; chunks merge with B_chunk/B_total weights, equal to the
+    single-pass per-sequence mean."""
+
+    def test_circuit_only_activation_chunked_weighted_mean(self):
+        """4 seqs in chunks of 2 -> two passes whose per-pass means (1.0, 3.0)
+        combine to the sequence-weighted mean 2.0."""
+        bank = ControlledSAEBank()
+        inf, counter = _make_stub_inference(bank, (1.0, 3.0))
+        sites = upstream_sites(bank, SEED_LAYER, SEED_KIND)
+        value = circuit_only_activation(
+            inf, bank, {}, sites,
+            torch.zeros(4, T, dtype=torch.long),
+            SEED_LAYER, SEED_KIND, SEED_LATENT,
+            torch.zeros(4, dtype=torch.long),
+            batch_size=2,
+        )
+        assert counter[0] == 2
+        assert value == pytest.approx(2.0, abs=1e-5)
+
+    def test_circuit_only_activation_uneven_chunks_weighting(self):
+        """3 seqs in chunks of 2 -> weights 2/3 and 1/3, not 1/2 each."""
+        bank = ControlledSAEBank()
+        inf, counter = _make_stub_inference(bank, (1.0, 4.0))
+        sites = upstream_sites(bank, SEED_LAYER, SEED_KIND)
+        value = circuit_only_activation(
+            inf, bank, {}, sites,
+            torch.zeros(3, T, dtype=torch.long),
+            SEED_LAYER, SEED_KIND, SEED_LATENT,
+            torch.zeros(3, dtype=torch.long),
+            batch_size=2,
+        )
+        assert counter[0] == 2
+        assert value == pytest.approx((2 * 1.0 + 1 * 4.0) / 3, abs=1e-5)
+
+    def test_circuit_only_activation_default_single_pass(self):
+        """batch_size=None must stay one forward pass (historical behaviour)."""
+        bank = ControlledSAEBank()
+        inf, counter = _make_stub_inference(bank, (0.5,))
+        sites = upstream_sites(bank, SEED_LAYER, SEED_KIND)
+        circuit_only_activation(
+            inf, bank, {}, sites,
+            torch.zeros(4, T, dtype=torch.long),
+            SEED_LAYER, SEED_KIND, SEED_LATENT,
+            torch.zeros(4, dtype=torch.long),
+        )
+        assert counter[0] == 1
+
+    def test_measure_seed_activation_chunked_weighted_mean(self):
+        bank = ControlledSAEBank()
+        inf, counter = _make_stub_inference(bank, (1.0, 3.0))
+        value = measure_seed_activation(
+            inf, bank, torch.zeros(4, T, dtype=torch.long),
+            SEED_LAYER, SEED_KIND, SEED_LATENT,
+            torch.zeros(4, dtype=torch.long),
+            batch_size=2,
+        )
+        assert counter[0] == 2
+        assert value == pytest.approx(2.0, abs=1e-5)

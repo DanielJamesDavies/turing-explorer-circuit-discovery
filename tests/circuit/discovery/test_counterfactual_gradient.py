@@ -114,6 +114,36 @@ def _build_two_layer_oracle():
     return graph, target_scalar
 
 
+def _build_two_site_oracle():
+    """
+    Two upstream sites at layer 0, both carrying REAL gradients (unlike the
+    two-layer oracle, whose layer-1 anchor is detached and so scores None).
+    Used to test posctx_values coverage across sites.
+
+      layer 0 'attn': vals [2.0, 0.0, 1.0], grads [+1, 0, -1]
+      layer 0 'mlp' : vals [1.0, 3.0, 0.0], grads [ 0, +1,  0]
+    """
+    f_attn_vals = torch.tensor([[[2.0, 0.0, 1.0]]])
+    f_attn = f_attn_vals.detach().clone().requires_grad_(True)
+    f_mlp_vals = torch.tensor([[[1.0, 3.0, 0.0]]])
+    f_mlp = f_mlp_vals.detach().clone().requires_grad_(True)
+
+    graph = FeatureGraph(torch.device("cpu"))
+    graph.add(
+        0, "attn",
+        SparseAct(act=f_attn), SparseAct(act=f_attn_vals.clone()),
+        torch.tensor([[[0, 1, 2]]]),
+    )
+    graph.add(
+        0, "mlp",
+        SparseAct(act=f_mlp), SparseAct(act=f_mlp_vals.clone()),
+        torch.tensor([[[0, 1, 2]]]),
+    )
+
+    target_scalar = f_attn[0, 0, 0] - f_attn[0, 0, 2] + f_mlp[0, 0, 1]
+    return graph, target_scalar
+
+
 # ---------------------------------------------------------------------------
 # TestComputeLatentCounterfactualScores
 # ---------------------------------------------------------------------------
@@ -294,6 +324,338 @@ class TestComputeLatentCounterfactualScores:
         for fid, score in {**activators, **inhibitors}.items():
             assert isinstance(fid, FeatureID)
             assert isinstance(score, float)
+
+
+# ---------------------------------------------------------------------------
+# TestActivatorSignalPosctxScaling
+# ---------------------------------------------------------------------------
+
+class TestActivatorSignalPosctxScaling:
+    """`posctx_values` switches the activator signal from the raw gradient
+    (the seed's per-unit sensitivity) to grad x posctx target — the first-order
+    effect of the injection that counterfactual faithfulness actually performs.
+    Selected by config's activator_signal="gradient_x_posctx".
+
+    Single-layer oracle: vals [2.0, 0.0, 1.0], grads [+1.0, 0.0, -1.0].
+    """
+
+    def _call(self, graph, target_scalar, posctx_values=None,
+              position_aware=None, seed_layer=0):
+        return compute_latent_counterfactual_scores(
+            graph=graph,
+            target_scalar=target_scalar,
+            seed_layer=seed_layer,
+            n_kinds=_N_KINDS,
+            kinds=_KINDS,
+            top_k_activators=10,
+            top_k_inhibitors=10,
+            min_active_count=1,
+            active_count=_ACTIVE_COUNT,
+            position_aware=position_aware,
+            posctx_values=posctx_values,
+        )
+
+    # --- The scaling itself ----------------------------------------------------
+
+    def test_activator_score_is_gradient_times_posctx_value(self):
+        """latent 0: grad +1.0 x posctx 3.0 = 3.0 (raw-gradient signal gives 1.0)."""
+        graph, ts = _build_single_layer_oracle()
+        pv = {(0, "attn"): torch.tensor([3.0, 5.0, 7.0])}
+        activators, _ = self._call(graph, ts, posctx_values=pv)
+
+        assert activators[FeatureID(0, "attn", 0)] == pytest.approx(3.0, abs=1e-5)
+
+    def test_none_posctx_values_leaves_the_classic_signal_untouched(self):
+        """The default path must stay bit-identical — every existing result
+        depends on it."""
+        graph, ts = _build_single_layer_oracle()
+        activators, _ = self._call(graph, ts, posctx_values=None)
+
+        assert activators[FeatureID(0, "attn", 0)] == pytest.approx(1.0, abs=1e-5)
+
+    def test_zero_posctx_value_drops_a_high_gradient_latent(self):
+        """The correction that matters: the seed may be highly sensitive to a
+        latent, but if that latent has no posctx value to inject, the eval can
+        never cash the sensitivity in — so it must not be selected."""
+        graph, ts = _build_single_layer_oracle()
+        pv = {(0, "attn"): torch.tensor([0.0, 5.0, 7.0])}   # latent 0 absent on posctx
+
+        scaled, _ = self._call(graph, ts, posctx_values=pv)
+        raw, _ = self._call(graph, ts)
+
+        assert FeatureID(0, "attn", 0) not in scaled
+        assert FeatureID(0, "attn", 0) in raw, "raw-gradient signal should still pick it"
+
+    def test_activator_sign_contract_survives_scaling(self):
+        """Scaling by non-negative posctx values must not smuggle in negatives."""
+        graph, ts = _build_single_layer_oracle()
+        pv = {(0, "attn"): torch.tensor([3.0, 5.0, 7.0])}
+        activators, _ = self._call(graph, ts, posctx_values=pv)
+
+        for fid, score in activators.items():
+            assert score > 0, f"{fid} has non-positive activator score {score}"
+
+    def test_inhibitors_are_unaffected_by_posctx_values(self):
+        """acts x grad is already an effect rather than a sensitivity, so the
+        knob is activator-only."""
+        graph, ts = _build_single_layer_oracle()
+        pv = {(0, "attn"): torch.tensor([3.0, 5.0, 7.0])}
+
+        _, scaled = self._call(graph, ts, posctx_values=pv)
+        _, raw = self._call(graph, ts)
+
+        assert scaled == raw
+        assert scaled[FeatureID(0, "attn", 2)] == pytest.approx(-1.0, abs=1e-5)
+
+    # --- Site coverage ---------------------------------------------------------
+
+    def test_each_site_is_scaled_by_its_own_values(self):
+        graph, ts = _build_two_site_oracle()
+        pv = {
+            (0, "attn"): torch.tensor([3.0, 5.0, 7.0]),
+            (0, "mlp"):  torch.tensor([2.0, 4.0, 6.0]),
+        }
+        activators, _ = self._call(graph, ts, posctx_values=pv)
+
+        assert activators[FeatureID(0, "attn", 0)] == pytest.approx(3.0, abs=1e-5)  # +1 x 3
+        assert activators[FeatureID(0, "mlp", 1)] == pytest.approx(4.0, abs=1e-5)   # +1 x 4
+
+    def test_missing_scored_site_raises_rather_than_mixing_scales(self):
+        """Falling back to the raw gradient for an uncovered site would put two
+        incommensurable scales into one global ranking — fail loudly instead."""
+        graph, ts = _build_two_site_oracle()
+        pv = {(0, "attn"): torch.tensor([3.0, 5.0, 7.0])}   # (0, "mlp") missing
+
+        with pytest.raises(KeyError, match="missing scored site"):
+            self._call(graph, ts, posctx_values=pv)
+
+    # --- Reaches both reductions ----------------------------------------------
+
+    def test_position_aware_branch_also_scales(self):
+        """A toggle that silently applied to only one of the two position
+        reductions would be a footgun."""
+        from circuit.instrument.position_aware import PositionAwareSpec
+
+        graph, ts = _build_single_layer_oracle()
+        spec = PositionAwareSpec(peaks=torch.zeros(1, dtype=torch.long), top_n=3)
+        pv = {(0, "attn"): torch.tensor([3.0, 5.0, 7.0])}
+
+        scaled, _ = self._call(graph, ts, posctx_values=pv, position_aware=spec)
+        raw, _ = self._call(graph, ts, position_aware=spec)
+
+        assert scaled[FeatureID(0, "attn", 0)] == pytest.approx(3.0, abs=1e-5)
+        assert raw[FeatureID(0, "attn", 0)] == pytest.approx(1.0, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# TestContrastiveIgMode
+# ---------------------------------------------------------------------------
+
+class TestContrastiveIgMode:
+    """Contract tests for attribution_mode="contrastive_ig": config gating
+    (cf-only), dispatch, and the negctx anchor helper. The path arithmetic and
+    completeness live in tests/circuit/test_ig_baseline.py."""
+
+    def test_config_accepts_contrastive_ig_for_cf_only(self):
+        """The first attribution mode the two gradient methods do NOT share:
+        cf accepts it; ablation (no contrast input) must reject it."""
+        from config import AblationGradientConfig, CounterfactualGradientConfig
+
+        assert CounterfactualGradientConfig(
+            attribution_mode="contrastive_ig"
+        ).attribution_mode == "contrastive_ig"
+        with pytest.raises(ValueError, match="attribution_mode"):
+            AblationGradientConfig(attribution_mode="contrastive_ig")
+
+    def test_config_objective_validator(self):
+        from config import CounterfactualGradientConfig
+
+        assert CounterfactualGradientConfig().contrastive_ig_objective == "drive"
+        assert CounterfactualGradientConfig(
+            contrastive_ig_objective="gap"
+        ).contrastive_ig_objective == "gap"
+        with pytest.raises(ValueError, match="contrastive_ig_objective"):
+            CounterfactualGradientConfig(contrastive_ig_objective="banana")
+
+    def test_discover_dispatches_to_contrastive_hop(self):
+        """attribution_mode="contrastive_ig" must route to the contrastive hop
+        and NOT the local contrast hop, and the circuit must carry the roles."""
+        algo = _make_discovery(min_faithfulness=0.0)
+        algo.attribution_mode = "contrastive_ig"
+        probe_data = _make_probe_data()
+        fid = FeatureID(0, "attn", 5)
+
+        algo.build_probe_dataset = MagicMock(return_value=probe_data)
+        mock_active_count = torch.full((N_COMP, D_SAE), 100, dtype=torch.long)
+        with patch("circuit.discovery.counterfactual_gradient.latent_stats") as mock_ls, \
+             patch("circuit.discovery.counterfactual_gradient.evaluate_counterfactual_faithfulness",
+                   return_value=(0.9, 0.25)), \
+             patch("observability.circuit_logger.CircuitLogger.save"):
+            mock_ls.active_count = mock_active_count
+            algo._get_posctx_activation = MagicMock(return_value=1.0)
+            algo._get_neg_tokens = MagicMock(return_value=probe_data.neg_tokens)
+            algo._run_contrastive_ig_hop = MagicMock(return_value=({fid: 0.7}, {}))
+            algo._run_contrast_hop = MagicMock()
+
+            circuit = algo.discover(3, 0)
+
+        algo._run_contrastive_ig_hop.assert_called_once()
+        algo._run_contrast_hop.assert_not_called()
+        assert circuit is not None
+        roles = {n.metadata.get("role") for n in circuit.nodes.values()}
+        assert "counterfactual_activator" in roles
+
+    def test_negctx_anchor_returns_preact_argmax(self):
+        """The anchor must be the seed's would-be-firing position — the
+        pre-activation argmax per sequence — from a no-grad forward."""
+        algo = _make_discovery()
+
+        pre_act = torch.tensor([[0.1, 3.0, 0.2, -1.0],
+                                [2.0, 0.0, 0.0, 5.0]])  # argmax -> [1, 3]
+
+        def fake_forward(tokens, patcher=None, **kwargs):
+            patcher.seed_pre_act = pre_act
+
+        algo.inference.forward = MagicMock(side_effect=fake_forward)
+        anchor = algo._negctx_anchor(1, "resid", 0, torch.zeros(2, 4, dtype=torch.long))
+
+        assert torch.equal(anchor, torch.tensor([1, 3]))
+        assert algo.inference.forward.call_args.kwargs["grad_enabled"] is False
+
+    def test_negctx_anchor_raises_when_capture_fails(self):
+        algo = _make_discovery()
+        algo.inference.forward = MagicMock()  # never sets seed_pre_act
+
+        with pytest.raises(RuntimeError, match="not captured"):
+            algo._negctx_anchor(1, "resid", 0, torch.zeros(2, 4, dtype=torch.long))
+
+    def test_capture_patcher_matches_graph_instrument(self, mock_sae_bank, mock_model):
+        """SeedPreActCapture must produce the same seed pre-activation (and
+        therefore the same anchor argmax) as the graph instrument it replaced
+        — without densifying any site. The graph instrument built two dense
+        [B, T, d_sae] copies at EVERY upstream site (~15.4GB at full width on
+        a deep seed) as a side effect of this capture."""
+        from circuit.discovery.counterfactual_gradient import SeedPreActCapture
+
+        torch.manual_seed(0)
+        w_seed = torch.randn(D_MODEL)
+        b_seed = torch.tensor(0.25)
+        x = torch.randn(B, T, D_MODEL)
+
+        graph_inst = SeedProjectionInstrument(mock_sae_bank, 1, "attn", w_seed, b_seed)
+        capture = SeedPreActCapture(1, "attn", w_seed, b_seed)
+        with torch.enable_grad():
+            with graph_inst(mock_model):
+                mock_model(x)
+        with torch.no_grad():
+            with capture(mock_model):
+                mock_model(x)
+
+        assert capture.seed_pre_act is not None
+        assert capture.seed_pre_act.shape == (B, T)
+        # Same values up to the graph instrument's reassociation rounding.
+        assert torch.allclose(capture.seed_pre_act, graph_inst.seed_pre_act,
+                              atol=1e-4, rtol=1e-4)
+        assert torch.equal(capture.seed_pre_act.argmax(dim=-1),
+                           graph_inst.seed_pre_act.argmax(dim=-1))
+
+    def test_contrastive_batch_is_depth_adaptive(self):
+        """Deep seeds (> threshold upstream sites) drop the neg microbatch —
+        per-site residency is batch-proportional and held across all sites,
+        so B=8 crosses a 16GB card near 29 sites; shallow seeds keep the
+        configured batch and pay no extra chunk overhead."""
+        algo = _make_discovery()
+        algo.neg_batch_size = 8
+        algo.contrastive_deep_site_threshold = 25
+        algo.contrastive_deep_neg_batch = 4
+
+        assert algo._contrastive_batch(10) == 8    # shallow: unchanged
+        assert algo._contrastive_batch(25) == 8    # at threshold: unchanged
+        assert algo._contrastive_batch(26) == 4    # deep: halved
+        assert algo._contrastive_batch(35) == 4
+
+        # Never RAISE the batch: if the configured batch is already smaller,
+        # keep it.
+        algo.neg_batch_size = 2
+        assert algo._contrastive_batch(35) == 2
+
+    def test_contrastive_batch_config_defaults(self):
+        from config import CounterfactualGradientConfig
+
+        cfg = CounterfactualGradientConfig()
+        assert cfg.contrastive_deep_site_threshold == 21
+        assert cfg.contrastive_deep_neg_batch == 4
+        with pytest.raises(ValueError):
+            CounterfactualGradientConfig(contrastive_deep_neg_batch=0)
+
+    def test_capture_patcher_leaves_stream_untouched(self, mock_sae_bank):
+        from circuit.discovery.counterfactual_gradient import SeedPreActCapture
+
+        capture = SeedPreActCapture(1, "attn", torch.randn(D_MODEL), torch.tensor(0.0))
+        x = torch.randn(B, T, D_MODEL)
+        out = capture.transform(0, "mlp", x)   # non-seed site: identity, no capture
+        assert out is x
+        assert capture.seed_pre_act is None
+        out_seed = capture.transform(1, "attn", x)
+        assert out_seed is x                   # seed site: capture, still identity
+        assert capture.seed_pre_act is not None
+
+
+# ---------------------------------------------------------------------------
+# TestCollectPosctxValues
+# ---------------------------------------------------------------------------
+
+class TestCollectPosctxValues:
+    """Gating contract for the activator_signal toggle: under the default
+    signal the collector must not run at all — no extra forward pass, and the
+    scorer receives None, so the classic behaviour is bit-identical."""
+
+    def _algo(self, activator_signal):
+        algo = _make_discovery()
+        algo.activator_signal = activator_signal
+        return algo
+
+    def test_default_gradient_signal_collects_nothing(self):
+        algo = self._algo("gradient")
+
+        out = algo._collect_posctx_values(
+            1, "resid", torch.zeros(2, 8, dtype=torch.long), None, MagicMock()
+        )
+
+        assert out is None
+        algo.inference.forward.assert_not_called()
+
+    def test_enabled_signal_collects_the_collapsed_pins(self):
+        algo = self._algo("gradient_x_posctx")
+        pins = {(0, "attn"): torch.ones(D_SAE)}
+
+        with patch("eval.floors.collect_site_anchors", return_value=({}, pins)) as m:
+            out = algo._collect_posctx_values(
+                1, "resid",
+                torch.zeros(2, 8, dtype=torch.long), torch.zeros(2, dtype=torch.long),
+                MagicMock(),
+            )
+
+        assert out is pins
+        # Must be the COLLAPSED pin: that is the value the cf eval injects.
+        assert m.call_args.kwargs["pin_position_specific"] is False
+
+    def test_seed_with_no_upstream_sites_returns_empty(self):
+        """Layer-0 attn has nothing upstream — no site is scored, so an empty
+        map is complete rather than missing."""
+        algo = self._algo("gradient_x_posctx")
+
+        out = algo._collect_posctx_values(
+            0, "attn", torch.zeros(2, 8, dtype=torch.long), None, MagicMock()
+        )
+
+        assert out == {}
+
+    def test_enabled_signal_without_pos_tokens_raises(self):
+        algo = self._algo("gradient_x_posctx")
+
+        with pytest.raises(ValueError, match="needs pos_tokens"):
+            algo._collect_posctx_values(1, "resid", None, None, MagicMock())
 
 
 # ---------------------------------------------------------------------------

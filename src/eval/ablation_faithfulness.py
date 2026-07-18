@@ -206,38 +206,50 @@ def measure_seed_activation(
     seed_kind: str,
     seed_latent_idx: int,
     argmax: Optional[torch.Tensor] = None,
+    batch_size: Optional[int] = None,
 ) -> float:
-    """Seed latent's mean activation at probe positions, no intervention."""
+    """Seed latent's mean activation at probe positions, no intervention.
+
+    ``batch_size``: sequences per forward pass; chunks are averaged with
+    B_chunk/B_total weights (== the single-pass mean). None = one pass."""
 
     kind_to_idx = {k: i for i, k in enumerate(sae_bank.kinds)}
-    values = []
-
-    def hook(layer_idx: int, activations: tuple) -> None:
-        if layer_idx != seed_layer:
-            return
-        act = activations[kind_to_idx[seed_kind]]
-        ta, ti = sae_bank.encode(act, seed_kind, layer_idx)
-        s_dense = target_latent_activations(ta, ti, seed_latent_idx)  # [B, T]
-        Bx = s_dense.shape[0]
-        if argmax is not None:
-            actual_B = min(Bx, argmax.shape[0])
-            pa = argmax[:actual_B].to(s_dense.device).clamp(0, s_dense.shape[1] - 1)
-            val = s_dense[:actual_B][torch.arange(actual_B, device=s_dense.device), pa].mean().item()
-        else:
-            val = s_dense.mean().item()
-        values.append(val)
+    B_total = int(tokens.shape[0])
+    bs = B_total if batch_size is None else max(1, int(batch_size))
+    total = 0.0
 
     inference.disable_compile()
     try:
-        inference.forward(
-            tokens,
-            activations_callback=hook,
-            return_activations=False,
-            tokenize_final=False,
-        )
+        for start in range(0, B_total, bs):
+            tokens_chunk = tokens[start:start + bs]
+            argmax_chunk = argmax[start:start + bs] if argmax is not None else None
+            values = []
+
+            def hook(layer_idx: int, activations: tuple) -> None:
+                if layer_idx != seed_layer:
+                    return
+                act = activations[kind_to_idx[seed_kind]]
+                ta, ti = sae_bank.encode(act, seed_kind, layer_idx)
+                s_dense = target_latent_activations(ta, ti, seed_latent_idx)  # [B, T]
+                Bx = s_dense.shape[0]
+                if argmax_chunk is not None:
+                    actual_B = min(Bx, argmax_chunk.shape[0])
+                    pa = argmax_chunk[:actual_B].to(s_dense.device).clamp(0, s_dense.shape[1] - 1)
+                    val = s_dense[:actual_B][torch.arange(actual_B, device=s_dense.device), pa].mean().item()
+                else:
+                    val = s_dense.mean().item()
+                values.append(val)
+
+            inference.forward(
+                tokens_chunk,
+                activations_callback=hook,
+                return_activations=False,
+                tokenize_final=False,
+            )
+            total += (float(values[0]) if values else 0.0) * tokens_chunk.shape[0]
     finally:
         inference.enable_compile()
-    return float(values[0]) if values else 0.0
+    return total / B_total if B_total else 0.0
 
 
 # Floors and site anchors moved to eval.floors (method-agnostic home for
@@ -283,33 +295,56 @@ def circuit_only_activation(
     pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     respect_topk: bool = False,
     topk: int = 128,
+    batch_size: Optional[int] = None,
 ) -> float:
-    """One forward pass with everything outside ``keep_indices`` ablated."""
+    """Circuit-only execution: everything outside ``keep_indices`` ablated.
 
-    patcher = CircuitOnlyPatcher(
-        bank=sae_bank,
-        keep_indices=keep_indices,
-        in_scope=in_scope,
-        seed_layer=seed_layer,
-        seed_kind=seed_kind,
-        seed_latent_idx=seed_latent_idx,
-        respect_topk=respect_topk,
-        topk=topk,
-        pos_argmax=pos_argmax,
-        site_means=site_means,
-        pin_values=pin_values,
-    )
+    ``batch_size``: sequences per forward pass. ``pos_tokens`` may carry more;
+    chunks are averaged with B_chunk/B_total weights, which equals the
+    single-pass per-sequence mean exactly. None (default) = one pass over all
+    of ``pos_tokens`` — the historical behaviour."""
+
+    B_total = int(pos_tokens.shape[0])
+    bs = B_total if batch_size is None else max(1, int(batch_size))
+
+    total = 0.0
     inference.disable_compile()
     try:
-        inference.forward(
-            pos_tokens,
-            patcher=patcher,
-            return_activations=False,
-            tokenize_final=False,
-        )
+        for start in range(0, B_total, bs):
+            tokens_chunk = pos_tokens[start:start + bs]
+            argmax_chunk = pos_argmax[start:start + bs] if pos_argmax is not None else None
+            # Position-specific (3D) pins are per-sequence — slice them to the
+            # chunk so pins stay aligned with their own sequences; collapsed
+            # (1D) pins are sequence-independent and pass through.
+            pins_chunk = pin_values
+            if pin_values is not None and bs < B_total:
+                pins_chunk = {
+                    site: (p[start:start + bs] if p.dim() == 3 else p)
+                    for site, p in pin_values.items()
+                }
+            patcher = CircuitOnlyPatcher(
+                bank=sae_bank,
+                keep_indices=keep_indices,
+                in_scope=in_scope,
+                seed_layer=seed_layer,
+                seed_kind=seed_kind,
+                seed_latent_idx=seed_latent_idx,
+                respect_topk=respect_topk,
+                topk=topk,
+                pos_argmax=argmax_chunk,
+                site_means=site_means,
+                pin_values=pins_chunk,
+            )
+            inference.forward(
+                tokens_chunk,
+                patcher=patcher,
+                return_activations=False,
+                tokenize_final=False,
+            )
+            total += float(patcher.captured_activation or 0.0) * tokens_chunk.shape[0]
     finally:
         inference.enable_compile()
-    return float(patcher.captured_activation or 0.0)
+    return total / B_total if B_total else 0.0
 
 
 @torch.no_grad()

@@ -419,3 +419,64 @@ class TestEvaluateCounterfactualFaithfulness:
         assert isinstance(score, tuple)
         assert len(score) == 2
         assert all(isinstance(v, float) for v in score)
+
+
+class TestBatchLatentTargets:
+    """_batch_latent_targets must be exactly the per-latent
+    target_latent_activations loop it replaced (the loop launched one kernel
+    + one blocking sync PER MEMBER — ~1 ms/member at PA-circuit sizes)."""
+
+    def _loop_reference(self, ta, ti, latent_ids, argmax):
+        from sae.dense import target_latent_activations
+        Bx, Tx = ta.shape[:2]
+        out = {}
+        for latent_idx in latent_ids:
+            t_dense = target_latent_activations(ta, ti, latent_idx)
+            if argmax is not None:
+                actual_B = min(Bx, argmax.shape[0])
+                pa = argmax[:actual_B].clamp(0, Tx - 1)
+                out[latent_idx] = t_dense[:actual_B][
+                    torch.arange(actual_B), pa].mean().item()
+            else:
+                out[latent_idx] = t_dense.mean().item()
+        return out
+
+    def _random_case(self, seed=0, B=3, T=5, k=4, d_sae=32):
+        g = torch.Generator().manual_seed(seed)
+        ta = torch.rand(B, T, k, generator=g)
+        ti = torch.randint(0, d_sae, (B, T, k), generator=g)
+        # exercise the padded-index-0 semantics: zero-act slots at index 0
+        ta[0, 0, 0] = 0.0
+        ti[0, 0, 0] = 0
+        argmax = torch.randint(0, T, (B,), generator=g)
+        return ta, ti, argmax, d_sae
+
+    def test_matches_loop_at_probe_positions(self):
+        from eval.counterfactual_faithfulness import _batch_latent_targets
+        ta, ti, argmax, d_sae = self._random_case()
+        latent_ids = [0, 3, 7, 31]
+        got = _batch_latent_targets(ta, ti, latent_ids, argmax, d_sae)
+        want = self._loop_reference(ta, ti, latent_ids, argmax)
+        assert set(got) == set(want)
+        for latent, val in want.items():
+            assert got[latent] == pytest.approx(val, abs=1e-5)
+
+    def test_matches_loop_without_argmax(self):
+        from eval.counterfactual_faithfulness import _batch_latent_targets
+        ta, ti, _, d_sae = self._random_case(seed=1)
+        latent_ids = list(range(0, 32, 5))
+        got = _batch_latent_targets(ta, ti, latent_ids, None, d_sae)
+        want = self._loop_reference(ta, ti, latent_ids, None)
+        for latent, val in want.items():
+            assert got[latent] == pytest.approx(val, abs=1e-5)
+
+    def test_duplicate_index_takes_max(self):
+        """The amax reduction must keep the largest activation when a latent
+        appears twice in one position's top-k (pad-0 collision semantics)."""
+        from eval.counterfactual_faithfulness import _batch_latent_targets
+        ta = torch.tensor([[[0.2, 0.9, 0.1]]])
+        ti = torch.tensor([[[5, 5, 3]]])
+        got = _batch_latent_targets(ta, ti, [5, 3, 7], torch.tensor([0]), 16)
+        assert got[5] == pytest.approx(0.9, abs=1e-6)
+        assert got[3] == pytest.approx(0.1, abs=1e-6)
+        assert got[7] == pytest.approx(0.0, abs=1e-6)

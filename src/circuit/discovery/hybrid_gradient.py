@@ -50,6 +50,8 @@ class HybridGradientDiscovery(DiscoveryMethod):
         self.sfc_edge_threshold = float(cfg.sfc_edge_threshold)
         self.sfc_score_mode = cast(str, cfg.sfc_score_mode)
         self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
+        self.eval_sequence_count = cast(int, config.discovery.eval_sequence_count)
+        self.eval_batch_size = cast(int, config.discovery.eval_batch_size)
         self.magnitude_prune = cast(bool, config.discovery.magnitude_prune)
         self.magnitude_prune_tolerance = cast(float, config.discovery.magnitude_prune_tolerance)
         self.magnitude_prune_target = cast(float, config.discovery.magnitude_prune_target)
@@ -140,8 +142,10 @@ class HybridGradientDiscovery(DiscoveryMethod):
             logger.reject("empty probe dataset (no positive contexts)")
             return None
 
-        pos_tokens_eval = probe_data.pos_tokens[: self.probe_batch_size]
-        pos_argmax_eval = probe_data.pos_argmax[: self.probe_batch_size]
+        # Hybrid's own slices are all evaluation-side (fusion pruning + final
+        # evals); the sub-methods slice their discovery inputs internally.
+        pos_tokens_eval = probe_data.pos_tokens[: self.eval_sequence_count]
+        pos_argmax_eval = probe_data.pos_argmax[: self.eval_sequence_count]
         neg_selection = self._select_neg_context(
             seed_comp_idx,
             seed_latent_idx,

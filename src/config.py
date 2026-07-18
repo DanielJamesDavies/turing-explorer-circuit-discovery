@@ -531,6 +531,18 @@ class RestorationConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     rounds: int = 8
     per_round_k: int = 64             # global (all-site) budget per round
+    # Round admission rule (crosses with discovery.position_aware -> 4 cells):
+    #   "top_k"    -> classic: global top-per_round_k by |score| (PA on: the
+    #                 per-position top-per_round_k union — budget grows with
+    #                 live positions, prefer abs_pctl when PA is on).
+    #   "abs_pctl" -> admit every latent whose round |score| clears the
+    #                 round_abs_pctl percentile of the round's pooled nonzero
+    #                 |score| across sites; variable count per round, and the
+    #                 cut RE-RESOLVES each round at the moving linearisation
+    #                 state (adaptive admission). PA on: per-position pooled-
+    #                 percentile union — greedy positional coverage.
+    round_select: str = "top_k"       # "top_k" | "abs_pctl"
+    round_abs_pctl: float = 95.0      # percentile (0-100) for round_select="abs_pctl"
     certificate_tol: float = 0.05     # relative: stop when |gap| <= tol * target
     ig_steps: int = 4                 # alpha samples per round for "ig_restoration"
                                       # (grid {i/N}; alpha=0 always sampled: it
@@ -540,6 +552,21 @@ class RestorationConfig(BaseModel):
     # truncation reflects the complete circuit rather than the round-by-round
     # state each node was scored in. Uses the method-level ig_steps.
     final_ig_polish: bool = False
+
+    @field_validator("round_select")
+    @classmethod
+    def validate_round_select(cls, v: str) -> str:
+        allowed = ["top_k", "abs_pctl"]
+        if v not in allowed:
+            raise ValueError(f"round_select must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("round_abs_pctl")
+    @classmethod
+    def validate_round_abs_pctl(cls, v: float) -> float:
+        if not (0 < v < 100):
+            raise ValueError(f"round_abs_pctl must be a percentile in (0, 100), got {v}")
+        return v
 
 
 class CounterfactualGradientConfig(BaseModel):
@@ -554,15 +581,71 @@ class CounterfactualGradientConfig(BaseModel):
     # iterative re-linearisation along the greedy restoration trajectory
     # (state-dependent schedule; see RestorationConfig); "ig_restoration" =
     # the restoration loop with per-round integrated-gradients scoring
-    # (state-dependent schedule + path-integrated credit).
-    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration"
+    # (state-dependent schedule + path-integrated credit); "contrastive_ig" =
+    # integrated gradients along the LATENT-SPACE path from the negctx state
+    # to the posctx target (the same values the counterfactual-faithfulness
+    # eval injects), run on negctx tokens — the exact estimator of the
+    # single-point "local" contrast gradient, with an IG completeness
+    # certificate (sum of attributions ~= the seed's actual change under the
+    # eval's intervention). cf-only: it needs a contrast input, so it has no
+    # ablation-gradient counterpart. See
+    # dev-notes/contrastive-ig-for-position-aware-cf.md.
+    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration" | "contrastive_ig"
     restoration: RestorationConfig = Field(default_factory=RestorationConfig)
     # Method-level: may counterfactual-gradient circuits carry
     # inhibitor-role members? "include" is the method's classic signed-roles
     # identity; "exclude" builds activator-only circuits (the ablation study
     # of the inhibitors' contribution). Honoured by all three modes.
     negative_roles: str = "include"   # "include" | "exclude"
-    ig_steps: int = 10                # interpolation steps for ig_baseline
+    # Which quantity ranks ABSENT ACTIVATORS (inhibitors are unaffected —
+    # acts x grad is already an effect, not a sensitivity).
+    #
+    # "gradient"          — the raw dL/df_g: the seed's per-unit sensitivity to
+    #                       the latent. The method's original behaviour.
+    # "gradient_x_posctx" — grad x the latent's posctx target value: the
+    #                       first-order effect of the intervention the
+    #                       evaluation actually performs, since counterfactual
+    #                       faithfulness INJECTS each activator at its posctx
+    #                       value. Ranking therefore matches what the metric
+    #                       rewards, and latents with no posctx value score 0
+    #                       rather than ranking on a sensitivity they can never
+    #                       cash in. That restores k-sparsity to the signal,
+    #                       which is what bounds the position-aware union
+    #                       (the raw gradient is dense over the whole
+    #                       dictionary; see dev-notes/contrastive-ig-for-
+    #                       position-aware-cf.md).
+    #
+    # Applies to the "local" attribution mode (the contrast hop), position-aware
+    # or not. ig_baseline/restoration already attribute with grad x delta by
+    # construction, so the knob does not reach them.
+    activator_signal: str = "gradient"   # "gradient" | "gradient_x_posctx"
+    # Metric integrated along contrastive_ig's negctx -> posctx-target path:
+    # "drive" = the seed's pre-activation itself. Attributions sum to the
+    #           seed's ACTUAL rise under the eval's intervention; the metric is
+    #           linear in the latents, so the left-Riemann completeness
+    #           certificate is well-conditioned. Overshooting latents keep
+    #           positive credit.
+    # "gap"   = -(pre-activation - target_act_pos)^2, the same objective the
+    #           "local" contrast hop optimises. Attributions sum to how much
+    #           the GAP closed; latents that push the seed past the posctx
+    #           target get negative credit (reclassified as inhibitors). The
+    #           quadratic metric makes the certificate O(1/ig_steps) even on a
+    #           linear model — expect looser certificates.
+    contrastive_ig_objective: str = "drive"   # "drive" | "gap"
+    # Depth-adaptive neg microbatch for contrastive_ig. Its per-site residency
+    # is the largest of any arm (leaf + grad + fp32 delta + fp32 per-position
+    # accumulator ~= 252MB/site at B=8), and one backward holds ALL upstream
+    # sites at once — measured peak ~= 7G + sites x 252MB, which crosses a
+    # 16GB card at ~29 sites (L10+; the paging tax tripled those chunks'
+    # wall-clock). When the seed's upstream site count exceeds
+    # contrastive_deep_site_threshold, the hop drops its microbatch to
+    # contrastive_deep_neg_batch (halving every per-site tensor); shallower
+    # seeds keep neg_batch_size so they don't pay the extra chunk overhead.
+    # 21 = switch from L7-mlp upward (site count 3*layer + earlier kinds),
+    # leaving ~2GB more margin than the measured crossing point.
+    contrastive_deep_site_threshold: int = 21
+    contrastive_deep_neg_batch: int = 4
+    ig_steps: int = 10                # interpolation steps for ig_baseline and contrastive_ig
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_activators: int = 8
     top_k_inhibitors: int = 8
@@ -587,7 +670,14 @@ class CounterfactualGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        allowed = ["local", "ig_baseline", "restoration", "ig_restoration"]
+        # "contrastive_ig" is cf-only: the first mode the two gradient methods
+        # do NOT share. It integrates along a negctx -> posctx-target path, and
+        # ablation gradient has no contrast input to anchor such a path.
+        # ("activation_gradient" was removed: it is a top-level method now
+        # (ActivationGradientDiscovery), not a mode — it runs on posctx and
+        # never answered counterfactual gradient's negctx question.)
+        allowed = ["local", "ig_baseline", "restoration", "ig_restoration",
+                   "contrastive_ig"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -598,6 +688,29 @@ class CounterfactualGradientConfig(BaseModel):
         allowed = ["include", "exclude"]
         if v not in allowed:
             raise ValueError(f"negative_roles must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("contrastive_ig_objective")
+    @classmethod
+    def validate_contrastive_ig_objective(cls, v: str) -> str:
+        allowed = ["drive", "gap"]
+        if v not in allowed:
+            raise ValueError(f"contrastive_ig_objective must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("contrastive_deep_site_threshold", "contrastive_deep_neg_batch")
+    @classmethod
+    def validate_contrastive_deep(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"contrastive deep-site settings must be >= 1, got {v}")
+        return v
+
+    @field_validator("activator_signal")
+    @classmethod
+    def validate_activator_signal(cls, v: str) -> str:
+        allowed = ["gradient", "gradient_x_posctx"]
+        if v not in allowed:
+            raise ValueError(f"activator_signal must be one of {allowed}, got {v!r}")
         return v
 
 class AblationGradientConfig(BaseModel):
@@ -649,6 +762,8 @@ class AblationGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
+        # "activation_gradient" removed: promoted to a top-level method
+        # (ActivationGradientDiscovery). "contrastive_ig" is cf-only.
         allowed = ["local", "ig_baseline", "restoration", "ig_restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
@@ -826,7 +941,18 @@ class SeedFilterConfig(BaseModel):
 class DiscoveryConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     n_seeds: int = 128
-    probe_batch_size: int = 16
+    # Sequence COUNT vs batch SIZE are separate ideas (the neg side has had
+    # this split all along: max_neg_sequences vs neg_batch_size; the pos side
+    # historically conflated them into probe_batch_size):
+    #   *_sequence_count — how many probe-dataset positive sequences INFORM the
+    #     result (statistical width; the probe dataset holds up to 64).
+    #   *batch_size — how many sequences go through ONE forward pass (VRAM).
+    # Counts above a batch size are processed in microbatches and merged, so
+    # raising a count costs time, not memory.
+    probe_sequence_count: int = 16   # pos sequences used by discovery attribution
+    probe_batch_size: int = 16       # sequences per grad-enabled forward (VRAM-bound)
+    eval_sequence_count: int = 16    # pos sequences used by the faithfulness evals
+    eval_batch_size: int = 16        # sequences per no-grad eval forward
     # Shared floor knob for every consumer of mean-ablation floors
     # (ig_baseline, restoration, ablation-faithfulness evals):
     # "posctx" = per-seed means over the seed's positive probe batch
@@ -853,11 +979,21 @@ class DiscoveryConfig(BaseModel):
     # attribution is peaked:
     #   "abs"      -> keep latents with |attr| >= position_aware_threshold
     #                 (global absolute cut; threshold in raw attribution units).
+    #   "abs_pctl" -> "abs" whose cut is computed IN-RUN as the threshold-th
+    #                 PERCENTILE (0-100) of the pass's pooled nonzero |attr|
+    #                 across all sites — self-calibrating, so e.g. 90 means the
+    #                 same admission bar on every seed even though raw
+    #                 attribution scales differ by orders of magnitude. At full
+    #                 sampling width (64 pos / 64 neg), p90 was ~size-neutral
+    #                 vs top_n=96 while RAISING free closure by 0.06-0.21 (a
+    #                 fixed per-position count clips heavy positions); p95
+    #                 halves size for ~0.05 free0; p99 collapses (collective
+    #                 closure). See the thresh64 experiment (2026-07-16).
     #   "relative" -> keep |attr| >= threshold * max_latent|attr| at that
     #                 position (scale-free fraction, threshold in [0, 1]).
     #   "mass"     -> keep the smallest set covering `threshold` of that
     #                 position's total |attr| mass (cumulative, threshold in (0, 1]).
-    position_aware_select: str = "top_n"   # "top_n" | "abs" | "relative" | "mass"
+    position_aware_select: str = "top_n"   # "top_n" | "abs" | "abs_pctl" | "relative" | "mass"
     position_aware_threshold: float = 0.0  # meaning depends on position_aware_select
     # Soft position weighting: scale each (position, site) block's attributions by
     # its normalised read-strength so latents at weakly-read positions score lower
@@ -903,10 +1039,19 @@ class DiscoveryConfig(BaseModel):
     @field_validator("position_aware_select")
     @classmethod
     def validate_position_aware_select(cls, v: str) -> str:
-        allowed = ["top_n", "abs", "relative", "mass"]
+        allowed = ["top_n", "abs", "abs_pctl", "relative", "mass"]
         if v not in allowed:
             raise ValueError(f"position_aware_select must be one of {allowed}, got {v!r}")
         return v
+
+    @model_validator(mode="after")
+    def validate_abs_pctl_threshold(self) -> "DiscoveryConfig":
+        if self.position_aware_select == "abs_pctl" and not (0 < self.position_aware_threshold < 100):
+            raise ValueError(
+                "position_aware_select='abs_pctl' needs position_aware_threshold as a "
+                f"percentile in (0, 100), got {self.position_aware_threshold}"
+            )
+        return self
 
     @field_validator("position_aware_scope")
     @classmethod

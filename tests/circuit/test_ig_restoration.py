@@ -412,3 +412,146 @@ class TestConfigAndRunnerSurface:
         assert "restoration" in ROUND_PREFIX_MODES
         assert "ig_restoration" in ROUND_PREFIX_MODES
         assert "ig_baseline" not in ROUND_PREFIX_MODES
+
+
+# ---------------------------------------------------------------------------
+# Round-admission cells (round_select x position_aware) and round chunking.
+# ---------------------------------------------------------------------------
+
+
+class TestRoundSelectCells:
+    """The chain (u at site A -> d at site B -> seed) must be recruited over
+    two rounds under EVERY admission rule — the rules change how much each
+    round admits, not the re-linearisation logic that recruits chains."""
+
+    def _run(self, **kw):
+        from circuit.types.feature_id import FeatureID
+
+        inf, bank = _selection_harness()
+        positives, negatives, result = run_restoration_selection(
+            inf, bank,
+            tokens=torch.zeros(1, 2, dtype=torch.long),
+            pos_argmax=torch.zeros(1, dtype=torch.long),
+            seed_layer=1, seed_kind="attn", seed_latent_idx=0,
+            target_act=0.0,
+            rounds=2, per_round_k=1, certificate_tol=0.0,
+            **kw,
+        )
+        return positives, result, FeatureID
+
+    def test_default_top_k_unchanged(self):
+        positives, result, FeatureID = self._run()
+        assert FeatureID(0, "mlp", 1) in positives
+        assert FeatureID(0, "attn", 0) in positives
+        assert result.round_of[((0, "mlp"), 1)] == 0
+        assert result.round_of[((0, "attn"), 0)] == 1
+
+    def test_abs_pctl_recruits_chain(self):
+        """Round admission by pooled percentile: each round's only nonzero
+        candidate clears its own distribution's cut, so the chain recruits
+        identically — but with a variable (rule-owned) budget."""
+        positives, result, FeatureID = self._run(
+            round_select="abs_pctl", round_abs_pctl=50.0
+        )
+        assert FeatureID(0, "mlp", 1) in positives
+        assert FeatureID(0, "attn", 0) in positives
+        assert result.round_of[((0, "mlp"), 1)] == 0
+        assert result.round_of[((0, "attn"), 0)] == 1
+
+    def test_pa_top_k_recruits_chain(self):
+        positives, result, FeatureID = self._run(position_aware=True)
+        assert FeatureID(0, "mlp", 1) in positives
+        assert FeatureID(0, "attn", 0) in positives
+        assert result.round_of[((0, "mlp"), 1)] == 0
+        assert result.round_of[((0, "attn"), 0)] == 1
+
+    def test_pa_abs_pctl_recruits_chain(self):
+        positives, result, FeatureID = self._run(
+            position_aware=True, round_select="abs_pctl", round_abs_pctl=50.0
+        )
+        assert FeatureID(0, "mlp", 1) in positives
+        assert FeatureID(0, "attn", 0) in positives
+
+    def test_bogus_round_select_raises(self):
+        inf, bank = _selection_harness()
+        with pytest.raises(ValueError, match="round_select"):
+            run_restoration_selection(
+                inf, bank,
+                tokens=torch.zeros(1, 2, dtype=torch.long),
+                pos_argmax=torch.zeros(1, dtype=torch.long),
+                seed_layer=1, seed_kind="attn", seed_latent_idx=0,
+                target_act=0.0, rounds=1, per_round_k=1, certificate_tol=0.0,
+                round_select="banana",
+            )
+
+
+class TestRoundChunking:
+    """Sequence count vs batch size in the round scorer: chunked rounds must
+    merge to the single-pass result (identical replicated sequences, so the
+    weighted mean is exactly the single-sequence value)."""
+
+    def _chunk_setup(self, n=4):
+        inf, bank, common, masks, c = _chain_setup()
+        x0 = torch.zeros(n, 1, 3)
+        x0[:, 0, 0] = c
+
+        def forward_fn(tokens, patcher=None, **kwargs):
+            # Chunked calls see exactly their own sequences — a mismatched
+            # per-sequence cache must therefore fail loudly, not broadcast.
+            x = x0[: tokens.shape[0]]
+            out_a = patcher.transform(0, "attn", x.clone())
+            out_b = patcher.transform(0, "mlp", out_a)
+            patcher.transform(1, "attn", out_b)
+
+        inf.forward.side_effect = forward_fn
+        common = dict(common)
+        common["tokens"] = torch.zeros(n, 1, dtype=torch.long)
+        common["pos_argmax"] = torch.zeros(n, dtype=torch.long)
+        # Residuals are PER-SEQUENCE state ([B, T, d_model]): expand the
+        # single-sequence cache to n rows so the chunk-slicing path is
+        # actually exercised (a [1, T, d] cache would silently broadcast —
+        # exactly the bug the production smoke caught).
+        common["residuals"] = {
+            site: r.expand(n, -1, -1).clone() for site, r in common["residuals"].items()
+        }
+        return inf, bank, common, masks
+
+    def test_chunked_round_matches_single_pass(self):
+        from circuit.instrument.restoration import _round_scores
+
+        inf, bank, common, masks = self._chunk_setup()
+        single, m_single, _ = _round_scores(
+            inf, bank, masks=masks, alphas=[0.0], **common)
+        inf2, bank2, common2, masks2 = self._chunk_setup()
+        chunked, m_chunked, _ = _round_scores(
+            inf2, bank2, masks=masks2, alphas=[0.0], batch_size=2, **common2)
+        assert m_chunked == pytest.approx(m_single, abs=1e-6)
+        for site in single:
+            assert torch.allclose(chunked[site], single[site], atol=1e-6)
+
+    def test_chunked_pa_selection_matches_single_pass(self):
+        from circuit.instrument.position_aware import PositionAwareSpec
+        from circuit.instrument.restoration import _round_scores
+
+        spec = PositionAwareSpec(peaks=torch.zeros(4, dtype=torch.long), top_n=1)
+        inf, bank, common, masks = self._chunk_setup()
+        _, _, sel_single = _round_scores(
+            inf, bank, masks=masks, alphas=[0.0], position_select=spec, **common)
+        inf2, bank2, common2, masks2 = self._chunk_setup()
+        _, _, sel_chunked = _round_scores(
+            inf2, bank2, masks=masks2, alphas=[0.0], batch_size=2,
+            position_select=spec, **common2)
+        assert set(sel_chunked) == set(sel_single)
+        for key, val in sel_single.items():
+            assert sel_chunked[key] == pytest.approx(val, rel=1e-5, abs=1e-7)
+
+
+def test_restoration_config_round_select_validators():
+    from config import RestorationConfig
+
+    assert RestorationConfig().round_select == "top_k"
+    assert RestorationConfig(round_select="abs_pctl", round_abs_pctl=95).round_abs_pctl == 95
+    with pytest.raises(ValueError, match="round_select"):
+        RestorationConfig(round_select="banana")
+    with pytest.raises(ValueError, match="percentile"):
+        RestorationConfig(round_abs_pctl=0)
