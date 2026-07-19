@@ -552,6 +552,19 @@ class RestorationConfig(BaseModel):
     # truncation reflects the complete circuit rather than the round-by-round
     # state each node was scored in. Uses the method-level ig_steps.
     final_ig_polish: bool = False
+    # Sequences per round grad pass. None = discovery.probe_batch_size. The
+    # global probe batch was sized for the CONTRASTIVE memory law (dense
+    # anchors+deltas at every site); restoration's instrument is far lighter
+    # (profiled 2026-07-18: 10.6G peak at batch 4 with 5G headroom), so its
+    # rounds can run wider and pay proportionally fewer passes.
+    grad_batch_size: Optional[int] = None
+
+    @field_validator("grad_batch_size")
+    @classmethod
+    def validate_grad_batch_size(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError(f"grad_batch_size must be None or >= 1, got {v}")
+        return v
 
     @field_validator("round_select")
     @classmethod
@@ -571,9 +584,14 @@ class RestorationConfig(BaseModel):
 
 class CounterfactualGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    neg_mode: str = "close"        # "close" | "random" | "distant"
+    # "fused" = one contrast set drawing quotas from all three sub-modes
+    # (close first — the sharpest boundary signal — then distant, then
+    # random), deduplicated by sequence id. A richer baseline than any
+    # single mode: close-only can miss latents that are absent across the
+    # BROADER distribution, which the distant/random quotas supply.
+    neg_mode: str = "close"        # "close" | "random" | "distant" | "fused"
     # Attribution mode: "local" = single-point gradient at the live contrast
-    # input (original behaviour); "ig_baseline" = integrated gradients along
+    # input (original behaviour); "ig_mean" = integrated gradients along
     # the path from the mean-ablated floor to the natural posctx state
     # (recipe from Sparse Feature Circuits, Marks et al. 2025: IE_ig against
     # the patch baseline), so selection linearises the circuit-only
@@ -581,7 +599,7 @@ class CounterfactualGradientConfig(BaseModel):
     # iterative re-linearisation along the greedy restoration trajectory
     # (state-dependent schedule; see RestorationConfig); "ig_restoration" =
     # the restoration loop with per-round integrated-gradients scoring
-    # (state-dependent schedule + path-integrated credit); "contrastive_ig" =
+    # (state-dependent schedule + path-integrated credit); "ig_negctx" =
     # integrated gradients along the LATENT-SPACE path from the negctx state
     # to the posctx target (the same values the counterfactual-faithfulness
     # eval injects), run on negctx tokens — the exact estimator of the
@@ -589,8 +607,16 @@ class CounterfactualGradientConfig(BaseModel):
     # certificate (sum of attributions ~= the seed's actual change under the
     # eval's intervention). cf-only: it needs a contrast input, so it has no
     # ablation-gradient counterpart. See
-    # dev-notes/contrastive-ig-for-position-aware-cf.md.
-    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration" | "contrastive_ig"
+    # dev-notes/contrastive-ig-for-position-aware-cf.md. "restoration_negctx"
+    # = the restoration loop transplanted onto ig_negctx's trajectory: run on
+    # negctx tokens, restored latents PINNED to their posctx targets (the cf
+    # eval's injection semantics — the loop's final state IS the eval's
+    # intervened state), unrestored latents live-connected on the modified
+    # negctx stream; each round re-linearises grad x (target - live value) at
+    # the current injected state, so the certificate closing means the
+    # selected set makes the seed fire on negctx under injection
+    # (cf-faithfulness ~= 1 by construction). cf-only, like ig_negctx.
+    attribution_mode: str = "local"   # "local" | "ig_mean" | "restoration" | "ig_restoration" | "ig_negctx" | "restoration_negctx"
     restoration: RestorationConfig = Field(default_factory=RestorationConfig)
     # Method-level: may counterfactual-gradient circuits carry
     # inhibitor-role members? "include" is the method's classic signed-roles
@@ -616,10 +642,10 @@ class CounterfactualGradientConfig(BaseModel):
     #                       position-aware-cf.md).
     #
     # Applies to the "local" attribution mode (the contrast hop), position-aware
-    # or not. ig_baseline/restoration already attribute with grad x delta by
+    # or not. ig_mean/restoration already attribute with grad x delta by
     # construction, so the knob does not reach them.
     activator_signal: str = "gradient"   # "gradient" | "gradient_x_posctx"
-    # Metric integrated along contrastive_ig's negctx -> posctx-target path:
+    # Metric integrated along ig_negctx's negctx -> posctx-target path:
     # "drive" = the seed's pre-activation itself. Attributions sum to the
     #           seed's ACTUAL rise under the eval's intervention; the metric is
     #           linear in the latents, so the left-Riemann completeness
@@ -631,21 +657,42 @@ class CounterfactualGradientConfig(BaseModel):
     #           target get negative credit (reclassified as inhibitors). The
     #           quadratic metric makes the certificate O(1/ig_steps) even on a
     #           linear model — expect looser certificates.
-    contrastive_ig_objective: str = "drive"   # "drive" | "gap"
-    # Depth-adaptive neg microbatch for contrastive_ig. Its per-site residency
+    ig_negctx_objective: str = "drive"   # "drive" | "gap"
+    # How restoration_negctx handles MEMBERSHIP (which latents) and INJECTION
+    # (what value restored latents are pinned to for the certificate) — two
+    # orthogonal axes, three useful combinations:
+    # "posctx"      — membership: top-|posctx-injection effect|, both signs;
+    #                 injection: ALL restored -> posctx. The original behaviour.
+    #                 Good free0 (both-sign membership) but cf-INCONSISTENT: the
+    #                 eval suppresses inhibitors to 0 while this pins them to
+    #                 posctx, so the certificate models a state the eval never
+    #                 scores (measured: free0 0.88 / deep 0.71, cf ~0.80).
+    # "directional" — membership: helping moves ONLY (drop latents that neither
+    #                 raising-to-posctx nor removing-to-0 helps); injection:
+    #                 activators->posctx, inhibitors->0. cf-consistent, but the
+    #                 helping filter strips both-sign members free0 needs
+    #                 (measured: free0 collapses to 0.66 / deep 0.49).
+    # "both_sign"   — membership: top-|posctx-injection effect|, both signs (as
+    #                 "posctx", to keep free0's both-sign closure); injection:
+    #                 activators->posctx, inhibitors->0 (as "directional", so
+    #                 the certificate matches the eval's Score-1 intervention).
+    #                 The reconciliation: separates "which latents are members"
+    #                 (free0) from "what value they inject at" (cf).
+    restoration_negctx_mode: str = "posctx"   # "posctx" | "directional" | "both_sign"
+    # Depth-adaptive neg microbatch for ig_negctx. Its per-site residency
     # is the largest of any arm (leaf + grad + fp32 delta + fp32 per-position
     # accumulator ~= 252MB/site at B=8), and one backward holds ALL upstream
     # sites at once — measured peak ~= 7G + sites x 252MB, which crosses a
     # 16GB card at ~29 sites (L10+; the paging tax tripled those chunks'
     # wall-clock). When the seed's upstream site count exceeds
-    # contrastive_deep_site_threshold, the hop drops its microbatch to
-    # contrastive_deep_neg_batch (halving every per-site tensor); shallower
+    # ig_negctx_deep_site_threshold, the hop drops its microbatch to
+    # ig_negctx_deep_neg_batch (halving every per-site tensor); shallower
     # seeds keep neg_batch_size so they don't pay the extra chunk overhead.
     # 21 = switch from L7-mlp upward (site count 3*layer + earlier kinds),
     # leaving ~2GB more margin than the measured crossing point.
-    contrastive_deep_site_threshold: int = 21
-    contrastive_deep_neg_batch: int = 4
-    ig_steps: int = 10                # interpolation steps for ig_baseline and contrastive_ig
+    ig_negctx_deep_site_threshold: int = 21
+    ig_negctx_deep_neg_batch: int = 4
+    ig_steps: int = 10                # interpolation steps for ig_mean and ig_negctx
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_activators: int = 8
     top_k_inhibitors: int = 8
@@ -662,7 +709,7 @@ class CounterfactualGradientConfig(BaseModel):
     @field_validator("neg_mode")
     @classmethod
     def validate_neg_mode(cls, v: str) -> str:
-        allowed = ["close", "random", "distant"]
+        allowed = ["close", "random", "distant", "fused"]
         if v not in allowed:
             raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
         return v
@@ -670,14 +717,14 @@ class CounterfactualGradientConfig(BaseModel):
     @field_validator("attribution_mode")
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
-        # "contrastive_ig" is cf-only: the first mode the two gradient methods
-        # do NOT share. It integrates along a negctx -> posctx-target path, and
-        # ablation gradient has no contrast input to anchor such a path.
+        # "ig_negctx" and "restoration_negctx" are cf-only: the modes the two
+        # gradient methods do NOT share. Both anchor on a negctx contrast
+        # input, which ablation gradient does not have.
         # ("activation_gradient" was removed: it is a top-level method now
         # (ActivationGradientDiscovery), not a mode — it runs on posctx and
         # never answered counterfactual gradient's negctx question.)
-        allowed = ["local", "ig_baseline", "restoration", "ig_restoration",
-                   "contrastive_ig"]
+        allowed = ["local", "ig_mean", "restoration", "ig_restoration",
+                   "ig_negctx", "restoration_negctx"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -690,19 +737,27 @@ class CounterfactualGradientConfig(BaseModel):
             raise ValueError(f"negative_roles must be one of {allowed}, got {v!r}")
         return v
 
-    @field_validator("contrastive_ig_objective")
+    @field_validator("ig_negctx_objective")
     @classmethod
-    def validate_contrastive_ig_objective(cls, v: str) -> str:
+    def validate_ig_negctx_objective(cls, v: str) -> str:
         allowed = ["drive", "gap"]
         if v not in allowed:
-            raise ValueError(f"contrastive_ig_objective must be one of {allowed}, got {v!r}")
+            raise ValueError(f"ig_negctx_objective must be one of {allowed}, got {v!r}")
         return v
 
-    @field_validator("contrastive_deep_site_threshold", "contrastive_deep_neg_batch")
+    @field_validator("restoration_negctx_mode")
     @classmethod
-    def validate_contrastive_deep(cls, v: int) -> int:
+    def validate_restoration_negctx_mode(cls, v: str) -> str:
+        allowed = ["posctx", "directional", "both_sign"]
+        if v not in allowed:
+            raise ValueError(f"restoration_negctx_mode must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("ig_negctx_deep_site_threshold", "ig_negctx_deep_neg_batch")
+    @classmethod
+    def validate_ig_negctx_deep(cls, v: int) -> int:
         if v < 1:
-            raise ValueError(f"contrastive deep-site settings must be >= 1, got {v}")
+            raise ValueError(f"ig_negctx deep-site settings must be >= 1, got {v}")
         return v
 
     @field_validator("activator_signal")
@@ -717,11 +772,11 @@ class AblationGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     neg_mode: str = "close"        # "close" | "random" | "distant"
     # See CounterfactualGradientConfig.attribution_mode.
-    attribution_mode: str = "local"   # "local" | "ig_baseline" | "restoration" | "ig_restoration"
+    attribution_mode: str = "local"   # "local" | "ig_mean" | "restoration" | "ig_restoration"
     restoration: RestorationConfig = Field(default_factory=RestorationConfig)
     # Method-level: may ablation-gradient circuits carry inhibitor-role
     # members (negative-scored latents) alongside supports? Honoured by the
-    # ig_baseline and restoration modes; local mode's attribution util
+    # ig_mean and restoration modes; local mode's attribution util
     # selects supports only and logs a note when "include" is requested.
     negative_roles: str = "exclude"   # "include" | "exclude"
     top_k_inhibitors: int = 12        # per selection scope, when included
@@ -733,7 +788,7 @@ class AblationGradientConfig(BaseModel):
         if v not in allowed:
             raise ValueError(f"negative_roles must be one of {allowed}, got {v!r}")
         return v
-    ig_steps: int = 10                # interpolation steps for ig_baseline
+    ig_steps: int = 10                # interpolation steps for ig_mean
     distant_pool_size: int = 512   # sequences to sample and rank for "distant" mode
     top_k_supports: int = 12
     top_k_scope: str = "layer_kind"   # "global" | "layer_kind"
@@ -746,7 +801,7 @@ class AblationGradientConfig(BaseModel):
     @field_validator("neg_mode")
     @classmethod
     def validate_neg_mode(cls, v: str) -> str:
-        allowed = ["close", "random", "distant"]
+        allowed = ["close", "random", "distant", "fused"]
         if v not in allowed:
             raise ValueError(f"neg_mode must be one of {allowed}, got {v!r}")
         return v
@@ -763,8 +818,8 @@ class AblationGradientConfig(BaseModel):
     @classmethod
     def validate_attribution_mode(cls, v: str) -> str:
         # "activation_gradient" removed: promoted to a top-level method
-        # (ActivationGradientDiscovery). "contrastive_ig" is cf-only.
-        allowed = ["local", "ig_baseline", "restoration", "ig_restoration"]
+        # (ActivationGradientDiscovery). "ig_negctx" is cf-only.
+        allowed = ["local", "ig_mean", "restoration", "ig_restoration"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -954,7 +1009,7 @@ class DiscoveryConfig(BaseModel):
     eval_sequence_count: int = 16    # pos sequences used by the faithfulness evals
     eval_batch_size: int = 16        # sequences per no-grad eval forward
     # Shared floor knob for every consumer of mean-ablation floors
-    # (ig_baseline, restoration, ablation-faithfulness evals):
+    # (ig_mean, restoration, ablation-faithfulness evals):
     # "posctx" = per-seed means over the seed's positive probe batch
     # (SFC's distribution-matched baseline); "global" = seed-independent
     # means over a sample of random corpus sequences (colder floor, no
@@ -1024,7 +1079,11 @@ class DiscoveryConfig(BaseModel):
     @field_validator("floor_source")
     @classmethod
     def validate_floor_source(cls, v: str) -> str:
-        allowed = ["posctx", "global", "diverse"]
+        # "zero": every floor consumer attributes/restores against the
+        # ZERO-ablation counterfactual (the one free0 evaluates) instead of a
+        # mean. Makes ig_mean the free0-coherent "integrated activation
+        # gradient" (0 -> natural) and restoration a greedy free0 climber.
+        allowed = ["posctx", "global", "diverse", "zero"]
         if v not in allowed:
             raise ValueError(f"floor_source must be one of {allowed}, got {v!r}")
         return v

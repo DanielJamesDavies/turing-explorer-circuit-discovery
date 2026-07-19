@@ -583,3 +583,61 @@ def test_positive_set_similarity_cpu_and_cuda_match_when_available():
     cuda_scores = selector._positive_set_max_similarity(reps, cuda_refs, torch.device("cuda:0"))
 
     assert torch.allclose(cpu_scores, cuda_scores, atol=1e-6)
+
+
+def test_fused_merges_quotas_with_dedup(monkeypatch):
+    """max_sequences=4 -> quotas close=2 (n//3 + remainder), distant=1,
+    random=1. Close ranks [1, 2] toward the [1,0,0] reference, distant picks
+    the opposite pole [3], and random's identity-shuffled pick (1) collides
+    with close's -> dedup drops it (first occurrence wins, counted against
+    the close quota)."""
+    vectors = {
+        99: [1.0, 0.0, 0.0],   # posctx reference
+        1: [1.0, 0.0, 0.0],    # closest
+        2: [0.9, 0.1, 0.0],
+        3: [-1.0, 0.0, 0.0],   # most distant
+        4: [0.0, 1.0, 0.0],
+    }
+    selector = _selector(vectors, top_rows={(0, 2): [99]})
+    monkeypatch.setattr(selector, "_deterministic_shuffle", lambda ids, *_args: list(ids))
+
+    selection = selector.select(
+        0,
+        2,
+        "fused",
+        max_sequences=4,
+        batch_size=2,
+        selection_seed=0,
+    )
+
+    assert selection is not None
+    assert selection.mode == "fused"
+    assert selection.sequence_ids == [1, 2, 3]
+    assert selection.tokens[:, 0].tolist() == [1, 2, 3]
+    assert selection.metadata["fused_quotas"] == {"close": 2, "distant": 1, "random": 1}
+    assert selection.metadata["fused_counts"] == {"close": 2, "distant": 1, "random": 0}
+    assert selection.metadata["selected_count"] == 3
+
+
+def test_fused_quota_remainder_goes_to_close(monkeypatch):
+    vectors = {
+        99: [1.0, 0.0, 0.0],
+        1: [1.0, 0.0, 0.0],
+        2: [0.9, 0.1, 0.0],
+        3: [-1.0, 0.0, 0.0],
+        4: [0.0, 1.0, 0.0],
+    }
+    selector = _selector(vectors, top_rows={(0, 2): [99]})
+    monkeypatch.setattr(selector, "_deterministic_shuffle", lambda ids, *_args: list(ids))
+
+    selection = selector.select(
+        0,
+        2,
+        "fused",
+        max_sequences=5,
+        batch_size=2,
+        selection_seed=0,
+    )
+
+    assert selection is not None
+    assert selection.metadata["fused_quotas"] == {"close": 3, "distant": 1, "random": 1}

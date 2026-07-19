@@ -43,8 +43,18 @@ class CircuitEdge:
     """
     source_uuid: str
     target_uuid: str
-    uuid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    # Lazy uuid: no production code reads an edge's own uuid (edges are keyed by
+    # (source_uuid, target_uuid) or list index), so generating one eagerly was
+    # pure waste — ~780k uuid4() calls on a single deep position-aware circuit.
+    # Generated on first access; the `edge.uuid` contract still holds.
+    _uuid: Optional[str] = field(default=None, compare=False)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def uuid(self) -> str:
+        if self._uuid is None:
+            self._uuid = str(uuid.uuid4())  # bare `uuid` = the module (top import)
+        return self._uuid
 
     @property
     def weight(self) -> Optional[float]:

@@ -56,10 +56,44 @@ def pooled_abs_threshold(attrs, pctl: float) -> float:
             idx = torch.randint(0, nz.numel(), (_PCTL_SAMPLE_CAP,), device=nz.device)
             nz = nz.flatten()[idx]
         if nz.numel():
-            samples.append(nz.detach().to(torch.float32).cpu())
+            # Stay on the attribution's device: the quantile runs where the
+            # data lives (profiled 2026-07-18: per-call .cpu() + CPU quantile
+            # was ~480ms x hundreds of calls — 30% of a deep restoration arm).
+            samples.append(nz.detach().to(torch.float32))
     if not samples:
         return float("inf")  # nothing attributed -> admit nothing
-    return float(torch.quantile(torch.cat(samples), pctl / 100.0))
+    device = samples[0].device
+    pooled = torch.cat([s.to(device) for s in samples])
+    return float(torch.quantile(pooled, pctl / 100.0))
+
+
+def resolve_role_delivery(supports, negatives, *, position_aware: bool,
+                          include_negatives: bool):
+    """Role delivery under the position-aware both-sign semantics (2026-07-19).
+
+    A position-aware allowed set is a STREAM-RECONSTRUCTION membership: a
+    negative-attribution latent still carries content in the residual stream at
+    its position, so it must stay a member. Therefore ``negative_roles`` cannot
+    *remove* negatives from a PA circuit — it only chooses whether they are
+    labelled as a distinct inhibitor role:
+
+      include            -> (supports, negatives-as-inhibitors)
+      exclude + PA       -> (supports + negatives folded in as |score|, {})
+      exclude + NPA      -> (supports, {})   [classic: negatives genuinely dropped]
+
+    So for PA the union of the two returned dicts' keys is IDENTICAL between
+    include and exclude — only the role split differs, and free0/size are
+    unchanged by the toggle. For NPA (seed-driving selection, not stream
+    reconstruction) exclude removes negatives, the long-standing behaviour that
+    the cf-local φcf finding depends on."""
+    if include_negatives:
+        return dict(supports), dict(negatives)
+    if position_aware:
+        folded = dict(supports)
+        for fid, score in negatives.items():
+            folded[fid] = abs(float(score))  # kept as a member, labelled support
+        return folded, {}
+    return dict(supports), {}
 
 
 def _selection_mask(block_abs: torch.Tensor, select: str, threshold: float, n: int) -> torch.Tensor:
@@ -204,6 +238,48 @@ def select_position_aware(
     return selected
 
 
+def select_position_aware_values(
+    attr: torch.Tensor,
+    peaks: torch.Tensor,
+    *,
+    top_n: int,
+    select: str = "top_n",
+    threshold: float = 0.0,
+    position_weight: bool = False,
+    scope: str = "aggregate",
+) -> torch.Tensor:
+    """Tensor twin of ``select_position_aware``: same per-position selection and
+    largest-|score| union, returned as a ``[d_sae]`` tensor on ``attr``'s device
+    (signed value of each selected latent; 0 = unselected). Built for hot loops
+    (restoration rounds) that would otherwise pay a Python dict merge per
+    chunk — convert to a dict ONCE after all chunks are merged.
+
+    Tie behavior matches the dict path: within a block, ``abs().argmax`` takes
+    the first position with the maximal |score| (the dict kept the first
+    encountered under a strict ``>``); across sequences/chunks the strict ``>``
+    keeps the earlier value. A selected-but-zero-valued entry is
+    indistinguishable from unselected — identical to the zero-admission gate
+    the restoration loop applies to the dict."""
+    if attr.dim() != 3:
+        raise ValueError(f"attr must be [B, T, d_sae], got {tuple(attr.shape)}")
+    B = min(attr.shape[0], peaks.shape[0])
+    out = torch.zeros(attr.shape[-1], dtype=torch.float32, device=attr.device)
+    b_range = range(1) if scope == "per_instance" else range(B)
+    for b in b_range:
+        prefix = int(peaks[b].item()) + 1
+        block = attr[b, :prefix]  # [prefix, d_sae]
+        if position_weight:
+            strength = block.abs().sum(dim=-1, keepdim=True)
+            block = block * (strength / strength.amax().clamp_min(1e-12))
+        mask = _selection_mask(block.abs(), select, threshold, top_n)
+        vals = torch.where(mask, block, torch.zeros((), dtype=block.dtype,
+                                                    device=block.device))
+        idx = vals.abs().argmax(dim=0)  # first maximal position per latent
+        cand = vals.gather(0, idx.unsqueeze(0)).squeeze(0).to(torch.float32)
+        out = torch.where(cand.abs() > out.abs(), cand, out)
+    return out
+
+
 class _PositionAttrInstrument:
     """Taps every upstream site as a differentiable leaf with an identity
     pass-through, and captures the seed's per-position pre-activation."""
@@ -290,12 +366,14 @@ def position_aware_membership(
     (one circuit for the seed); ``"per_instance"`` builds it from a single
     sequence (b=0) — the per-input "meal"-sized circuit for a specific example.
 
-    Returns (members, {}) — ALL selected latents are members (kept / allowed to
-    fire), because the allowed set is a STREAM-RECONSTRUCTION set: a latent with
-    negative attribution to the seed still contributes to the residual stream at
-    its position, so zeroing it corrupts free execution. Sign is preserved in
-    the value (activator/inhibitor is interpretive metadata, not a keep filter),
-    so `negative_roles` does not gate membership here."""
+    Returns (supports, inhibitors). ALL selected latents are members either way
+    (the allowed set is a STREAM-RECONSTRUCTION set — a negative-attribution
+    latent still contributes to the residual stream at its position, so zeroing
+    it corrupts free execution): ``negative_roles`` does NOT gate membership,
+    only the role split. With ``negative_roles=True`` (include) the negatives
+    come back as ``inhibitors``; with False (exclude) they are folded into
+    ``supports`` as |score|. So the union of the two dicts is identical either
+    way — free0/size are unchanged by the toggle (see resolve_role_delivery)."""
 
     if not sites:
         return {}, {}
@@ -364,23 +442,26 @@ def position_aware_membership(
                     position_weight=position_weight, scope=scope,
                 )
                 for lat, val in selected.items():
-                    # Value is the |attribution| magnitude so every member is a
-                    # positive-scored support (the assembly drops negative-scored
-                    # ones); membership, not sign, is what the allowed set needs.
-                    # Cross-chunk merge keeps the max — the same rule the
-                    # selection applies across sequences within a chunk.
+                    # Keep the SIGNED value (merged by |val| across chunks /
+                    # sequences) so the role split below can label inhibitors;
+                    # membership is by magnitude, sign carries the role.
                     fid = FeatureID(layer=layer, kind=kind, index=lat)
-                    if fid not in members or abs(val) > members[fid]:
-                        members[fid] = abs(val)
+                    if fid not in members or abs(val) > abs(members[fid]):
+                        members[fid] = val
             del ins
     finally:
         inference.enable_compile()
-    return members, {}
+    supports = {fid: v for fid, v in members.items() if v >= 0}
+    negatives = {fid: v for fid, v in members.items() if v < 0}
+    return resolve_role_delivery(supports, negatives, position_aware=True,
+                                 include_negatives=negative_roles)
 
 
 __all__ = [
     "position_aware_membership",
     "select_position_aware",
+    "select_position_aware_values",
+    "resolve_role_delivery",
     "PositionAwareSpec",
     "SELECT_MODES",
 ]

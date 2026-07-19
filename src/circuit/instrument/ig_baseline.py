@@ -1,6 +1,6 @@
 """Integrated-gradients attribution from the mean-ablation baseline.
 
-Implements the "ig_baseline" attribution mode shared by the counterfactual-
+Implements the "ig_mean" attribution mode shared by the counterfactual-
 and ablation-gradient discovery methods. The recipe follows Sparse Feature
 Circuits (Marks et al., 2025): score each upstream latent with the
 integrated-gradients estimator of its indirect effect (their IE_ig), taken
@@ -53,7 +53,7 @@ class InterpolatedCodeInstrument:
     vector (``site_floors``). ``path`` sets the direction:
 
         "to_natural"   (default) — f_alpha = floor + alpha * (f_natural - floor)
-                       The original ig_baseline path: mean-ablation floor at
+                       The original ig_mean path: mean-ablation floor at
                        alpha=0, the clean state at alpha=1.
         "from_natural" — f_alpha = f_natural + alpha * (target - f_natural)
                        The contrastive path: the tokens' own (negctx) state at
@@ -208,10 +208,10 @@ def integrated_baseline_scores(
 
     path:
         "to_natural"   (default) — floor -> the tokens' clean state: the
-                       original ig_baseline recipe. ``site_floors`` is the
+                       original ig_mean recipe. ``site_floors`` is the
                        mean-ablation floor.
         "from_natural" — the tokens' clean state -> a dense target: the
-                       contrastive_ig recipe, run on NEGCTX tokens with
+                       ig_negctx recipe, run on NEGCTX tokens with
                        ``site_floors`` carrying the posctx target values the
                        counterfactual-faithfulness eval injects. alpha=1 then
                        reproduces the eval's intervened negctx state.

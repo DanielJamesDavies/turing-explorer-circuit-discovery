@@ -283,13 +283,13 @@ discovery:
   counterfactual_gradient:
     neg_mode: "random" # "close" | "random" | "distant"
     # "local" = single-point contrast gradient at the live negctx input (classic);
-    # "ig_baseline" = SFC-style IG along mean-ablation floor -> natural posctx;
+    # "ig_mean" = SFC-style IG along mean-ablation floor -> natural posctx;
     # "restoration" / "ig_restoration" = greedy re-linearisation loop;
     # "activation_gradient" = grad(seed peak) x natural on posctx, no baseline;
-    # "contrastive_ig" = IG along the latent-space path negctx state -> posctx target
+    # "ig_negctx" = IG along the latent-space path negctx state -> posctx target
     #                    (the exact estimator of "local", with a completeness certificate).
     attribution_mode: "local"
-    contrastive_ig_objective: "drive" # "drive" (seed pre-act; well-conditioned certificate) | "gap" (-(pre-act - target)^2, the local hop's objective)
+    ig_negctx_objective: "drive" # "drive" (seed pre-act; well-conditioned certificate) | "gap" (-(pre-act - target)^2, the local hop's objective)
     distant_pool_size: 512 # sequences to sample and rank for neg_mode=distant
     top_k_activators: 12 # Top-K absent activators per scope unit
     top_k_inhibitors: 12 # Top-K present inhibitors per scope unit

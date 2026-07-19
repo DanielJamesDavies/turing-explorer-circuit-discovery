@@ -58,7 +58,7 @@ M_VALUES = (2, 4, 8, 12, 16, 32, 64, 128)
 SWEEP_NEG_MODE = "random"
 # Modes whose circuits carry selected_round provenance and are therefore
 # evaluated at round prefixes instead of m truncations.
-ROUND_PREFIX_MODES = frozenset({"restoration", "ig_restoration"})
+ROUND_PREFIX_MODES = frozenset({"restoration", "ig_restoration", "restoration_negctx"})
 ROW_FIELDS = [
     "method",
     "attribution_mode",
@@ -454,14 +454,14 @@ def run_gradient_size_sweep(
     return {"rows": rows_path, "summary": summary_path}
 
 
-ATTRIBUTION_MODES = ("local", "ig_baseline", "restoration", "ig_restoration")
+ATTRIBUTION_MODES = ("local", "ig_mean", "restoration", "ig_restoration")
 
 
 def parse_hybrid_mode(mode: str) -> tuple[str, str]:
     """A hybrid attribution mode is either plain (both sub-methods share it,
-    e.g. "ig_baseline") or compound "cfmode+ablmode" (e.g.
-    "restoration+ig_baseline" = cf sub-method restoration, abl sub-method
-    ig_baseline). Sub-methods read independent config fields, so hybrid can
+    e.g. "ig_mean") or compound "cfmode+ablmode" (e.g.
+    "restoration+ig_mean" = cf sub-method restoration, abl sub-method
+    ig_mean). Sub-methods read independent config fields, so hybrid can
     pair each with a different mode. Returns (cf_mode, abl_mode)."""
 
     if "+" in mode:
@@ -803,8 +803,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--attribution-modes",
         nargs="+",
         default=["local"],
-        help="Attribution modes: local | ig_baseline | restoration | ig_restoration. "
-        "For hybrid, a compound 'cfmode+ablmode' (e.g. 'restoration+ig_baseline') runs "
+        help="Attribution modes: local | ig_mean | restoration | ig_restoration. "
+        "For hybrid, a compound 'cfmode+ablmode' (e.g. 'restoration+ig_mean') runs "
         "the cf and abl sub-methods in different modes.",
     )
     parser.add_argument(

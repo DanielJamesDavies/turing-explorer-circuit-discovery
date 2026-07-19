@@ -85,15 +85,18 @@ def test_classic_unchanged_when_position_aware_none():
 
 # ---------------------------------------------------------- position-aware path
 
-def test_pa_keeps_both_signs_as_members_at_abs_score():
+def test_pa_keeps_both_signs_as_members_signed():
     """Allowed-set semantics: the negatively-attributed latent (acts x grad =
-    -3) is a member at |score| — zeroing it would corrupt the stream."""
+    -3) is a member at its SIGNED score — zeroing it would corrupt the stream.
+    The scorer preserves the sign so the caller (resolve_role_delivery) can
+    label inhibitors under include / fold them under exclude."""
     graph, ts = _single_site_oracle()
     members = _call(graph, ts, position_aware=_spec())
     assert members[FeatureID(0, "attn", 0)] == pytest.approx(2.0, abs=1e-5)
-    assert members[FeatureID(0, "attn", 2)] == pytest.approx(3.0, abs=1e-5)
+    assert members[FeatureID(0, "attn", 2)] == pytest.approx(-3.0, abs=1e-5)
     assert FeatureID(0, "attn", 1) not in members  # zero attribution
-    assert all(v >= 0 for v in members.values())
+    # both signs present as members (magnitude is what the allowed set needs)
+    assert any(v < 0 for v in members.values())
 
 
 def test_pa_bypasses_top_k_truncation():

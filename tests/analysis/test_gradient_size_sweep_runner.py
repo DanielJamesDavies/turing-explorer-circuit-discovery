@@ -114,8 +114,8 @@ def test_run_rejects_bogus_restoration_truncation():
 def test_parse_hybrid_mode_plain_and_compound():
     from analysis.circuits.gradient_size_sweep_runner import parse_hybrid_mode
 
-    assert parse_hybrid_mode("ig_baseline") == ("ig_baseline", "ig_baseline")
-    assert parse_hybrid_mode("restoration+ig_baseline") == ("restoration", "ig_baseline")
+    assert parse_hybrid_mode("ig_mean") == ("ig_mean", "ig_mean")
+    assert parse_hybrid_mode("restoration+ig_mean") == ("restoration", "ig_mean")
     assert parse_hybrid_mode("ig_restoration + local") == ("ig_restoration", "local")
     with pytest.raises(ValueError, match="must be one of"):
         parse_hybrid_mode("restoration+bogus")
@@ -130,7 +130,7 @@ def test_run_rejects_compound_mode_for_non_hybrid():
         run_gradient_size_sweep(
             "nonexistent",
             methods=["counterfactual_gradient"],
-            attribution_modes=["restoration+ig_baseline"],
+            attribution_modes=["restoration+ig_mean"],
         )
 
 

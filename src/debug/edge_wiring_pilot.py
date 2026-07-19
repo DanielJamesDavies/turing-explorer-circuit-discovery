@@ -1,7 +1,7 @@
 """Retro-wiring pilot: attach direct-effect edges (SFC's edge weights) to
 freshly discovered circuits and measure chain depth.
 
-For a small seed sample, discovers circuits with local and ig_baseline
+For a small seed sample, discovers circuits with local and ig_mean
 attribution (gates off, as in the sweeps), truncates to the deployed
 configuration (top-12 per site per role), wires members with
 attach_direct_edges, and records longest-path depth stats per circuit.
@@ -85,7 +85,7 @@ def main(argv=None) -> int:
     try:
         methods = {}
         for name in ("counterfactual_gradient", "ablation_gradient"):
-            for mode in ("local", "ig_baseline"):
+            for mode in ("local", "ig_mean"):
                 methods[(name, mode)] = _build_mode_method(name, mode, inference, bank, avg_acts, probe_builder)
         probe_batch = int(config.discovery.probe_batch_size)
         CircuitLogger._LOG_DIR = str(args.out / "logs")

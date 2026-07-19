@@ -452,36 +452,36 @@ class TestActivatorSignalPosctxScaling:
 # ---------------------------------------------------------------------------
 
 class TestContrastiveIgMode:
-    """Contract tests for attribution_mode="contrastive_ig": config gating
+    """Contract tests for attribution_mode="ig_negctx": config gating
     (cf-only), dispatch, and the negctx anchor helper. The path arithmetic and
     completeness live in tests/circuit/test_ig_baseline.py."""
 
-    def test_config_accepts_contrastive_ig_for_cf_only(self):
+    def test_config_accepts_ig_negctx_for_cf_only(self):
         """The first attribution mode the two gradient methods do NOT share:
         cf accepts it; ablation (no contrast input) must reject it."""
         from config import AblationGradientConfig, CounterfactualGradientConfig
 
         assert CounterfactualGradientConfig(
-            attribution_mode="contrastive_ig"
-        ).attribution_mode == "contrastive_ig"
+            attribution_mode="ig_negctx"
+        ).attribution_mode == "ig_negctx"
         with pytest.raises(ValueError, match="attribution_mode"):
-            AblationGradientConfig(attribution_mode="contrastive_ig")
+            AblationGradientConfig(attribution_mode="ig_negctx")
 
     def test_config_objective_validator(self):
         from config import CounterfactualGradientConfig
 
-        assert CounterfactualGradientConfig().contrastive_ig_objective == "drive"
+        assert CounterfactualGradientConfig().ig_negctx_objective == "drive"
         assert CounterfactualGradientConfig(
-            contrastive_ig_objective="gap"
-        ).contrastive_ig_objective == "gap"
-        with pytest.raises(ValueError, match="contrastive_ig_objective"):
-            CounterfactualGradientConfig(contrastive_ig_objective="banana")
+            ig_negctx_objective="gap"
+        ).ig_negctx_objective == "gap"
+        with pytest.raises(ValueError, match="ig_negctx_objective"):
+            CounterfactualGradientConfig(ig_negctx_objective="banana")
 
     def test_discover_dispatches_to_contrastive_hop(self):
-        """attribution_mode="contrastive_ig" must route to the contrastive hop
+        """attribution_mode="ig_negctx" must route to the contrastive hop
         and NOT the local contrast hop, and the circuit must carry the roles."""
         algo = _make_discovery(min_faithfulness=0.0)
-        algo.attribution_mode = "contrastive_ig"
+        algo.attribution_mode = "ig_negctx"
         probe_data = _make_probe_data()
         fid = FeatureID(0, "attn", 5)
 
@@ -494,12 +494,12 @@ class TestContrastiveIgMode:
             mock_ls.active_count = mock_active_count
             algo._get_posctx_activation = MagicMock(return_value=1.0)
             algo._get_neg_tokens = MagicMock(return_value=probe_data.neg_tokens)
-            algo._run_contrastive_ig_hop = MagicMock(return_value=({fid: 0.7}, {}))
+            algo._run_ig_negctx_hop = MagicMock(return_value=({fid: 0.7}, {}))
             algo._run_contrast_hop = MagicMock()
 
             circuit = algo.discover(3, 0)
 
-        algo._run_contrastive_ig_hop.assert_called_once()
+        algo._run_ig_negctx_hop.assert_called_once()
         algo._run_contrast_hop.assert_not_called()
         assert circuit is not None
         roles = {n.metadata.get("role") for n in circuit.nodes.values()}
@@ -559,34 +559,34 @@ class TestContrastiveIgMode:
         assert torch.equal(capture.seed_pre_act.argmax(dim=-1),
                            graph_inst.seed_pre_act.argmax(dim=-1))
 
-    def test_contrastive_batch_is_depth_adaptive(self):
+    def test_ig_negctx_batch_is_depth_adaptive(self):
         """Deep seeds (> threshold upstream sites) drop the neg microbatch —
         per-site residency is batch-proportional and held across all sites,
         so B=8 crosses a 16GB card near 29 sites; shallow seeds keep the
         configured batch and pay no extra chunk overhead."""
         algo = _make_discovery()
         algo.neg_batch_size = 8
-        algo.contrastive_deep_site_threshold = 25
-        algo.contrastive_deep_neg_batch = 4
+        algo.ig_negctx_deep_site_threshold = 25
+        algo.ig_negctx_deep_neg_batch = 4
 
-        assert algo._contrastive_batch(10) == 8    # shallow: unchanged
-        assert algo._contrastive_batch(25) == 8    # at threshold: unchanged
-        assert algo._contrastive_batch(26) == 4    # deep: halved
-        assert algo._contrastive_batch(35) == 4
+        assert algo._ig_negctx_batch(10) == 8    # shallow: unchanged
+        assert algo._ig_negctx_batch(25) == 8    # at threshold: unchanged
+        assert algo._ig_negctx_batch(26) == 4    # deep: halved
+        assert algo._ig_negctx_batch(35) == 4
 
         # Never RAISE the batch: if the configured batch is already smaller,
         # keep it.
         algo.neg_batch_size = 2
-        assert algo._contrastive_batch(35) == 2
+        assert algo._ig_negctx_batch(35) == 2
 
-    def test_contrastive_batch_config_defaults(self):
+    def test_ig_negctx_batch_config_defaults(self):
         from config import CounterfactualGradientConfig
 
         cfg = CounterfactualGradientConfig()
-        assert cfg.contrastive_deep_site_threshold == 21
-        assert cfg.contrastive_deep_neg_batch == 4
+        assert cfg.ig_negctx_deep_site_threshold == 21
+        assert cfg.ig_negctx_deep_neg_batch == 4
         with pytest.raises(ValueError):
-            CounterfactualGradientConfig(contrastive_deep_neg_batch=0)
+            CounterfactualGradientConfig(ig_negctx_deep_neg_batch=0)
 
     def test_capture_patcher_leaves_stream_untouched(self, mock_sae_bank):
         from circuit.discovery.counterfactual_gradient import SeedPreActCapture

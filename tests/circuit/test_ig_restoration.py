@@ -411,7 +411,7 @@ class TestConfigAndRunnerSurface:
 
         assert "restoration" in ROUND_PREFIX_MODES
         assert "ig_restoration" in ROUND_PREFIX_MODES
-        assert "ig_baseline" not in ROUND_PREFIX_MODES
+        assert "ig_mean" not in ROUND_PREFIX_MODES
 
 
 # ---------------------------------------------------------------------------

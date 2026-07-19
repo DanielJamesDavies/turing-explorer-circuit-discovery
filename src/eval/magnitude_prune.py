@@ -138,6 +138,11 @@ def prune_by_magnitude_bisection(
         else:
             lo = mid + 1
 
+    # Record the pre-prune member count + φ so callers can report the
+    # compression ratio without a second (unpruned) run.
+    circuit.metadata["n_members_pre_prune"] = n_total
+    circuit.metadata["prune_phi_base"] = float(base_phi)
+    circuit.metadata["prune_phi_kept"] = float(phi(best))
     removed = [uuid for _, uuid, _ in members[best:]]
     if not removed:
         return []

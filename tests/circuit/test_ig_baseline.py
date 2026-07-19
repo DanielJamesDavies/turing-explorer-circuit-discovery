@@ -1,5 +1,5 @@
 """
-Unit tests for the ig_baseline attribution mode (SFC-style integrated
+Unit tests for the ig_mean attribution mode (SFC-style integrated
 gradients from the mean-ablation floor; Marks et al. 2025).
 
 Part 1  TestInterpolatedCodeInstrument — transform arithmetic at the path
@@ -95,7 +95,7 @@ class TestInterpolatedCodeInstrument:
         grad = torch.autograd.grad(out.sum(), instrument.anchors[SITE])[0]
         assert grad is not None and grad.abs().sum() > 0
 
-    # --- path="from_natural" (contrastive_ig): the direction flip -------------
+    # --- path="from_natural" (ig_negctx): the direction flip -------------
 
     def test_from_natural_alpha_zero_reproduces_input(self, mock_sae_bank):
         """Mirror of test_alpha_one_reproduces_input: on the contrastive path
@@ -210,7 +210,7 @@ class TestIntegratedBaselineScores:
         assert total == pytest.approx(m_nat - m_floor, abs=1e-3)
 
     def test_completeness_exact_on_contrastive_path(self):
-        """The certificate contrastive_ig is built for: on path="from_natural"
+        """The certificate ig_negctx is built for: on path="from_natural"
         the scores must sum to metric(target) - metric(natural) — the seed's
         actual change under the injection — exactly on a linear pipeline."""
         scores, m_start, m_end, _ = self._run(objective="drive", path="from_natural")

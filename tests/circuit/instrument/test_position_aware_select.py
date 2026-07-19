@@ -176,6 +176,61 @@ def test_select_position_aware_rejects_wrong_shape():
         select_position_aware(torch.zeros(4, 6), torch.tensor([1]), top_n=1)
 
 
+def test_resolve_role_delivery_semantics():
+    """PA keeps both signs as members (union invariant across the toggle);
+    NPA-exclude drops negatives. include labels inhibitors; PA-exclude folds
+    them into supports as |score|."""
+    from circuit.instrument.position_aware import resolve_role_delivery
+    from circuit.types.feature_id import FeatureID
+    sup = {FeatureID(0, "attn", 0): 2.0}
+    neg = {FeatureID(1, "mlp", 3): -5.0}
+
+    # include: negatives come back as inhibitors, signed.
+    s, i = resolve_role_delivery(sup, neg, position_aware=True, include_negatives=True)
+    assert s == sup and i == neg
+
+    # PA + exclude: same MEMBERSHIP (union of keys), negatives folded into
+    # supports as |score|, no inhibitors.
+    s, i = resolve_role_delivery(sup, neg, position_aware=True, include_negatives=False)
+    assert i == {}
+    assert set(s) == {FeatureID(0, "attn", 0), FeatureID(1, "mlp", 3)}
+    assert s[FeatureID(1, "mlp", 3)] == 5.0            # |score|, kept as support
+    # include vs exclude cover the identical member set for PA
+    inc_s, inc_i = resolve_role_delivery(sup, neg, position_aware=True, include_negatives=True)
+    assert set(s) == set(inc_s) | set(inc_i)
+
+    # NPA + exclude: negatives genuinely dropped (classic seed-driving select).
+    s, i = resolve_role_delivery(sup, neg, position_aware=False, include_negatives=False)
+    assert s == sup and i == {}
+
+
+def test_select_values_tensor_matches_dict_path():
+    """select_position_aware_values is the tensor twin of select_position_aware:
+    identical membership and identical signed max-|score| values, across rules
+    and random inputs (zeros = unselected)."""
+    from circuit.instrument.position_aware import (
+        select_position_aware, select_position_aware_values,
+    )
+    g = torch.Generator().manual_seed(7)
+    B, T, D = 3, 6, 24
+    attr = torch.randn(B, T, D, generator=g)
+    attr[attr.abs() < 0.6] = 0.0          # realistic sparsity + exact zeros
+    peaks = torch.tensor([2, 5, 0])
+    for select, thr, n in [("top_n", 0.0, 3), ("abs", 0.7, 0),
+                           ("relative", 0.4, 0), ("mass", 0.8, 0)]:
+        want = select_position_aware(attr, peaks, top_n=n, select=select,
+                                     threshold=thr)
+        got = select_position_aware_values(attr, peaks, top_n=n, select=select,
+                                           threshold=thr)
+        got_dict = {int(i): float(v) for i, v in
+                    zip(got.nonzero(as_tuple=True)[0].tolist(),
+                        got[got != 0].tolist())}
+        want_nonzero = {k: v for k, v in want.items() if v != 0.0}
+        assert got_dict.keys() == want_nonzero.keys(), select
+        for k in want_nonzero:
+            assert got_dict[k] == pytest.approx(want_nonzero[k], abs=1e-6), select
+
+
 def test_position_aware_spec_carries_selection_rule():
     from circuit.instrument.position_aware import PositionAwareSpec
     B, T, D = 1, 3, 6
@@ -202,10 +257,14 @@ def test_activation_gradient_is_a_method_not_a_mode():
 
     assert METHOD_REGISTRY["activation_gradient"] is ActivationGradientDiscovery
     assert ActivationGradientDiscovery.method_name == "activation_gradient"
-    # It is ablation-family (shares assembly/eval) but discovers via the
-    # position-aware posctx hop, not attribution_mode dispatch.
+    # A SIBLING of ablation gradient on the shared pipeline base (2026-07-18
+    # refactor) — it shares assembly/eval via GradientDiscoveryBase but is NOT
+    # an ablation gradient: no attribution_mode dispatch, its own hop.
     from circuit.discovery.ablation_gradient import AblationGradientDiscovery
-    assert issubclass(ActivationGradientDiscovery, AblationGradientDiscovery)
+    from circuit.discovery.gradient_base import GradientDiscoveryBase
+    assert issubclass(ActivationGradientDiscovery, GradientDiscoveryBase)
+    assert not issubclass(ActivationGradientDiscovery, AblationGradientDiscovery)
+    assert issubclass(AblationGradientDiscovery, GradientDiscoveryBase)
 
 
 def test_config_accepts_scope_and_position_weight():

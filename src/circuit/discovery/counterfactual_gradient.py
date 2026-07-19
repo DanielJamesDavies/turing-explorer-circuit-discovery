@@ -2,12 +2,11 @@ import torch
 import gc
 from typing import Optional, Any, Tuple, Dict, Set, cast
 
-from .base import DiscoveryMethod
+from .gradient_base import DiscoveryContext, GradientDiscoveryBase, HopResult
 from config import config
-from store.circuits import Circuit, CircuitNode
+from store.circuits import Circuit
 from store.latent_stats import latent_stats
 from eval.minimality import prune_non_minimal_nodes_cf
-from eval.magnitude_prune import prune_by_magnitude_bisection
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 from circuit.instrument.sae_graph import SAEGraphInstrument
 from circuit.instrument.attribution import compute_latent_counterfactual_scores
@@ -16,7 +15,6 @@ from circuit.types.feature_id import FeatureID
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from sae.dense import target_latent_activations
-from utils.neg_context_selector import NegContextSelector
 
 
 class SeedProjectionInstrument(SAEGraphInstrument):
@@ -105,7 +103,7 @@ class SeedPreActCapture:
         return x
 
 
-class CounterfactualGradientDiscovery(DiscoveryMethod):
+class CounterfactualGradientDiscovery(GradientDiscoveryBase):
     """
     Discovers circuit nodes by running gradient attribution on contrast sequences —
     inputs where the seed latent is inactive.
@@ -130,6 +128,9 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
     """
 
     method_name = "counterfactual_gradient"
+    circuit_name_prefix = "CounterfactualGrad"
+    positive_role = "counterfactual_activator"
+    empty_reject_message = "no activators or inhibitors passed threshold"
 
     def __init__(
         self,
@@ -151,38 +152,20 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.counterfactual_gradient
-
-        self.attribution_mode = (
-            attribution_mode if attribution_mode is not None
-            else cast(str, cfg.attribution_mode)
+        self._init_shared_knobs(
+            cfg,
+            attribution_mode=attribution_mode,
+            ig_steps=ig_steps,
+            min_active_count=min_active_count,
+            max_neg_sequences=max_neg_sequences,
+            pruning_threshold=pruning_threshold,
+            top_k_scope=top_k_scope,
         )
-        self.ig_steps = ig_steps if ig_steps is not None else cast(int, cfg.ig_steps)
-        self.restoration_rounds = cast(int, cfg.restoration.rounds)
-        self.restoration_per_round_k = cast(int, cfg.restoration.per_round_k)
-        self.restoration_round_select = cast(str, cfg.restoration.round_select)
-        self.restoration_round_abs_pctl = cast(float, cfg.restoration.round_abs_pctl)
-        self.restoration_certificate_tol = cast(float, cfg.restoration.certificate_tol)
-        self.restoration_ig_steps = cast(int, cfg.restoration.ig_steps)
-        self.restoration_final_ig_polish = cast(bool, cfg.restoration.final_ig_polish)
-        self.negative_roles = cast(str, cfg.negative_roles)
         self.activator_signal = cast(str, cfg.activator_signal)
-        self.contrastive_ig_objective = cast(str, cfg.contrastive_ig_objective)
-        self.contrastive_deep_site_threshold = cast(int, cfg.contrastive_deep_site_threshold)
-        self.contrastive_deep_neg_batch = cast(int, cfg.contrastive_deep_neg_batch)
-        self.position_aware = cast(bool, config.discovery.position_aware)
-        self.position_aware_top_n = cast(int, config.discovery.position_aware_top_n)
-        self.position_aware_select = cast(str, config.discovery.position_aware_select)
-        self.position_aware_threshold = cast(float, config.discovery.position_aware_threshold)
-        self.position_aware_position_weight = cast(bool, config.discovery.position_aware_position_weight)
-        self.position_aware_scope = cast(str, config.discovery.position_aware_scope)
-        self.magnitude_prune = cast(bool, config.discovery.magnitude_prune)
-        self.magnitude_prune_tolerance = cast(float, config.discovery.magnitude_prune_tolerance)
-        self.magnitude_prune_target = cast(float, config.discovery.magnitude_prune_target)
-        self.magnitude_prune_min_keep = cast(int, config.discovery.magnitude_prune_min_keep)
-        self.magnitude_prune_objective = cast(str, config.discovery.magnitude_prune_objective)
-        self._last_restoration = None
-        self.neg_mode = cast(str, cfg.neg_mode)
-        self.distant_pool_size = cast(int, cfg.distant_pool_size)
+        self.ig_negctx_objective = cast(str, cfg.ig_negctx_objective)
+        self.restoration_negctx_mode = cast(str, cfg.restoration_negctx_mode)
+        self.ig_negctx_deep_site_threshold = cast(int, cfg.ig_negctx_deep_site_threshold)
+        self.ig_negctx_deep_neg_batch = cast(int, cfg.ig_negctx_deep_neg_batch)
         self.top_k_activators = (
             top_k_activators if top_k_activators is not None
             else cast(int, cfg.top_k_activators)
@@ -190,10 +173,6 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         self.top_k_inhibitors = (
             top_k_inhibitors if top_k_inhibitors is not None
             else cast(int, cfg.top_k_inhibitors)
-        )
-        self.top_k_scope = (
-            top_k_scope if top_k_scope is not None
-            else cast(str, cfg.top_k_scope)
         )
         self.activator_threshold = (
             activator_threshold if activator_threshold is not None
@@ -203,150 +182,106 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             inhibitor_threshold if inhibitor_threshold is not None
             else cast(float, cfg.inhibitor_threshold)
         )
-        self.min_active_count = (
-            min_active_count if min_active_count is not None
-            else cast(int, cfg.min_active_count)
-        )
-        self.max_neg_sequences = (
-            max_neg_sequences if max_neg_sequences is not None
-            else cast(int, cfg.max_neg_sequences)
-        )
         self.neg_batch_size = cast(int, cfg.neg_batch_size)
-        self.pruning_threshold = (
-            pruning_threshold if pruning_threshold is not None
-            else cast(float, cfg.pruning_threshold)
-        )
         self.min_faithfulness = (
             min_faithfulness if min_faithfulness is not None
             else cast(float, cfg.min_faithfulness)
         )
-        # Sequence COUNT vs batch SIZE (see DiscoveryConfig): counts set how
-        # many pos sequences inform discovery / evals; batch sizes bound one
-        # forward pass, with chunked merging above them.
-        self.probe_batch_size = cast(int, config.discovery.probe_batch_size)
-        self.probe_sequence_count = cast(int, config.discovery.probe_sequence_count)
-        self.eval_sequence_count = cast(int, config.discovery.eval_sequence_count)
-        self.eval_batch_size = cast(int, config.discovery.eval_batch_size)
-        self._last_neg_selection_metadata: dict[str, Any] = {}
 
-    def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
-        logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
-        try:
-            return self._discover(seed_comp_idx, seed_latent_idx, logger)
-        finally:
-            logger.save()
+    # ------------------------------------------------------------------
+    # Pipeline hooks (the template itself lives in GradientDiscoveryBase)
+    # ------------------------------------------------------------------
 
-    def _discover(
-        self,
-        seed_comp_idx: int,
-        seed_latent_idx: int,
-        logger: CircuitLogger,
-    ) -> Optional[Circuit]:
-        n_kinds = len(self.sae_bank.kinds)
-        kinds = self.sae_bank.kinds
-        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
-        seed_kind = kinds[seed_kind_idx]
-        seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
-
-        circuit = Circuit(name=f"CounterfactualGrad_S{seed_comp_idx}_{seed_latent_idx}")
-
-        # 1. Build probe dataset
-        probe_data = self.build_probe_dataset(seed_comp_idx, seed_latent_idx)
-        if probe_data.pos_tokens.shape[0] == 0:
-            logger.reject("empty probe dataset (no positive contexts)")
-            return None
-
-        logger.header(
-            seed_layer, seed_kind, seed_latent_idx,
-            probe_data.pos_tokens.shape[0],
-            probe_data.neg_tokens.shape[0],
-        )
-
-        # 2. Posctx slices. Discovery attribution and evaluation each get their
-        # own sequence COUNT (batch sizes handle VRAM separately, via chunked
-        # merging inside the hops and evals).
-        pos_tokens_probe = probe_data.pos_tokens[:self.probe_sequence_count]
-        pos_argmax_probe = probe_data.pos_argmax[:self.probe_sequence_count]
-        pos_tokens_eval = probe_data.pos_tokens[:self.eval_sequence_count]
-        pos_argmax_eval = probe_data.pos_argmax[:self.eval_sequence_count]
-
-        # 3. Source the contrast sequences according to neg_mode
+    def _prepare(self, ctx: DiscoveryContext, logger: CircuitLogger) -> bool:
+        """Source the contrast sequences (per neg_mode) and the seed's posctx
+        target activation, which scales the admission thresholds."""
         neg_tokens = self._get_neg_tokens(
-            probe_data,
-            seed_comp_idx, seed_latent_idx,
+            ctx.probe_data,
+            ctx.seed_comp_idx, ctx.seed_latent_idx,
             logger,
         )
         if neg_tokens is None:
-            return None
+            return False
+        ctx.neg_tokens = neg_tokens
 
-        # 4. Seed node
-        seed_node = CircuitNode(metadata={"feature_id": seed_fid, "role": "seed"})
-        circuit.add_node(seed_node)
-        fid_to_uuid: Dict[FeatureID, str] = {seed_fid: seed_node.uuid}
-
-        # 5. Get the seed's mean activation on posctx — used as the MSE target
         target_act_pos = self._get_posctx_activation(
-            seed_comp_idx, seed_latent_idx, pos_tokens_probe, pos_argmax_probe
+            ctx.seed_comp_idx, ctx.seed_latent_idx,
+            ctx.pos_tokens_probe, ctx.pos_argmax_probe,
         )
         # Scale thresholds by target_act_pos so focal seeds (lower a_posctx) are not
         # disproportionately penalised. Gradient scores ≈ 2·a_posctx·(alignment), so
         # an absolute threshold is ~4× stricter for a seed with a_posctx=1 vs a_posctx=4.
         act_scale = max(target_act_pos, 0.1)
-        effective_activator_threshold = self.activator_threshold * act_scale
-        effective_inhibitor_threshold = self.inhibitor_threshold * act_scale
+        ctx.target_act_pos = target_act_pos
+        ctx.effective_activator_threshold = self.activator_threshold * act_scale
+        ctx.effective_inhibitor_threshold = self.inhibitor_threshold * act_scale
         logger.note(
             f"target_act_pos: {target_act_pos:.4f} | "
-            f"effective thresholds — activator: {effective_activator_threshold:.4f}, "
-            f"inhibitor: {effective_inhibitor_threshold:.4f}"
+            f"effective thresholds — activator: {ctx.effective_activator_threshold:.4f}, "
+            f"inhibitor: {ctx.effective_inhibitor_threshold:.4f}"
         )
+        return True
 
-        # 6. Attribution pass. "local" runs the contrast-sequence gradient
-        # hop at the live negctx input; "ig_baseline" attributes along the
-        # mean-ablation-floor -> natural-posctx path instead (SFC-style),
-        # in which case negctx is used only by the evaluation step.
+    def _run_attribution_hop(self, ctx: DiscoveryContext, logger: CircuitLogger) -> HopResult:
+        # "local" runs the contrast-sequence gradient hop at the live negctx
+        # input; "ig_mean" attributes along the mean-ablation-floor ->
+        # natural-posctx path instead (SFC-style), in which case negctx is used
+        # only by the evaluation step.
         # `position_aware` is a MODIFIER on whichever attribution runs below (it
         # swaps that method's position-collapse for a union over the seed's causal
         # prefix) — not a method of its own. (The baseline-free posctx
         # grad x natural attribution is its own method, ActivationGradientDiscovery,
         # not a counterfactual mode: it runs on posctx and cannot find absent
         # activators, so it never answered cf's question.)
-        if self.attribution_mode == "ig_baseline":
-            activator_scores, inhibitor_scores = self._run_ig_baseline_hop(
-                seed_comp_idx, seed_latent_idx, pos_tokens_probe, pos_argmax_probe,
-                target_act_pos, logger,
+        if self.attribution_mode == "ig_mean":
+            activator_scores, inhibitor_scores = self._run_ig_mean_hop(
+                ctx.seed_comp_idx, ctx.seed_latent_idx,
+                ctx.pos_tokens_probe, ctx.pos_argmax_probe,
+                ctx.target_act_pos, logger,
             )
-            pass_label = "ig_baseline grad pass"
-        elif self.attribution_mode == "contrastive_ig":
-            activator_scores, inhibitor_scores = self._run_contrastive_ig_hop(
-                seed_comp_idx, seed_latent_idx, neg_tokens,
-                pos_tokens_probe, pos_argmax_probe, target_act_pos, logger,
+            pass_label = "ig_mean grad pass"
+        elif self.attribution_mode == "ig_negctx":
+            activator_scores, inhibitor_scores = self._run_ig_negctx_hop(
+                ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.neg_tokens,
+                ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
             )
-            pass_label = f"contrastive_ig/{self.contrastive_ig_objective} grad pass"
+            pass_label = f"ig_negctx/{self.ig_negctx_objective} grad pass"
+        elif self.attribution_mode == "restoration_negctx":
+            activator_scores, inhibitor_scores = self._run_restoration_negctx_hop(
+                ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.neg_tokens,
+                ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
+            )
+            pass_label = f"restoration_negctx/{self.ig_negctx_objective} selection"
         elif self.attribution_mode in ("restoration", "ig_restoration"):
             # Full probe_sequence_count: the round scorer chunks internally
             # at probe_batch_size (see _round_scores).
             activator_scores, inhibitor_scores = self._run_restoration_hop(
-                seed_comp_idx, seed_latent_idx,
-                pos_tokens_probe, pos_argmax_probe,
-                target_act_pos, logger,
+                ctx.seed_comp_idx, ctx.seed_latent_idx,
+                ctx.pos_tokens_probe, ctx.pos_argmax_probe,
+                ctx.target_act_pos, logger,
             )
             pass_label = f"{self.attribution_mode} selection"
         else:
             activator_scores, inhibitor_scores = self._run_contrast_hop(
-                seed_comp_idx, seed_latent_idx, neg_tokens, target_act_pos, logger,
-                pos_tokens=pos_tokens_probe, pos_argmax=pos_argmax_probe,
+                ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.neg_tokens,
+                ctx.target_act_pos, logger,
+                pos_tokens=ctx.pos_tokens_probe, pos_argmax=ctx.pos_argmax_probe,
             )
             pass_label = f"{self.neg_mode} grad pass"
             if self.activator_signal == "gradient_x_posctx":
                 pass_label += " (grad x posctx)"
         if self.position_aware:
             pass_label += " (position-aware union)"
-        if self.negative_roles == "exclude":
-            # Activator-only circuits: the ablation study of the inhibitors'
-            # contribution. ig/restoration hops already avoid spending
-            # selection budget on negatives in this mode; this guard covers
-            # local mode (whose attribution returns both roles regardless).
-            inhibitor_scores = {}
+        # Role semantics, applied ONCE for every cf mode: PA keeps both signs
+        # (stream-reconstruction membership — exclude only unlabels the
+        # inhibitors), NPA-exclude genuinely drops them (the activator-only
+        # ablation study; the cf-local φcf collapse finding lives here).
+        from circuit.instrument.position_aware import resolve_role_delivery
+        activator_scores, inhibitor_scores = resolve_role_delivery(
+            activator_scores, inhibitor_scores,
+            position_aware=self.position_aware,
+            include_negatives=self.negative_roles == "include",
+        )
         logger.stage(
             pass_label,
             1, 0,
@@ -355,155 +290,120 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
                 f"{len(inhibitor_scores)} present inhibitors before thresholding"
             ),
         )
+        return HopResult(positives=activator_scores, negatives=inhibitor_scores)
 
-        # 7. Add absent activators
-        n_activators = 0
-        for upstream_fid, score in activator_scores.items():
-            if score < effective_activator_threshold:
-                continue
-            upstream_comp, upstream_latent = upstream_fid.to_component_id(n_kinds, kinds)
-            if latent_stats.active_count[upstream_comp, upstream_latent] < self.min_active_count:
-                continue
-            if upstream_fid not in fid_to_uuid:
-                node = CircuitNode(metadata={
-                    "feature_id": upstream_fid,
-                    "role": "counterfactual_activator",
-                    "attribution_score": score,
-                })
-                circuit.add_node(node)
-                fid_to_uuid[upstream_fid] = node.uuid
-            circuit.add_edge(fid_to_uuid[upstream_fid], seed_node.uuid, weight=score)
-            n_activators += 1
-
-        # 8. Add present inhibitors
-        n_inhibitors = 0
-        for upstream_fid, score in inhibitor_scores.items():
-            if abs(score) < effective_inhibitor_threshold:
-                continue
-            upstream_comp, upstream_latent = upstream_fid.to_component_id(n_kinds, kinds)
-            if latent_stats.active_count[upstream_comp, upstream_latent] < self.min_active_count:
-                continue
-            if upstream_fid not in fid_to_uuid:
-                node = CircuitNode(metadata={
-                    "feature_id": upstream_fid,
-                    "role": "counterfactual_inhibitor",
-                    "attribution_score": score,
-                })
-                circuit.add_node(node)
-                fid_to_uuid[upstream_fid] = node.uuid
-            circuit.add_edge(fid_to_uuid[upstream_fid], seed_node.uuid, weight=score)
-            n_inhibitors += 1
-
-        logger.stage(
-            "circuit assembly",
-            len(circuit.nodes), len(circuit.edges),
-            note=f"{n_activators} activators, {n_inhibitors} inhibitors after thresholding",
+    def _pre_assembly(self, ctx: DiscoveryContext, hop: HopResult) -> None:
+        """Churn-fix #1: ONE vectorized active_count gather for every hop
+        candidate, replacing a per-member ``active_count[comp, latent] <
+        min_active_count`` tensor comparison inside the admission loop (~one
+        host-device sync per member — the dominant assembly cost on
+        position-aware circuits). Semantics identical: a candidate passes iff
+        NOT (active_count < min_active_count)."""
+        fids = list(hop.positives)
+        fids.extend(f for f in hop.negatives if f not in hop.positives)
+        if not fids:
+            self._active_ok = frozenset()
+            return
+        comps = []
+        latents = []
+        for fid in fids:
+            comp, latent = fid.to_component_id(ctx.n_kinds, ctx.kinds)
+            comps.append(comp)
+            latents.append(latent)
+        # Module-global latent_stats so tests can patch
+        # counterfactual_gradient.latent_stats.
+        active_count = latent_stats.active_count
+        idx_comp = torch.as_tensor(comps, dtype=torch.long, device=active_count.device)
+        idx_lat = torch.as_tensor(latents, dtype=torch.long, device=active_count.device)
+        passes = ~(active_count[idx_comp, idx_lat] < self.min_active_count)
+        self._active_ok = frozenset(
+            fid for fid, ok in zip(fids, passes.cpu().tolist()) if ok
         )
 
-        if len(circuit.nodes) <= 1:
-            logger.reject("no activators or inhibitors passed threshold")
-            return None
+    def _admit_positive(self, ctx: DiscoveryContext, fid: FeatureID, score: float) -> bool:
+        if score < ctx.effective_activator_threshold:
+            return False
+        return fid in self._active_ok
 
-        if (
-            self.attribution_mode in ("restoration", "ig_restoration")
-            and self._last_restoration is not None
-        ):
-            from circuit.instrument.restoration import stamp_restoration_provenance
+    def _admit_negative(self, ctx: DiscoveryContext, fid: FeatureID, score: float) -> bool:
+        if abs(score) < ctx.effective_inhibitor_threshold:
+            return False
+        return fid in self._active_ok
 
-            stamp_restoration_provenance(circuit, self._last_restoration)
+    def _assembly_note(self, n_pos: int, n_neg: int) -> str:
+        return f"{n_pos} activators, {n_neg} inhibitors after thresholding"
 
-        # 9. Evaluation — runs on posctx, layer-bounded to seed_layer
-        circuit_layers: Set[int] = {
-            node.feature_id.layer
-            for node in circuit.nodes.values()
-            if node.feature_id is not None
-        }
+    def _eval_neg_tokens(
+        self, ctx: DiscoveryContext, logger: CircuitLogger
+    ) -> Optional[torch.Tensor]:
+        # Evaluation reuses the SAME contrast sequences discovery attributed on.
+        return ctx.neg_tokens
+
+    def _log_assembly_complete(self, circuit: Circuit, circuit_layers: Set[int]) -> None:
         print(
             f"[CounterfactualGrad] Discovery complete: {len(circuit.nodes)} nodes, "
             f"{len(circuit.edges)} edges | circuit_layers={sorted(circuit_layers)}"
         )
 
-        # Minimality pruning (optional) — uses cf_faith as the leave-one-out signal
-        if self.pruning_threshold > 0:
-            n_before = len(circuit.nodes)
-            prune_non_minimal_nodes_cf(
-                self.inference, self.sae_bank, self.avg_acts, circuit,
-                neg_tokens=neg_tokens,
-                pos_tokens=pos_tokens_eval,
-                seed_layer=seed_layer,
-                seed_kind=seed_kind,
-                seed_latent_idx=seed_latent_idx,
-                pos_argmax=pos_argmax_eval,
-                threshold=self.pruning_threshold,
-                circuit_layers=circuit_layers,
-            )
-            circuit_layers = {
-                node.feature_id.layer
-                for node in circuit.nodes.values()
-                if node.feature_id is not None
-            }
-            logger.stage(
-                "after pruning", len(circuit.nodes), len(circuit.edges),
-                note=f"removed {n_before - len(circuit.nodes)} nodes",
-            )
-
-        # Global magnitude prune (optional) — scalable free-φ bisection, for the
-        # large position-aware allowed sets that LOO minimality cannot touch.
-        if self.magnitude_prune:
-            prune_by_magnitude_bisection(
-                self.inference, self.sae_bank, circuit,
-                pos_tokens=pos_tokens_eval,
-                seed_layer=seed_layer, seed_kind=seed_kind, seed_latent_idx=seed_latent_idx,
-                pos_argmax=pos_argmax_eval,
-                tolerance=self.magnitude_prune_tolerance,
-                target=self.magnitude_prune_target,
-                min_keep=self.magnitude_prune_min_keep,
-                objective=self.magnitude_prune_objective,
-                logger=logger,
-            )
-            circuit_layers = {
-                node.feature_id.layer
-                for node in circuit.nodes.values()
-                if node.feature_id is not None
-            }
-
-        cf_faith, sup_score = evaluate_counterfactual_faithfulness(
+    def _call_loo_prune(
+        self,
+        ctx: DiscoveryContext,
+        circuit: Circuit,
+        neg_tokens_eval: torch.Tensor,
+        circuit_layers: Set[int],
+    ) -> None:
+        # Minimality pruning — uses cf_faith as the leave-one-out signal.
+        # Referenced from THIS module so tests can patch
+        # counterfactual_gradient.prune_non_minimal_nodes_cf.
+        prune_non_minimal_nodes_cf(
             self.inference, self.sae_bank, self.avg_acts, circuit,
-            neg_tokens=neg_tokens,
-            pos_tokens=pos_tokens_eval,
-            seed_layer=seed_layer,
-            seed_kind=seed_kind,
-            seed_latent_idx=seed_latent_idx,
-            pos_argmax=pos_argmax_eval,
+            neg_tokens=neg_tokens_eval,
+            pos_tokens=ctx.pos_tokens_eval,
+            seed_layer=ctx.seed_layer,
+            seed_kind=ctx.seed_kind,
+            seed_latent_idx=ctx.seed_latent_idx,
+            pos_argmax=ctx.pos_argmax_eval,
+            threshold=self.pruning_threshold,
             circuit_layers=circuit_layers,
         )
-        logger.note(
-            f"counterfactual_faithfulness: {cf_faith:.4f} | "
-            f"posctx_suppression_score: {sup_score:.4f}"
+
+    def _run_faithfulness_eval(
+        self,
+        ctx: DiscoveryContext,
+        circuit: Circuit,
+        neg_tokens_eval: torch.Tensor,
+        circuit_layers: Set[int],
+    ) -> Tuple[float, float]:
+        # Referenced from THIS module so tests can patch
+        # counterfactual_gradient.evaluate_counterfactual_faithfulness.
+        return evaluate_counterfactual_faithfulness(
+            self.inference, self.sae_bank, self.avg_acts, circuit,
+            neg_tokens=neg_tokens_eval,
+            pos_tokens=ctx.pos_tokens_eval,
+            seed_layer=ctx.seed_layer,
+            seed_kind=ctx.seed_kind,
+            seed_latent_idx=ctx.seed_latent_idx,
+            pos_argmax=ctx.pos_argmax_eval,
+            circuit_layers=circuit_layers,
         )
 
+    def _accept(self, cf_faith: float, sup_score: float) -> Optional[str]:
         if cf_faith < self.min_faithfulness:
-            logger.reject(
-                f"counterfactual_faithfulness {cf_faith:.4f} < min_faithfulness {self.min_faithfulness}"
+            return (
+                f"counterfactual_faithfulness {cf_faith:.4f} < "
+                f"min_faithfulness {self.min_faithfulness}"
             )
-            return None
+        return None
 
-        circuit.metadata.update({
-            "counterfactual_faithfulness": cf_faith,
-            "posctx_suppression_score": sup_score,
-            "seed_comp": seed_comp_idx,
-            "seed_latent": seed_latent_idx,
-            "n_nodes": len(circuit.nodes),
-            "n_edges": len(circuit.edges),
-            "n_activators": n_activators,
-            "n_inhibitors": n_inhibitors,
-            "discovery_method": self.method_name,
-            "neg_mode": self.neg_mode,
-            "neg_selection": dict(self._last_neg_selection_metadata),
-        })
-        logger.nodes(list(circuit.nodes.values()))
-        logger.accept(len(circuit.nodes), len(circuit.edges))
-        return circuit
+    def _extra_metadata(
+        self,
+        ctx: DiscoveryContext,
+        hop: HopResult,
+        n_pos: int,
+        n_neg: int,
+        sup_score: float,
+    ) -> Dict[str, Any]:
+        return {"n_activators": n_pos, "n_inhibitors": n_neg}
 
     def _get_neg_tokens(
         self,
@@ -562,23 +462,6 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             logger=logger,
         )
 
-    def _neg_context_selector(self) -> NegContextSelector:
-        from store.context import mid_ctx, neg_ctx, top_ctx
-        from store.seq_repr import seq_repr
-
-        if seq_repr is None:
-            raise RuntimeError("seq_repr must be loaded before negative-context selection")
-
-        return NegContextSelector(
-            self.inference,
-            self.sae_bank,
-            self.probe_builder.loader,
-            neg_ctx,
-            seq_repr,
-            top_ctx,
-            mid_ctx,
-        )
-
     def _get_posctx_activation(
         self,
         seed_comp_idx: int,
@@ -632,40 +515,17 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         target_act_pos: float,
         logger: CircuitLogger,
     ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
-        """Iterative greedy restoration from the mean-ablation floor
-        (single-point gradient per round at the current restored state;
-        connected restoration). See RestorationConfig."""
-
-        from circuit.instrument.restoration import run_restoration_selection
+        """The shared restoration engine under cf's profile: the gap target is
+        the posctx target activation already measured by _prepare; signed roles
+        returned directly. See RestorationConfig."""
 
         n_kinds = len(self.sae_bank.kinds)
         seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
         seed_kind = self.sae_bank.kinds[seed_kind_idx]
 
-        positives, negatives, result = run_restoration_selection(
-            self.inference,
-            self.sae_bank,
-            tokens=pos_tokens,
-            pos_argmax=pos_argmax,
-            seed_layer=seed_layer,
-            seed_kind=seed_kind,
-            seed_latent_idx=seed_latent_idx,
-            target_act=target_act_pos,
-            rounds=self.restoration_rounds,
-            per_round_k=self.restoration_per_round_k,
-            certificate_tol=self.restoration_certificate_tol,
-            allow_negative=self.negative_roles == "include",
-            loader=self.probe_builder.loader,
-            scorer="ig" if self.attribution_mode == "ig_restoration" else "point",
-            ig_steps=self.restoration_ig_steps,
-            final_ig_polish=self.restoration_final_ig_polish,
-            polish_ig_steps=self.ig_steps,
-            round_select=self.restoration_round_select,
-            round_abs_pctl=self.restoration_round_abs_pctl,
-            position_aware=self.position_aware,
-            batch_size=self.probe_batch_size,
+        positives, negatives, result = self._restoration_selection(
+            seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, target_act_pos
         )
-        self._last_restoration = result
         if result is None:
             logger.note("restoration: seed has no upstream sites")
         else:
@@ -676,25 +536,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             )
         return positives, negatives
 
-    def _position_aware_spec(self, peaks: torch.Tensor):
-        """PositionAwareSpec for this run, or None when position-awareness is off
-        (in which case every attribution keeps its classic .sum(dim=(0,1))
-        position-collapse). ``peaks`` is the seed's per-sequence anchor position
-        for whichever input this attribution runs on."""
-        if not self.position_aware:
-            return None
-        from circuit.instrument.position_aware import PositionAwareSpec
-
-        return PositionAwareSpec(
-            peaks=peaks,
-            top_n=self.position_aware_top_n,
-            select=self.position_aware_select,
-            threshold=self.position_aware_threshold,
-            position_weight=self.position_aware_position_weight,
-            scope=self.position_aware_scope,
-        )
-
-    def _run_ig_baseline_hop(
+    def _run_ig_mean_hop(
         self,
         seed_comp_idx: int,
         seed_latent_idx: int,
@@ -703,88 +545,43 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         target_act_pos: float,
         logger: CircuitLogger,
     ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
-        """SFC-style integrated-gradients attribution (Marks et al. 2025)
-        along the mean-ablation-floor -> natural-posctx path, so candidate
-        scores linearise the circuit-only counterfactual. Positive IG
-        contributions are activator candidates, negative are inhibitors."""
-
-        from eval.ablation_faithfulness import collect_site_means, upstream_sites
+        """The shared IG-from-floor engine under cf's profile: "gap" objective
+        against the posctx target (candidate scores linearise the circuit-only
+        counterfactual), activator/inhibitor budgets, signed roles returned
+        directly."""
 
         n_kinds = len(self.sae_bank.kinds)
-        kinds = self.sae_bank.kinds
         seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
-        seed_kind = kinds[seed_kind_idx]
+        seed_kind = self.sae_bank.kinds[seed_kind_idx]
 
-        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
-        if not sites:
-            logger.note("ig_baseline: seed has no upstream sites")
-            return {}, {}
-        from eval.ablation_faithfulness import resolve_site_floors
-
-        site_floors = collect_site_means(self.inference, self.sae_bank, pos_tokens, sites)
-        site_floors = resolve_site_floors(
-            self.inference, self.sae_bank, sites,
-            posctx_means=site_floors, loader=self.probe_builder.loader,
-        )
-
-        sae = self.sae_bank.saes[seed_kind][seed_layer]
-        w_seed = sae.encoder.weight[seed_latent_idx].detach()
-        b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
-
-        scores_by_site, metric_floor, metric_natural = integrated_baseline_scores(
-            self.inference,
-            self.sae_bank,
-            tokens=pos_tokens,
-            substitute_sites=sites,
-            site_floors=site_floors,
-            seed_layer=seed_layer,
-            seed_kind=seed_kind,
-            w_seed=w_seed,
-            b_seed=b_seed,
-            pos_argmax=pos_argmax,
-            # Position-aware: union the upstream position axis over the seed's
-            # causal prefix instead of summing it away. Scores come back sparse.
-            position_aware=self._position_aware_spec(pos_argmax),
+        result = self._integrated_baseline_attribution(
+            seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax,
             objective="gap",
             target_act=target_act_pos,
-            ig_steps=self.ig_steps,
-            batch_size=self.probe_batch_size,
+            top_k_positive=self.top_k_activators,
+            top_k_negative=self.top_k_inhibitors,
+            metric_label="metric",
+            logger=logger,
         )
-        logger.note(
-            f"ig_baseline: metric floor {metric_floor:.4f} -> natural {metric_natural:.4f} "
-            f"over {len(sites)} sites, {self.ig_steps} steps"
-            + (" (position-aware union)" if self.position_aware else "")
-        )
-        # Position-aware scores are already the union — the per-position selection
-        # replaced the ranking, so don't re-truncate with top-k here.
-        no_trunc = int(self.sae_bank.d_sae)
-        top_pos = no_trunc if self.position_aware else self.top_k_activators
-        top_neg = no_trunc if self.position_aware else self.top_k_inhibitors
-        return extract_signed_roles(
-            scores_by_site,
-            kinds=list(kinds),
-            n_kinds=n_kinds,
-            top_k_positive=top_pos,
-            top_k_negative=top_neg if self.negative_roles == "include" else 0,
-            min_active_count=self.min_active_count,
-            active_count=latent_stats.active_count,
-            top_k_scope=self.top_k_scope,
-        )
+        if result is None:
+            return {}, {}
+        positives, negatives, _metric_floor, _metric_natural = result
+        return positives, negatives
 
-    def _contrastive_batch(self, n_sites: int) -> int:
+    def _ig_negctx_batch(self, n_sites: int) -> int:
         """Effective neg microbatch for the contrastive path integral.
 
-        contrastive_ig's per-site residency (leaf + grad + fp32 delta + fp32
+        ig_negctx's per-site residency (leaf + grad + fp32 delta + fp32
         per-position accumulator) is batch-proportional and held for ALL
         upstream sites at once, so deep seeds cross the card: measured peak
         ~= 7G + sites x 252MB at B=8 (fits at L7's 23 sites, pages at L10's
         29). Above the threshold the microbatch drops to
-        contrastive_deep_neg_batch — halving every per-site tensor at the
+        ig_negctx_deep_neg_batch — halving every per-site tensor at the
         cost of more chunks — while shallow seeds keep the configured
         neg_batch_size and pay no extra chunk overhead."""
-        if n_sites <= self.contrastive_deep_site_threshold:
+        if n_sites <= self.ig_negctx_deep_site_threshold:
             return self.neg_batch_size
-        return max(1, min(self.neg_batch_size, self.contrastive_deep_neg_batch))
+        return max(1, min(self.neg_batch_size, self.ig_negctx_deep_neg_batch))
 
     def _negctx_anchor(
         self,
@@ -819,7 +616,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             raise RuntimeError("seed pre-activation was not captured on negctx")
         return instrument.seed_pre_act.argmax(dim=-1)
 
-    def _run_contrastive_ig_hop(
+    def _run_ig_negctx_hop(
         self,
         seed_comp_idx: int,
         seed_latent_idx: int,
@@ -842,7 +639,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         that intervention (logged as the certificate by
         integrated_baseline_scores). The contrast lives in the path's
         endpoints rather than an MSE loss; the metric along the path is
-        selected by ``contrastive_ig_objective`` ("drive" | "gap"). See
+        selected by ``ig_negctx_objective`` ("drive" | "gap"). See
         dev-notes/contrastive-ig-for-position-aware-cf.md.
 
         cf-only by construction: ablation gradient has no contrast input to
@@ -859,13 +656,13 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
 
         sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
         if not sites:
-            logger.note("contrastive_ig: seed has no upstream sites")
+            logger.note("ig_negctx: seed has no upstream sites")
             return {}, {}
-        neg_batch = self._contrastive_batch(len(sites))
+        neg_batch = self._ig_negctx_batch(len(sites))
         if neg_batch != self.neg_batch_size:
             logger.note(
-                f"contrastive_ig: {len(sites)} sites > "
-                f"{self.contrastive_deep_site_threshold} — neg microbatch "
+                f"ig_negctx: {len(sites)} sites > "
+                f"{self.ig_negctx_deep_site_threshold} — neg microbatch "
                 f"{self.neg_batch_size} -> {neg_batch} (per-site residency "
                 f"~252MB x sites at B=8 crosses a 16GB card near 29 sites)"
             )
@@ -891,19 +688,21 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             b_seed=b_seed,
             pos_argmax=neg_anchor,
             position_aware=self._position_aware_spec(neg_anchor),
-            objective=self.contrastive_ig_objective,
+            objective=self.ig_negctx_objective,
             target_act=target_act_pos,
             ig_steps=self.ig_steps,
             path="from_natural",
             batch_size=neg_batch,
         )
         logger.note(
-            f"contrastive_ig/{self.contrastive_ig_objective}: metric negctx "
+            f"ig_negctx/{self.ig_negctx_objective}: metric negctx "
             f"{metric_neg:.4f} -> injected {metric_injected:.4f} over {len(sites)} sites, "
             f"{self.ig_steps} steps"
             + (" (position-aware union)" if self.position_aware else "")
         )
         # Position-aware scores are already the union (same as the ig hop).
+        # Extract BOTH signs; _run_attribution_hop applies the role semantics
+        # (resolve_role_delivery) centrally for every cf mode.
         no_trunc = int(self.sae_bank.d_sae)
         top_pos = no_trunc if self.position_aware else self.top_k_activators
         top_neg = no_trunc if self.position_aware else self.top_k_inhibitors
@@ -912,11 +711,89 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
             kinds=list(kinds),
             n_kinds=n_kinds,
             top_k_positive=top_pos,
-            top_k_negative=top_neg if self.negative_roles == "include" else 0,
+            top_k_negative=top_neg,
             min_active_count=self.min_active_count,
             active_count=latent_stats.active_count,
             top_k_scope=self.top_k_scope,
         )
+
+    def _run_restoration_negctx_hop(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        neg_tokens: torch.Tensor,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        target_act_pos: float,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
+        """The restoration loop on ig_negctx's trajectory: greedy iterated
+        selection on negctx tokens, restored latents pinned to their posctx
+        targets (the cf eval's injection), each round re-linearising
+        grad x (target - live value) at the current injected state. The
+        certificate closing means the selected set makes the seed fire on
+        negctx under injection. Shares ig_negctx's anchors (posctx targets,
+        negctx would-be-firing positions) and its deep-site neg microbatch;
+        the loop knobs come from RestorationConfig, the backward objective
+        from ig_negctx_objective. See run_negctx_restoration_selection.
+        """
+
+        from circuit.instrument.restoration import run_negctx_restoration_selection
+        from eval.ablation_faithfulness import upstream_sites
+
+        n_kinds = len(self.sae_bank.kinds)
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = self.sae_bank.kinds[seed_kind_idx]
+
+        sites = upstream_sites(self.sae_bank, seed_layer, seed_kind)
+        if not sites:
+            logger.note("restoration_negctx: seed has no upstream sites")
+            return {}, {}
+        neg_batch = self._ig_negctx_batch(len(sites))
+        if neg_batch != self.neg_batch_size:
+            logger.note(
+                f"restoration_negctx: {len(sites)} sites > "
+                f"{self.ig_negctx_deep_site_threshold} — neg microbatch "
+                f"{self.neg_batch_size} -> {neg_batch} (per-site residency "
+                f"matches ig_negctx's)"
+            )
+
+        targets = self._posctx_targets(seed_layer, seed_kind, pos_tokens, pos_argmax)
+        neg_anchor = self._negctx_anchor(seed_layer, seed_kind, seed_latent_idx, neg_tokens)
+
+        positives, negatives, result = run_negctx_restoration_selection(
+            self.inference,
+            self.sae_bank,
+            neg_tokens=neg_tokens,
+            neg_anchor=neg_anchor,
+            inject_targets=targets,
+            sites=sites,
+            seed_layer=seed_layer,
+            seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            target_act=target_act_pos,
+            rounds=self.restoration_rounds,
+            per_round_k=self.restoration_per_round_k,
+            certificate_tol=self.restoration_certificate_tol,
+            # Same gate as _restoration_selection: PA keeps both signs in the
+            # loop (role split applied after, via resolve_role_delivery).
+            allow_negative=self.negative_roles == "include" or self.position_aware,
+            objective=self.ig_negctx_objective,
+            inject_mode=self.restoration_negctx_mode,
+            round_select=self.restoration_round_select,
+            round_abs_pctl=self.restoration_round_abs_pctl,
+            position_aware=self.position_aware,
+            batch_size=neg_batch,
+        )
+        self._last_restoration = result
+        if result is not None:
+            logger.note(
+                f"restoration_negctx/{self.ig_negctx_objective}: "
+                f"rounds_used={result.rounds_used} "
+                f"stopped_early={result.stopped_early} "
+                f"metric {result.metric_trajectory[0]:.4f} -> {result.metric_trajectory[-1]:.4f}"
+            )
+        return positives, negatives
 
     def _collect_posctx_values(
         self,
@@ -961,7 +838,7 @@ class CounterfactualGradientDiscovery(DiscoveryMethod):
         value at the probe positions, i.e. exactly what
         `evaluate_counterfactual_faithfulness` injects per activator in Pass 3.
         Shared by the gradient_x_posctx activator signal (as the ranking's
-        scale) and by contrastive_ig (as the path's alpha=1 endpoint)."""
+        scale) and by ig_negctx (as the path's alpha=1 endpoint)."""
         from eval.ablation_faithfulness import upstream_sites
         from eval.floors import collect_site_anchors
 

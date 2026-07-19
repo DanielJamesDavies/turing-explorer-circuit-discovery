@@ -117,7 +117,122 @@ class NegContextSelector:
                 ranking_metadata={**ranking_metadata, "exact": bool(exact)},
                 logger=logger,
             )
+        if mode == "fused":
+            return self._select_fused(
+                comp_idx,
+                latent_idx,
+                max_sequences,
+                batch_size,
+                candidate_pool_size=candidate_pool_size,
+                exact=exact,
+                non_activation_threshold=float(non_activation_threshold),
+                selection_seed=selection_seed,
+                filter_batch_size=filter_batch_size,
+                load_window_size=load_window_size,
+                logger=logger,
+            )
         raise ValueError(f"Unknown neg_mode: {mode!r}")
+
+    def _select_fused(
+        self,
+        comp_idx: int,
+        latent_idx: int,
+        max_sequences: int,
+        batch_size: int,
+        *,
+        candidate_pool_size: Optional[int],
+        exact: bool,
+        non_activation_threshold: float,
+        selection_seed: int,
+        filter_batch_size: Optional[int],
+        load_window_size: Optional[int],
+        logger: Any | None,
+    ) -> NegContextSelection | None:
+        """One contrast set drawing quotas from all three sub-modes.
+
+        Quotas: close gets n//3 + remainder (the sharpest boundary signal),
+        distant and random n//3 each. Sub-selections run through the normal
+        per-mode paths (same ranking, same non-activation filter), then merge
+        in close -> distant -> random order with sequence-id dedup (first
+        occurrence wins, so a sequence that is both a hard negative and a
+        random draw counts against the close quota). Dedup losses and
+        sub-mode shortfalls are NOT topped up — the fused set may come in
+        under max_sequences; per-mode counts land in metadata. The distant
+        quota uses the generic candidate pool rather than distant_pool_size
+        (callers resolve that knob for pure-"distant" only); the pool is
+        clamped >= quota by _candidate_pool_limit either way.
+        """
+
+        quota = max_sequences // 3
+        quotas = {
+            "close": quota + (max_sequences - 3 * quota),
+            "distant": quota,
+            "random": quota,
+        }
+        merged_ids: list[int] = []
+        merged_tokens: list[torch.Tensor] = []
+        seen: set[int] = set()
+        per_mode_counts: dict[str, int] = {}
+        sub_metadata: dict[str, Any] = {}
+        for sub_mode in ("close", "distant", "random"):
+            sub_quota = quotas[sub_mode]
+            if sub_quota <= 0:
+                per_mode_counts[sub_mode] = 0
+                continue
+            selection = self.select(
+                comp_idx,
+                latent_idx,
+                sub_mode,
+                sub_quota,
+                batch_size,
+                candidate_pool_size=candidate_pool_size,
+                exact=exact,
+                non_activation_threshold=non_activation_threshold,
+                selection_seed=selection_seed,
+                filter_batch_size=filter_batch_size,
+                load_window_size=load_window_size,
+                logger=logger,
+            )
+            if selection is None:
+                per_mode_counts[sub_mode] = 0
+                sub_metadata[sub_mode] = {"selected_count": 0, "rejected": True}
+                continue
+            kept = 0
+            for row, seq_id in enumerate(selection.sequence_ids):
+                seq_id_int = int(seq_id)
+                if seq_id_int in seen:
+                    continue
+                seen.add(seq_id_int)
+                merged_ids.append(seq_id_int)
+                merged_tokens.append(selection.tokens[row])
+                kept += 1
+            per_mode_counts[sub_mode] = kept
+            sub_metadata[sub_mode] = {
+                "selected_count": int(selection.tokens.shape[0]),
+                "kept_after_dedup": kept,
+            }
+        if not merged_ids:
+            self._reject(logger, "neg_mode=fused: every sub-mode came back empty")
+            return None
+        tokens = torch.stack(merged_tokens, dim=0).to(self.bank.device)
+        self._note(
+            logger,
+            f"neg_mode=fused: selected {tokens.shape[0]} sequences "
+            f"(close={per_mode_counts.get('close', 0)} "
+            f"distant={per_mode_counts.get('distant', 0)} "
+            f"random={per_mode_counts.get('random', 0)})",
+        )
+        return NegContextSelection(
+            tokens=tokens,
+            sequence_ids=merged_ids,
+            mode="fused",
+            metadata={
+                "fused_quotas": quotas,
+                "fused_counts": per_mode_counts,
+                "selected_count": int(tokens.shape[0]),
+                "submodes": sub_metadata,
+            },
+        )
 
     def global_negctx_ids(self) -> list[int]:
         if self._global_negctx_ids_cache is not None:

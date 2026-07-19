@@ -8,8 +8,8 @@ seed's firing built from?"* — the same question as ablation gradient, but with
 no baseline and no path: a single-point ``grad x value`` at the natural posctx
 state.
 
-Why a METHOD and not a mode. The others (local / ig_baseline / restoration /
-ig_restoration / contrastive_ig) vary *where the gradient is linearised* along a
+Why a METHOD and not a mode. The others (local / ig_mean / restoration /
+ig_restoration / ig_negctx) vary *where the gradient is linearised* along a
 baseline->target path while sharing an input regime and objective. Activation
 gradient shares none of that axis: it has its own input regime (posctx, seed
 present), its own attribution (``grad x natural``, no baseline — so it cannot
@@ -19,28 +19,44 @@ its own endpoint (the seed's real firing peak). It was briefly reachable as an
 it under counterfactual gradient was misleading (the discovery ignored negctx
 entirely), so it is promoted here.
 
-Implementation: it is ablation gradient's posctx support-discovery with the
-attribution hop fixed to the position-aware ``grad x natural`` union, so it
-inherits that method's assembly, evaluation (posctx suppression + cf
-faithfulness) and pruning unchanged. The reusable algorithm itself lives in
+Implementation: a sibling of ablation gradient on GradientDiscoveryBase (the
+shared pipeline: assembly, evaluation, pruning, acceptance — the base's default
+posctx-support profile), with the attribution hop fixed to the position-aware
+``grad x natural`` union. The reusable algorithm itself lives in
 ``circuit.instrument.position_aware.position_aware_membership``.
+
+Config note: this method deliberately reads the ``ablation_gradient`` config
+block for its pipeline knobs (support_threshold, min_suppression_score,
+neg_mode, ...), exactly as it did when it was hosted there — giving it its own
+config block is a separate, flagged decision.
 """
 
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 
+from .gradient_base import GradientDiscoveryBase
 from circuit.types.feature_id import FeatureID
+from config import config
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 
-from .ablation_gradient import AblationGradientDiscovery
 
-
-class ActivationGradientDiscovery(AblationGradientDiscovery):
+class ActivationGradientDiscovery(GradientDiscoveryBase):
     """Position-aware ``grad x natural`` support discovery on posctx."""
 
     method_name = "activation_gradient"
+    circuit_name_prefix = "ActivationGrad"
+
+    def __init__(
+        self,
+        inference: Any,
+        sae_bank: Any,
+        avg_acts: torch.Tensor,
+        probe_builder: Any,
+    ):
+        super().__init__(inference, sae_bank, avg_acts, probe_builder)
+        self._init_support_profile(config.discovery.ablation_gradient)
 
     def _run_ablation_hop(
         self,

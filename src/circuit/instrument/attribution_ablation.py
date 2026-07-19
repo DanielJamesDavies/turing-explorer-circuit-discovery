@@ -140,11 +140,12 @@ def compute_latent_ablation_scores(
             for latent, score in spec.select_from(acts * grad_act).items():
                 if count_mask is not None and not bool(count_mask[latent]):
                     continue
-                # Both signs are members at |score| (allowed-set semantics —
-                # see docstring); the union already replaced the ranking, so
-                # no top-k truncation applies below.
+                # Keep the SIGNED score — both signs are members (allowed-set
+                # semantics), and the sign carries the role so the caller can
+                # label inhibitors (see resolve_role_delivery). The union
+                # already replaced the ranking, so no top-k truncation below.
                 all_supports.append(
-                    (FeatureID(layer=layer_p, kind=kind_p, index=latent), abs(float(score)))
+                    (FeatureID(layer=layer_p, kind=kind_p, index=latent), float(score))
                 )
         return {fid: score for fid, score in all_supports}
 

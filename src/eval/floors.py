@@ -1,7 +1,7 @@
 """Mean-ablation floors and site anchors — shared, method-agnostic.
 
 Single home for every consumer of mean-ablation baselines: the
-ablation-faithfulness evals (free/pinned, a_empty), the ig_baseline and
+ablation-faithfulness evals (free/pinned, a_empty), the ig_mean and
 restoration attribution modes, and the sweep runner. One knob
 (config.discovery.floor_source) selects the floor semantics everywhere,
 keeping the discovery/evaluation pact intact:
@@ -223,6 +223,11 @@ def resolve_site_floors(
     source = str(config.discovery.floor_source)
     if source == "posctx":
         return posctx_means
+    if source == "zero":
+        # The zero-ablation counterfactual (free0's own): every latent's floor
+        # value is 0. Shapes/dtypes/devices mirror the posctx means so every
+        # consumer is drop-in.
+        return {site: torch.zeros_like(means) for site, means in posctx_means.items()}
     if loader is None:
         raise ValueError(f"floor_source={source!r} requires a data loader")
     if source == "diverse":
