@@ -480,3 +480,132 @@ class TestBatchLatentTargets:
         assert got[5] == pytest.approx(0.9, abs=1e-6)
         assert got[3] == pytest.approx(0.1, abs=1e-6)
         assert got[7] == pytest.approx(0.0, abs=1e-6)
+
+
+# ============================================================================
+# Part 4 — anchor_mode="negctx_preact" (the position-aware cf mode)
+# ============================================================================
+
+from types import SimpleNamespace
+
+
+def _attach_seed_sae(bank, w_row, bias=0.0):
+    """Give the stub bank the encoder surface the anchored mode reads:
+    sae_bank.saes[kind][layer].encoder.weight + ._get_bias_eff()."""
+    W = torch.zeros(D_SAE, D_MODEL)
+    W[SEED_LATENT] = w_row
+    sae = SimpleNamespace(
+        encoder=SimpleNamespace(weight=W),
+        _get_bias_eff=lambda: torch.full((D_SAE,), float(bias)),
+    )
+    bank.saes = {SEED_KIND: {SEED_LAYER: sae}}
+    return bank
+
+
+def _positional_stub(bank, pass_acts, pass2_profile, seed_layer_pass2=SEED_LAYER):
+    """Like _make_stub_inference, but pass 2's residual stream carries
+    ``pass2_profile`` in model-dim 0, so the seed's pre-activation (with
+    w_seed = e0) peaks at a controlled position. pass_acts entries may be
+    scalars or [T] tensors (positional seed activations)."""
+    call = [0]
+
+    def forward_fn(tokens, activations_callback=None, patcher=None, **kwargs):
+        call[0] += 1
+        bank.current_seed_act = pass_acts[call[0] - 1]
+        x = torch.zeros(B, T, D_MODEL)
+        if call[0] == 2:
+            x[:, :, 0] = torch.tensor(pass2_profile, dtype=torch.float32)
+        acts_tuple = tuple(x.clone() for _ in KINDS)
+        layer = seed_layer_pass2 if call[0] == 2 else SEED_LAYER
+        if activations_callback is not None:
+            activations_callback(layer, acts_tuple)
+        if patcher is not None:
+            for kind in KINDS:
+                patcher.transform(SEED_LAYER, kind, x.clone())
+
+    inf = MagicMock()
+    inf.forward.side_effect = forward_fn
+    return inf
+
+
+class TestAnchoredMode:
+    """anchor_mode='negctx_preact': measurement at the seed's would-be-firing
+    position per negctx sequence, not at recycled posctx argmax positions."""
+
+    # Pre-activation profile peaks at position 2; intervened seed fires ONLY
+    # at position 2 (value 3.0). Anchored must read 3.0; legacy (argmax=0 or
+    # position-mean) must not.
+    PROFILE = [0.0, 0.0, 5.0, 0.0]
+    PASS3 = torch.tensor([0.0, 0.0, 3.0, 0.0])
+
+    def _run(self, anchor_mode, return_details=False, seed_layer_pass2=SEED_LAYER,
+             pos_argmax=None):
+        bank = _attach_seed_sae(ControlledSAEBank(),
+                                torch.eye(D_MODEL)[0])       # w_seed = e0
+        inf = _positional_stub(bank, (2.0, 0.0, self.PASS3, 0.5),
+                               self.PROFILE, seed_layer_pass2)
+        return evaluate_counterfactual_faithfulness(
+            inf, bank, _avg_acts(), _make_circuit([FeatureID(0, "attn", 7)]),
+            neg_tokens=torch.zeros(B, T, dtype=torch.long),
+            pos_tokens=torch.zeros(B, T, dtype=torch.long),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT,
+            pos_argmax=pos_argmax,
+            circuit_layers={SEED_LAYER, 0},
+            anchor_mode=anchor_mode,
+            return_details=return_details,
+        )
+
+    def test_invalid_mode_raises(self):
+        with pytest.raises(ValueError, match="anchor_mode"):
+            self._run("negctx_argmax")
+
+    def test_legacy_explicit_equals_omitted(self):
+        bank = _attach_seed_sae(ControlledSAEBank(), torch.eye(D_MODEL)[0])
+        inf = _positional_stub(bank, (2.0, 0.0, self.PASS3, 0.5), self.PROFILE)
+        base = evaluate_counterfactual_faithfulness(
+            inf, bank, _avg_acts(), _make_circuit([FeatureID(0, "attn", 7)]),
+            neg_tokens=torch.zeros(B, T, dtype=torch.long),
+            pos_tokens=torch.zeros(B, T, dtype=torch.long),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT, pos_argmax=None,
+            circuit_layers={SEED_LAYER, 0},
+        )
+        assert self._run("legacy") == pytest.approx(base, abs=1e-7)
+
+    def test_anchored_measures_at_preact_argmax(self):
+        """Anchor = pre-act argmax (position 2) → reads the 3.0 the legacy
+        position-mean smears to 0.75. cf = (3.0 - 0)/(2.0 - 0)."""
+        cf_anchored, _ = self._run("negctx_preact")
+        cf_legacy, _ = self._run("legacy")
+        assert cf_anchored == pytest.approx(1.5, abs=1e-5)
+        assert cf_legacy == pytest.approx(0.375, abs=1e-5)   # 0.75 / 2.0
+
+    def test_anchored_ignores_posctx_argmax_positions(self):
+        """Legacy recycles pos_argmax onto negctx (position 0 → misses the
+        firing); anchored must give the same answer regardless of pos_argmax."""
+        pa = torch.zeros(B, dtype=torch.long)
+        cf_anchored, _ = self._run("negctx_preact", pos_argmax=pa)
+        assert cf_anchored == pytest.approx(3.0 / 2.0, abs=1e-4)
+
+    def test_details_carry_anchors_and_bounded_score(self):
+        cf, sup, d = self._run("negctx_preact", return_details=True)
+        assert d["anchor_mode"] == "negctx_preact"
+        assert d["a_posctx"] == pytest.approx(2.0, abs=1e-5)
+        assert d["a_baseline"] == pytest.approx(0.0, abs=1e-5)
+        assert d["a_intervened_neg"] == pytest.approx(3.0, abs=1e-5)
+        assert d["denom"] == pytest.approx(2.0, abs=1e-5)
+        # overshoot treated as error: 1 - |3 - 2| / 2
+        assert d["cf_bounded"] == pytest.approx(0.5, abs=1e-5)
+        assert d["a_intervened_neg_maxpos"] == pytest.approx(3.0, abs=1e-5)
+
+    def test_details_available_in_legacy_mode_without_maxpos(self):
+        cf, sup, d = self._run("legacy", return_details=True)
+        assert d["anchor_mode"] == "legacy"
+        assert "a_intervened_neg_maxpos" not in d
+        assert d["cf"] == pytest.approx(cf, abs=1e-7)
+
+    def test_anchored_raises_when_seed_layer_unreached(self):
+        """No anchors captured must be loud, never a silent legacy fallback."""
+        with pytest.raises(RuntimeError, match="no anchors captured"):
+            self._run("negctx_preact", seed_layer_pass2=SEED_LAYER + 1)

@@ -460,6 +460,65 @@ class SFCAttributionPatchingConfig(BaseModel):
     max_neg: int = 8
     pruning_threshold: float = 0.0
     ig_steps: int = 10
+    # Scalar m that IG attributes. "logit" (default) preserves existing
+    # behaviour; "logprob" log-softmaxes first. SFC's own metric is a log
+    # PROBABILITY difference — a raw logit keeps an input-independent baseline
+    # that mean-ablation cannot remove, collapsing the faithfulness denominator
+    # (measured m(full)-m(empty)=1.81, leaving every ratio noise-dominated).
+    metric_mode: str = "logit"        # "logit" | "logprob"
+    # How per-token effects become one score per node.
+    #
+    # "npa" (default) is SFC's OWN rule for non-templatic data, verified against
+    #       both the paper (App. C, "Aggregating across token positions and
+    #       examples") and their reference implementation (feature-circuits
+    #       circuit.py:69-70, `.sum(dim=1)` over position then `.mean(dim=0)`
+    #       over examples): sum across token positions, then example-wise mean.
+    #       One node per (site, latent).
+    # "pa_union" is OURS, and is labelled as such — an extension on top of their
+    #       attribution, NOT part of SFC: per-position selection, then union over
+    #       the causal prefix ("allow, don't force"). Routes through the same
+    #       `select_position_aware` backend our own methods use, so an
+    #       SFC-vs-ours comparison isolates the ATTRIBUTION, not the reduction.
+    #
+    # SFC's OTHER rule — templatic position-INDEXED nodes — is deliberately not
+    # implemented: it needs position-varying keep-sets in CircuitOnlyPatcher, and
+    # it presupposes the templatic data our corpus does not have.
+    #
+    # A third value, "pa_peak" (score each latent at its strongest position), was
+    # removed 2026-07-22. It was OUR invention, not SFC's, and shipping it under
+    # a mode list headed "SFC" risked misrepresenting their algorithm. It was
+    # also measured degenerate with npa (Jaccard 0.999).
+    position_mode: str = "npa"        # "npa" | "pa_union"
+    # Selection rule for position_mode="pa_union" only (ignored otherwise).
+    # Mirrors discovery.position_aware_select; "abs_pctl" @ 90 is the default
+    # validated for our own methods, so the two stacks stay comparable.
+    pa_select: str = "abs_pctl"       # "top_n" | "abs" | "abs_pctl" | "relative" | "mass"
+    pa_top_n: int = 64                # for select="top_n"
+    pa_threshold: float = 90.0        # abs: raw cut; abs_pctl: PERCENTILE (0-100)
+
+    @field_validator("metric_mode")
+    @classmethod
+    def validate_sfc_metric_mode(cls, v: str) -> str:
+        allowed = ["logit", "logprob"]
+        if v not in allowed:
+            raise ValueError(f"metric_mode must be one of {allowed}, got {v}")
+        return v
+
+    @field_validator("position_mode")
+    @classmethod
+    def validate_sfc_position_mode(cls, v: str) -> str:
+        allowed = ["npa", "pa_union"]
+        if v not in allowed:
+            raise ValueError(f"position_mode must be one of {allowed}, got {v}")
+        return v
+
+    @field_validator("pa_select")
+    @classmethod
+    def validate_sfc_pa_select(cls, v: str) -> str:
+        allowed = ["top_n", "abs", "abs_pctl", "relative", "mass"]
+        if v not in allowed:
+            raise ValueError(f"pa_select must be one of {allowed}, got {v}")
+        return v
 
 class NeighborhoodExpansionConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -1017,7 +1076,21 @@ class DiscoveryConfig(BaseModel):
     # "diverse" = farthest-point sample over stored sequence representations
     # (coverage-weighted: a different floor semantics from "global"'s
     # density-weighted corpus expectation, not a variance-reduced estimate).
-    floor_source: str = "posctx"     # "posctx" | "global" | "diverse"
+    # "negctx" = per-seed means over the seed's retrieved NEGATIVE contexts,
+    # i.e. sequences chosen because the seed is silent. Removes seed-specific
+    # content while keeping generic stream content, where "posctx" removes
+    # nothing (it leaks 23-30% of a_pos into deep seeds before any circuit
+    # exists) and "zero" removes everything. Requires the caller to thread
+    # neg_tokens; see the ordering argument in eval/floors.py.
+    floor_source: str = "posctx"     # "posctx" | "negctx" | "global" | "diverse"
+    # Which negatives define floor_source="negctx". "store" (default) reuses
+    # the probe dataset's negatives, i.e. the per-latent neg_ctx KNN store —
+    # the nearest non-activating sequences, so close/hard negatives at no extra
+    # cost. "close"/"random"/"distant" re-retrieve through the shared
+    # negative-context selector, letting the FLOOR's negative hardness be varied
+    # independently of a method's own neg_mode (which governs ig_negctx and
+    # phi_cf, never the floor). Inert unless floor_source == "negctx".
+    floor_negctx_mode: str = "store"  # "store" | "close" | "random" | "distant"
     # Position-aware allowed-set selection (orthogonal to attribution_mode).
     # When true, discovery keeps the token-position axis of the gradient
     # attribution and selects the allowed set as the union, over each seed's
@@ -1075,6 +1148,30 @@ class DiscoveryConfig(BaseModel):
     # keeps the causal DRIVERS only (pinned-phi, kept latents clamped to clean
     # position-specific values) — compact when the closure tax is high.
     magnitude_prune_objective: str = "free"   # "free" | "pinned"
+    # Cross-sequence recurrence prune (post-assembly, runs BEFORE the magnitude
+    # prune). Drops members that fire in fewer than `min_sequences` of the probe
+    # sequences — the PA union's one-sequence tail, which is context-specific
+    # rather than mechanism. Role-split: supports/activators are judged on
+    # posctx, inhibitors on negctx (a member that suppresses the seed is only
+    # observable where the seed is absent); inhibitors are exempt when no negctx
+    # is available rather than being dropped unseen.
+    recurrence_prune: bool = False
+    recurrence_prune_min_sequences: int = 2   # rec2 is the validated deep default
+    recurrence_prune_min_keep: int = 1        # never prune below this many members
+
+    @field_validator("recurrence_prune_min_sequences")
+    @classmethod
+    def validate_recurrence_prune_min_sequences(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"recurrence_prune_min_sequences must be >= 1, got {v}")
+        return v
+
+    @field_validator("recurrence_prune_min_keep")
+    @classmethod
+    def validate_recurrence_prune_min_keep(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"recurrence_prune_min_keep must be >= 1, got {v}")
+        return v
 
     @field_validator("floor_source")
     @classmethod
@@ -1083,9 +1180,21 @@ class DiscoveryConfig(BaseModel):
         # ZERO-ablation counterfactual (the one free0 evaluates) instead of a
         # mean. Makes ig_mean the free0-coherent "integrated activation
         # gradient" (0 -> natural) and restoration a greedy free0 climber.
-        allowed = ["posctx", "global", "diverse", "zero"]
+        # "negctx": the on-manifold counterpart of "zero" — it reaches the same
+        # clean denominator (measured a_empty == 0.0) from a real non-firing
+        # state, and makes ig_mean integrate along exactly the contrast the
+        # eval floor scores against.
+        allowed = ["posctx", "negctx", "global", "diverse", "zero"]
         if v not in allowed:
             raise ValueError(f"floor_source must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("floor_negctx_mode")
+    @classmethod
+    def validate_floor_negctx_mode(cls, v: str) -> str:
+        allowed = ["store", "close", "random", "distant"]
+        if v not in allowed:
+            raise ValueError(f"floor_negctx_mode must be one of {allowed}, got {v!r}")
         return v
 
     @field_validator("position_aware_top_n")

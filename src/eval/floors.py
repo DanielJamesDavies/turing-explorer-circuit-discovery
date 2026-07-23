@@ -8,6 +8,8 @@ keeping the discovery/evaluation pact intact:
 
   - "posctx"  — per-seed means over the seed's positive probe batch
                 (SFC's distribution-matched baseline; Marks et al., 2025).
+  - "negctx"  — per-seed means over the seed's retrieved NEGATIVE contexts:
+                sequences selected because the seed is silent on them.
   - "global"  — seed-independent means over a random corpus sample
                 (density-weighted corpus expectation; colder, no
                 evaluation-distribution leakage).
@@ -17,7 +19,52 @@ keeping the discovery/evaluation pact intact:
                 context regions by design — not a variance-reduced corpus
                 mean).
 
-Seed-independent floors are cached per process under their source key.
+Seed-independent floors ("global"/"diverse") are cached per process under
+their source key. "posctx"/"negctx" are seed-specific and never cached.
+
+On "negctx". Order the floors by what they REMOVE from the stream:
+
+  zero    removes everything, preserves nothing  — a sparser-than-k code the
+          model never produces.
+  posctx  removes nothing specific, preserves everything INCLUDING the seed's
+          own firing signature. The mean over contexts where a latent fires
+          carries that firing by construction, so the floor drives the seed
+          before any circuit exists: measured at 23%/30%/26% of a_pos on the
+          L8/L9/L10 validation seeds (0% at L2 — the leak grows with depth).
+          See dev-notes/data/floor-diagnostic-2026-07-23.
+  negctx  removes seed-specific content, preserves generic stream content.
+
+That middle column is the point: "what makes this latent fire?" wants a
+baseline that strips what is specific to firing while keeping the ordinary
+background a real sequence carries. It also matches the field's convention —
+ACDC resamples from a corrupted prompt, and SFC's contrastive mode patches
+from the counterfactual distribution — where our posctx default is the
+outlier, being conditioned on the very event it is used to explain. The
+asymmetry is that for a BEHAVIOURAL endpoint the task mean does not trivially
+reproduce the behaviour, whereas for a LATENT endpoint it does.
+
+Measured: a_empty(negctx) == 0.0000 on all four validation seeds, so it
+reaches free0's clean denominator (den == a_pos) through a real non-firing
+state rather than an empty code. Note freeN != free0 even so — the numerators
+are different forward passes over a shared denominator.
+
+Which negatives. The floor uses ProbeDataset.neg_tokens, which comes straight
+from the per-latent neg_ctx store: the 64 NEAREST non-activating sequences to
+the latent's positive-context centroid (cosine over mean-pooled sequence
+representations, exact KNN over a 512-neighbour pool, positives excluded —
+store/neg_ctx/component.py). These are CLOSE / hard negatives.
+
+Note this does NOT co-vary with config.discovery.*.neg_mode: that knob selects
+the cf method's own negatives (ig_negctx, restoration_negctx, phi_cf) via
+_get_neg_tokens, a path the floor never takes. The floor is pinned to close
+negatives by construction, so no separate floor_negctx_mode knob is needed.
+
+Close negatives are the HARDEST case for this floor — being semantically
+nearest the positive contexts, their mean is the closest to the posctx mean
+that any negative mode could give, so they remove the least. The measured
+a_empty == 0.0 therefore holds a fortiori: random or distant negatives would
+only separate further. It is also the sharpest contrast, since what survives
+is what makes the latent fire rather than a generic topic difference.
 """
 
 from __future__ import annotations
@@ -119,6 +166,51 @@ def collect_site_means(
     return means
 
 
+@torch.no_grad()
+def collect_site_error_means(
+    inference: Any,
+    sae_bank: Any,
+    tokens: torch.Tensor,
+    sites: Set[Site],
+) -> Dict[Site, torch.Tensor]:
+    """Mean SAE reconstruction error [d_model] per site over a clean forward
+    pass: mean over (batch, position) of ``x - decode(encode(x))``.
+
+    The mean-ablation floor for ERROR NODES — the error-space analogue of
+    ``collect_site_means``. Feed to ``CircuitOnlyPatcher(error_means=...)`` so
+    a non-member site's error is replaced by its distribution mean rather than
+    zeroed (the same preserve/mean/zero ladder latents already have)."""
+
+    kind_to_idx = {k: i for i, k in enumerate(sae_bank.kinds)}
+    means: Dict[Site, torch.Tensor] = {}
+
+    def hook(layer_idx: int, activations: tuple) -> None:
+        for kind in sae_bank.kinds:
+            if (layer_idx, kind) not in sites:
+                continue
+            act = activations[kind_to_idx[kind]]
+            ta, ti = sae_bank.encode(act, kind, layer_idx)
+            dense = sparse_topk_to_dense(ta, ti, sae_bank.d_sae, dtype=torch.float32)
+            recon = sae_bank.decode(dense, kind, layer_idx)
+            means[(layer_idx, kind)] = (act.float() - recon.float()).mean(dim=(0, 1)).detach()
+
+    inference.disable_compile()
+    try:
+        inference.forward(
+            tokens,
+            activations_callback=hook,
+            return_activations=False,
+            tokenize_final=False,
+        )
+    finally:
+        inference.enable_compile()
+
+    missing = sites - set(means)
+    if missing:
+        raise RuntimeError(f"site error means missing for sites: {sorted(missing)}")
+    return means
+
+
 def _farthest_point_sample(reprs: torch.Tensor, n: int) -> list[int]:
     """Greedy k-center over l2-normalised representations (cosine distance).
     Deliberately coverage-weighted: overweights rare regions relative to a
@@ -214,9 +306,14 @@ def resolve_site_floors(
     *,
     posctx_means: Dict[Site, torch.Tensor],
     loader: Any = None,
+    neg_tokens: Optional[torch.Tensor] = None,
 ) -> Dict[Site, torch.Tensor]:
-    """Apply the shared config.discovery.floor_source knob: return the
-    posctx means unchanged, or swap in cached global/diverse floors."""
+    """Apply the shared config.discovery.floor_source knob: return the posctx
+    means unchanged, or swap in zero / negctx / cached global / diverse floors.
+
+    ``neg_tokens`` is required only by floor_source="negctx" and ignored
+    otherwise, so callers that cannot supply negatives are unaffected under
+    every other source (including the "posctx" default)."""
 
     from config import config
 
@@ -228,6 +325,17 @@ def resolve_site_floors(
         # value is 0. Shapes/dtypes/devices mirror the posctx means so every
         # consumer is drop-in.
         return {site: torch.zeros_like(means) for site, means in posctx_means.items()}
+    if source == "negctx":
+        # Seed-specific, so never cached: these are THIS seed's negatives.
+        if neg_tokens is None or int(neg_tokens.shape[0]) == 0:
+            raise ValueError(
+                "floor_source='negctx' requires neg_tokens, but none were "
+                "supplied — either this seed retrieved no negative contexts, "
+                "or this caller does not thread them. Refusing to fall back: a "
+                "result labelled 'negctx' that silently used another floor is "
+                "worse than a visible failure."
+            )
+        return collect_site_means(inference, sae_bank, neg_tokens, sites)
     if loader is None:
         raise ValueError(f"floor_source={source!r} requires a data loader")
     if source == "diverse":
@@ -238,6 +346,7 @@ def resolve_site_floors(
 __all__ = [
     "collect_site_anchors",
     "collect_site_means",
+    "collect_site_error_means",
     "collect_global_site_floors",
     "collect_diverse_site_floors",
     "resolve_site_floors",

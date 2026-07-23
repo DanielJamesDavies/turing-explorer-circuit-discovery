@@ -121,6 +121,7 @@ class CounterfactualInterventionPatcher:
         seed_latent_idx: int,
         pos_argmax: Optional[torch.Tensor] = None,
         circuit_layers: Optional[Set[int]] = None,
+        capture_max: bool = False,
     ) -> None:
         self.bank = bank
         self.activator_targets = activator_targets
@@ -130,7 +131,11 @@ class CounterfactualInterventionPatcher:
         self.seed_latent_idx = seed_latent_idx
         self.pos_argmax = pos_argmax.detach().cpu() if pos_argmax is not None else None
         self.circuit_layers = circuit_layers
+        self.capture_max = capture_max
         self.captured_activation: Optional[float] = None
+        # Max-over-positions capture (set when capture_max): "did the seed fire
+        # ANYWHERE?" — diagnostic for anchor placement, never a score input.
+        self.captured_activation_max: Optional[float] = None
         # Precomputed per-site index/value tensors so the intervention is one
         # advanced-index write per site instead of one kernel launch per
         # member (the per-latent loop was ~1 ms/member at PA-circuit sizes).
@@ -174,6 +179,8 @@ class CounterfactualInterventionPatcher:
             else:
                 val = seed_dense.mean().item()
             self.captured_activation = val
+            if self.capture_max:
+                self.captured_activation_max = seed_dense.max(dim=1).values.mean().item()
             print(f"      [CF-Capture] Mean at probe pos: {val:.4f}")
             sys.stdout.flush()
 
@@ -222,10 +229,43 @@ def evaluate_counterfactual_faithfulness(
     seed_latent_idx: int,
     pos_argmax: Optional[torch.Tensor] = None,
     circuit_layers: Optional[Set[int]] = None,
-) -> Tuple[float, float]:
+    anchor_mode: str = "legacy",
+    return_details: bool = False,
+):
     """
     Measure how well the discovered activators and inhibitors causally explain
     the seed's firing behaviour in both directions.
+
+    ``anchor_mode`` selects where the negctx-side seed measurement is taken:
+
+      * ``"legacy"`` (default, byte-identical to the historical eval): the
+        posctx argmax positions are reused on the negctx sequences —
+        ``neg_argmax = pos_argmax[:B_neg]``. Position i's probe index came
+        from a DIFFERENT sequence, so on negctx it is an arbitrary position.
+        This is the position-collapse defect that censors cf at depth (a
+        circuit with free0 = 0.988 scored cf = 0.039 at L9): deep seeds read
+        specific positions, and the measurement looks at the wrong one.
+      * ``"negctx_preact"``: per-sequence anchors at the seed's own
+        WOULD-BE-FIRING position on each negctx sequence — the argmax of its
+        pre-activation (w_seed·x + b_seed) on the natural negctx run, computed
+        in Pass 2 at no extra forward cost. The same anchor ig_negctx
+        integrates at (counterfactual_gradient._negctx_anchor). a_baseline is
+        measured at the same anchors, so numerator and denominator share their
+        positions. Also captures max-over-positions of the intervened run
+        (``a_intervened_neg_maxpos``) as an anchor-placement diagnostic.
+        Inhibitor injection TARGETS (pass 2 → pass 4) keep legacy positions:
+        they are collected at upstream sites before the seed's layer runs, so
+        the anchors do not exist yet when they are needed — and they feed the
+        posctx-side score, which has correct anchors already.
+
+    ``return_details``: when True, returns ``(cf, sup, details)`` where
+    details carries every anchor (a_posctx, a_baseline, a_intervened_neg,
+    a_intervened_pos, denom, anchor_mode, and in anchored mode
+    a_intervened_neg_maxpos) plus ``cf_bounded`` =
+    1 − |a_intervened_neg − a_posctx| / |denom| — a variant that treats
+    overshoot as error rather than success (cf rose 1.63→2.49 at L10 while
+    free0 collapsed to 0.005; the unbounded ratio rewards uncompensated
+    drive). Logged so scores can be recomputed post hoc without a rerun.
 
     Four no-grad forward passes are run (see module docstring for details):
 
@@ -255,8 +295,20 @@ def evaluate_counterfactual_faithfulness(
         circuit_layers: Layer indices at which to apply the intervention.
                         When None, all (layer, kind) pairs with nodes are used.
     """
+    if anchor_mode not in ("legacy", "negctx_preact"):
+        raise ValueError(
+            f"anchor_mode must be 'legacy' or 'negctx_preact', got {anchor_mode!r}")
+    anchored = anchor_mode == "negctx_preact"
+
     kinds = sae_bank.kinds
     kind_to_idx: Dict[str, int] = {k: i for i, k in enumerate(kinds)}
+
+    # Anchored mode: the seed's encoder row, for the pre-activation argmax.
+    w_seed = b_seed = None
+    if anchored:
+        sae = sae_bank.saes[seed_kind][seed_layer]
+        w_seed = sae.encoder.weight[seed_latent_idx].detach()
+        b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
 
     # ── Parse circuit nodes by role ───────────────────────────────────────
     activator_fids: Dict[Tuple[int, str], List[int]] = {}
@@ -284,6 +336,8 @@ def evaluate_counterfactual_faithfulness(
     if n_act == 0 and n_inh == 0:
         print("  [CFaithfulness] No activator or inhibitor nodes — returning (0.0, 0.0)")
         sys.stdout.flush()
+        if return_details:
+            return 0.0, 0.0, {"anchor_mode": anchor_mode, "empty_circuit": True}
         return 0.0, 0.0
 
     print(
@@ -343,6 +397,7 @@ def evaluate_counterfactual_faithfulness(
     neg_B = neg_tokens.shape[0]
     neg_argmax = pos_argmax[:neg_B] if pos_argmax is not None else None
     a_baseline_buf: List[float] = []
+    neg_anchors_buf: List[torch.Tensor] = []
     inhibitor_targets: Dict[Tuple[int, str], Dict[int, float]] = {}
 
     def baseline_hook(layer_idx: int, activations: tuple) -> None:
@@ -352,7 +407,16 @@ def evaluate_counterfactual_faithfulness(
             ta, ti = sae_bank.encode(act, seed_kind, layer_idx)
             s_dense = target_latent_activations(ta, ti, seed_latent_idx)
             Bx = s_dense.shape[0]
-            if neg_argmax is not None:
+            if anchored:
+                # Per-sequence would-be-firing anchor: pre-activation argmax on
+                # the natural negctx run. Baseline is measured AT the anchors so
+                # numerator and denominator share their positions.
+                pre = act.float() @ w_seed.to(act.device).float() + float(b_seed)  # [B, T]
+                anchors = pre.argmax(dim=-1)                                       # [B]
+                neg_anchors_buf.append(anchors.detach().cpu())
+                val = s_dense[torch.arange(Bx, device=s_dense.device),
+                              anchors.to(s_dense.device)].mean().item()
+            elif neg_argmax is not None:
                 actual_B = min(Bx, neg_argmax.shape[0])
                 pa = neg_argmax[:actual_B].to(s_dense.device).clamp(0, s_dense.shape[1] - 1)
                 val = s_dense[:actual_B][torch.arange(actual_B, device=s_dense.device), pa].mean().item()
@@ -385,6 +449,12 @@ def evaluate_counterfactual_faithfulness(
         inference.enable_compile()
 
     a_baseline = a_baseline_buf[0] if a_baseline_buf else 0.0
+    neg_anchors = neg_anchors_buf[0] if neg_anchors_buf else None
+    if anchored and neg_anchors is None:
+        # The hook never reached the seed's layer — surface it rather than
+        # silently measuring at legacy positions under an "anchored" label.
+        raise RuntimeError("anchor_mode='negctx_preact': no anchors captured "
+                           "(seed layer not reached in the negctx pass)")
 
     # ── Pass 3: intervened negctx ─────────────────────────────────────────
     patcher = CounterfactualInterventionPatcher(
@@ -394,8 +464,9 @@ def evaluate_counterfactual_faithfulness(
         seed_layer=seed_layer,
         seed_kind=seed_kind,
         seed_latent_idx=seed_latent_idx,
-        pos_argmax=neg_argmax,
+        pos_argmax=neg_anchors if anchored else neg_argmax,
         circuit_layers=circuit_layers,
+        capture_max=anchored,
     )
 
     inference.disable_compile()
@@ -449,19 +520,43 @@ def evaluate_counterfactual_faithfulness(
         f"a_baseline: {a_baseline:.4f} | "
         f"a_intervened_neg: {a_intervened_neg:.4f} | "
         f"a_intervened_pos: {a_intervened_pos:.4f} | "
-        f"denom: {denom:.4f}"
+        f"denom: {denom:.4f} | anchor_mode: {anchor_mode}"
     )
     sys.stdout.flush()
+
+    def _details(cf_score: float, sup_score: float) -> Dict[str, Any]:
+        d: Dict[str, Any] = {
+            "anchor_mode": anchor_mode,
+            "a_posctx": float(a_posctx),
+            "a_baseline": float(a_baseline),
+            "a_intervened_neg": float(a_intervened_neg),
+            "a_intervened_pos": float(a_intervened_pos),
+            "denom": float(denom),
+            "cf": float(cf_score),
+            "sup": float(sup_score),
+            # Overshoot-as-error variant: 1 at perfect restoration, falls off
+            # symmetrically in both directions. The raw ratio rewards
+            # uncompensated drive (cf can RISE as a circuit is gutted).
+            "cf_bounded": (1.0 - abs(a_intervened_neg - a_posctx) / abs(denom)
+                           if abs(denom) > 1e-9 else None),
+        }
+        if patcher.captured_activation_max is not None:
+            d["a_intervened_neg_maxpos"] = float(patcher.captured_activation_max)
+        return d
 
     if abs(denom) < 1e-9:
         cf_score = 1.0 if abs(a_intervened_neg - a_posctx) < 1e-9 else 0.0
         sup_score = 1.0 if abs(a_intervened_pos - a_baseline) < 1e-9 else 0.0
         print(f"  [CFaithfulness] cf={cf_score:.4f}  sup={sup_score:.4f}  (small denom)")
         sys.stdout.flush()
+        if return_details:
+            return float(cf_score), float(sup_score), _details(cf_score, sup_score)
         return float(cf_score), float(sup_score)
 
     cf_score = (a_intervened_neg - a_baseline) / denom
     sup_score = (a_posctx - a_intervened_pos) / denom
     print(f"  [CFaithfulness] cf={cf_score:.4f}  sup={sup_score:.4f}")
     sys.stdout.flush()
+    if return_details:
+        return float(cf_score), float(sup_score), _details(cf_score, sup_score)
     return float(cf_score), float(sup_score)

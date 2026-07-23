@@ -69,6 +69,10 @@ class HybridGradientDiscovery(DiscoveryMethod):
         # prune can drop redundancy that spans the two sources.
         self.counterfactual_method.magnitude_prune = False
         self.ablation_method.magnitude_prune = False
+        # Both prunes belong to the FUSED union, not the sub-circuits: pruning a
+        # sub-method first would drop members the other one needs for closure.
+        self.counterfactual_method.recurrence_prune = False
+        self.ablation_method.recurrence_prune = False
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
@@ -189,6 +193,20 @@ class HybridGradientDiscovery(DiscoveryMethod):
                     f"removed={len(removed)}"
                 ),
             )
+
+        # Cross-sequence recurrence prune (optional) — applied to the FUSED union
+        # (the sub-methods have their own prunes disabled), before the magnitude
+        # bisection so that search runs over a smaller ranked set.
+        if self.recurrence_prune:
+            prune_by_sequence_recurrence(
+                self.inference, self.sae_bank, fused,
+                pos_tokens=pos_tokens_eval,
+                neg_tokens=neg_tokens_eval,
+                min_sequences=self.recurrence_prune_min_sequences,
+                min_keep=self.recurrence_prune_min_keep,
+                logger=logger,
+            )
+            circuit_layers = _circuit_layers(fused)
 
         # Global magnitude prune (optional) — scalable free-φ bisection over the
         # fused union, for the large position-aware allowed sets.

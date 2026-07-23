@@ -41,6 +41,7 @@ from config import config
 from eval.counterfactual_faithfulness import evaluate_counterfactual_faithfulness
 from eval.magnitude_prune import prune_by_magnitude_bisection
 from eval.minimality import prune_non_minimal_nodes_suppression
+from eval.recurrence_prune import prune_by_sequence_recurrence
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from store.circuits import Circuit, CircuitNode
@@ -153,6 +154,15 @@ class GradientDiscoveryBase(DiscoveryMethod):
         self.magnitude_prune_target = cast(float, config.discovery.magnitude_prune_target)
         self.magnitude_prune_min_keep = cast(int, config.discovery.magnitude_prune_min_keep)
         self.magnitude_prune_objective = cast(str, config.discovery.magnitude_prune_objective)
+        # Cross-sequence recurrence prune — runs BEFORE the magnitude prune, so
+        # magnitude bisection operates on the already-derecurred membership.
+        self.recurrence_prune = cast(bool, config.discovery.recurrence_prune)
+        self.recurrence_prune_min_sequences = cast(
+            int, config.discovery.recurrence_prune_min_sequences)
+        self.recurrence_prune_min_keep = cast(
+            int, config.discovery.recurrence_prune_min_keep)
+        # Set per seed in _discover; only floor_source="negctx" reads it.
+        self._floor_neg_tokens: Optional[torch.Tensor] = None
         # Sequence COUNT vs batch SIZE (see DiscoveryConfig): counts set how
         # many pos sequences inform discovery / evals; batch sizes bound one
         # forward pass, with chunked merging above them.
@@ -216,6 +226,14 @@ class GradientDiscoveryBase(DiscoveryMethod):
         if probe_data.pos_tokens.shape[0] == 0:
             logger.reject("empty probe dataset (no positive contexts)")
             return None
+
+        # Negatives for floor_source="negctx", read by _integrated_baseline_
+        # attribution and _restoration_selection. Set here, beside the probe
+        # dataset they derive from, so they cannot go stale relative to the
+        # seed. Left None outside discover(), where the negctx branch raises
+        # rather than silently substituting another floor.
+        self._floor_neg_tokens = self._floor_negatives(
+            probe_data, seed_comp_idx, seed_latent_idx, logger)
 
         ctx = DiscoveryContext(
             seed_comp_idx=seed_comp_idx,
@@ -301,6 +319,25 @@ class GradientDiscoveryBase(DiscoveryMethod):
                 len(circuit.edges),
                 note=f"removed {n_before - len(circuit.nodes)} nodes",
             )
+
+        # Cross-sequence recurrence prune (optional) — drops per-input scaffolding
+        # that PA's union-over-positions admits from a single probe sequence.
+        # Runs BEFORE the magnitude prune so that bisection searches a smaller
+        # ranked set; needs one forward pass, no sufficiency search.
+        if self.recurrence_prune:
+            prune_by_sequence_recurrence(
+                self.inference, self.sae_bank, circuit,
+                pos_tokens=ctx.pos_tokens_eval,
+                neg_tokens=neg_tokens_eval,
+                min_sequences=self.recurrence_prune_min_sequences,
+                min_keep=self.recurrence_prune_min_keep,
+                logger=logger,
+            )
+            circuit_layers = {
+                node.feature_id.layer
+                for node in circuit.nodes.values()
+                if node.feature_id is not None
+            }
 
         # Global magnitude prune (optional) — scalable free-φ bisection, for the
         # large position-aware allowed sets that LOO minimality cannot touch.
@@ -565,6 +602,7 @@ class GradientDiscoveryBase(DiscoveryMethod):
         site_floors = resolve_site_floors(
             self.inference, self.sae_bank, sites,
             posctx_means=site_floors, loader=self.probe_builder.loader,
+            neg_tokens=self._floor_neg_tokens,
         )
 
         sae = self.sae_bank.saes[seed_kind][seed_layer]
@@ -650,6 +688,7 @@ class GradientDiscoveryBase(DiscoveryMethod):
             # the classic gate (exclude never restores negatives).
             allow_negative=self.negative_roles == "include" or self.position_aware,
             loader=self.probe_builder.loader,
+            neg_tokens=self._floor_neg_tokens,
             scorer="ig" if self.attribution_mode == "ig_restoration" else "point",
             ig_steps=self.restoration_ig_steps,
             final_ig_polish=self.restoration_final_ig_polish,
@@ -720,6 +759,55 @@ class GradientDiscoveryBase(DiscoveryMethod):
             logger.reject(f"neg_mode={self.neg_mode}: no eval negative sequences available")
             return None
         self._last_neg_selection_metadata = selection.metadata
+        return selection.tokens
+
+    def _floor_negatives(
+        self,
+        probe_data: Any,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        logger: CircuitLogger,
+    ) -> Optional[torch.Tensor]:
+        """The negatives defining floor_source="negctx".
+
+        "store" (default) reuses the probe dataset's negatives — the per-latent
+        neg_ctx KNN store, i.e. the nearest non-activating sequences — so it is
+        a free slice and works for every method, abl included (ProbeDataset
+        always carries negatives; ctx.neg_tokens is cf-only and would not).
+
+        "close"/"random"/"distant" re-retrieve through the shared selector, so
+        the FLOOR's negative hardness can be varied independently of
+        self.neg_mode, which governs ig_negctx / phi_cf and never the floor.
+        Those modes cost a retrieval, so they are skipped entirely unless a
+        negctx floor will actually read them.
+        """
+        mode = str(config.discovery.floor_negctx_mode)
+        if mode == "store":
+            return probe_data.neg_tokens[: self.probe_sequence_count]
+        if str(config.discovery.floor_source) != "negctx":
+            return None
+        cfg = config.discovery.neg_context_selection
+        selection = self._neg_context_selector().select(
+            seed_comp_idx,
+            seed_latent_idx,
+            mode,
+            max_sequences=max(1, int(self.probe_sequence_count)),
+            batch_size=max(1, int(config.discovery.probe_batch_size)),
+            candidate_pool_size=(
+                self.distant_pool_size if mode == "distant" else cfg.candidate_pool_size
+            ),
+            exact=bool(cfg.exact_negctx_ranking),
+            non_activation_threshold=float(cfg.non_activation_threshold),
+            selection_seed=int(cfg.selection_seed),
+            filter_batch_size=int(cfg.filter_batch_size),
+            load_window_size=int(cfg.load_window_size),
+            logger=logger,
+        )
+        if selection is None:
+            # resolve_site_floors raises on None rather than substituting a
+            # different floor, which is the intended loud failure.
+            logger.note(f"floor_negctx_mode={mode}: no negatives selected")
+            return None
         return selection.tokens
 
     def _neg_context_selector(self) -> NegContextSelector:

@@ -48,22 +48,41 @@ def prune_by_magnitude_bisection(
     target: float = 0.0,
     min_keep: int = 1,
     objective: str = "free",
+    pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     logger: Any = None,
 ) -> List[str]:
     """Prune ``circuit`` in place to the smallest magnitude-ranked prefix that
     holds φ ≥ floor, where floor = ``target`` if ``target > 0`` else
     ``base_φ - tolerance`` (base_φ = full-circuit φ). Returns removed uuids.
 
-    ``objective`` picks which sufficiency the prune preserves — the two ends of the
-    drivers-vs-closure decomposition:
-      * ``"free"`` (default): free-φ, kept latents re-encode live → a self-contained
-        (CLOSED) circuit. Large for deep seeds (closure is distributed).
-      * ``"pinned"``: pinned-φ, kept latents clamped to their clean position-specific
-        values → the causal DRIVERS (node selection). Compact — the drivers are
-        concentrated, so this prunes far harder than "free"."""
+    ``objective`` picks which sufficiency the prune preserves:
+      * ``"free"`` (default): free0-φ, kept latents re-encode live against the
+        ZERO-ablation floor → a self-contained (CLOSED) circuit.
+      * ``"free_mean_dense"``: free-φ against the DENSE MEAN floor — i.e. the
+        SFC-standard faithfulness metric (freeM_dense). Use this when the target
+        metric is freeM_dense: bisecting on "free" optimises free0 and lets
+        freeM_dense collapse under compression (the dense-fill off-manifold
+        artefact), so the two must be matched. Prunes against exactly what is
+        reported.
+      * ``"free_mean_topk"``: same but with the on-manifold k-sparse fill
+        (freeM_topk) — the honest fill that keeps the stream in the model's
+        natural k-sparse regime.
+      * ``"pinned"``: pinned-φ, kept latents clamped to their clean position-
+        specific values → the causal DRIVERS. Prunes hardest.
 
-    if objective not in ("free", "pinned"):
-        raise ValueError(f"objective must be 'free' or 'pinned', got {objective!r}")
+    Monotonicity: bisection assumes φ non-decreasing in K. This holds
+    approximately for free0/pinned. The mean-floor objectives are LESS monotone
+    (a low-mass member can lower freeM_dense via the off-manifold fill), so the
+    found K may sit slightly above the true knee — but the RESULT is always
+    validated to meet the floor, so the target is never violated."""
+
+    valid = ("free", "free_mean_dense", "free_mean_topk", "pinned")
+    if objective not in valid:
+        raise ValueError(f"objective must be one of {valid}, got {objective!r}")
+    # mean-floor objectives evaluate free-φ against the site means; the dense vs
+    # topk split is the fill regime.
+    use_means = objective in ("free_mean_dense", "free_mean_topk")
+    respect_topk = objective == "free_mean_topk"
 
     members: List[Tuple[float, str, Any]] = []
     for uuid, node in circuit.nodes.items():
@@ -91,9 +110,19 @@ def prune_by_magnitude_bisection(
     a_posctx = measure_seed_activation(
         inference, sae_bank, pos_tokens, seed_layer, seed_kind, seed_latent_idx, pos_argmax
     )
+
+    # Mean-floor objectives need the per-site means as the ablation floor; the
+    # empty circuit and every phi(k) are then measured against that same floor,
+    # so the bisected quantity IS freeM_dense/freeM_topk.
+    site_means = None
+    if use_means:
+        from eval.floors import collect_site_means
+        site_means = collect_site_means(inference, sae_bank, pos_tokens, in_scope)
+
     a_empty = circuit_only_activation(
         inference, sae_bank, {}, in_scope, pos_tokens,
         seed_layer, seed_kind, seed_latent_idx, pos_argmax=pos_argmax,
+        site_means=site_means, respect_topk=respect_topk,
     )
     denom = a_posctx - a_empty
     if abs(denom) < 1e-9:
@@ -101,13 +130,19 @@ def prune_by_magnitude_bisection(
 
     # For the "pinned" (drivers) objective, clamp kept latents to their clean
     # position-specific values; collected once (circuit-independent anchor).
-    pin_values = None
-    if objective == "pinned":
+    # Position-specific pins are [B, T, d_sae] PER SITE (~671 MB each at 64x64
+    # with d_sae=40960) and depend only on (tokens, sites) — not on the circuit.
+    # Callers sweeping several pruned variants of one circuit should collect them
+    # once and pass them in; otherwise every pinned invocation rebuilds the same
+    # multi-gigabyte structure.
+    if objective == "pinned" and pin_values is None:
         from eval.floors import collect_site_anchors
         _, pin_values = collect_site_anchors(
             inference, sae_bank, pos_tokens, in_scope, pos_argmax,
             pin_position_specific=True,
         )
+    elif objective != "pinned":
+        pin_values = None
 
     cache: Dict[int, float] = {}
 
@@ -116,7 +151,8 @@ def prune_by_magnitude_bisection(
             a_c = circuit_only_activation(
                 inference, sae_bank, keep_of(k), in_scope, pos_tokens,
                 seed_layer, seed_kind, seed_latent_idx, pos_argmax=pos_argmax,
-                pin_values=pin_values,
+                site_means=site_means, pin_values=pin_values,
+                respect_topk=respect_topk,
             )
             cache[k] = (a_c - a_empty) / denom
         return cache[k]

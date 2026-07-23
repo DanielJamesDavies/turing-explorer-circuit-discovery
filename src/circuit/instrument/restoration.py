@@ -825,6 +825,7 @@ def run_restoration_selection(
     certificate_tol: float,
     allow_negative: bool = True,
     loader: Any = None,
+    neg_tokens: Optional[torch.Tensor] = None,
     scorer: str = "point",
     ig_steps: int = 4,
     final_ig_polish: bool = False,
@@ -893,7 +894,8 @@ def run_restoration_selection(
         return {}, {}, None
     floors, pins = collect_site_anchors(inference, bank, tokens, sites, pos_argmax)
     # Shared floor knob: pins (natural probe values) always stay posctx.
-    floors = resolve_site_floors(inference, bank, sites, posctx_means=floors, loader=loader)
+    floors = resolve_site_floors(inference, bank, sites, posctx_means=floors,
+                                 loader=loader, neg_tokens=neg_tokens)
     _, residuals = collect_natural_codes(inference, bank, tokens, sites)
 
     sae = bank.saes[seed_kind][seed_layer]

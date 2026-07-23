@@ -255,7 +255,8 @@ def run_gradient_size_sweep(
             from eval.ablation_faithfulness import resolve_site_floors
 
             site_means = resolve_site_floors(
-                inference, bank, in_scope, posctx_means=site_means, loader=loader
+                inference, bank, in_scope, posctx_means=site_means, loader=loader,
+                neg_tokens=neg_tokens_eval,
             )
             a_empty = circuit_only_activation(
                 inference,

@@ -8,6 +8,7 @@ from ..types.sparse_act import SparseAct
 from config import config
 from store.circuits import Circuit, CircuitNode
 from circuit.instrument.sae_graph import SAEGraphInstrument
+from circuit.instrument.position_aware import PositionAwareSpec
 from circuit.types.feature_id import FeatureID
 from observability.circuit_logger import CircuitLogger
 from eval.faithfulness import evaluate_faithfulness
@@ -117,6 +118,8 @@ class SFCAttributionPatching(DiscoveryMethod):
         probe_batch_size: Optional[int] = None,
         min_faithfulness: Optional[float] = None,
         ig_steps: Optional[int] = None,
+        metric_mode: Optional[str] = None,
+        position_mode: Optional[str] = None,
     ):
         super().__init__(inference, sae_bank, avg_acts, probe_builder)
         cfg = config.discovery.sfc_attribution_patching
@@ -132,6 +135,81 @@ class SFCAttributionPatching(DiscoveryMethod):
             else cast(float, config.discovery.min_faithfulness or 0.3)
         )
         self.ig_steps          = ig_steps          if ig_steps          is not None else cast(int,   getattr(cfg, "ig_steps", 10))
+        self.metric_mode       = metric_mode       or cast(str,   getattr(cfg, "metric_mode", "logit"))
+        self.position_mode     = position_mode     or cast(str,   getattr(cfg, "position_mode", "npa"))
+        self.pa_select         = cast(str,   getattr(cfg, "pa_select", "abs_pctl"))
+        self.pa_top_n          = cast(int,   getattr(cfg, "pa_top_n", 64))
+        self.pa_threshold      = cast(float, getattr(cfg, "pa_threshold", 90.0))
+
+    def _metric(
+        self,
+        logits: torch.Tensor,
+        batch_idx: torch.Tensor,
+        argmax: torch.Tensor,
+        target_ids: torch.Tensor,
+    ) -> torch.Tensor:
+        """The scalar m that IG attributes — SFC's "metric on the model's output".
+
+        "logit" (default, unchanged): the raw target logit. Kept as the default so
+            existing behaviour is untouched.
+        "logprob": log-softmax of the target token. SFC's own metric is a LOG
+            PROBABILITY difference; a raw logit carries a large input-independent
+            baseline that mean-ablation does not remove, which collapses the
+            faithfulness denominator (measured m(full)-m(empty) = 1.81, leaving
+            every ratio noise-dominated). log_softmax normalises against the whole
+            vocabulary, which restores a meaningful denominator without needing
+            minimal pairs — a cleaner choice than a sampled distractor token,
+            which would add variance without adding signal.
+        """
+        if self.metric_mode == "logprob":
+            lp = torch.log_softmax(logits[batch_idx, argmax].float(), dim=-1)
+            return lp[torch.arange(lp.shape[0], device=lp.device), target_ids].sum()
+        return logits[batch_idx, argmax, target_ids].sum()
+
+    def _aggregate_effect(
+        self,
+        effect: SparseAct,
+        pa_spec: Optional[PositionAwareSpec],
+    ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
+        """Reduce ONE site's per-position IG effect to one score per latent.
+
+        npa       SFC's OWN rule for non-templatic data: sum over token
+                  positions, then example-wise mean. Verified against their
+                  App. C and their reference implementation (feature-circuits
+                  circuit.py:69-70). One node per (site, latent).
+        pa_union  OURS, not SFC's — an extension applied on top of their
+                  attribution: per-position selection, unioned over the causal
+                  prefix and across sequences, keeping each latent's
+                  largest-|score|. Kept clearly labelled so a comparison never
+                  reads as "SFC does this".
+
+        Returns ``(scores[d_sae], res_agg[1])``, either of which may be None
+        when the site contributed no activations / no error term.
+        """
+        # NPA (default): SFC's non-templatic aggregation.
+        agg = effect.sum(dim=1).mean(dim=0)
+        scores, res_agg = agg.act, agg.resc
+
+        if self.position_mode == "pa_union" and effect.act is not None:
+            if pa_spec is None:
+                raise ValueError("pa_union requires a resolved PositionAwareSpec")
+            sel = pa_spec.select_from(effect.act)                     # {latent: score}
+            d_sae = effect.act.shape[-1]
+            scores = torch.zeros(d_sae, dtype=effect.act.dtype,
+                                 device=effect.act.device)
+            if sel:
+                idx = torch.tensor(list(sel.keys()), dtype=torch.long,
+                                   device=scores.device)
+                scores[idx] = torch.tensor(list(sel.values()),
+                                           dtype=scores.dtype,
+                                           device=scores.device)
+            if effect.resc is not None:
+                # One error node per site, so there is no union to take — it is
+                # scored at its strongest position.
+                rp = effect.resc.mean(dim=0).reshape(-1)              # [T]
+                res_agg = rp[rp.abs().argmax()].reshape(1)
+
+        return scores, res_agg
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, "sfc_attribution_patching")
@@ -193,9 +271,18 @@ class SFCAttributionPatching(DiscoveryMethod):
         resid_node_id_map: Dict[Tuple[int, str], str] = {}
         active_latents: Dict[Tuple[int, str], List[int]] = {}
 
+        # pa_union resolves ONE admission threshold pooled across every site,
+        # before the per-site loop — the same discipline our own attribution
+        # passes use (pooling makes "p90" mean the same thing on every seed).
+        pa_spec: Optional[PositionAwareSpec] = None
+        if self.position_mode == "pa_union":
+            pa_spec = PositionAwareSpec(
+                peaks=probe_argmax, top_n=self.pa_top_n,
+                select=self.pa_select, threshold=self.pa_threshold,
+            ).resolved_for([e.act for e in effects.values() if e.act is not None])
+
         for (layer, kind), effect in effects.items():
-            agg = effect.sum(dim=1).mean(dim=0)
-            scores = agg.act
+            scores, res_agg = self._aggregate_effect(effect, pa_spec)
             if scores is None:
                 continue
 
@@ -213,7 +300,7 @@ class SFCAttributionPatching(DiscoveryMethod):
                 node_id_map[fid] = node.uuid
                 active_latents.setdefault((layer, kind), []).append(l_idx)
 
-            res_score = float(agg.resc.item()) if agg.resc is not None else 0.0
+            res_score = float(res_agg.item()) if res_agg is not None else 0.0
             if abs(res_score) >= self.node_threshold:
                 node = CircuitNode(metadata={
                     "layer_idx": layer, "kind": kind,
@@ -488,7 +575,8 @@ class SFCAttributionPatching(DiscoveryMethod):
                     return_activations=False, all_logits=True,
                 )
                 target_ids = targets[batch_idx, argmax.to(targets.device)].to(logits.device)
-                logits[batch_idx, argmax, target_ids].sum().backward()
+                metric = self._metric(logits, batch_idx, argmax, target_ids)
+                metric.backward()
 
                 act_grad_sum += f_act.grad.detach() if f_act.grad is not None else torch.zeros_like(f_act)
                 res_grad_sum += f_res.grad.detach() if f_res.grad is not None else torch.zeros_like(f_res)

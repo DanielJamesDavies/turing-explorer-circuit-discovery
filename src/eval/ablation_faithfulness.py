@@ -13,7 +13,10 @@ Protocol, aligned with sparse feature circuits:
     layer and reduces the model to SAE error terms; SFC explicitly
     mean-ablates ("set to their average value over data from D") and notes
     that deleting residual-stream signal "severely disrupts the model".
-  - SAE reconstruction error is always preserved (error nodes stay in place).
+  - SAE reconstruction error is preserved by default (error nodes stay in
+    place). Callers may instead pass ``keep_error_sites`` to make the error an
+    ABLATABLE node per site, as SFC treats it; every existing metric is
+    measured under the default, which is unchanged.
   - The score is normalised against the EMPTY circuit, as in SFC:
 
         score = (a_circuit_only − a_empty) / (a_posctx − a_empty)
@@ -74,6 +77,9 @@ class CircuitOnlyPatcher:
         pin_values: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
         respect_topk: bool = False,
         topk: int = 128,
+        keep_tensors: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
+        keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
+        error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     ) -> None:
         self.bank = bank
         self.keep_indices = keep_indices
@@ -94,6 +100,21 @@ class CircuitOnlyPatcher:
         self.respect_topk = respect_topk
         self.topk = topk
         self.captured_activation: Optional[float] = None
+        # Keep-index tensors are CONSTANT for the life of the patcher, but
+        # transform() runs once per (site, batch). Building them there rebuilt
+        # the same ~30k-element CUDA tensor 136x per forward pass (34 sites x 4
+        # batches) — profiled at 0.59s of a 0.79s masking cost, ~20% of a
+        # magnitude-prune bisection, purely to recompute a constant.
+        # ``keep_tensors`` lets the caller build them once across all batches
+        # (see circuit_only_activation). Without it they are cached lazily per
+        # site here, using the live activation's device — not every bank
+        # exposes one.
+        self._keep_tensors: Dict[Tuple[int, str], Optional[torch.Tensor]] = (
+            dict(keep_tensors) if keep_tensors is not None else {}
+        )
+        # None => preserve SAE error at every site (default, unchanged).
+        self.keep_error_sites = keep_error_sites
+        self.error_means = error_means
 
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
@@ -130,10 +151,18 @@ class CircuitOnlyPatcher:
             if self.site_means is not None
             else None
         )
-        keep = self.keep_indices.get((layer_idx, kind))
-        keep_tensor = (
-            torch.tensor(sorted(keep), device=all_latents.device, dtype=torch.long) if keep else None
-        )
+        site = (layer_idx, kind)
+        if site in self._keep_tensors:
+            keep_tensor = self._keep_tensors[site]
+        else:
+            keep = self.keep_indices.get(site)
+            keep_tensor = (
+                torch.tensor(sorted(keep), device=all_latents.device, dtype=torch.long)
+                if keep else None
+            )
+            self._keep_tensors[site] = keep_tensor
+        if keep_tensor is not None and keep_tensor.device != all_latents.device:
+            keep_tensor = keep_tensor.to(all_latents.device)
 
         def kept_values() -> Optional[torch.Tensor]:
             if keep_tensor is None:
@@ -162,6 +191,24 @@ class CircuitOnlyPatcher:
             if keep_tensor is not None:
                 patched[:, :, keep_tensor] = kept_values()
 
+        # SAE error handling. Default (keep_error_sites is None) preserves the
+        # error everywhere — the historical behaviour every existing metric was
+        # measured under, left byte-identical.
+        #
+        # When keep_error_sites IS given, the error becomes an ABLATABLE NODE, as
+        # in SFC: a site's error survives only if its error node is in the
+        # circuit, otherwise it is replaced by its mean (or dropped when no mean
+        # is supplied). Needed because with the error always preserved the empty
+        # circuit already retains most of the model's predictive signal, which
+        # collapses the faithfulness denominator — SFC's own finding that
+        # residual error nodes are load-bearing.
+        if self.keep_error_sites is not None and (layer_idx, kind) not in self.keep_error_sites:
+            if self.error_means is not None and (layer_idx, kind) in self.error_means:
+                error = self.error_means[(layer_idx, kind)].to(
+                    device=error.device, dtype=error.dtype
+                ).expand_as(error)
+            else:
+                error = torch.zeros_like(error)
         return self.bank.decode(patched, kind, layer_idx) + error
 
     def _respect_topk_fill(
@@ -260,6 +307,7 @@ from eval.floors import (  # noqa: F401  (re-exports)
     collect_diverse_site_floors,
     collect_global_site_floors,
     collect_site_anchors,
+    collect_site_error_means,
     collect_site_means,
     resolve_site_floors,
 )
@@ -296,16 +344,35 @@ def circuit_only_activation(
     respect_topk: bool = False,
     topk: int = 128,
     batch_size: Optional[int] = None,
+    keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
+    error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
 ) -> float:
     """Circuit-only execution: everything outside ``keep_indices`` ablated.
 
     ``batch_size``: sequences per forward pass. ``pos_tokens`` may carry more;
     chunks are averaged with B_chunk/B_total weights, which equals the
     single-pass per-sequence mean exactly. None (default) = one pass over all
-    of ``pos_tokens`` — the historical behaviour."""
+    of ``pos_tokens`` — the historical behaviour.
+
+    ``keep_error_sites``/``error_means``: error-node mode (see
+    CircuitOnlyPatcher). None (default) preserves every site's SAE error — the
+    behaviour every historical φ was measured under. A set makes the error an
+    ablatable node: it survives only at member sites, and is mean-filled
+    (``error_means`` from ``collect_site_error_means``) or zeroed elsewhere."""
 
     B_total = int(pos_tokens.shape[0])
     bs = B_total if batch_size is None else max(1, int(batch_size))
+
+    # Build the keep-index tensors ONCE for the whole call. A fresh patcher is
+    # constructed per batch below, so caching them on the patcher cannot help:
+    # each site is transformed exactly once per patcher. Profiled at 0.556s of a
+    # 0.756s masking cost (136 rebuilds = 34 sites x 4 batches) purely to
+    # reconstruct a constant from a Python list.
+    keep_tensors = {
+        site: torch.tensor(sorted(idxs), device=pos_tokens.device, dtype=torch.long)
+        for site, idxs in keep_indices.items()
+        if idxs
+    }
 
     total = 0.0
     inference.disable_compile()
@@ -334,6 +401,9 @@ def circuit_only_activation(
                 pos_argmax=argmax_chunk,
                 site_means=site_means,
                 pin_values=pins_chunk,
+                keep_tensors=keep_tensors,
+                keep_error_sites=keep_error_sites,
+                error_means=error_means,
             )
             inference.forward(
                 tokens_chunk,

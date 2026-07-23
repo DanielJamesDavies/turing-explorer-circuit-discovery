@@ -476,6 +476,134 @@ class TestFloorSource:
         out = resolve_site_floors(MagicMock(), ControlledSAEBank(), {(0, "attn")}, posctx_means=means)
         assert out is means
 
+    # ---- floor_source="negctx" ------------------------------------------
+    # The floor built from the seed's NEGATIVE contexts: sequences retrieved
+    # because the seed is silent on them. Unlike posctx (whose mean carries the
+    # seed's own firing signature by construction) it strips seed-specific
+    # content while keeping generic stream content.
+
+    def _negctx_setup(self, monkeypatch, seed_act=4.0):
+        from config import config as cfg
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", "negctx")
+        bank = ControlledSAEBank(seed_act=seed_act)
+        bank.device = torch.device("cpu")
+        inf, _ = _make_stub_inference(bank, (seed_act,))
+        return bank, inf
+
+    def test_negctx_source_reads_neg_tokens_not_posctx(self, monkeypatch):
+        """The floor must come from a forward on neg_tokens. Guards the whole
+        point of the source: reading pos_tokens here would silently reproduce
+        the posctx floor under a negctx label."""
+        import eval.ablation_faithfulness as module
+
+        bank, inf = self._negctx_setup(monkeypatch)
+        sites = {(SEED_LAYER, SEED_KIND)}
+        # Distinctive fill so the assertion is on identity, not coincidence.
+        neg_tokens = torch.full((B, T), 7, dtype=torch.long)
+        posctx_means = {(SEED_LAYER, SEED_KIND): torch.zeros(D_SAE)}
+
+        out = module.resolve_site_floors(
+            inf, bank, sites, posctx_means=posctx_means, neg_tokens=neg_tokens,
+        )
+
+        assert inf.forward.call_count == 1
+        assert torch.equal(inf.forward.call_args[0][0], neg_tokens)
+        assert out is not posctx_means
+        assert out[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(4.0, abs=1e-5)
+
+    def test_negctx_source_needs_no_loader(self, monkeypatch):
+        """Seed-specific, so unlike global/diverse it never touches the corpus."""
+        import eval.ablation_faithfulness as module
+
+        bank, inf = self._negctx_setup(monkeypatch)
+        out = module.resolve_site_floors(
+            inf, bank, {(SEED_LAYER, SEED_KIND)},
+            posctx_means={(SEED_LAYER, SEED_KIND): torch.zeros(D_SAE)},
+            loader=None, neg_tokens=torch.zeros(B, T, dtype=torch.long),
+        )
+        assert (SEED_LAYER, SEED_KIND) in out
+
+    def test_negctx_source_is_not_cached_across_seeds(self, monkeypatch):
+        """global/diverse cache per process because they are seed-independent;
+        negctx must NOT, or seed 2 would inherit seed 1's negatives."""
+        import eval.ablation_faithfulness as module
+
+        from config import config as cfg
+        monkeypatch.setattr(cfg.discovery, "floor_source", "negctx")
+        bank = ControlledSAEBank(seed_act=1.0)
+        bank.device = torch.device("cpu")
+        inf, _ = _make_stub_inference(bank, (1.0, 9.0))
+        sites = {(SEED_LAYER, SEED_KIND)}
+        pm = {(SEED_LAYER, SEED_KIND): torch.zeros(D_SAE)}
+
+        first = module.resolve_site_floors(
+            inf, bank, sites, posctx_means=pm,
+            neg_tokens=torch.zeros(B, T, dtype=torch.long))
+        second = module.resolve_site_floors(
+            inf, bank, sites, posctx_means=pm,
+            neg_tokens=torch.ones(B, T, dtype=torch.long))
+
+        assert inf.forward.call_count == 2          # recomputed, not cached
+        assert first[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(1.0, abs=1e-5)
+        assert second[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(9.0, abs=1e-5)
+
+    @pytest.mark.parametrize("bad", [None, torch.zeros(0, 8, dtype=torch.long)])
+    def test_negctx_source_raises_rather_than_falling_back(self, monkeypatch, bad):
+        """A seed with no negatives must fail loudly. A silent fallback would
+        label another floor's numbers 'negctx' and poison the comparison."""
+        import eval.ablation_faithfulness as module
+
+        bank, inf = self._negctx_setup(monkeypatch)
+        with pytest.raises(ValueError, match="negctx"):
+            module.resolve_site_floors(
+                inf, bank, {(SEED_LAYER, SEED_KIND)},
+                posctx_means={(SEED_LAYER, SEED_KIND): torch.zeros(D_SAE)},
+                neg_tokens=bad,
+            )
+        assert inf.forward.call_count == 0
+
+    @pytest.mark.parametrize("source", ["posctx", "zero"])
+    def test_neg_tokens_ignored_under_other_sources(self, monkeypatch, source):
+        """Inertness: threading neg_tokens everywhere must not perturb any
+        existing floor. This is what keeps the default path byte-identical."""
+        from config import config as cfg
+        import eval.ablation_faithfulness as module
+
+        monkeypatch.setattr(cfg.discovery, "floor_source", source)
+        inf = MagicMock()
+        means = {(0, "attn"): torch.ones(D_SAE)}
+        out = module.resolve_site_floors(
+            inf, ControlledSAEBank(), {(0, "attn")}, posctx_means=means,
+            neg_tokens=torch.full((B, T), 7, dtype=torch.long),
+        )
+        if source == "posctx":
+            assert out is means
+        else:
+            assert torch.all(out[(0, "attn")] == 0.0)
+        assert inf.forward.call_count == 0
+
+    def test_config_validator_accepts_negctx_and_rejects_unknown(self):
+        from config import DiscoveryConfig
+
+        assert DiscoveryConfig(floor_source="negctx").floor_source == "negctx"
+        for known in ("posctx", "zero", "global", "diverse"):
+            assert DiscoveryConfig(floor_source=known).floor_source == known
+        with pytest.raises(ValueError, match="floor_source"):
+            DiscoveryConfig(floor_source="negctxx")
+
+    def test_floor_negctx_mode_validator(self):
+        """Which negatives define the negctx floor. Defaults to the neg_ctx KNN
+        store (close/hard); the other modes re-retrieve so the floor's negative
+        hardness can be swept independently of a method's own neg_mode."""
+        from config import DiscoveryConfig
+
+        assert DiscoveryConfig().floor_negctx_mode == "store"
+        for known in ("store", "close", "random", "distant"):
+            assert DiscoveryConfig(floor_negctx_mode=known).floor_negctx_mode == known
+        with pytest.raises(ValueError, match="floor_negctx_mode"):
+            DiscoveryConfig(floor_negctx_mode="closest")
+
     def test_global_source_uses_corpus_sample_and_caches(self, monkeypatch):
         from config import config as cfg
         import eval.ablation_faithfulness as module
