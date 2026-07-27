@@ -785,3 +785,147 @@ class TestEvalBatchChunking:
         )
         assert counter[0] == 2
         assert value == pytest.approx(2.0, abs=1e-5)
+
+
+class TestKeepScale:
+    """keep_scale: the amplitude intervention (redundancy probe). Default 1.0
+    must be bit-identical to the historical transform."""
+
+    def _x(self):
+        torch.manual_seed(3)
+        return torch.randn(B, T, D_MODEL)
+
+    def _patcher(self, bank, scale, keep=None, pin_values=None):
+        return CircuitOnlyPatcher(
+            bank=bank, keep_indices=keep or {(0, "attn"): {1, 3}},
+            in_scope={(0, "attn")}, seed_layer=1, seed_kind="resid",
+            seed_latent_idx=5, pin_values=pin_values, keep_scale=scale)
+
+    def test_default_scale_is_identity(self, mock_sae_bank):
+        x = self._x()
+        a = self._patcher(mock_sae_bank, 1.0).transform(0, "attn", x)
+        b = CircuitOnlyPatcher(bank=mock_sae_bank,
+                               keep_indices={(0, "attn"): {1, 3}},
+                               in_scope={(0, "attn")}, seed_layer=1,
+                               seed_kind="resid",
+                               seed_latent_idx=5).transform(0, "attn", x)
+        assert torch.equal(a, b)
+
+    def test_scale_doubles_kept_contribution(self, mock_sae_bank):
+        """decode is linear in the code, so scaling kept values by 2 must move
+        the output by exactly the kept latents' decode contribution."""
+        x = self._x()
+        out1 = self._patcher(mock_sae_bank, 1.0).transform(0, "attn", x)
+        out2 = self._patcher(mock_sae_bank, 2.0).transform(0, "attn", x)
+        ta, ti = mock_sae_bank.encode(x, "attn", 0)
+        dense = sparse_topk_to_dense(ta, ti, D_SAE)
+        kept_only = torch.zeros_like(dense)
+        kept_only[:, :, [1, 3]] = dense[:, :, [1, 3]]
+        contrib = (mock_sae_bank.decode(kept_only, "attn", 0)
+                   - mock_sae_bank.decode(torch.zeros_like(dense), "attn", 0))
+        assert torch.allclose(out2 - out1, contrib, atol=1e-5)
+
+    def test_scale_applies_to_pins_too(self, mock_sae_bank):
+        x = self._x()
+        pins = {(0, "attn"): torch.full((D_SAE,), 2.0)}
+        out1 = self._patcher(mock_sae_bank, 1.0, pin_values=pins).transform(0, "attn", x)
+        out3 = self._patcher(mock_sae_bank, 3.0, pin_values=pins).transform(0, "attn", x)
+        assert not torch.allclose(out1, out3, atol=1e-4)
+
+    def test_threading_reaches_patcher(self, mock_sae_bank, monkeypatch):
+        from eval import ablation_faithfulness as af
+        captured = {}
+
+        class FakePatcher:
+            def __init__(self, **kw):
+                captured.update(kw)
+                self.captured_activation = 1.0
+
+        monkeypatch.setattr(af, "CircuitOnlyPatcher", FakePatcher)
+        af.circuit_only_activation(
+            MagicMock(), mock_sae_bank, {}, {(0, "attn")},
+            torch.zeros(B, T, dtype=torch.long), 1, "resid", 5, keep_scale=4.0)
+        assert captured["keep_scale"] == 4.0
+
+
+class TestPreactCapture:
+    """capture_preact / preact=True: the uncensored seed measurement.
+
+    The default post-top-k read is floored at 0 (target_latent_activations
+    returns 0 when the seed misses the top-k), so it cannot distinguish "no
+    drive" from "below threshold" nor show the sign of changes underneath.
+    """
+
+    def _bank_with_seed_sae(self, w_row, bias=0.0):
+        """Attach the real SAE's encoder API (encoder.weight / _get_bias_eff)
+        to the mock module — replacing the module would break bank.encode()."""
+        from types import SimpleNamespace
+        bank = MockSAEBank()
+        mod = bank.saes[SEED_KIND][SEED_LAYER]
+        W = torch.zeros(D_SAE, D_MODEL)
+        W[SEED_LATENT] = w_row
+        mod.encoder = SimpleNamespace(weight=W)
+        mod._get_bias_eff = lambda: torch.full((D_SAE,), float(bias))
+        return bank
+
+    def test_preact_matches_manual_dot_product(self):
+        bank = self._bank_with_seed_sae(torch.eye(D_MODEL)[0], bias=0.5)
+        p = CircuitOnlyPatcher(
+            bank=bank, keep_indices={}, in_scope=set(),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT, capture_preact=True)
+        x = torch.zeros(B, T, D_MODEL)
+        x[:, :, 0] = 3.0
+        p.transform(SEED_LAYER, SEED_KIND, x)
+        assert p.captured_preactivation == pytest.approx(3.5, abs=1e-5)
+
+    def test_preact_can_be_negative_where_activation_floors_at_zero(self):
+        """The whole point: post-top-k reads 0, pre-act reads the real value."""
+        bank = self._bank_with_seed_sae(torch.eye(D_MODEL)[0], bias=0.0)
+        p = CircuitOnlyPatcher(
+            bank=bank, keep_indices={}, in_scope=set(),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT, capture_preact=True)
+        x = torch.zeros(B, T, D_MODEL)
+        x[:, :, 0] = -2.0
+        p.transform(SEED_LAYER, SEED_KIND, x)
+        assert p.captured_preactivation == pytest.approx(-2.0, abs=1e-5)
+        assert p.captured_activation == pytest.approx(0.0, abs=1e-6)
+
+    def test_preact_respects_pos_argmax(self):
+        bank = self._bank_with_seed_sae(torch.eye(D_MODEL)[0])
+        pa = torch.full((B,), 2, dtype=torch.long)
+        p = CircuitOnlyPatcher(
+            bank=bank, keep_indices={}, in_scope=set(),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT, pos_argmax=pa, capture_preact=True)
+        x = torch.zeros(B, T, D_MODEL)
+        x[:, 2, 0] = 7.0          # only the probe position carries signal
+        p.transform(SEED_LAYER, SEED_KIND, x)
+        assert p.captured_preactivation == pytest.approx(7.0, abs=1e-5)
+
+    def test_default_off_leaves_preact_none(self, mock_sae_bank):
+        p = CircuitOnlyPatcher(
+            bank=mock_sae_bank, keep_indices={}, in_scope=set(),
+            seed_layer=SEED_LAYER, seed_kind=SEED_KIND,
+            seed_latent_idx=SEED_LATENT)
+        p.transform(SEED_LAYER, SEED_KIND, torch.randn(B, T, D_MODEL))
+        assert p.captured_preactivation is None
+        assert p.captured_activation is not None
+
+    def test_circuit_only_activation_returns_preact(self, mock_sae_bank, monkeypatch):
+        from eval import ablation_faithfulness as af
+        captured = {}
+
+        class FakePatcher:
+            def __init__(self, **kw):
+                captured.update(kw)
+                self.captured_activation = 1.0
+                self.captured_preactivation = -4.0
+
+        monkeypatch.setattr(af, "CircuitOnlyPatcher", FakePatcher)
+        out = af.circuit_only_activation(
+            MagicMock(), mock_sae_bank, {}, {(0, "attn")},
+            torch.zeros(B, T, dtype=torch.long), 1, "resid", 5, preact=True)
+        assert captured["capture_preact"] is True
+        assert out == pytest.approx(-4.0)

@@ -252,6 +252,12 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
                 ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
             )
             pass_label = f"restoration_negctx/{self.ig_negctx_objective} selection"
+        elif self.attribution_mode in ("mask_contrast", "mask_negctx"):
+            activator_scores, inhibitor_scores = self._run_mask_hop(
+                ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.neg_tokens,
+                ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
+            )
+            pass_label = f"{self.attribution_mode} optimisation"
         elif self.attribution_mode in ("restoration", "ig_restoration"):
             # Full probe_sequence_count: the round scorer chunks internally
             # at probe_batch_size (see _round_scores).
@@ -404,6 +410,65 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
         sup_score: float,
     ) -> Dict[str, Any]:
         return {"n_activators": n_pos, "n_inhibitors": n_neg}
+
+    def _run_mask_hop(
+        self,
+        seed_comp_idx: int,
+        seed_latent_idx: int,
+        neg_tokens: torch.Tensor,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        target_act_pos: float,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
+        """The cf-hosted learned-mask modes.
+
+        mask_contrast: reconstruction on posctx PLUS beta-weighted silence on
+        negctx — selectivity, not just drive. All kept members are supports
+        (m >= 0; the mask never asks for a sign).
+        mask_negctx: pure gate-opening on negctx — the minimal EDIT to the
+        natural negctx stream that fires the seed at the posctx level. Kept
+        members carry negative scores (-(1 - m)) and are delivered as
+        INHIBITORS: latents whose presence holds the seed off, i.e. exactly
+        the set the cf eval suppresses on negctx.
+        """
+        if self.position_aware:
+            raise ValueError(
+                f"attribution_mode={self.attribution_mode!r} does not support "
+                "position_aware yet — failing loudly rather than silently "
+                "ignoring the flag."
+            )
+        from circuit.instrument.learned_mask import run_learned_mask
+        from eval.ablation_faithfulness import upstream_sites
+
+        n_kinds = len(self.sae_bank.kinds)
+        seed_layer, seed_kind_idx = split_component_idx(seed_comp_idx, n_kinds)
+        seed_kind = self.sae_bank.kinds[seed_kind_idx]
+        sites = sorted(upstream_sites(self.sae_bank, seed_layer, seed_kind))
+        if not sites:
+            logger.note("mask: seed has no upstream sites")
+            return {}, {}
+        cfg = config.discovery.learned_mask
+        objective = ("contrast" if self.attribution_mode == "mask_contrast"
+                     else "negctx")
+        scores, prov = run_learned_mask(
+            self.inference, self.sae_bank,
+            objective=objective, sites=sites,
+            seed_layer=seed_layer, seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            pos_tokens=pos_tokens, pos_argmax=pos_argmax,
+            neg_tokens=neg_tokens, target_act=target_act_pos,
+            steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda, beta=cfg.beta,
+            keep_threshold=cfg.keep_threshold,
+            batch_size=self.probe_batch_size,
+            holdout_frac=cfg.holdout_frac, theta_init=cfg.theta_init,
+            log_every=cfg.log_every,
+            deep_site_threshold=cfg.deep_site_threshold,
+            deep_batch_size=cfg.deep_batch_size, logger=logger,
+        )
+        if objective == "negctx":
+            return {}, scores          # all edits, delivered as inhibitors
+        return scores, {}              # all supports
 
     def _get_neg_tokens(
         self,

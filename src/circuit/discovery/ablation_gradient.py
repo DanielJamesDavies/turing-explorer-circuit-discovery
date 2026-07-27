@@ -82,6 +82,10 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             return self._run_ig_mean_hop(
                 seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
             )
+        if self.attribution_mode == "mask":
+            return self._run_mask_hop(
+                seed_layer, seed_kind, seed_latent_idx, pos_tokens, pos_argmax, logger
+            )
         if self.attribution_mode in ("restoration", "ig_restoration"):
             # Full probe_sequence_count: the round scorer chunks internally
             # at probe_batch_size (see restoration._round_scores).
@@ -233,6 +237,55 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             include_negatives=self.negative_roles == "include",
         )
         return supports, metric_floor, metric_natural
+
+    def _run_mask_hop(
+        self,
+        seed_layer: int,
+        seed_kind: str,
+        seed_latent_idx: int,
+        pos_tokens: torch.Tensor,
+        pos_argmax: torch.Tensor,
+        logger: CircuitLogger,
+    ) -> Tuple[Dict[FeatureID, float], float, float]:
+        """abl-mask: the learned continuous mask under the posctx objective —
+        the sparsest soft membership whose masked stream reproduces the seed's
+        natural pre-activation. Selection happens inside the engine (threshold
+        on converged m), as with restoration; scores are m values, all
+        positive, so role delivery is trivially supports-only. floor_source is
+        inert here (the loss anchors at the natural state, not a floor)."""
+
+        if self.position_aware:
+            raise ValueError(
+                "attribution_mode='mask' does not support position_aware yet: "
+                "a flat mask IS a flat membership, and the position-indexed "
+                "mask is a planned variant — failing loudly rather than "
+                "silently ignoring the flag."
+            )
+        from circuit.instrument.learned_mask import run_learned_mask
+        from eval.ablation_faithfulness import upstream_sites
+
+        sites = sorted(upstream_sites(self.sae_bank, seed_layer, seed_kind))
+        if not sites:
+            logger.note("mask: seed has no upstream sites")
+            return {}, 0.0, 0.0
+        cfg = config.discovery.learned_mask
+        scores, prov = run_learned_mask(
+            self.inference, self.sae_bank,
+            objective="pos", sites=sites,
+            seed_layer=seed_layer, seed_kind=seed_kind,
+            seed_latent_idx=seed_latent_idx,
+            pos_tokens=pos_tokens, pos_argmax=pos_argmax,
+            steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda,
+            keep_threshold=cfg.keep_threshold,
+            batch_size=self.probe_batch_size,
+            holdout_frac=cfg.holdout_frac, theta_init=cfg.theta_init,
+            log_every=cfg.log_every,
+            deep_site_threshold=cfg.deep_site_threshold,
+            deep_batch_size=cfg.deep_batch_size, logger=logger,
+        )
+        self._pending_inhibitors = {}
+        return scores, float(prov.get("loss_initial") or 0.0), float(
+            prov.get("loss_final") or 0.0)
 
     def _run_restoration_hop(
         self,

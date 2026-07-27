@@ -717,26 +717,60 @@ class TopCoactivation:
     # ------------------------------------------------------------------
 
     def load(self, path: str) -> None:
+        """Load a saved store. The ARTIFACT is authoritative for its own shape
+        and mode: an artifact built with n_latents_per_latent=128 must load
+        under a config that says 64 (the values are baked at build time, and a
+        wider store is strictly more information). Allocating from the current
+        config instead silently broke every load of the 20260531 run's store
+        (built at 128, mode "pmi") once the config default moved to 64 — and
+        the blanket "likely no file yet" message hid the real error for days.
+
+        The model grid (num_components, d_sae) stays a hard requirement: a
+        store for a different model/SAE is not adoptable.
+        """
         try:
             checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+
+            ti = checkpoint.get("top_indices")
+            if ti is not None and hasattr(ti, "shape") and ti.dim() == 3:
+                nc, ds, npl = (int(x) for x in ti.shape)
+                if (nc, ds) != (self.num_components, self.d_sae):
+                    raise ValueError(
+                        f"artifact grid ({nc}, {ds}) does not match model grid "
+                        f"({self.num_components}, {self.d_sae}) — wrong model/SAE"
+                    )
+                if npl != self.n_latents_per_latent:
+                    print(f"[top_coactivation] artifact stores top-{npl} per latent, "
+                          f"config expects top-{self.n_latents_per_latent} — adopting "
+                          f"the artifact's {npl} (values are baked at build time)")
+                    self.n_latents_per_latent = npl
+                    self._allocated = False  # force reallocation at the right shape
+
             self.allocate()
-            if "top_indices" in checkpoint:
-                self.top_indices.copy_(checkpoint["top_indices"])
-            if "top_values" in checkpoint:
-                self.top_values.copy_(checkpoint["top_values"])
-            if "freq_factors" in checkpoint:
-                self.freq_factors.copy_(checkpoint["freq_factors"])
+            for name in ("top_indices", "top_values", "freq_factors"):
+                val = checkpoint.get(name)
+                # freq_factors is stored as None by modes that never build it
+                # (pmi); copy_(None) would crash a perfectly good artifact.
+                if val is not None:
+                    getattr(self, name).copy_(val)
             if "total_tokens_processed" in checkpoint:
                 self.total_tokens_processed = checkpoint["total_tokens_processed"]
-            
-            # Verify mode compatibility
+
+            # The stored values were computed under the stored mode; config
+            # cannot reinterpret them, so adopt (keeps save() round-trips and
+            # any build-time reuse consistent with the data actually held).
             stored_mode = checkpoint.get("mode")
             if stored_mode is not None and stored_mode != self.mode:
-                print(f"[top_coactivation] WARNING: Stored mode '{stored_mode}' "
-                      f"differs from current config mode '{self.mode}'. "
-                      f"Co-activation values may be inconsistent.")
+                print(f"[top_coactivation] adopting artifact mode '{stored_mode}' "
+                      f"(config said '{self.mode}'; values are baked at build time)")
+                self._mode = stored_mode
+        except FileNotFoundError:
+            print(f"TopCoactivation store not found at {path} — starting empty")
         except Exception as e:
-            print(f"TopCoactivation load failed (likely no file yet): {e}")
+            # A present-but-unloadable artifact is a real error; say so loudly
+            # instead of the old "likely no file yet" shrug that masked it.
+            print(f"[top_coactivation] LOAD FAILED for existing artifact {path}: "
+                  f"{type(e).__name__}: {e}")
 
     def save(self, path: str) -> None:
         if not self._allocated:

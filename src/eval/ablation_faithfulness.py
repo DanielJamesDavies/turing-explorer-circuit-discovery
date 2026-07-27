@@ -80,6 +80,8 @@ class CircuitOnlyPatcher:
         keep_tensors: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
         keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
         error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
+        keep_scale: float = 1.0,
+        capture_preact: bool = False,
     ) -> None:
         self.bank = bank
         self.keep_indices = keep_indices
@@ -115,6 +117,9 @@ class CircuitOnlyPatcher:
         # None => preserve SAE error at every site (default, unchanged).
         self.keep_error_sites = keep_error_sites
         self.error_means = error_means
+        self.keep_scale = float(keep_scale)
+        self.capture_preact = bool(capture_preact)
+        self.captured_preactivation: Optional[float] = None
 
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
@@ -127,6 +132,26 @@ class CircuitOnlyPatcher:
         if layer_idx == self.seed_layer and kind == self.seed_kind:
             top_acts, top_indices = self.bank.encode(x, kind, layer_idx)
             seed_dense = target_latent_activations(top_acts, top_indices, self.seed_latent_idx)  # [B, T]
+            if self.capture_preact:
+                # The seed's PRE-activation (w.x + b): continuous and signed,
+                # so it keeps measuring below the top-k cutoff where the
+                # post-top-k read above is censored to exactly 0. This is the
+                # quantity discovery optimises (the ig_mean "drive" objective),
+                # so capturing it here lets an eval score the same object
+                # discovery targeted.
+                sae_seed = self.bank.saes[kind][layer_idx]
+                w = sae_seed.encoder.weight[self.seed_latent_idx].detach().to(
+                    device=x.device, dtype=x.dtype)
+                b = sae_seed._get_bias_eff()[self.seed_latent_idx].detach().to(
+                    device=x.device, dtype=x.dtype)
+                pre = x @ w + b  # [B, T]
+                if self.pos_argmax is not None:
+                    aB = min(B, self.pos_argmax.shape[0])
+                    ppa = self.pos_argmax[:aB].to(x.device).clamp(0, T - 1)
+                    self.captured_preactivation = pre[:aB][
+                        torch.arange(aB, device=x.device), ppa].mean().item()
+                else:
+                    self.captured_preactivation = pre.mean().item()
             if self.pos_argmax is not None:
                 actual_B = min(B, self.pos_argmax.shape[0])
                 pa = self.pos_argmax[:actual_B].to(x.device).clamp(0, T - 1)
@@ -174,11 +199,18 @@ class CircuitOnlyPatcher:
                 if pins.dim() == 1:
                     # collapsed pin [d_sae]: one value per latent, broadcasts
                     # across [B, T, len(keep)].
-                    return pins[keep_tensor]
-                # position-specific pin [B, T, d_sae]: per-position clean value.
-                B_, T_ = all_latents.shape[:2]
-                return pins[:B_, :T_][:, :, keep_tensor]
-            return all_latents[:, :, keep_tensor]
+                    vals = pins[keep_tensor]
+                else:
+                    # position-specific pin [B, T, d_sae]: per-position clean value.
+                    B_, T_ = all_latents.shape[:2]
+                    vals = pins[:B_, :T_][:, :, keep_tensor]
+            else:
+                vals = all_latents[:, :, keep_tensor]
+            # Amplitude intervention (redundancy probe): scale kept members'
+            # values. 1.0 (default) is the historical behaviour, bit-identical.
+            if self.keep_scale != 1.0:
+                vals = vals * self.keep_scale
+            return vals
 
         if self.respect_topk and mean_vector is not None:
             patched = self._respect_topk_fill(all_latents, mean_vector, keep_tensor, kept_values())
@@ -346,8 +378,22 @@ def circuit_only_activation(
     batch_size: Optional[int] = None,
     keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
     error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
+    keep_scale: float = 1.0,
+    preact: bool = False,
 ) -> float:
     """Circuit-only execution: everything outside ``keep_indices`` ablated.
+
+    ``keep_scale``: multiply kept members' values (natural or pinned) by this
+    factor — the amplitude intervention for redundancy probes. 1.0 = historical
+    behaviour.
+
+    ``preact``: return the seed's PRE-activation (w.x + b) instead of its
+    post-top-k activation. The default read is censored — a seed that falls out
+    of its SAE's top-k reads exactly 0 however far below the cutoff it sits, so
+    "0.000" conflates "no drive" with "below threshold" and hides the sign of
+    any change beneath it. The pre-activation is continuous and signed, and is
+    the same quantity discovery optimises (the ig_mean "drive" objective), so
+    it closes the discovery/evaluation metric mismatch.
 
     ``batch_size``: sequences per forward pass. ``pos_tokens`` may carry more;
     chunks are averaged with B_chunk/B_total weights, which equals the
@@ -404,6 +450,8 @@ def circuit_only_activation(
                 keep_tensors=keep_tensors,
                 keep_error_sites=keep_error_sites,
                 error_means=error_means,
+                keep_scale=keep_scale,
+                capture_preact=preact,
             )
             inference.forward(
                 tokens_chunk,
@@ -411,7 +459,9 @@ def circuit_only_activation(
                 return_activations=False,
                 tokenize_final=False,
             )
-            total += float(patcher.captured_activation or 0.0) * tokens_chunk.shape[0]
+            captured = (patcher.captured_preactivation if preact
+                        else patcher.captured_activation)
+            total += float(captured or 0.0) * tokens_chunk.shape[0]
     finally:
         inference.enable_compile()
     return total / B_total if B_total else 0.0

@@ -641,6 +641,74 @@ class RestorationConfig(BaseModel):
         return v
 
 
+class LearnedMaskConfig(BaseModel):
+    """The learned continuous-mask modes (abl-mask, cf-mask_contrast,
+    cf-mask_negctx). Shared by all three objectives; beta is read only by
+    mask_contrast. Losses target the seed PRE-activation and every target is
+    a natural level ("reproduce, don't maximise"). Motivation: gradient signs
+    are state-dependent to near-independence (corr 0.05 at L8, 2026-07-24),
+    so membership is optimised against the loss rather than read off any
+    single gradient."""
+    model_config = ConfigDict(extra='forbid')
+    steps: int = 200
+    lr: float = 0.05
+    # Per-latent price (the penalty is a SUM over latents, not a mean —
+    # mean-normalising put the per-latent gradient under Adam's eps and
+    # nothing pruned). 1e-4 means "a latent must reduce the squared preact
+    # error by ~1e-4 to pay for itself".
+    l1_lambda: float = 0.0001
+    beta: float = 1.0                # mask_contrast: weight of negctx silence
+    keep_threshold: float = 0.5      # m above (pos/contrast) / edit above (negctx)
+    holdout_frac: float = 0.25       # probe split: train on the rest, report both
+    theta_init: float = 4.0          # sigmoid(4) ~= 0.982: start at ~natural
+    log_every: int = 50
+    # Depth-adaptive VRAM guard, same law as ig_negctx's (peak ~= base +
+    # sites x per-site tensors; one backward holds ALL upstream sites at
+    # once, and under WDDM the margin silently spills to system RAM at PCIe
+    # speed instead of OOMing — measured on the L10 sweep, 32 sites at
+    # batch 4). Above deep_site_threshold sites the engine shrinks the
+    # MICRO-batch to deep_batch_size and keeps the effective batch via
+    # gradient accumulation, so deep and shallow seeds share one
+    # optimisation regime — only peak VRAM (and a little wall-clock) differ.
+    deep_site_threshold: int = 21    # switch from L7-mlp upward, as ig_negctx
+    deep_batch_size: int = 2         # micro-batch under the guard
+
+    @field_validator("steps")
+    @classmethod
+    def validate_steps(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"steps must be >= 1, got {v}")
+        return v
+
+    @field_validator("keep_threshold")
+    @classmethod
+    def validate_keep_threshold(cls, v: float) -> float:
+        if not 0.0 < v < 1.0:
+            raise ValueError(f"keep_threshold must be in (0, 1), got {v}")
+        return v
+
+    @field_validator("holdout_frac")
+    @classmethod
+    def validate_holdout_frac(cls, v: float) -> float:
+        if not 0.0 <= v < 1.0:
+            raise ValueError(f"holdout_frac must be in [0, 1), got {v}")
+        return v
+
+    @field_validator("beta", "l1_lambda")
+    @classmethod
+    def validate_nonneg(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError(f"must be >= 0, got {v}")
+        return v
+
+    @field_validator("lr")
+    @classmethod
+    def validate_lr(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"lr must be > 0, got {v}")
+        return v
+
+
 class CounterfactualGradientConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     # "fused" = one contrast set drawing quotas from all three sub-modes
@@ -782,8 +850,14 @@ class CounterfactualGradientConfig(BaseModel):
         # ("activation_gradient" was removed: it is a top-level method now
         # (ActivationGradientDiscovery), not a mode — it runs on posctx and
         # never answered counterfactual gradient's negctx question.)
+        # "mask_contrast"/"mask_negctx" are the cf-hosted learned-mask modes
+        # (see LearnedMaskConfig): contrast optimises reconstruction on posctx
+        # PLUS silence on negctx; mask_negctx is the pure gate-opening search
+        # on negctx (the _negctx suffix marks the counterfactual-distribution
+        # worker, as with ig_negctx/restoration_negctx).
         allowed = ["local", "ig_mean", "restoration", "ig_restoration",
-                   "ig_negctx", "restoration_negctx"]
+                   "ig_negctx", "restoration_negctx",
+                   "mask_contrast", "mask_negctx"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -878,7 +952,10 @@ class AblationGradientConfig(BaseModel):
     def validate_attribution_mode(cls, v: str) -> str:
         # "activation_gradient" removed: promoted to a top-level method
         # (ActivationGradientDiscovery). "ig_negctx" is cf-only.
-        allowed = ["local", "ig_mean", "restoration", "ig_restoration"]
+        # "mask" = the posctx learned-mask mode (abl-mask): sparsest soft
+        # membership reproducing natural firing (see LearnedMaskConfig). The
+        # negctx-aware mask modes are cf-only, like ig_negctx.
+        allowed = ["local", "ig_mean", "restoration", "ig_restoration", "mask"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -1300,6 +1377,7 @@ class DiscoveryConfig(BaseModel):
     layerwise_gradient_upstream: LayerwiseGradientUpstreamConfig = Field(default_factory=LayerwiseGradientUpstreamConfig)
     counterfactual_gradient: CounterfactualGradientConfig = Field(default_factory=CounterfactualGradientConfig)
     ablation_gradient: AblationGradientConfig = Field(default_factory=AblationGradientConfig)
+    learned_mask: LearnedMaskConfig = Field(default_factory=LearnedMaskConfig)
     hybrid_gradient: HybridGradientConfig = Field(default_factory=HybridGradientConfig)
     circuit_tracer_baseline: CircuitTracerBaselineConfig = Field(default_factory=CircuitTracerBaselineConfig)
     cluster_contrast: ClusterContrastConfig = Field(default_factory=ClusterContrastConfig)
