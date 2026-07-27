@@ -139,6 +139,8 @@ def run_learned_mask(
     log_every: int = 50,
     deep_site_threshold: Optional[int] = None,
     deep_batch_size: Optional[int] = None,
+    optimizer: str = "adam",
+    weight_decay: float = 0.0,
     logger: Any = None,
 ) -> Tuple[Dict[FeatureID, float], Dict[str, Any]]:
     """Optimise the mask and return (scores, provenance).
@@ -186,7 +188,15 @@ def run_learned_mask(
         for s in sites
     }
     params = list(thetas.values())
-    opt = torch.optim.Adam(params, lr=lr)
+    if optimizer not in ("adam", "adamw"):
+        raise ValueError(f"optimizer must be 'adam' or 'adamw', got {optimizer!r}")
+    if optimizer == "adamw":
+        # NOTE: decoupled decay pulls theta toward 0 == m toward 0.5 — the
+        # keep-threshold boundary, NOT sparsity. It regularises confidence in
+        # both directions; the L1 term remains the only sparsifier.
+        opt = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
+    else:
+        opt = torch.optim.Adam(params, lr=lr)
 
     def split(tokens, anchors):
         n = int(tokens.shape[0])
@@ -259,16 +269,24 @@ def run_learned_mask(
             step_total = 0.0
             for j in range(accum):
                 mi = step * accum + j
+                # Every loss term is backwarded SEPARATELY (grad(a+b) =
+                # grad(a) + grad(b)): summing contrast's two terms first kept
+                # the posctx forward's graph alive while the negctx forward
+                # built its own — two full all-site graphs at once, which
+                # doubled peak VRAM and spilled into WDDM shared memory on L8
+                # (measured). Per-term backward holds one graph at a time.
                 if objective == "pos":
-                    part = data_loss(pt_tr, pa_tr, ptgt_tr, mi) / accum
+                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0)]
                 elif objective == "contrast":
-                    part = (data_loss(pt_tr, pa_tr, ptgt_tr, mi)
-                            + beta * data_loss(nt_tr, na_tr, ntgt_tr, mi)) / accum
+                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0),
+                             (nt_tr, na_tr, ntgt_tr, beta)]
                 else:  # negctx — sparsity on the EDIT (1 - m): reference is
                     # the natural stream, so cost accrues for turning DOWN.
-                    part = data_loss(nt_tr, na_tr, ntgt_tr, mi) / accum
-                part.backward()
-                step_total += float(part.detach())
+                    terms = [(nt_tr, na_tr, ntgt_tr, 1.0)]
+                for tokens_t, anchors_t, targets_t, w in terms:
+                    part = w * data_loss(tokens_t, anchors_t, targets_t, mi) / accum
+                    part.backward()
+                    step_total += float(part.detach())
             penalty = (l1_lambda * edit_sum() if objective == "negctx"
                        else l1_lambda * mask_sum())
             penalty.backward()
@@ -317,6 +335,8 @@ def run_learned_mask(
 
     provenance = {
         "objective": objective,
+        "optimizer": optimizer,
+        "weight_decay": float(weight_decay),
         "batch_size_used": int(batch_size),      # effective batch (unchanged by guard)
         "micro_batch": int(micro_bs),
         "accum_chunks": int(accum),

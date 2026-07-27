@@ -672,6 +672,11 @@ class LearnedMaskConfig(BaseModel):
     # optimisation regime — only peak VRAM (and a little wall-clock) differ.
     deep_site_threshold: int = 21    # switch from L7-mlp upward, as ig_negctx
     deep_batch_size: int = 2         # micro-batch under the guard
+    # "adamw" adds decoupled decay pulling theta toward 0 == m toward 0.5
+    # (the keep-threshold boundary, NOT sparsity): a confidence regulariser;
+    # the L1 term remains the only sparsifier.
+    optimizer: str = "adam"          # "adam" | "adamw"
+    weight_decay: float = 0.0        # adamw only
 
     @field_validator("steps")
     @classmethod
@@ -694,7 +699,14 @@ class LearnedMaskConfig(BaseModel):
             raise ValueError(f"holdout_frac must be in [0, 1), got {v}")
         return v
 
-    @field_validator("beta", "l1_lambda")
+    @field_validator("optimizer")
+    @classmethod
+    def validate_optimizer(cls, v: str) -> str:
+        if v not in ("adam", "adamw"):
+            raise ValueError(f"optimizer must be 'adam' or 'adamw', got {v!r}")
+        return v
+
+    @field_validator("beta", "l1_lambda", "weight_decay")
     @classmethod
     def validate_nonneg(cls, v: float) -> float:
         if v < 0:

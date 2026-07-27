@@ -464,7 +464,9 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             holdout_frac=cfg.holdout_frac, theta_init=cfg.theta_init,
             log_every=cfg.log_every,
             deep_site_threshold=cfg.deep_site_threshold,
-            deep_batch_size=cfg.deep_batch_size, logger=logger,
+            deep_batch_size=cfg.deep_batch_size,
+            optimizer=cfg.optimizer, weight_decay=cfg.weight_decay,
+            logger=logger,
         )
         if objective == "negctx":
             return {}, scores          # all edits, delivered as inhibitors
