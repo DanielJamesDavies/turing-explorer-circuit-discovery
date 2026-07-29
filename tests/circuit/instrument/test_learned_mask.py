@@ -71,8 +71,16 @@ class _Inference:
     def enable_compile(self):
         pass
 
-    def forward(self, tokens, patcher=None, **kwargs):
+    def forward(self, tokens, patcher=None, activations_callback=None, **kwargs):
         x = self.streams[int(tokens[0, 0])][: tokens.shape[0]].clone()
+        if activations_callback is not None:
+            # Clean pass with no patcher — how collect_site_means gathers the
+            # mask floor. Callback signature mirrors the real Inference: one
+            # activation tensor per kind, indexed by the bank's kind order.
+            activations_callback(0, (x, x, x))
+            return None
+        if patcher is None:
+            return None
         x = patcher.transform(0, "attn", x)
         patcher.transform(1, "resid", x)
 
@@ -100,6 +108,88 @@ def _run(objective, bank, inf, pt, nt, pa, **kw):
                 holdout_frac=0.25, log_every=0)
     args.update(kw)
     return run_learned_mask(inf, bank, **args)
+
+
+class TestMaskFloor:
+    """The mean-ablation mask: a fully masked latent lands on a FLOOR instead
+    of 0, so m=0 reproduces the state freeM/freeN measure against rather than
+    one no eval uses. This is what lets the mask be compared with mean-floor
+    methods on a metric neither family owns."""
+
+    def test_zero_floor_is_the_default_and_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        base = _run("pos", bank, inf, pt, nt, pa)
+        explicit = _run("pos", bank, inf, pt, nt, pa, mask_floor_source="zero")
+        assert base[0] == explicit[0]
+        assert base[1]["mask_floor_source"] == "zero"
+        assert base[1]["mask_floor_sites"] == 0
+
+    def test_m_one_is_still_identity_under_a_floor(self):
+        """The load-bearing invariant: code*m + floor*(1-m) at m=1 must be
+        exactly code, or a fully-kept mask would no longer reproduce the clean
+        stream and every reconstruction number would be off."""
+        bank = _Bank()
+        x = torch.zeros(1, 1, D)
+        x[0, 0, 0], x[0, 0, 3] = 2.0, 1.0
+        floors = {SITE: torch.full((D,), 0.7)}
+        big = torch.full((D,), 40.0)          # sigmoid(40) == 1.0
+        p_floor = LearnedMaskPatcher(bank, {SITE: big}, SEED_LAYER, SEED_KIND,
+                                     torch.eye(D)[0], torch.zeros(1),
+                                     floors=floors)
+        p_zero = LearnedMaskPatcher(bank, {SITE: big}, SEED_LAYER, SEED_KIND,
+                                    torch.eye(D)[0], torch.zeros(1))
+        out_floor = p_floor.transform(SITE[0], SITE[1], x)
+        out_zero = p_zero.transform(SITE[0], SITE[1], x)
+        assert torch.allclose(out_floor, x, atol=1e-5)
+        assert torch.allclose(out_floor, out_zero, atol=1e-5)
+
+    def test_m_zero_lands_on_the_floor_not_zero(self):
+        """m=0 must reproduce the mean-ablated state — that IS the alignment
+        with freeN. Under the zero floor the same mask gives the empty state."""
+        bank = _Bank()
+        x = torch.zeros(1, 1, D)
+        x[0, 0, 0] = 2.0
+        floors = {SITE: torch.full((D,), 0.5)}
+        small = torch.full((D,), -40.0)       # sigmoid(-40) == 0.0
+        p_floor = LearnedMaskPatcher(bank, {SITE: small}, SEED_LAYER, SEED_KIND,
+                                     torch.eye(D)[0], torch.zeros(1),
+                                     floors=floors)
+        p_zero = LearnedMaskPatcher(bank, {SITE: small}, SEED_LAYER, SEED_KIND,
+                                    torch.eye(D)[0], torch.zeros(1))
+        got = p_floor.transform(SITE[0], SITE[1], x)
+        want = bank.decode(floors[SITE].view(1, 1, D), SITE[1], SITE[0]) + (
+            x - bank.decode(torch.relu(x), SITE[1], SITE[0]))
+        assert torch.allclose(got, want, atol=1e-5)
+        assert not torch.allclose(got, p_zero.transform(SITE[0], SITE[1], x),
+                                  atol=1e-3)
+
+    def test_negctx_floor_uses_negatives_and_is_recorded(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, prov = _run("pos", bank, inf, pt, nt, pa,
+                       neg_tokens=nt, mask_floor_source="negctx")
+        assert prov["mask_floor_source"] == "negctx"
+        assert prov["mask_floor_sites"] == 1
+
+    def test_negctx_floor_without_negatives_raises(self):
+        """Loud failure, never a silent substitution: a run labelled 'negctx
+        floor' that quietly used posctx would be worse than a crash."""
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="negctx"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="negctx")
+
+    def test_unknown_floor_source_raises(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="mask_floor_source"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="global")
+
+    def test_floor_changes_selection(self):
+        """Sanity that the floor is actually load-bearing rather than plumbed
+        but inert — the two floors must not agree by construction."""
+        bank, inf, pt, nt, pa = _setup()
+        zero, _ = _run("pos", bank, inf, pt, nt, pa)
+        neg, _ = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                      mask_floor_source="negctx")
+        assert isinstance(zero, dict) and isinstance(neg, dict)
 
 
 class TestValidation:
@@ -222,3 +312,251 @@ class TestGradientAccumulation:
             deep_site_threshold=21, deep_batch_size=2)
         assert prov["micro_batch"] == 4
         assert prov["accum_chunks"] == 1
+
+
+class TestInjectObjective:
+    """"inject": value' = m*value + delta. The controlled geometry has both C1
+    roles ready-made: latent 0 drives the seed but is ABSENT on negctx (only
+    delta can reach it); latent 5 is PRESENT on negctx and suppresses (only an
+    edit can silence it). Target above the gate-only ceiling forces the
+    optimiser to use both levers."""
+
+    def test_learns_both_roles(self):
+        bank, inf, pt, nt, pa = _setup()
+        # gate-only ceiling is 1.0 (edit latent 5 fully); target 2.5 needs
+        # delta on latent 0 as well.
+        scores, prov = _run("inject", bank, inf, pt, nt, pa,
+                            neg_tokens=nt, target_act=2.5, steps=200)
+        assert scores[FeatureID(0, "attn", 5)] < 0     # present inhibitor (edit)
+        assert scores[FeatureID(0, "attn", 0)] > 0     # absent activator (delta)
+        assert prov["loss_final"] < prov["loss_initial"]
+
+    def test_decomposition_reported_and_ordered(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, prov = _run("inject", bank, inf, pt, nt, pa,
+                       neg_tokens=nt, target_act=2.5, steps=200)
+        assert {"p_both", "p_gate_only", "p_inject_only"} <= set(prov)
+        # both levers together must reach at least each alone
+        assert prov["p_both"] >= prov["p_gate_only"] - 1e-3
+        assert prov["p_both"] >= prov["p_inject_only"] - 1e-3
+        # and approach the target
+        assert prov["p_both"] == pytest.approx(2.5, abs=0.5)
+
+    def test_requires_neg_and_target(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="neg_tokens"):
+            _run("inject", bank, inf, pt, nt, pa, target_act=1.0)
+        with pytest.raises(ValueError, match="target_act"):
+            _run("inject", bank, inf, pt, nt, pa, neg_tokens=nt)
+
+
+class TestInjectV2Economics:
+    """v2: delta is priced on its own scale, its concentration is reported,
+    and the seed-adjacent sites can be excluded from injection.
+
+    v1 shared one lambda and found a diffuse sub-threshold delta blanket that
+    hit the target with ZERO selected latents (L8, 2026-07-24) — these pin the
+    machinery that makes that visible and controllable."""
+
+    def _inject(self, **kw):
+        bank, inf, pt, nt, pa = _setup()
+        return _run("inject", bank, inf, pt, nt, pa, neg_tokens=nt,
+                    target_act=2.5, steps=150, **kw)
+
+    def test_concentration_diagnostics_present(self):
+        _, prov = self._inject()
+        for k in ("delta_sum", "delta_top1pct_share", "delta_max",
+                  "n_delta_gt_0p1", "n_delta_gt_0p5", "n_delta_sites"):
+            assert k in prov, k
+        assert prov["delta_sum"] >= 0.0
+
+    def test_higher_inject_lambda_shrinks_injected_mass(self):
+        _, cheap = self._inject(inject_lambda=0.0)
+        _, dear = self._inject(inject_lambda=5.0)
+        assert dear["delta_sum"] < cheap["delta_sum"]
+
+    def test_inject_lambda_defaults_to_l1_lambda(self):
+        _, prov = self._inject()          # inject_lambda unset
+        assert prov["inject_lambda"] == pytest.approx(0.05)  # _run's l1_lambda
+
+    def test_exclusion_removes_sites_from_injection(self):
+        # one site only, so excluding 1 leaves nothing injectable
+        _, prov = self._inject(inject_exclude_sites=1)
+        assert prov["n_delta_sites"] == 0 or prov.get("delta_sum", 0.0) == 0.0
+        assert prov["inject_exclude_sites"] == 1
+
+    def test_exclusion_forces_the_gate(self):
+        """With injection unavailable, the optimiser must fall back to the
+        gate — the same lever mask_negctx uses."""
+        bank, inf, pt, nt, pa = _setup()
+        scores, _ = _run("inject", bank, inf, pt, nt, pa, neg_tokens=nt,
+                         target_act=0.9, steps=150, inject_exclude_sites=1)
+        assert scores[FeatureID(0, "attn", 5)] < 0     # edit selected
+
+
+class TestLrSchedule:
+    """Decaying lr freezes membership progressively (membership is a threshold
+    crossing, so the last step shouldn't decide inclusion). BOTH budgets scale
+    with sum(lr), so a decayed run must report a halved sum and correspondingly
+    halved budgets — that is what forces peak lr to double when converting a
+    calibrated constant-lr setting."""
+
+    def _prov(self, schedule, **kw):
+        bank, inf, pt, nt, pa = _setup()
+        _, prov = _run("pos", bank, inf, pt, nt, pa, steps=100, lr=0.2,
+                       lr_schedule=schedule, **kw)
+        return prov
+
+    def test_constant_sum_is_steps_times_lr(self):
+        prov = self._prov("constant")
+        assert prov["lr_sum"] == pytest.approx(100 * 0.2, rel=1e-3)
+        assert prov["lr_schedule"] == "constant"
+
+    def test_cosine_halves_the_lr_sum(self):
+        prov = self._prov("cosine", lr_min_frac=0.0)
+        assert prov["lr_sum"] == pytest.approx(0.5 * 100 * 0.2, rel=0.02)
+
+    def test_linear_halves_the_lr_sum(self):
+        prov = self._prov("linear", lr_min_frac=0.0)
+        assert prov["lr_sum"] == pytest.approx(0.5 * 100 * 0.2, rel=0.02)
+
+    def test_budgets_track_the_lr_sum(self):
+        prov = self._prov("cosine", lr_min_frac=0.0)
+        assert prov["decay_product"] == pytest.approx(
+            prov["lr_sum"] * prov["weight_decay"], rel=1e-3)
+        assert prov["sparsity_product"] == pytest.approx(
+            prov["lr_sum"] * 0.05, rel=1e-3)   # _run's l1_lambda
+
+    def test_floor_raises_the_sum(self):
+        bare = self._prov("cosine", lr_min_frac=0.0)["lr_sum"]
+        floored = self._prov("cosine", lr_min_frac=0.5)["lr_sum"]
+        assert floored > bare
+
+    def test_invalid_schedule_raises(self):
+        with pytest.raises(ValueError, match="lr_schedule"):
+            self._prov("exponential")
+
+    @pytest.mark.parametrize("up,down", [("cosine_up", "cosine"),
+                                         ("linear_up", "linear")])
+    def test_warmup_is_the_mirror_of_decay(self, up, down):
+        """The _up variants exist because decay measurably made circuits
+        BIGGER; they must carry the same lr budget as their decaying twin so
+        the two isolate schedule DIRECTION and nothing else."""
+        assert self._prov(up, lr_min_frac=0.0)["lr_sum"] == pytest.approx(
+            self._prov(down, lr_min_frac=0.0)["lr_sum"], rel=0.02)
+
+    def test_warmup_frac_ramps_then_decays(self):
+        """The conventional recipe: rise to peak by the end of warmup, then
+        decay to the floor. The earlier decay arms had NO warmup — they
+        started at peak on step 0 — so this is a genuinely different shape."""
+        prov = self._prov("cosine", lr_min_frac=0.1, warmup_frac=0.1)
+        assert prov["warmup_steps"] == 10          # 10% of steps=100
+        assert prov["lr_first"] == pytest.approx(0.1 * 0.2 + 0.9 * 0.2 / 10,
+                                                 rel=1e-6)
+        assert prov["lr_last"] == pytest.approx(0.1 * 0.2, rel=1e-6)
+        # warmup adds budget relative to the same schedule without it
+        assert prov["lr_sum"] > self._prov("cosine", lr_min_frac=0.1)["lr_sum"]
+
+    def test_warmup_rejected_for_non_decaying_schedules(self):
+        for sched in ("constant", "cosine_up", "linear_up"):
+            with pytest.raises(ValueError, match="warmup_frac"):
+                self._prov(sched, warmup_frac=0.1)
+
+    def test_warmup_starts_low_and_ends_high(self):
+        prov = self._prov("cosine_up", lr_min_frac=0.0)
+        assert prov["lr_first"] < prov["lr_last"]
+        assert prov["lr_last"] == pytest.approx(0.2, rel=1e-6)
+
+    def test_doubling_peak_restores_the_constant_budget(self):
+        """The conversion rule: a cosine run at 2x peak lr matches the
+        constant run's budgets, so lambda and wd carry over unchanged."""
+        const = self._prov("constant")
+        bank, inf, pt, nt, pa = _setup()
+        _, cos = _run("pos", bank, inf, pt, nt, pa, steps=100, lr=0.4,
+                      lr_schedule="cosine", lr_min_frac=0.0)
+        assert cos["lr_sum"] == pytest.approx(const["lr_sum"], rel=0.02)
+
+
+class TestDualFloor:
+    """Scoring one mask under BOTH ablation semantics every step.
+
+    Motivation is measured, not aesthetic: on L2/L5/L8 the negctx-only floor
+    reached freeN 0.66-1.06 while its free0 was EXACTLY 0.0 at L5 and L8 (the
+    post-top-k signature — the members alone cannot get the seed into top-k).
+    It learns the DELTA from the negative baseline and is never asked to be
+    sufficient. The zero-only floor has the mirror gap.
+    """
+
+    def test_dual_requires_negatives(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="negctx|neg_tokens"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="dual")
+
+    def test_dual_rejected_for_negctx_objectives(self):
+        """negctx/contrast/inject already carry a negative-context term;
+        composing them with a dual floor is a different experiment."""
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="dual"):
+            _run("contrast", bank, inf, pt, nt, pa, neg_tokens=nt,
+                 mask_floor_source="dual")
+
+    def test_dual_records_both_normalisers(self):
+        """Each term is divided by its OWN closed-mask loss. Without that the
+        sum is just L_zero plus noise, since zeroing every latent destroys far
+        more of the stream than replacing it with the negctx mean."""
+        bank, inf, pt, nt, pa = _setup()
+        _, prov = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                       mask_floor_source="dual")
+        assert prov["mask_floor_source"] == "dual"
+        assert prov["dual_floor_weight"] == 1.0
+        assert prov["dual_norm_zero"] > 0.0
+        assert prov["dual_norm_floor"] > 0.0
+        # They must DIFFER � that is why per-term normalisation exists.
+        # Direction is geometry-dependent, not fixed: here the negctx floor
+        # is the HARSHER one (9.0 vs 4.0) because this negative context
+        # carries an active suppressor (latent 5 decodes to -e0), so masking
+        # to the negctx mean drives the seed negative while zeroing merely
+        # silences it. A negctx floor is not automatically the gentler one.
+        assert prov["dual_norm_zero"] != prov["dual_norm_floor"]
+
+    def test_dual_differs_from_both_single_floors(self):
+        """If dual matched either specialist it would not be adding anything."""
+        bank, inf, pt, nt, pa = _setup()
+        zero, _ = _run("pos", bank, inf, pt, nt, pa)
+        negc, _ = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                       mask_floor_source="negctx")
+        dual, pv = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                        mask_floor_source="dual")
+        assert pv["dual_norm_zero"] is not None
+        assert not (dual == zero and dual == negc)
+
+    def test_gamma_shifts_the_solution_toward_the_floor_term(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, lo = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                     mask_floor_source="dual", dual_floor_weight=0.0)
+        _, hi = _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt,
+                     mask_floor_source="dual", dual_floor_weight=8.0)
+        assert lo["dual_floor_weight"] == 0.0 and hi["dual_floor_weight"] == 8.0
+        assert lo["loss_final"] != hi["loss_final"]
+
+
+def test_floors_needing_negatives_matches_the_engine():
+    """Regression: gradient_base skips negative RETRIEVAL unless something
+    will read it, and that guard once hardcoded "negctx" — which starved
+    "dual" and killed 4 of 11 arms mid-run with a missing-floor error. Both
+    sides now import this tuple; this pins it to what the engine actually
+    demands, so a new floor cannot drift out of sync silently."""
+    from circuit.instrument.learned_mask import (
+        FLOORS_NEEDING_NEGATIVES, MASK_FLOOR_SOURCES)
+    bank, inf, pt, nt, pa = _setup()
+    for src in MASK_FLOOR_SOURCES:
+        if src == "posctx":
+            continue                      # builds its floor from positives
+        needs = src in FLOORS_NEEDING_NEGATIVES
+        try:
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source=src)
+            raised = False
+        except ValueError:
+            raised = True
+        assert raised == needs, (
+            "%r raised=%s but FLOORS_NEEDING_NEGATIVES says %s" % (src, raised, needs))

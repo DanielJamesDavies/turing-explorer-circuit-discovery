@@ -650,7 +650,11 @@ class LearnedMaskConfig(BaseModel):
     so membership is optimised against the loss rather than read off any
     single gradient."""
     model_config = ConfigDict(extra='forbid')
-    steps: int = 200
+    # Defaults are the CALIBRATED configuration (L2/L8/L10 sweep,
+    # 2026-07-25): AdamW at wd 0.05 puts held-out free0 nearest 1.0 across
+    # seeds. See the weight-decay note below — wd is only meaningful jointly
+    # with steps and lr.
+    steps: int = 400
     lr: float = 0.05
     # Per-latent price (the penalty is a SUM over latents, not a mean —
     # mean-normalising put the per-latent gradient under Adam's eps and
@@ -658,6 +662,15 @@ class LearnedMaskConfig(BaseModel):
     # error by ~1e-4 to pay for itself".
     l1_lambda: float = 0.0001
     beta: float = 1.0                # mask_contrast: weight of negctx silence
+    # mask_inject only. delta is priced on its OWN scale: it carries
+    # activation magnitudes while the mask's l1_lambda prices unitless edits,
+    # and sharing one price let a diffuse sub-threshold delta blanket reach
+    # the target with zero selected latents (v1 degeneracy, L8 2026-07-24).
+    # None => fall back to l1_lambda (v1 behaviour, kept reproducible).
+    inject_lambda: Optional[float] = 0.01
+    # Exclude the N sites nearest the seed from injection: additive steering
+    # at the adjacent resid site is trivially expressive.
+    inject_exclude_sites: int = 0
     keep_threshold: float = 0.5      # m above (pos/contrast) / edit above (negctx)
     holdout_frac: float = 0.25       # probe split: train on the rest, report both
     theta_init: float = 4.0          # sigmoid(4) ~= 0.982: start at ~natural
@@ -675,8 +688,52 @@ class LearnedMaskConfig(BaseModel):
     # "adamw" adds decoupled decay pulling theta toward 0 == m toward 0.5
     # (the keep-threshold boundary, NOT sparsity): a confidence regulariser;
     # the L1 term remains the only sparsifier.
-    optimizer: str = "adam"          # "adam" | "adamw"
-    weight_decay: float = 0.0        # adamw only
+    optimizer: str = "adamw"         # "adam" | "adamw"
+    # DECAY IS SCHEDULE-COUPLED. Decay shrinks theta by (1 - lr*wd) per step,
+    # so the total shrinkage is exp(-steps*lr*wd) — only the PRODUCT matters.
+    # The calibrated point is steps*lr*wd ~= 1.0 (400 * 0.05 * 0.05), which
+    # holds kept-member m near 0.75; that value, not wd itself, is what the
+    # seeds agree on (L2 0.75 / L8 0.76 / L10 0.70 at their optima).
+    # CHANGING steps OR lr REQUIRES RESCALING wd to keep the product ~1.0,
+    # otherwise the calibration breaks silently. The engine logs the product.
+    weight_decay: float = 0.05       # adamw only
+    # "stream" matches the eval patcher's dtype (ordinary mixed precision:
+    # fp32 params, stream-dtype activations). "fp32" forces float32 dense
+    # codes, which roughly doubles the optimisation footprint.
+    code_dtype: str = "stream"       # "stream" | "fp32"
+    # Learning-rate schedule. Membership is a threshold crossing, so decaying
+    # lr freezes it progressively instead of letting the final step decide.
+    # NOTE both budgets scale with sum(lr): a decaying schedule roughly HALVES
+    # sum(lr) for the same peak, so a decayed run needs peak lr ~2x the
+    # calibrated constant lr to keep lambda and wd meaningful. The engine logs
+    # sum(lr) and both budgets.
+    # MEASURED 2026-07-29 (L2/L8/L10, matched sum(lr)): decay is the WRONG
+    # direction — cosine/linear gave 11-28% BIGGER circuits than constant with
+    # no consistent quality gain, so "constant" stays the default. Pruning is a
+    # slow threshold crossing, so late-training lr is what shrinks a circuit;
+    # the "_up" warmup variants exist to push that lever the other way.
+    lr_schedule: str = "constant"    # constant | cosine | linear | cosine_up | linear_up
+    lr_min_frac: float = 0.05        # floor as a fraction of peak lr
+    warmup_frac: float = 0.0         # ramp floor->peak over this fraction, then decay
+    # What a fully masked (m=0) latent becomes. "zero" is the historical
+    # behaviour and keeps the mask's training counterfactual identical to
+    # free0's — which means the mask is always scored on home turf. A mean
+    # floor makes m=0 reproduce the state freeM/freeN measure against, so mask
+    # and mean-floor methods can be compared on a metric neither owns.
+    # Prefer "negctx" over "posctx": the posctx fill reaches 23%/30% of a_pos
+    # at L8/L9 (it credits itself at depth), negctx measures 0.0000 everywhere.
+    # Separate from discovery.floor_source ON PURPOSE — that knob is shared
+    # with the ig hops and would silently move the other arms in a run.
+    mask_floor_source: str = "zero"   # zero | posctx | negctx | dual
+    # "dual" scores the mask under BOTH the zero and negctx floors every
+    # step, each term normalised by its own closed-mask loss (they differ
+    # by a large factor, in either direction � a negctx floor can install
+    # active suppression rather than mere silence). Measured
+    # motivation: a negctx-only floor learns the DELTA from the negative
+    # baseline and its free0 is exactly 0.0 at L5/L8 (members alone cannot
+    # reach top-k); a zero-only floor is sufficient but never asked what
+    # distinguishes firing from a near-identical silent context.
+    dual_floor_weight: float = 1.0    # gamma on the negctx term
 
     @field_validator("steps")
     @classmethod
@@ -706,11 +763,55 @@ class LearnedMaskConfig(BaseModel):
             raise ValueError(f"optimizer must be 'adam' or 'adamw', got {v!r}")
         return v
 
+    @field_validator("mask_floor_source")
+    @classmethod
+    def validate_mask_floor_source(cls, v: str) -> str:
+        if v not in ("zero", "posctx", "negctx", "dual"):
+            raise ValueError("mask_floor_source must be 'zero', 'posctx', "
+                             f"'negctx' or 'dual', got {v!r}")
+        return v
+
+    @field_validator("code_dtype")
+    @classmethod
+    def validate_code_dtype(cls, v: str) -> str:
+        if v not in ("stream", "fp32"):
+            raise ValueError(f"code_dtype must be 'stream' or 'fp32', got {v!r}")
+        return v
+
+    @field_validator("lr_schedule")
+    @classmethod
+    def validate_lr_schedule(cls, v: str) -> str:
+        allowed = ("constant", "cosine", "linear", "cosine_up", "linear_up")
+        if v not in allowed:
+            raise ValueError(f"lr_schedule must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("lr_min_frac", "warmup_frac")
+    @classmethod
+    def validate_lr_min_frac(cls, v: float, info) -> float:
+        if not 0.0 <= v < 1.0:
+            raise ValueError(f"{info.field_name} must be in [0, 1), got {v}")
+        return v
+
     @field_validator("beta", "l1_lambda", "weight_decay")
     @classmethod
     def validate_nonneg(cls, v: float) -> float:
         if v < 0:
             raise ValueError(f"must be >= 0, got {v}")
+        return v
+
+    @field_validator("inject_lambda")
+    @classmethod
+    def validate_inject_lambda(cls, v):
+        if v is not None and v < 0:
+            raise ValueError(f"inject_lambda must be >= 0 or None, got {v}")
+        return v
+
+    @field_validator("inject_exclude_sites")
+    @classmethod
+    def validate_inject_exclude_sites(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f"inject_exclude_sites must be >= 0, got {v}")
         return v
 
     @field_validator("lr")
@@ -867,9 +968,13 @@ class CounterfactualGradientConfig(BaseModel):
         # PLUS silence on negctx; mask_negctx is the pure gate-opening search
         # on negctx (the _negctx suffix marks the counterfactual-distribution
         # worker, as with ig_negctx/restoration_negctx).
+        # "mask_inject" is the full learned heir of the original cf
+        # question: value' = m*value + delta on negctx, so it learns BOTH
+        # C1 roles — delta-selected absent activators and edit-selected
+        # present inhibitors.
         allowed = ["local", "ig_mean", "restoration", "ig_restoration",
                    "ig_negctx", "restoration_negctx",
-                   "mask_contrast", "mask_negctx"]
+                   "mask_contrast", "mask_negctx", "mask_inject"]
         if v not in allowed:
             raise ValueError(f"attribution_mode must be one of {allowed}, got {v!r}")
         return v
@@ -1079,6 +1184,25 @@ class NegContextSelectionConfig(BaseModel):
     candidate_pool_size: Optional[int] = None
     exact_negctx_ranking: bool = False
     non_activation_threshold: float = 0.0
+    # A negative is normally rejected on its POST-TOP-K seed value, which is
+    # exactly 0 whenever the seed misses top-k — so a sequence where the seed
+    # very nearly fired looks identical to one where it is silent. That
+    # contaminates "close" negatives most, since they are the likeliest to
+    # nearly fire, and is a candidate explanation for random beating close.
+    # preact_filter measures relu(x @ w_seed + b_seed) instead (the uncensored
+    # value) and rejects any candidate above preact_max_frac of the seed's
+    # posctx reference — i.e. keep only sequences that are genuinely NOT
+    # driving the seed, not merely ones where top-k hid that they were.
+    preact_filter: bool = False
+    # "cleanest" RANKS a bounded candidate pool by pre-top-k value and keeps
+    # the quietest max_sequences � adaptive by construction, and the reason
+    # an absolute bar was abandoned: contamination runs ~3% of the posctx
+    # reference at L2 and ~28% at L10, so preact_max_frac=0.25 rejected
+    # NOTHING at L2/L5/L8 while 0.10 would have rejected 100% of close
+    # candidates at L10. "threshold" keeps the old absolute-bar behaviour.
+    preact_select: str = "cleanest"       # cleanest | threshold
+    preact_max_frac: float = 0.1          # threshold mode only
+    preact_reference_stat: str = "median"  # median | mean
     selection_seed: int = 17
     filter_batch_size: int = 128
     load_window_size: int = 1024
@@ -1091,6 +1215,29 @@ class NegContextSelectionConfig(BaseModel):
     def validate_candidate_pool_size(cls, v: Optional[int]) -> Optional[int]:
         if v is not None and v <= 0:
             raise ValueError("candidate_pool_size must be null or > 0")
+        return v
+
+    @field_validator("preact_max_frac")
+    @classmethod
+    def validate_preact_max_frac(cls, v: float) -> float:
+        if not 0.0 <= v < 1.0:
+            raise ValueError(f"preact_max_frac must be in [0, 1), got {v}")
+        return v
+
+    @field_validator("preact_select")
+    @classmethod
+    def validate_preact_select(cls, v: str) -> str:
+        if v not in ("cleanest", "threshold"):
+            raise ValueError(
+                f"preact_select must be 'cleanest' or 'threshold', got {v!r}")
+        return v
+
+    @field_validator("preact_reference_stat")
+    @classmethod
+    def validate_preact_reference_stat(cls, v: str) -> str:
+        if v not in ("median", "mean"):
+            raise ValueError(
+                f"preact_reference_stat must be 'median' or 'mean', got {v!r}")
         return v
 
     @field_validator("filter_batch_size", "load_window_size")

@@ -251,8 +251,14 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
         the sparsest soft membership whose masked stream reproduces the seed's
         natural pre-activation. Selection happens inside the engine (threshold
         on converged m), as with restoration; scores are m values, all
-        positive, so role delivery is trivially supports-only. floor_source is
-        inert here (the loss anchors at the natural state, not a floor)."""
+        positive, so role delivery is trivially supports-only.
+
+        The shared floor_source stays inert here (the loss anchors at the
+        natural state). The mask's own mask_floor_source instead sets what a
+        FULLY MASKED latent becomes: "zero" keeps the training counterfactual
+        identical to free0's, "negctx" makes m=0 reproduce the mean-ablated
+        state freeN measures against — which is what lets the mask be compared
+        with mean-floor methods on a metric neither of them owns."""
 
         if self.position_aware:
             raise ValueError(
@@ -275,6 +281,11 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             seed_layer=seed_layer, seed_kind=seed_kind,
             seed_latent_idx=seed_latent_idx,
             pos_tokens=pos_tokens, pos_argmax=pos_argmax,
+            # Only read when mask_floor_source="negctx"; supplied always so the
+            # engine can raise on a missing floor rather than substitute one.
+            neg_tokens=self._floor_neg_tokens,
+            mask_floor_source=cfg.mask_floor_source,
+            dual_floor_weight=cfg.dual_floor_weight,
             steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda,
             keep_threshold=cfg.keep_threshold,
             batch_size=self.probe_batch_size,
@@ -283,6 +294,9 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             deep_site_threshold=cfg.deep_site_threshold,
             deep_batch_size=cfg.deep_batch_size,
             optimizer=cfg.optimizer, weight_decay=cfg.weight_decay,
+            code_dtype=cfg.code_dtype,
+            lr_schedule=cfg.lr_schedule, lr_min_frac=cfg.lr_min_frac,
+            warmup_frac=cfg.warmup_frac,
             logger=logger,
         )
         self._pending_inhibitors = {}

@@ -163,6 +163,13 @@ class GradientDiscoveryBase(DiscoveryMethod):
             int, config.discovery.recurrence_prune_min_keep)
         # Set per seed in _discover; only floor_source="negctx" reads it.
         self._floor_neg_tokens: Optional[torch.Tensor] = None
+        # The seed's typical PRE-TOP-K posctx activation, the scale that
+        # preact_filter's negative-rejection bar is a fraction of. Measured
+        # ONCE per seed here rather than at each selector call site: it
+        # costs a forward pass over the positives and every call site must
+        # agree on the number or the same candidate could pass one filter
+        # and fail another.
+        self._posctx_preact_reference: Optional[float] = None
         # Sequence COUNT vs batch SIZE (see DiscoveryConfig): counts set how
         # many pos sequences inform discovery / evals; batch sizes bound one
         # forward pass, with chunked merging above them.
@@ -232,6 +239,14 @@ class GradientDiscoveryBase(DiscoveryMethod):
         # dataset they derive from, so they cannot go stale relative to the
         # seed. Left None outside discover(), where the negctx branch raises
         # rather than silently substituting another floor.
+        _ncs = config.discovery.neg_context_selection
+        self._posctx_preact_reference = (
+            self._neg_context_selector().posctx_reference(
+                probe_data.pos_tokens[: self.probe_sequence_count],
+                seed_comp_idx, seed_latent_idx,
+                batch_size=int(_ncs.filter_batch_size),
+                stat=str(_ncs.preact_reference_stat))
+            if bool(_ncs.preact_filter) else None)
         self._floor_neg_tokens = self._floor_negatives(
             probe_data, seed_comp_idx, seed_latent_idx, logger)
 
@@ -750,6 +765,10 @@ class GradientDiscoveryBase(DiscoveryMethod):
             candidate_pool_size=candidate_pool_size,
             exact=bool(cfg.exact_negctx_ranking),
             non_activation_threshold=float(cfg.non_activation_threshold),
+            preact_filter=bool(cfg.preact_filter),
+            preact_select=str(cfg.preact_select),
+            preact_max_frac=float(cfg.preact_max_frac),
+            posctx_reference=self._posctx_preact_reference,
             selection_seed=int(cfg.selection_seed),
             filter_batch_size=int(cfg.filter_batch_size),
             load_window_size=int(cfg.load_window_size),
@@ -784,7 +803,14 @@ class GradientDiscoveryBase(DiscoveryMethod):
         mode = str(config.discovery.floor_negctx_mode)
         if mode == "store":
             return probe_data.neg_tokens[: self.probe_sequence_count]
-        if str(config.discovery.floor_source) != "negctx":
+        # The learned mask has its OWN negctx floor knob (deliberately not the
+        # shared floor_source, which would move the ig hops too), so the
+        # retrieval must also run when only the mask wants negatives —
+        # otherwise a negctx-floored mask fails on a None it cannot explain.
+        from circuit.instrument.learned_mask import FLOORS_NEEDING_NEGATIVES
+        if (str(config.discovery.floor_source) != "negctx"
+                and str(config.discovery.learned_mask.mask_floor_source)
+                not in FLOORS_NEEDING_NEGATIVES):
             return None
         cfg = config.discovery.neg_context_selection
         selection = self._neg_context_selector().select(
@@ -798,6 +824,10 @@ class GradientDiscoveryBase(DiscoveryMethod):
             ),
             exact=bool(cfg.exact_negctx_ranking),
             non_activation_threshold=float(cfg.non_activation_threshold),
+            preact_filter=bool(cfg.preact_filter),
+            preact_select=str(cfg.preact_select),
+            preact_max_frac=float(cfg.preact_max_frac),
+            posctx_reference=self._posctx_preact_reference,
             selection_seed=int(cfg.selection_seed),
             filter_batch_size=int(cfg.filter_batch_size),
             load_window_size=int(cfg.load_window_size),

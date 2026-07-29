@@ -48,7 +48,7 @@ class NegContextSelector:
         self.mid_ctx = mid_ctx
         self._global_negctx_ids_cache: list[int] | None = None
         self._topctx_reference_reprs_cache: dict[tuple[int, int], tuple[torch.Tensor, dict[str, Any]]] = {}
-        self._seed_activation_cache: dict[tuple[int, int, int], float] = {}
+        self._seed_activation_cache: dict[tuple[int, int, int, bool], float] = {}
         self._last_token_load_metadata: dict[str, Any] = {}
 
     def select(
@@ -62,6 +62,10 @@ class NegContextSelector:
         candidate_pool_size: Optional[int] = None,
         exact: bool = False,
         non_activation_threshold: float = 0.0,
+        preact_filter: bool = False,
+        preact_select: str = "cleanest",
+        preact_max_frac: float = 0.0,
+        posctx_reference: Optional[float] = None,
         selection_seed: int = 0,
         filter_batch_size: Optional[int] = None,
         load_window_size: Optional[int] = None,
@@ -71,6 +75,23 @@ class NegContextSelector:
         if max_sequences <= 0:
             self._reject(logger, f"neg_mode={mode}: max_sequences <= 0")
             return None
+
+        # Under preact_filter the raw threshold is no longer "did the seed
+        # appear in top-k" (which censors near-misses to exactly 0) but "how
+        # close did the seed come to its typical firing level". The bar is a
+        # FRACTION of the seed's posctx reference, so it is scale-free across
+        # seeds whose natural activations differ by orders of magnitude.
+        if preact_filter:
+            if posctx_reference is None:
+                raise ValueError(
+                    "preact_filter=True needs posctx_reference (the seed's "
+                    "typical posctx activation) to scale the threshold against."
+                    " Refusing to fall back to an absolute bar: it would mean "
+                    "something different for every seed.")
+            non_activation_threshold = max(
+                float(non_activation_threshold),
+                float(preact_max_frac) * float(posctx_reference))
+            self._last_preact_threshold = float(non_activation_threshold)
 
         if mode == "random":
             candidate_ids, ranking_metadata = self._random_candidate_ids(
@@ -88,6 +109,8 @@ class NegContextSelector:
                 max_sequences,
                 batch_size,
                 non_activation_threshold=float(non_activation_threshold),
+                preact_filter=bool(preact_filter),
+                preact_select=str(preact_select),
                 selection_seed=selection_seed,
                 filter_batch_size=filter_batch_size,
                 load_window_size=load_window_size,
@@ -112,6 +135,8 @@ class NegContextSelector:
                 max_sequences,
                 batch_size,
                 non_activation_threshold=float(non_activation_threshold),
+                preact_filter=bool(preact_filter),
+                preact_select=str(preact_select),
                 filter_batch_size=filter_batch_size,
                 load_window_size=load_window_size,
                 ranking_metadata={**ranking_metadata, "exact": bool(exact)},
@@ -126,6 +151,8 @@ class NegContextSelector:
                 candidate_pool_size=candidate_pool_size,
                 exact=exact,
                 non_activation_threshold=float(non_activation_threshold),
+                preact_filter=bool(preact_filter),
+                preact_select=str(preact_select),
                 selection_seed=selection_seed,
                 filter_batch_size=filter_batch_size,
                 load_window_size=load_window_size,
@@ -143,6 +170,10 @@ class NegContextSelector:
         candidate_pool_size: Optional[int],
         exact: bool,
         non_activation_threshold: float,
+        preact_filter: bool = False,
+        preact_select: str = "cleanest",
+        preact_max_frac: float = 0.0,
+        posctx_reference: Optional[float] = None,
         selection_seed: int,
         filter_batch_size: Optional[int],
         load_window_size: Optional[int],
@@ -187,7 +218,13 @@ class NegContextSelector:
                 batch_size,
                 candidate_pool_size=candidate_pool_size,
                 exact=exact,
+                # already resolved to an absolute bar above; passing the
+                # reference through keeps the recursion idempotent.
                 non_activation_threshold=non_activation_threshold,
+                preact_filter=preact_filter,
+                preact_select=preact_select,
+                preact_max_frac=preact_max_frac,
+                posctx_reference=posctx_reference,
                 selection_seed=selection_seed,
                 filter_batch_size=filter_batch_size,
                 load_window_size=load_window_size,
@@ -532,14 +569,32 @@ class NegContextSelector:
         comp_idx: int,
         latent_idx: int,
         batch_size: int,
+        preact: bool = False,
     ) -> torch.Tensor:
         """
         Run no-grad forwards and return max seed activation per sequence.
+
+        ``preact=False`` (default) reads the seed POST-TOP-K, via
+        target_latent_activations — which returns exactly 0 whenever the seed
+        misses the top-k. A sequence where the seed very nearly fired is
+        therefore indistinguishable from one where it is genuinely silent, and
+        both pass a non-activation filter as "clean" negatives. Since "close"
+        negatives are the ones most likely to nearly fire, this
+        preferentially contaminates exactly the mode that should be strongest.
+
+        ``preact=True`` reads relu(x @ w_seed + b_seed) instead — the value the
+        seed WOULD have without top-k censoring (the SAE computes
+        relu(linear(...)) then takes top-k, so this is the uncensored
+        activation, not a different quantity).
         """
         n_kinds = len(self.bank.kinds)
         seed_layer, seed_kind_idx = split_component_idx(comp_idx, n_kinds)
         seed_kind = self.bank.kinds[seed_kind_idx]
         seed_acts_list: list[torch.Tensor] = []
+        if preact:
+            sae = self.bank.saes[seed_kind][seed_layer]
+            w_seed = sae.encoder.weight[int(latent_idx)].detach()
+            b_seed = sae._get_bias_eff()[int(latent_idx)].detach()
 
         self._disable_compile()
         try:
@@ -551,8 +606,13 @@ class NegContextSelector:
                     if layer_idx != seed_layer:
                         return
                     act = activations[seed_kind_idx]
-                    top_acts, top_indices = self.bank.encode(act, seed_kind, seed_layer)
-                    seed_vals = target_latent_activations(top_acts, top_indices, latent_idx)
+                    if preact:
+                        w = w_seed.to(device=act.device, dtype=act.dtype)
+                        b = b_seed.to(device=act.device, dtype=act.dtype)
+                        seed_vals = torch.relu(act @ w + b)
+                    else:
+                        top_acts, top_indices = self.bank.encode(act, seed_kind, seed_layer)
+                        seed_vals = target_latent_activations(top_acts, top_indices, latent_idx)
                     batch_seed_acts.append(seed_vals.max(dim=-1).values.float().cpu())
 
                 with torch.no_grad():
@@ -572,6 +632,33 @@ class NegContextSelector:
             return torch.zeros(0, dtype=torch.float32)
         return torch.cat(seed_acts_list, dim=0)
 
+    def posctx_reference(
+        self,
+        pos_tokens: torch.Tensor,
+        comp_idx: int,
+        latent_idx: int,
+        batch_size: int,
+        stat: str = "median",
+    ) -> Optional[float]:
+        """The seed's typical PRE-TOP-K activation on its positive contexts —
+        the scale preact_filter's threshold is a fraction of.
+
+        Measured pre-top-k on purpose: the bar has to be comparable with the
+        candidates' pre-top-k values, and a posctx reference read post-top-k
+        would be the censored quantity we are trying to get away from.
+
+        One definition, on the selector, so callers cannot drift apart on how
+        the reference is computed.
+        """
+        if pos_tokens is None or int(pos_tokens.shape[0]) == 0:
+            return None
+        vals = self.collect_seed_max_activations(
+            pos_tokens, comp_idx, latent_idx,
+            batch_size=max(1, int(batch_size)), preact=True)
+        if int(vals.numel()) == 0:
+            return None
+        return float(vals.mean() if stat == "mean" else vals.median())
+
     def _cached_seed_max_activations(
         self,
         tokens: torch.Tensor,
@@ -579,6 +666,7 @@ class NegContextSelector:
         comp_idx: int,
         latent_idx: int,
         batch_size: int,
+        preact: bool = False,
     ) -> tuple[torch.Tensor, int, int]:
         usable = min(int(tokens.shape[0]), len(sequence_ids))
         if usable <= 0:
@@ -590,7 +678,10 @@ class NegContextSelector:
         miss_indices: list[int] = []
         hits = 0
         for index, seq_id in enumerate(sequence_ids):
-            cache_key = (int(comp_idx), int(latent_idx), int(seq_id))
+            # preact is PART OF THE KEY: post-top-k and pre-top-k are different
+            # measurements of the same (seed, sequence), so sharing a cache
+            # slot would silently serve censored values to a pre-act run.
+            cache_key = (int(comp_idx), int(latent_idx), int(seq_id), bool(preact))
             cached = self._seed_activation_cache.get(cache_key)
             if cached is None:
                 cached_values.append(None)
@@ -607,12 +698,13 @@ class NegContextSelector:
                 comp_idx,
                 latent_idx,
                 batch_size=max(1, int(batch_size)),
+                preact=preact,
             )
             for offset, index in enumerate(miss_indices[: int(miss_acts.shape[0])]):
                 value = float(miss_acts[offset].item())
                 cached_values[index] = value
                 self._seed_activation_cache[
-                    (int(comp_idx), int(latent_idx), int(sequence_ids[index]))
+                    (int(comp_idx), int(latent_idx), int(sequence_ids[index]), bool(preact))
                 ] = value
 
         resolved = [0.0 if value is None else float(value) for value in cached_values]
@@ -658,6 +750,8 @@ class NegContextSelector:
         batch_size: int,
         *,
         non_activation_threshold: float,
+        preact_filter: bool = False,
+        preact_select: str = "cleanest",
         selection_seed: int = 0,
         filter_batch_size: Optional[int] = None,
         load_window_size: Optional[int] = None,
@@ -674,6 +768,12 @@ class NegContextSelector:
         filtered_active = 0
         valid_ids: list[int] = []
         valid_tokens: list[torch.Tensor] = []
+        preact_rank = bool(preact_filter) and preact_select == "cleanest"
+        ranked_scores: list[float] = []
+        ranked_ids: list[int] = []
+        ranked_tokens: list[torch.Tensor] = []
+        rank_stats: dict[str, Any] = {}
+        rank_pool_mult = 4
         activation_cache_hits = 0
         activation_cache_misses = 0
         token_cache_hit_count = 0
@@ -705,6 +805,7 @@ class NegContextSelector:
                 comp_idx,
                 latent_idx,
                 batch_size=filter_batch_size,
+                preact=preact_filter,
             )
             activation_cache_hits += cache_hits
             activation_cache_misses += cache_misses
@@ -716,9 +817,30 @@ class NegContextSelector:
             seed_acts = seed_acts[:usable]
             tokens = tokens[:usable]
             loaded_ids = loaded_ids[:usable]
+            candidate_ids_scanned += len(window_ids)
+
+            if preact_rank:
+                # RANK MODE: keep every scanned candidate with its pre-top-k
+                # score and choose the CLEANEST at the end.
+                #
+                # An absolute bar cannot work across depth: contamination runs
+                # ~3% of the posctx reference at L2 and ~28% at L10, so one
+                # fraction is either inert (0.25 rejected NOTHING at L2/L5/L8,
+                # measured) or rejects everything (0.10 would reject 100% of
+                # close candidates at L10). Ranking adapts automatically and
+                # cannot be infeasible � at the price that it always returns
+                # something, so the selected set's own contamination is
+                # reported in metadata rather than assumed away.
+                ranked_scores.extend(float(v) for v in seed_acts.tolist())
+                ranked_ids.extend(int(i) for i in loaded_ids)
+                ranked_tokens.append(tokens.detach().cpu())
+                if len(ranked_ids) >= max(max_sequences * rank_pool_mult,
+                                          max_sequences):
+                    break
+                continue
+
             non_activating = seed_acts <= non_activation_threshold
             filtered_active += int((~non_activating).sum().item())
-            candidate_ids_scanned += len(window_ids)
 
             if bool(non_activating.any().item()):
                 valid_ids.extend([loaded_ids[i] for i in non_activating.nonzero(as_tuple=True)[0].tolist()])
@@ -726,6 +848,23 @@ class NegContextSelector:
 
             if len(valid_ids) >= max_sequences:
                 break
+
+        if preact_rank and ranked_ids:
+            order = sorted(range(len(ranked_ids)), key=lambda i: ranked_scores[i])
+            keep = order[:max_sequences]
+            all_tokens = torch.cat(ranked_tokens, dim=0)
+            valid_ids = [ranked_ids[i] for i in keep]
+            valid_tokens = [all_tokens[torch.tensor(keep, dtype=torch.long)]]
+            kept_scores = [ranked_scores[i] for i in keep]
+            filtered_active = len(ranked_ids) - len(keep)
+            rank_stats = {
+                "preact_rank_pool": len(ranked_ids),
+                "preact_kept_max": round(max(kept_scores), 6) if kept_scores else None,
+                "preact_kept_median": (round(sorted(kept_scores)[len(kept_scores) // 2], 6)
+                                       if kept_scores else None),
+                "preact_pool_median": round(sorted(ranked_scores)[len(ranked_scores) // 2], 6),
+                "preact_pool_max": round(max(ranked_scores), 6),
+            }
 
         if not valid_ids:
             self._reject(logger, f"neg_mode={mode}: no non-activating negctx candidates found")
@@ -738,6 +877,9 @@ class NegContextSelector:
         metadata = {
             "candidate_ids_total": ranking_metadata.get("candidate_ids_total", len(candidate_ids)),
             "candidate_ids_scanned": candidate_ids_scanned,
+            "preact_filter": bool(preact_filter),
+            "preact_select": (preact_select if preact_filter else None),
+            **rank_stats,
             "filtered_seed_active": filtered_active,
             "non_activating_count": len(valid_ids),
             "selected_count": int(selected_tokens.shape[0]),

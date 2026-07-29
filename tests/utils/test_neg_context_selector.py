@@ -641,3 +641,111 @@ def test_fused_quota_remainder_goes_to_close(monkeypatch):
 
     assert selection is not None
     assert selection.metadata["fused_quotas"] == {"close": 3, "distant": 1, "random": 1}
+
+
+# ---------------------------------------------------------------------------
+# Pre-top-k negative filtering
+#
+# A negative is normally rejected on its POST-TOP-K seed value, which
+# target_latent_activations pins to exactly 0 whenever the seed misses top-k.
+# A sequence where the seed very nearly fired is therefore indistinguishable
+# from one where the seed is silent, and passes as a "clean" negative. That
+# contaminates "close" negatives hardest, since those are the likeliest to
+# nearly fire — a candidate explanation for random negatives outperforming
+# close ones.
+# ---------------------------------------------------------------------------
+
+class _CensoringSAE:
+    """Seed latent 3 has a real, positive pre-activation but is NEVER in the
+    top-k that encode() returns — exactly the near-miss case."""
+
+    def __init__(self):
+        self.encoder = type("E", (), {})()
+        # row 3 (the seed) reads dim 0 of the stream
+        w = torch.zeros(4, 2)
+        w[3, 0] = 1.0
+        self.encoder.weight = w
+
+    def _get_bias_eff(self):
+        return torch.zeros(4)
+
+
+class _CensoringBank:
+    kinds = ["resid"]
+    d_sae = 4
+    n_layer = 1
+    device = torch.device("cpu")
+
+    def __init__(self):
+        self.saes = {"resid": {0: _CensoringSAE()}}
+
+    def encode(self, act, kind, layer):
+        del kind, layer
+        b, t = act.shape[:2]
+        # top-k = 2, and the seed (3) is deliberately absent from the indices
+        top_indices = torch.tensor([0, 1]).view(1, 1, 2).expand(b, t, 2).clone()
+        top_acts = torch.full((b, t, 2), 5.0)
+        return top_acts, top_indices
+
+
+class _CensoringInference:
+    """Stream dim 0 carries the seed drive, taken from the token value."""
+
+    def disable_compile(self):
+        pass
+
+    def enable_compile(self):
+        pass
+
+    def forward(self, tokens, activations_callback=None, **_kwargs):
+        if activations_callback is None:
+            return None
+        act = torch.zeros(tokens.shape[0], tokens.shape[1], 2)
+        act[:, 0, 0] = tokens[:, 0].float()
+        activations_callback(0, (act,))
+
+
+def _censoring_selector():
+    return NegContextSelector(
+        inference=_CensoringInference(), bank=_CensoringBank(), loader=FakeLoader(),
+        neg_ctx=FakeNegCtx(), seq_repr=None, top_ctx=None, mid_ctx=None)
+
+
+def test_post_topk_censors_a_near_miss_to_zero_but_preact_sees_it():
+    """The defect itself: the same sequence reads 0.0 post-top-k and its true
+    drive pre-top-k. Everything else here depends on this being real."""
+    sel = _censoring_selector()
+    tokens = torch.tensor([[7, 0], [3, 0]], dtype=torch.long)
+    censored = sel.collect_seed_max_activations(tokens, 0, 3, batch_size=2)
+    uncensored = sel.collect_seed_max_activations(tokens, 0, 3, batch_size=2, preact=True)
+    assert torch.allclose(censored, torch.zeros(2))
+    assert torch.allclose(uncensored, torch.tensor([7.0, 3.0]))
+
+
+def test_preact_and_postk_do_not_share_a_cache_slot():
+    """They are different measurements of the same (seed, sequence); sharing a
+    slot would serve censored values to a pre-act run."""
+    sel = _censoring_selector()
+    tokens = torch.tensor([[7, 0]], dtype=torch.long)
+    post, _, _ = sel._cached_seed_max_activations(tokens, [11], 0, 3, batch_size=1)
+    pre, _, _ = sel._cached_seed_max_activations(tokens, [11], 0, 3, batch_size=1, preact=True)
+    assert float(post[0]) == 0.0
+    assert float(pre[0]) == 7.0
+    post_again, hits, _ = sel._cached_seed_max_activations(tokens, [11], 0, 3, batch_size=1)
+    assert float(post_again[0]) == 0.0 and hits == 1
+
+
+def test_posctx_reference_is_the_preact_median():
+    sel = _censoring_selector()
+    pos = torch.tensor([[2, 0], [4, 0], [9, 0]], dtype=torch.long)
+    assert sel.posctx_reference(pos, 0, 3, batch_size=3) == pytest.approx(4.0)
+    assert sel.posctx_reference(pos, 0, 3, batch_size=3, stat="mean") == pytest.approx(5.0)
+    assert sel.posctx_reference(torch.zeros(0, 2, dtype=torch.long), 0, 3, batch_size=1) is None
+
+
+def test_preact_filter_without_a_reference_raises():
+    """No silent fallback to an absolute bar: it would mean something
+    different for every seed."""
+    sel = _censoring_selector()
+    with pytest.raises(ValueError, match="posctx_reference"):
+        sel.select(0, 3, "random", max_sequences=2, batch_size=2, preact_filter=True)

@@ -252,7 +252,8 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
                 ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
             )
             pass_label = f"restoration_negctx/{self.ig_negctx_objective} selection"
-        elif self.attribution_mode in ("mask_contrast", "mask_negctx"):
+        elif self.attribution_mode in ("mask_contrast", "mask_negctx",
+                                       "mask_inject"):
             activator_scores, inhibitor_scores = self._run_mask_hop(
                 ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.neg_tokens,
                 ctx.pos_tokens_probe, ctx.pos_argmax_probe, ctx.target_act_pos, logger,
@@ -449,8 +450,8 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             logger.note("mask: seed has no upstream sites")
             return {}, {}
         cfg = config.discovery.learned_mask
-        objective = ("contrast" if self.attribution_mode == "mask_contrast"
-                     else "negctx")
+        objective = {"mask_contrast": "contrast", "mask_negctx": "negctx",
+                     "mask_inject": "inject"}[self.attribution_mode]
         scores, prov = run_learned_mask(
             self.inference, self.sae_bank,
             objective=objective, sites=sites,
@@ -459,6 +460,8 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             pos_tokens=pos_tokens, pos_argmax=pos_argmax,
             neg_tokens=neg_tokens, target_act=target_act_pos,
             steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda, beta=cfg.beta,
+            inject_lambda=cfg.inject_lambda,
+            inject_exclude_sites=cfg.inject_exclude_sites,
             keep_threshold=cfg.keep_threshold,
             batch_size=self.probe_batch_size,
             holdout_frac=cfg.holdout_frac, theta_init=cfg.theta_init,
@@ -466,10 +469,22 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             deep_site_threshold=cfg.deep_site_threshold,
             deep_batch_size=cfg.deep_batch_size,
             optimizer=cfg.optimizer, weight_decay=cfg.weight_decay,
+            code_dtype=cfg.code_dtype,
+            lr_schedule=cfg.lr_schedule, lr_min_frac=cfg.lr_min_frac,
+            warmup_frac=cfg.warmup_frac,
+            mask_floor_source=cfg.mask_floor_source,
+            dual_floor_weight=cfg.dual_floor_weight,
             logger=logger,
         )
         if objective == "negctx":
             return {}, scores          # all edits, delivered as inhibitors
+        if objective == "inject":
+            # both C1 roles at once: split by sign — positive deltas are the
+            # learned absent activators, negative edits the learned present
+            # inhibitors.
+            acts = {f: v for f, v in scores.items() if v > 0}
+            inhs = {f: v for f, v in scores.items() if v < 0}
+            return acts, inhs
         return scores, {}              # all supports
 
     def _get_neg_tokens(
@@ -523,6 +538,10 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             candidate_pool_size=candidate_pool_size,
             exact=bool(cfg.exact_negctx_ranking),
             non_activation_threshold=float(cfg.non_activation_threshold),
+            preact_filter=bool(cfg.preact_filter),
+            preact_select=str(cfg.preact_select),
+            preact_max_frac=float(cfg.preact_max_frac),
+            posctx_reference=self._posctx_preact_reference,
             selection_seed=int(cfg.selection_seed),
             filter_batch_size=int(cfg.filter_batch_size),
             load_window_size=int(cfg.load_window_size),

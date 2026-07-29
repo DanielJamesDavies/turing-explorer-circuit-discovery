@@ -34,8 +34,16 @@ class TestConfig:
 
     def test_learned_mask_defaults_and_validators(self):
         cfg = LearnedMaskConfig()
-        assert cfg.steps == 200 and cfg.keep_threshold == 0.5
+        # Calibrated defaults (L2/L8/L10 wd sweep, 2026-07-25). Decay is
+        # schedule-coupled: only steps*lr*wd matters, calibrated at ~1.0.
+        assert cfg.steps == 400 and cfg.lr == 0.05
+        assert cfg.optimizer == "adamw" and cfg.weight_decay == 0.05
+        assert cfg.steps * cfg.lr * cfg.weight_decay == pytest.approx(1.0, abs=1e-6)
+        assert cfg.code_dtype == "stream"
+        assert cfg.keep_threshold == 0.5
         assert config.discovery.learned_mask.beta == 1.0
+        with pytest.raises(ValueError, match="code_dtype"):
+            LearnedMaskConfig(code_dtype="bf16")
         with pytest.raises(ValueError):
             LearnedMaskConfig(steps=0)
         with pytest.raises(ValueError):
