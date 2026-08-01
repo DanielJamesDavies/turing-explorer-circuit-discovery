@@ -650,17 +650,38 @@ class LearnedMaskConfig(BaseModel):
     so membership is optimised against the loss rather than read off any
     single gradient."""
     model_config = ConfigDict(extra='forbid')
-    # Defaults are the CALIBRATED configuration (L2/L8/L10 sweep,
-    # 2026-07-25): AdamW at wd 0.05 puts held-out free0 nearest 1.0 across
-    # seeds. See the weight-decay note below — wd is only meaningful jointly
-    # with steps and lr.
+    # ------------------------------------------------------------------
+    # HOUSE RECIPE (frozen 2026-07-30). Every default here is the measured
+    # winner or measured-no-worse choice from the Jul 29-30 calibration arc;
+    # evidence in dev-notes/data/lambda-calibration-2026-07-30/README.md and
+    # dev-notes/data/dual-floor-2026-07-29/README.md. The dials collapse to
+    # ONE free axis - total sparsity pressure (steps*lr*lambda) - plus wd
+    # (member confidence) and gamma (floor balance). Change one thing at a
+    # time, and re-anchor the lambda calibration if steps/lr/pricing move.
+    # ------------------------------------------------------------------
+    # steps: a SPARSITY DIAL, not convergence - n is still falling at step
+    # 1000 at every seed tested (pressure accrues without bound, there is no
+    # fixed point). 400 is the operating point every calibration number is
+    # anchored to.
     steps: int = 400
+    # lr: a budget multiplier. Schedule SHAPE is irrelevant (a flat schedule
+    # reproduced warmup+cosine within 3% at matched sum(lr)); constant 0.05.
     lr: float = 0.05
     # Per-latent price (the penalty is a SUM over latents, not a mean —
     # mean-normalising put the per-latent gradient under Adam's eps and
-    # nothing pruned). 1e-4 means "a latent must reduce the squared preact
-    # error by ~1e-4 to pay for itself".
-    l1_lambda: float = 0.0001
+    # nothing pruned). THE one free dial. 1e-5 is its PROBE ANCHOR, not a
+    # universal value: per-seed good lambdas span 1.7e-6..1.2e-5 with depth,
+    # and NO free predictor beats measurement (best feature model 24-29%
+    # size error vs 3.6% for one probe run). Calibrate per seed:
+    #   lambda_target = 1e-5 * (n_probe / n_target)^(1/0.759)
+    # where n_probe is the member count of a single run at 1e-5.
+    # CAUTION: the exponent 0.759 was fitted at 400 steps, flat pricing,
+    # SOFT gate (binarize="none"). Every training-dynamics change measured so
+    # far (soft->anneal, 400->200 steps, descend->hold) moved the lambda->n
+    # curve; under the now-default "anneal" the exponent is UNVERIFIED and a
+    # re-fit is pending (probe-corrections observed 1.45-1.78x). Sizes at the
+    # anchor also run larger under anneal (L8 31.6k vs 21.9k soft).
+    l1_lambda: float = 1e-5
     beta: float = 1.0                # mask_contrast: weight of negctx silence
     # mask_inject only. delta is priced on its OWN scale: it carries
     # activation magnitudes while the mask's l1_lambda prices unitless edits,
@@ -684,7 +705,15 @@ class LearnedMaskConfig(BaseModel):
     # gradient accumulation, so deep and shallow seeds share one
     # optimisation regime — only peak VRAM (and a little wall-clock) differ.
     deep_site_threshold: int = 21    # switch from L7-mlp upward, as ig_negctx
-    deep_batch_size: int = 2         # micro-batch under the guard
+    # 2 -> 4 (2026-08-01): after the backbone freeze removed ~6GB of weight
+    # grads from the mask backward, micro=4 at the deepest seed (L11, 35
+    # sites) peaks at 9.9GB — comfortably inside dedicated VRAM — and runs
+    # ~8% faster than micro=2 (accum 2 -> 1; same effective batch, same
+    # regime). Membership differs from micro=2 only at churn level (2.6% at
+    # L11, cf 0.9865 vs 0.9797 — noise band). micro=8 measured and rejected:
+    # the accum math makes it EFFECTIVE batch 8 (2x work/step, slower,
+    # 12.8GB peak at the spill line). Data: vram-ledger-2026-07-31 README.
+    deep_batch_size: int = 4         # micro-batch under the guard
     # "adamw" adds decoupled decay pulling theta toward 0 == m toward 0.5
     # (the keep-threshold boundary, NOT sparsity): a confidence regulariser;
     # the L1 term remains the only sparsifier.
@@ -724,16 +753,52 @@ class LearnedMaskConfig(BaseModel):
     # at L8/L9 (it credits itself at depth), negctx measures 0.0000 everywhere.
     # Separate from discovery.floor_source ON PURPOSE — that knob is shared
     # with the ig hops and would silently move the other arms in a run.
-    mask_floor_source: str = "zero"   # zero | posctx | negctx | dual
+    # HOUSE RECIPE: "dual". At MATCHED trained size it beat both
+    # single-floor specialists on BOTH neutral k-sparse metrics at 4/4 seeds
+    # (after the normaliser fix: both terms share one bounded mean(target^2)
+    # scale - the old per-term closed-mask normaliser silently annihilated
+    # the zero term at L10, ratio 1.9e8). Use "zero" when comparing against
+    # free0-anchored historical numbers.
+    mask_floor_source: str = "dual"   # zero | posctx | negctx | dual
     # "dual" scores the mask under BOTH the zero and negctx floors every
     # step, each term normalised by its own closed-mask loss (they differ
-    # by a large factor, in either direction � a negctx floor can install
+    # by a large factor, in either direction -- a negctx floor can install
     # active suppression rather than mere silence). Measured
     # motivation: a negctx-only floor learns the DELTA from the negative
     # baseline and its free0 is exactly 0.0 at L5/L8 (members alone cannot
     # reach top-k); a zero-only floor is sufficient but never asked what
     # distinguishes firing from a near-identical silent context.
-    dual_floor_weight: float = 1.0    # gamma on the negctx term
+    # gamma = 0.25 beat 0.5 and 1.0 at every lambda tested (L5 scan), and
+    # is what all one-probe calibration numbers were measured at.
+    dual_floor_weight: float = 0.25   # gamma on the negctx term
+    # Gate discretisation during TRAINING (TopK-SAE lesson: its top-k lives
+    # inside the training forward, so no soft/hard gap exists there).
+    # HOUSE RECIPE: "anneal" (adopted 2026-07-31 after Sweep 0 +
+    # follow-ups, dev-notes/data/binarize-sweep-2026-07-31/).
+    # Evidence: at 400 steps / lambda 1e-5 it produces the best free0 ever
+    # measured at the standard seeds (dev 0.002-0.100 vs 0.11-0.31 soft) with
+    # the LOWEST end-of-run membership churn (2/151/123 flips per step at
+    # L2/L8/L10). The known trade: freeN_topk worsens slightly (the negctx
+    # term still trains dense while that metric evals k-sparse) - you win the
+    # metric whose semantics you train.
+    # Alternatives measured and REJECTED:
+    #   "ste"  - matched free0 wins but end-of-run oscillation GROWS
+    #            (218 flips/step at L10; membership becomes a stopping-step
+    #            lottery);
+    #   200-step compression - metrics match but per-step pressure doubles
+    #            and churn doubles with it (churn is priced by lr*lambda per
+    #            step, not by schedule shape);
+    #   reach-then-hold (anneal_reach_frac<1) - churn unchanged, sizes
+    #            inflate (+21-48%): pruning happens while the gate is soft,
+    #            holding the floor just shortens the pruning phase;
+    #   truncating a 400-run at 200 - circuit 57-72% oversized at depth,
+    #            sampled mid-churn (flips 3-4x the natural end); the second
+    #            half of the run removes 36-42% of members - NOT redundant.
+    # NOTE: no run ever fully freezes - a boundary population (the ~20%
+    # near-cut mass) churns at every step under every gate; "anneal" merely
+    # quiets it most. Requires keep_threshold=0.5 (hardens at theta=0; the
+    # engine raises loudly otherwise).
+    binarize: str = "anneal"          # none | ste | anneal
 
     @field_validator("steps")
     @classmethod
@@ -761,6 +826,13 @@ class LearnedMaskConfig(BaseModel):
     def validate_optimizer(cls, v: str) -> str:
         if v not in ("adam", "adamw"):
             raise ValueError(f"optimizer must be 'adam' or 'adamw', got {v!r}")
+        return v
+
+    @field_validator("binarize")
+    @classmethod
+    def validate_binarize(cls, v: str) -> str:
+        if v not in ("none", "ste", "anneal"):
+            raise ValueError(f"binarize must be 'none', 'ste' or 'anneal', got {v!r}")
         return v
 
     @field_validator("mask_floor_source")
@@ -1195,7 +1267,7 @@ class NegContextSelectionConfig(BaseModel):
     # driving the seed, not merely ones where top-k hid that they were.
     preact_filter: bool = False
     # "cleanest" RANKS a bounded candidate pool by pre-top-k value and keeps
-    # the quietest max_sequences � adaptive by construction, and the reason
+    # the quietest max_sequences -- adaptive by construction, and the reason
     # an absolute bar was abandoned: contamination runs ~3% of the posctx
     # reference at L2 and ~28% at L10, so preact_max_frac=0.25 rejected
     # NOTHING at L2/L5/L8 while 0.10 would have rejected 100% of close
@@ -1303,6 +1375,18 @@ class DiscoveryConfig(BaseModel):
     probe_batch_size: int = 16       # sequences per grad-enabled forward (VRAM-bound)
     eval_sequence_count: int = 16    # pos sequences used by the faithfulness evals
     eval_batch_size: int = 16        # sequences per no-grad eval forward
+    # bf16 autocast for GRADIENT-ENABLED forwards (discovery attribution, mask
+    # training) — the same torch.autocast(bfloat16) regime the model was
+    # TRAINED under (turing-llm/train.py). Halves the retained backward graph
+    # (the [T, d_sae] dense site tensors that dominate deep-seed discovery
+    # VRAM; L11 at 35 sites was spilling into WDDM shared memory 2026-07-31).
+    # Default OFF: attribution numerics shift within the documented bf16
+    # family variance (~16% membership churn at unchanged quality — see the
+    # underdetermination corpus), so it must not silently change results
+    # mid-panel. Flip only between panels, after the A/B validation
+    # (planned-driver-experiments D-track; one-seed fp32-vs-autocast Jaccard
+    # + exam-score comparison). No-grad eval forwards are never affected.
+    autocast_bf16: bool = False
     # Shared floor knob for every consumer of mean-ablation floors
     # (ig_mean, restoration, ablation-faithfulness evals):
     # "posctx" = per-seed means over the seed's positive probe batch
@@ -1326,6 +1410,13 @@ class DiscoveryConfig(BaseModel):
     # negative-context selector, letting the FLOOR's negative hardness be varied
     # independently of a method's own neg_mode (which governs ig_negctx and
     # phi_cf, never the floor). Inert unless floor_source == "negctx".
+    # KNOWN CONTRADICTION (2026-07-30): "store" is the MOST contaminated
+    # negative source measured (never activation-checked; at L10 the median
+    # store negative drives the seed to 36% of its normal level) - yet it is
+    # what the validated lambda-calibration runs used, so flipping it
+    # silently un-anchors the 1e-5/0.759 calibration. Resolution is Sweep 1
+    # in dev-notes/planned-sweeps-2026-07-30.md; change this default only
+    # with that sweep's result, then re-anchor.
     floor_negctx_mode: str = "store"  # "store" | "close" | "random" | "distant"
     # Position-aware allowed-set selection (orthogonal to attribution_mode).
     # When true, discovery keeps the token-position axis of the gradient

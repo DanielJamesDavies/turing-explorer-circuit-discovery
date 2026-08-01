@@ -122,6 +122,13 @@ class MaskedRestorationInstrument:
         self.live: Dict[Site, torch.Tensor] = {}  # target_inject: f_conn [B,T,d_sae]
         self.seed_pre_act: Optional[torch.Tensor] = None
 
+    def release(self) -> None:
+        """Deterministic teardown — reference cycles otherwise hold these
+        [B,T,d_sae] tensors until an eventual gc pass (vram-ledger 2026-07-31)."""
+        self.leaves.clear()
+        self.live.clear()
+        self.seed_pre_act = None
+
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
 
@@ -346,6 +353,7 @@ def _restoration_grad_pass(
             per_latent = grad_cpu.sum(dim=(0, 1)) * delta
             per_latent = per_latent * unrestored  # unrestored only
             scores[site] = per_latent
+    instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
     return scores, pos_scores, float(metric.detach().item())
 
 

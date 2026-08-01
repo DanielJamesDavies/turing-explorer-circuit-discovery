@@ -105,7 +105,9 @@ class LearnedMaskPatcher:
                  w_seed: torch.Tensor, b_seed: torch.Tensor,
                  deltas: Optional[Dict[Site, torch.Tensor]] = None,
                  code_dtype: str = "stream",
-                 floors: Optional[Dict[Site, torch.Tensor]] = None) -> None:
+                 floors: Optional[Dict[Site, torch.Tensor]] = None,
+                 binarize: str = "none",
+                 bin_threshold: float = 0.5) -> None:
         self.bank = bank
         self.thetas = thetas
         self.deltas = deltas or {}
@@ -124,7 +126,31 @@ class LearnedMaskPatcher:
         # which spilled into WDDM shared memory. Parameters stay fp32 either
         # way; this only affects activations, i.e. ordinary mixed precision.
         self.code_dtype = code_dtype
+        # Gate discretisation - the TopK-SAE lesson (its top-k lives INSIDE
+        # the training forward, so it has no soft/hard gap by construction)
+        # adapted to a GLOBAL membership that still needs gradients for
+        # non-members:
+        #   "none"   - sigmoid(theta), historical soft gate. Converged masks
+        #              are genuinely fractional (79% of L8 members at
+        #              m in (0.5,0.9)) and ANY post-hoc cut is lossy.
+        #   "ste"    - forward uses the HARD mask (m > bin_threshold),
+        #              backward flows through the soft sigmoid (straight-
+        #              through estimator). Training forward == eval semantics
+        #              exactly; non-members keep their gradient path.
+        #   "anneal" - sigmoid(theta / T) with T -> 0 over training
+        #              (continuous sparsification): the gate BECOMES binary.
+        #              self.temperature is set per step by the training loop.
+        self.binarize = binarize
+        self.bin_threshold = float(bin_threshold)
+        self.temperature = 1.0
         self.seed_pre: Optional[torch.Tensor] = None
+
+    def release(self) -> None:
+        """Drop the graph-connected seed capture. Bounded to one forward's
+        graph (each _forward_preact overwrites it), so this is hygiene, not
+        the multi-pass ratchet fix the discovery instruments needed
+        (vram-ledger 2026-07-31)."""
+        self.seed_pre = None
 
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
@@ -142,37 +168,79 @@ class LearnedMaskPatcher:
         ta, ti = self.bank.encode(x, kind, layer_idx)
         code_dt = torch.float32 if self.code_dtype == "fp32" else x.dtype
         dense = sparse_topk_to_dense(ta, ti, self.bank.d_sae, dtype=code_dt)
-        recon = self.bank.decode(dense, kind, layer_idx)
-        error = x - recon.to(x.dtype)
-        code = dense
+        # ONE decode, not two. The masked-stream semantics are
+        #     out = decode(code) + (x - decode(dense))
+        # and decode is affine with a shared bias, so that is exactly
+        #     out = x + (code - dense) @ W_dec.T
+        # We therefore build the DIFFERENCE (code - dense) directly and pass it
+        # through the decoder once with add_bias=False. This drops a full
+        # [B*T, d_sae] @ [d_sae, d_model] matmul AND its backward at every
+        # masked site of every forward — and backward is ~70% of the training
+        # loop (measured: 66.7ms vs 27.0ms forward, steady state, L10).
+        #
+        # It is also MORE accurate, not a trade: the old form subtracted two
+        # nearly-equal decoded tensors (at init m = sigmoid(4) = 0.982, so
+        # code ~ dense), which is catastrophic cancellation. Measured against
+        # an fp64 reference at L5-resid, max abs error at init: fp32 4.54e-2 ->
+        # 3.56e-4 (128x better), bf16 6.00e-2 -> 7.34e-3 (8x better).
+        # Equivalence is ALGEBRAIC, not bitwise.
+        delta_code = None
         if theta is not None:
-            m = torch.sigmoid(theta).to(device=dense.device, dtype=dense.dtype)
+            if self.binarize == "anneal":
+                m = torch.sigmoid(theta / max(self.temperature, 1e-4))
+            else:
+                m = torch.sigmoid(theta)
+            m = m.to(device=dense.device, dtype=dense.dtype)
+            if self.binarize == "ste":
+                hard = (m > self.bin_threshold).to(m.dtype)
+                m = hard + m - m.detach()
             floor = self.floors.get((layer_idx, kind))
             if floor is None:
-                code = code * m                      # zero floor (historical)
+                # zero floor: code - dense == -dense * (1 - m)
+                delta_code = -dense * (1.0 - m)
             else:
                 # MEAN-ABLATION MASK: a fully masked latent lands on the floor
                 # instead of 0, so m=0 reproduces the EVAL's empty-circuit
                 # state rather than a state no eval measures. m=1 is still
-                # exactly identity (1*code + 0*floor == code), so the
+                # exactly identity (delta_code == 0 there), so the
                 # decode(all)+error invariant is untouched.
+                # code - dense == (floor - dense) * (1 - m)
                 f = floor.to(device=dense.device, dtype=dense.dtype)
-                code = code * m + f * (1.0 - m)
+                delta_code = (f - dense) * (1.0 - m)
         if psi is not None:
             # additive injection, always >= 0; position-uniform (broadcast
             # over [B, T]) — the same semantics as the cf injection eval.
+            # It enters `code` additively, so it enters the difference as-is.
             delta = torch.nn.functional.softplus(psi).to(device=dense.device,
                                                          dtype=dense.dtype)
-            code = code + delta
-        out = self.bank.decode(code, kind, layer_idx)
-        return out.to(x.dtype) + error
+            delta_code = delta if delta_code is None else delta_code + delta
+        if delta_code is None:
+            return x
+        out = self.bank.decode(delta_code, kind, layer_idx, add_bias=False)
+        return x + out.to(x.dtype)
 
 
 def _forward_preact(inference: Any, patcher: LearnedMaskPatcher,
                     tokens: torch.Tensor, grad: bool) -> torch.Tensor:
     patcher.seed_pre = None
-    inference.forward(tokens, patcher=patcher, grad_enabled=grad,
-                      return_activations=False, tokenize_final=False)
+    # Never run a patcher forward through the compiled model: each distinct
+    # patcher closure fails dynamo's guards and adds a recompile variant to
+    # module-level caches. This matches the eager-patcher policy every other
+    # discovery path follows (restoration wraps each instrument forward the
+    # same way). NOTE: this is hygiene/consistency, NOT the fix for the
+    # 5.9GB post-discovery residue — that was parameter .grad accumulation
+    # from loss.backward(), fixed by the backbone freeze in run_learned_mask.
+    # Restoring the PRIOR state (rather than enable_compile unconditionally)
+    # keeps this a no-op inside the training loop's existing disable window.
+    was_compiled = getattr(inference, "_compiled", False)
+    if was_compiled:
+        inference.disable_compile()
+    try:
+        inference.forward(tokens, patcher=patcher, grad_enabled=grad,
+                          return_activations=False, tokenize_final=False)
+    finally:
+        if was_compiled:
+            inference.enable_compile()
     if patcher.seed_pre is None:
         raise RuntimeError("learned_mask: seed pre-activation was not captured")
     return patcher.seed_pre
@@ -196,7 +264,47 @@ def _natural(inference: Any, bank: Any, tokens: torch.Tensor,
     return _forward_preact(inference, p, tokens, grad=False).detach()
 
 
-def run_learned_mask(
+def _frozen_backbone_params(inference: Any, bank: Any) -> List[torch.Tensor]:
+    """Every model/SAE parameter that currently requires grad. Duck-typed so
+    test doubles without .model / .saes simply contribute nothing."""
+    params: List[torch.Tensor] = []
+    model = getattr(inference, "model", None)
+    if model is not None and hasattr(model, "parameters"):
+        params.extend(p for p in model.parameters() if p.requires_grad)
+    for kind in getattr(bank, "kinds", ()):
+        for sae in getattr(bank, "saes", {}).get(kind, ()):
+            if sae is not None and hasattr(sae, "parameters"):
+                params.extend(p for p in sae.parameters() if p.requires_grad)
+    return params
+
+
+def run_learned_mask(inference: Any, bank: Any, **kwargs
+                     ) -> Tuple[Dict[FeatureID, float], Dict[str, Any]]:
+    """Freeze the model/SAE backbone around the mask optimisation.
+
+    The engine trains theta with ``loss.backward()`` — the only discovery
+    path that does (everything else uses ``torch.autograd.grad`` on explicit
+    anchors). ``backward()`` accumulates a ``.grad`` the size of EVERY
+    requires-grad parameter it can reach: model + SAE encoders + the
+    materialised decoders ≈ 6GB that then lives on the parameters for the
+    rest of the process (measured 2026-08-01: a deep-seed mask discovery
+    rested 5.95GB above other methods; memory-history snapshot attributed
+    the blocks to mm_mat2_backward / EmbeddingBackward0 — weight grads).
+    Freezing skips those weight-grad kernels entirely (theta gradients still
+    flow THROUGH frozen modules), cutting both the residue and the in-run
+    peak; the zero_grad clears anything accumulated by earlier callers."""
+    params = _frozen_backbone_params(inference, bank)
+    for p in params:
+        p.requires_grad_(False)
+    try:
+        return _run_learned_mask_impl(inference, bank, **kwargs)
+    finally:
+        for p in params:
+            p.requires_grad_(True)
+            p.grad = None
+
+
+def _run_learned_mask_impl(
     inference: Any,
     bank: Any,
     *,
@@ -219,6 +327,9 @@ def run_learned_mask(
     batch_size: int = 4,
     holdout_frac: float = 0.25,
     theta_init: float = 4.0,
+    theta_init_mode: str = "uniform",
+    theta_lo: float = -4.0,
+    site_lambda_weights: Optional[Dict[Site, float]] = None,
     log_every: int = 50,
     deep_site_threshold: Optional[int] = None,
     deep_batch_size: Optional[int] = None,
@@ -230,6 +341,8 @@ def run_learned_mask(
     warmup_frac: float = 0.0,
     mask_floor_source: str = "zero",
     dual_floor_weight: float = 1.0,
+    binarize: str = "none",
+    anneal_reach_frac: float = 1.0,
     logger: Any = None,
 ) -> Tuple[Dict[FeatureID, float], Dict[str, Any]]:
     """Optimise the mask and return (scores, provenance).
@@ -247,6 +360,15 @@ def run_learned_mask(
     if objective in ("negctx", "inject") and target_act is None:
         raise ValueError(
             f"objective={objective!r} requires target_act (posctx level)")
+    if binarize not in ("none", "ste", "anneal"):
+        raise ValueError(
+            f"binarize must be 'none', 'ste' or 'anneal', got {binarize!r}")
+    if binarize == "anneal" and abs(float(keep_threshold) - 0.5) > 1e-9:
+        raise ValueError(
+            "binarize='anneal' hardens the gate at theta=0, i.e. m=0.5 - a "
+            f"keep_threshold of {keep_threshold} would select a DIFFERENT set "
+            "than the one training converged to. Use 0.5, or 'ste' which "
+            "binarises at keep_threshold itself.")
 
     # ------------------------------------------------------------------
     # Mask floor: what a fully masked (m=0) latent becomes.
@@ -329,11 +451,78 @@ def run_learned_mask(
     b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
     device = getattr(bank, "device", pos_tokens.device)
 
-    thetas: Dict[Site, torch.Tensor] = {
-        s: torch.full((bank.d_sae,), float(theta_init), device=device,
-                      requires_grad=True)
-        for s in sites
-    }
+    # theta_init_mode="active": probe-INACTIVE latents start at theta_lo
+    # (m ~ 0.02) instead of theta_init (m ~ 0.98).
+    #
+    # Under the ZERO floor this is close to exact rather than a heuristic: the
+    # transform is delta_code = -dense*(1-m), so a latent that never fires on
+    # any probe sequence contributes ZERO for every m - its data gradient is
+    # identically zero and only the L1 penalty moves it. Uniform init at +4
+    # therefore spends the first ~theta_init/lr steps marching millions of
+    # informationless thetas across the 0.5 threshold: the measured 80-100
+    # step burn-in during which the "circuit" is the entire dictionary
+    # (327,680 / 1,024,000 / 1,310,720 members at steps 25-50, exactly
+    # n_sites * d_sae). Down-initialising them deletes that burn-in without
+    # touching anything the data term can see.
+    #
+    # Under MEAN floors (negctx/dual) masked inactive latents inject the floor
+    # value, so there this is a genuine PRIOR, not a no-op - the data gradient
+    # can still pull any of them back up, but the starting point biases
+    # membership and must be A/B-checked rather than assumed.
+    if theta_init_mode not in ("uniform", "active"):
+        raise ValueError("theta_init_mode must be 'uniform' or 'active', "
+                         f"got {theta_init_mode!r}")
+    if theta_init_mode == "active":
+        # One no-grad pass over the probes per site: union of post-top-k
+        # active latents. Uses the same encode the training forward uses.
+        active_sets: Dict[Site, torch.Tensor] = {}
+
+        class _ActiveCapture:
+            def __init__(self):
+                self.seen: Dict[Site, torch.Tensor] = {
+                    st: torch.zeros(bank.d_sae, dtype=torch.bool,
+                                    device=device) for st in sites}
+
+            def __call__(self, model):
+                return multi_patch(model, self.transform)
+
+            def transform(self, layer_idx, kind, x):
+                if (layer_idx, kind) in self.seen:
+                    _, ti = bank.encode(x, kind, layer_idx)
+                    self.seen[(layer_idx, kind)].index_fill_(
+                        0, ti.reshape(-1).to(device), True)
+                return x
+
+        cap = _ActiveCapture()
+        # Same compiled-model guard as _forward_preact (see its comment).
+        _was = getattr(inference, "_compiled", False)
+        if _was:
+            inference.disable_compile()
+        try:
+            with torch.no_grad():
+                inference.forward(pos_tokens, patcher=cap, grad_enabled=False,
+                                  return_activations=False, tokenize_final=False)
+        finally:
+            if _was:
+                inference.enable_compile()
+        active_sets = cap.seen
+        thetas = {}
+        for st in sites:
+            t = torch.full((bank.d_sae,), float(theta_lo), device=device)
+            t[active_sets[st]] = float(theta_init)
+            t.requires_grad_(True)
+            thetas[st] = t
+        if logger is not None:
+            n_act = sum(int(v.sum()) for v in active_sets.values())
+            logger.note(f"learned_mask: active-init {n_act:,} of "
+                        f"{len(sites) * bank.d_sae:,} latents at theta_init="
+                        f"{theta_init}, rest at theta_lo={theta_lo}")
+    else:
+        thetas = {
+            s: torch.full((bank.d_sae,), float(theta_init), device=device,
+                          requires_grad=True)
+            for s in sites
+        }
     # "inject": an additive delta = softplus(psi) per latent, psi init -4
     # (delta ~= 0.018, small but with live gradient) — absent-on-negctx
     # latents are unreachable by the multiplicative mask, delta is their
@@ -459,7 +648,9 @@ def run_learned_mask(
 
     patcher = LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind,
                                  w_seed, b_seed, deltas=deltas,
-                                 code_dtype=code_dtype, floors=floors)
+                                 code_dtype=code_dtype, floors=floors,
+                                 binarize=binarize,
+                                 bin_threshold=keep_threshold)
     # DUAL FLOOR: a second patcher over the SAME thetas, differing only in the
     # floor, so one mask is scored under both ablation semantics and gradients
     # from both accumulate into the same parameters.
@@ -473,13 +664,32 @@ def run_learned_mask(
     # from a near-identical non-firing context.
     patcher_zero = (
         LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
-                           deltas=deltas, code_dtype=code_dtype, floors=None)
+                           deltas=deltas, code_dtype=code_dtype, floors=None,
+                           binarize=binarize, bin_threshold=keep_threshold)
         if dual_floor else None)
 
     def mask_mean() -> torch.Tensor:
         return torch.stack([torch.sigmoid(t).mean() for t in thetas.values()]).mean()
 
+    # Per-site sparsity weights: lambda_s = l1_lambda * w_s. None = flat
+    # pricing (historical). Motivation for non-flat: the C3 dose-response
+    # showed members with individually tiny scores COLLECTIVELY carry deep
+    # reconstruction, and flat lambda charges those diffuse-signal sites the
+    # same per latent as concentrated near-seed sites - so it prunes exactly
+    # the population C3 showed is load-bearing. Weights are normalised by the
+    # caller; the engine just applies them.
+    if site_lambda_weights is not None:
+        _missing = [st for st in sites if st not in site_lambda_weights]
+        if _missing:
+            raise ValueError(
+                f"site_lambda_weights missing {len(_missing)} sites, e.g. "
+                f"{_missing[:3]} - refusing to default missing sites to 1.0")
+
     def mask_sum() -> torch.Tensor:
+        if site_lambda_weights is not None:
+            return torch.stack(
+                [float(site_lambda_weights[st]) * torch.sigmoid(t).sum()
+                 for st, t in thetas.items()]).sum()
         # Penalty in PER-LATENT units (sum, not mean): mean-normalising over
         # ~3e5 latents makes the per-latent L1 gradient ~lambda*sigma'/N ~ 5e-10,
         # BELOW Adam's eps (1e-8) — the epsilon floor then swallows the
@@ -516,15 +726,31 @@ def run_learned_mask(
             tgt = tg[:vals.shape[0]].to(vals.device, vals.dtype)
         return ((vals - tgt) ** 2).mean()
 
-    # Per-floor normalisers: each term is divided by ITS OWN fully-closed-mask
-    # loss, so the two land on a common scale and gamma means what it says.
-    # The raw terms can differ by a large factor in EITHER direction: zeroing
-    # merely silences a latent, whereas a negctx floor installs whatever the
-    # non-firing context characteristically contains — which may include
-    # active suppression that drives the seed FURTHER from target than silence
-    # does. (Test geometry shows exactly that: floor 9.0 vs zero 4.0.) Never
-    # assume one floor is the gentler one; measure and log both.
+    # TERM SCALING. Both dual terms measure the SAME quantity - squared error
+    # of the seed's pre-activation against its natural value - on the SAME
+    # target. They are therefore already in the same units, and one SHARED,
+    # TARGET-SCALED normaliser is all that is needed: dividing by
+    # mean(target^2) makes each a relative squared error, so gamma means
+    # exactly "how much does the negctx counterfactual count relative to the
+    # zero one".
+    #
+    # This previously divided each term by ITS OWN fully-closed-mask loss,
+    # which is UNBOUNDED and produced a silent failure. Measured
+    # norm_zero/norm_floor: L2 137.7, L5 1.08, L8 1.19, and L10 **1.9e8** -
+    # at L10 the zero floor's closed state drives the seed's pre-activation to
+    # ~1.8e5 (zeroing all 32 upstream sites is far off-manifold; the same
+    # explosion that makes the pre-act empty floor blow up while free0's
+    # post-top-k read still shows a clean 0.0000), giving a normaliser of
+    # 3.3e10 against the negctx floor's 176. The zero term was divided into
+    # oblivion, dual silently became negctx-only, and it reproduced
+    # negctx-only's exact failure signature (free0 == 0.0, negative
+    # freeM_topk). A normaliser must never be able to annihilate its own term.
+    #
+    # The closed-mask losses are still MEASURED and reported: they are a
+    # genuinely useful off-manifold diagnostic (they are what exposed this).
+    # They simply no longer set the scale.
     norm_zero = norm_floor = 1.0
+    dual_norm = 1.0
     if dual_floor:
         with torch.no_grad():
             shut = {s: torch.full((bank.d_sae,), -40.0, device=device)
@@ -540,16 +766,36 @@ def run_learned_mask(
                     norm_zero = max(closed_loss, 1e-6)
                 else:
                     norm_floor = max(closed_loss, 1e-6)
+            # bounded by construction: the natural target's own scale
+            dual_norm = max(float((ptgt_tr.to(torch.float32) ** 2).mean()), 1e-6)
         if logger is not None:
-            logger.note(f"learned_mask[dual]: closed-mask loss zero "
-                        f"{norm_zero:.4f} / floor {norm_floor:.4f} "
-                        f"(ratio {norm_zero / norm_floor:.2f}x) | gamma "
-                        f"{dual_floor_weight}")
+            logger.note(f"learned_mask[dual]: scale mean(target^2) "
+                        f"{dual_norm:.4f} | gamma {dual_floor_weight} | "
+                        f"closed-mask DIAGNOSTIC zero {norm_zero:.4g} / floor "
+                        f"{norm_floor:.4g} (ratio "
+                        f"{norm_zero / max(norm_floor, 1e-12):.4g}x — large "
+                        f"means the zero floor's empty state is far "
+                        f"off-manifold, NOT that the term is down-weighted)")
 
     losses: List[float] = []
     inference.disable_compile()
     try:
         for step in range(int(steps)):
+            if binarize == "anneal":
+                # geometric 1.0 -> 0.05, reaching the floor at
+                # anneal_reach_frac of the run and HOLDING it after. 1.0 =
+                # descend the whole run (the floor arrives only at the last
+                # step). Compressed schedules measurably need the hold: at
+                # 200 steps with reach=1.0 the boundary population is still
+                # churning when the run ends (end-of-run flips 2-2.7x the
+                # 400-step run despite matched metrics) - the mask gets no
+                # time AT final sharpness to settle.
+                prog = step / max(int(steps) - 1, 1)
+                eff = min(prog / max(float(anneal_reach_frac), 1e-6), 1.0)
+                t_now = 1.0 * (0.05 ** eff)
+                patcher.temperature = t_now
+                if patcher_zero is not None:
+                    patcher_zero.temperature = t_now
             if lr_schedule != "constant":
                 lr_now = lr_at(step)
                 for group in opt.param_groups:
@@ -571,9 +817,9 @@ def run_learned_mask(
                 if objective == "pos" and dual_floor:
                     # Same data, same anchors, same target — two ABLATION
                     # SEMANTICS. A latent must earn its place under both.
-                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / norm_zero, patcher_zero),
+                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dual_norm, patcher_zero),
                              (pt_tr, pa_tr, ptgt_tr,
-                              float(dual_floor_weight) / norm_floor, patcher)]
+                              float(dual_floor_weight) / dual_norm, patcher)]
                 elif objective == "pos":
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
                 elif objective == "contrast":
@@ -634,15 +880,24 @@ def run_learned_mask(
     scores: Dict[FeatureID, float] = {}
     kept_m: List[float] = []
     with torch.no_grad():
+        # DEVICE->HOST IN BULK. `m` lives on the GPU, so the obvious
+        # `float(m[i])` inside the loop costs a full device sync PER ELEMENT.
+        # At L10's ~108k members that is ~216k syncs: measured 13.52s against
+        # 0.20s for the batched form, a 66x difference, in a loop that does no
+        # arithmetic. Gather the selected values ONCE per site with .tolist()
+        # and iterate over plain Python floats.
         for (layer, kind), theta in thetas.items():
             m = torch.sigmoid(theta)
             if objective == "inject":
                 # gate half: edits, delivered as inhibitors (negative)
                 edit = 1.0 - m
                 idx = (edit > keep_threshold).nonzero(as_tuple=True)[0]
-                for i in idx.tolist():
-                    scores[FeatureID(layer, kind, i)] = -float(edit[i])
-                    kept_m.append(float(m[i]))
+                ids = idx.tolist()
+                edits = edit[idx].tolist()
+                ms = m[idx].tolist()
+                for i, e_i, m_i in zip(ids, edits, ms):
+                    scores[FeatureID(layer, kind, i)] = -e_i
+                    kept_m.append(m_i)
                 # injection half: delta in ACTIVATION units, delivered as
                 # activators (positive). keep_threshold is reused across two
                 # unit systems — a documented v1 simplification.
@@ -651,21 +906,26 @@ def run_learned_mask(
                     continue           # site excluded from injection
                 delta = torch.nn.functional.softplus(psi_here)
                 jdx = (delta > keep_threshold).nonzero(as_tuple=True)[0]
-                for i in jdx.tolist():
+                for i, d_i in zip(jdx.tolist(), delta[jdx].tolist()):
                     fid = FeatureID(layer, kind, i)
-                    scores[fid] = max(scores.get(fid, 0.0), float(delta[i]))
+                    scores[fid] = max(scores.get(fid, 0.0), d_i)
                 continue
             if objective == "negctx":
                 edit = 1.0 - m
                 idx = (edit > keep_threshold).nonzero(as_tuple=True)[0]
-                for i in idx.tolist():
-                    scores[FeatureID(layer, kind, i)] = -float(edit[i])
-                    kept_m.append(float(m[i]))
+                ids = idx.tolist()
+                edits = edit[idx].tolist()
+                ms = m[idx].tolist()
+                for i, e_i, m_i in zip(ids, edits, ms):
+                    scores[FeatureID(layer, kind, i)] = -e_i
+                    kept_m.append(m_i)
             else:
                 idx = (m > keep_threshold).nonzero(as_tuple=True)[0]
-                for i in idx.tolist():
-                    scores[FeatureID(layer, kind, i)] = float(m[i])
-                    kept_m.append(float(m[i]))
+                ids = idx.tolist()
+                ms = m[idx].tolist()
+                for i, m_i in zip(ids, ms):
+                    scores[FeatureID(layer, kind, i)] = m_i
+                    kept_m.append(m_i)
 
     # "inject": decompose the recovery — gate-only (deltas off), inject-only
     # (mask at natural), both — three no-grad forwards on the train negatives.
@@ -728,11 +988,17 @@ def run_learned_mask(
         "lr_schedule": lr_schedule,
         "lr_min_frac": float(lr_min_frac),
         "warmup_frac": float(warmup_frac),
+        "theta_init_mode": theta_init_mode,
+        "binarize": binarize,
+        "anneal_reach_frac": float(anneal_reach_frac) if binarize == "anneal" else None,
+        "site_lambda_weighted": site_lambda_weights is not None,
         "mask_floor_source": mask_floor_source,
         "mask_floor_sites": len(floors) if floors else 0,
         "dual_floor_weight": float(dual_floor_weight) if dual_floor else None,
-        "dual_norm_zero": round(norm_zero, 6) if dual_floor else None,
-        "dual_norm_floor": round(norm_floor, 6) if dual_floor else None,
+        "dual_norm_shared": round(dual_norm, 6) if dual_floor else None,
+        # diagnostics only — these no longer scale the loss
+        "dual_norm_zero": float("%.6g" % norm_zero) if dual_floor else None,
+        "dual_norm_floor": float("%.6g" % norm_floor) if dual_floor else None,
         "warmup_steps": int(n_warm),
         "lr_floor": float("%.6g" % lr_floor),
         "lr_peak": float(lr),
@@ -777,6 +1043,9 @@ def run_learned_mask(
         logger.note(f"learned_mask[{objective}]: kept {len(scores)} "
                     f"(loss {provenance['loss_initial']:.5f} -> "
                     f"{provenance['loss_final']:.5f}, holdout {ho})")
+    patcher.release()
+    if patcher_zero is not None:
+        patcher_zero.release()
     return scores, provenance
 
 

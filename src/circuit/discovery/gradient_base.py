@@ -30,6 +30,7 @@ import — tests patch e.g. ``circuit.discovery.counterfactual_gradient.
 evaluate_counterfactual_faithfulness`` and must keep working.
 """
 
+import gc
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
@@ -216,6 +217,13 @@ class GradientDiscoveryBase(DiscoveryMethod):
             return self._discover(seed_comp_idx, seed_latent_idx, logger)
         finally:
             logger.save()
+            # Coarse-boundary safety net for any instrument cycle that slipped
+            # past the per-pass release() calls. gc.collect costs 50-500ms so
+            # it runs once per discovery, never in the grad-pass hot loops
+            # (vram-ledger 2026-07-31).
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     def _discover(
         self,

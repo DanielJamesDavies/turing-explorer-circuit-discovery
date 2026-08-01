@@ -634,6 +634,7 @@ def compute_direct_effects_matrix(
             # ------------------------------------------------------------------
             # Step 6: Free the retained graph (runs even if a backward raises)
             # ------------------------------------------------------------------
+            instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
             del instrument
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()

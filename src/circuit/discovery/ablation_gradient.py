@@ -176,6 +176,7 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
                     for fid, score in chunk_scores.items():
                         all_scores.setdefault(fid, []).append(score)
                 finally:
+                    instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
                     del instrument
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -286,6 +287,7 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             neg_tokens=self._floor_neg_tokens,
             mask_floor_source=cfg.mask_floor_source,
             dual_floor_weight=cfg.dual_floor_weight,
+            binarize=cfg.binarize,
             steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda,
             keep_threshold=cfg.keep_threshold,
             batch_size=self.probe_batch_size,

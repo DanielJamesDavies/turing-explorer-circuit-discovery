@@ -58,6 +58,16 @@ class FeatureGraph:
                     anchors.append(state_grad.resc)
         return anchors
 
+    def release(self) -> None:
+        """Drop every retained latent record so the multi-GB activation
+        tensors free by refcount immediately. The instrument/graph objects
+        participate in reference cycles that CPython's generational GC
+        collects only sporadically — measured (vram-ledger 2026-07-31) as a
+        +0.4–2.1 GB per-pass VRAM ratchet with a 7.7 GB spontaneous release
+        when GC happened to fire. Clearing the containers makes teardown
+        deterministic; the cycle husks that remain hold no tensors."""
+        self.activations.clear()
+
     def zero_grad(self):
         """Zeros accumulated gradients on all leaf anchors."""
         for steps in self.activations.values():
@@ -97,6 +107,11 @@ class SAEGraphInstrument:
     def __call__(self, model: Any):
         """Hook entry point for Inference.forward(patcher=instrument)."""
         return multi_patch(model, self.transform)
+
+    def release(self) -> None:
+        """Deterministically free retained activations (see FeatureGraph.release)."""
+        self.graph.release()
+        self.logits = None
 
     def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
         # 1. Encode — top_acts is connected to x through the encoder

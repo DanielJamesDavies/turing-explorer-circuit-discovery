@@ -169,7 +169,8 @@ class SAEBank:
 
         return results  # type: ignore[return-value]
 
-    def decode(self, latents: torch.Tensor, kind: str, layer: int) -> torch.Tensor:
+    def decode(self, latents: torch.Tensor, kind: str, layer: int,
+               add_bias: bool = True) -> torch.Tensor:
         sae = self.saes[kind][layer]
         if sae is None:
             raise ValueError(f"SAE for {kind} layer {layer} is not loaded")
@@ -180,7 +181,7 @@ class SAEBank:
 
         ctx = torch.no_grad() if not torch.is_grad_enabled() else nullcontext()
         with ctx, self._autocast_ctx(target_device):
-            return sae.decode(latents)
+            return sae.decode(latents, add_bias=add_bias)
 
     def full_encode(self, x: torch.Tensor, kind: str, layer: int) -> tuple[torch.Tensor, torch.Tensor]:
         """Returns (features [..., d_sae], residual [..., d_model])."""

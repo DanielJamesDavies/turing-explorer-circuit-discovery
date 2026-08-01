@@ -112,6 +112,15 @@ class Inference:
 
         sdpa_ctx = sdpa_kernel(SDPBackend.FLASH_ATTENTION) if self.device.type == "cuda" else nullcontext()
         grad_ctx = torch.enable_grad() if grad_enabled else torch.no_grad()
+        # bf16 autocast on gradient forwards only (config.discovery.autocast_bf16):
+        # matches the model's own training regime and halves the retained
+        # backward graph. Forward-only wrap is the correct autocast pattern —
+        # backward runs later on the saved (bf16) tensors. No-grad evals are
+        # deliberately untouched.
+        autocast_ctx = (torch.autocast(device_type="cuda", dtype=torch.bfloat16)
+                        if (grad_enabled and self.device.type == "cuda"
+                            and config.discovery.autocast_bf16)
+                        else nullcontext())
         restore_compile = patcher is not None and self._compiled
         if restore_compile:
             self.disable_compile()
@@ -120,7 +129,7 @@ class Inference:
             for i in range(num_gen):
                 with obs.track_forward():
                     with capture_activations(self.model, callback=activations_callback, capture=return_activations) as acts, (patcher(self.model) if patcher else nullcontext()):
-                        with grad_ctx, sdpa_ctx:
+                        with grad_ctx, sdpa_ctx, autocast_ctx:
                             logits, _ = self.model(tokens, return_all_logits=(all_logits and i == 0))
                 
                 if return_activations:

@@ -344,6 +344,7 @@ class ClusterContrastDiscovery:
                             raw_inh[key] = raw_inh[key] + inh_s
 
             finally:
+                instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
                 del instrument
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()

@@ -194,17 +194,28 @@ class SAE(nn.Module):
 
         return pre_acts.topk(self.k, sorted=False, dim=-1)
 
-    def decode(self, latents, ensure_device: bool = True):
+    def decode(self, latents, ensure_device: bool = True, add_bias: bool = True):
         """
         Decodes the latents back into the original d_model space.
-        
+
         Args:
             latents: Sparse activations of shape (..., d_sae)
+            add_bias: when False, return only decoder(latents) without
+                decoder_bias. Decoding is affine, so a DIFFERENCE of two
+                decodes has the bias cancel exactly:
+                    decode(a) - decode(b) == (a - b) @ W_dec.T
+                Callers that only need such a difference can therefore pass
+                the difference through once with add_bias=False instead of
+                decoding both sides and subtracting - one matmul instead of
+                two, and better conditioned when a ~ b (the subtraction of
+                two nearly-equal decoded tensors is catastrophic
+                cancellation). Default True is the historical behaviour.
         """
         if ensure_device is True and self.decoder_device != latents.device:
             self.move_decoder_to_vram()
-            
-        return self.decoder(latents) + self.decoder_bias
+
+        out = self.decoder(latents)
+        return out + self.decoder_bias if add_bias else out
 
     def forward(self, x: torch.Tensor):
         """

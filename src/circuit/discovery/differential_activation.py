@@ -250,6 +250,7 @@ class DifferentialActivation(DiscoveryMethod):
             note=f"{n_edges} edges from {len(all_candidates)} candidates",
         )
 
+        instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
         del instrument
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

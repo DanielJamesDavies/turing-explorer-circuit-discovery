@@ -52,6 +52,12 @@ class SeedProjectionInstrument(SAEGraphInstrument):
         self.b_seed = b_seed  # scalar — effective encoder bias for the seed latent
         self.seed_pre_act: Optional[torch.Tensor] = None  # populated during forward: [B, T]
 
+    def release(self) -> None:
+        # seed_pre_act is graph-connected — it alone keeps the whole backward
+        # graph (and every retained activation) alive.
+        super().release()
+        self.seed_pre_act = None
+
     def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
         result = super().transform(layer_idx, kind, x)
         if layer_idx == self.seed_layer and kind == self.seed_kind:
@@ -474,6 +480,7 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             warmup_frac=cfg.warmup_frac,
             mask_floor_source=cfg.mask_floor_source,
             dual_floor_weight=cfg.dual_floor_weight,
+            binarize=cfg.binarize,
             logger=logger,
         )
         if objective == "negctx":
@@ -1066,6 +1073,7 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
                     n_valid_batches += 1
 
                 finally:
+                    instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
                     del instrument
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()

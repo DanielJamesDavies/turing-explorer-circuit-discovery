@@ -296,6 +296,13 @@ class _PositionAttrInstrument:
         self.naturals: Dict[Site, torch.Tensor] = {}
         self.seed_pre: Optional[torch.Tensor] = None
 
+    def release(self) -> None:
+        """Deterministic teardown — reference cycles otherwise hold these
+        tensors until an eventual gc pass (vram-ledger 2026-07-31)."""
+        self.leaves.clear()
+        self.naturals.clear()
+        self.seed_pre = None
+
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
 
@@ -448,6 +455,7 @@ def position_aware_membership(
                     fid = FeatureID(layer=layer, kind=kind, index=lat)
                     if fid not in members or abs(val) > abs(members[fid]):
                         members[fid] = val
+            ins.release()   # deterministic teardown (vram-ledger 2026-07-31)
             del ins
     finally:
         inference.enable_compile()

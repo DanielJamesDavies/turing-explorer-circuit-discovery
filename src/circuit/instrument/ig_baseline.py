@@ -100,6 +100,13 @@ class InterpolatedCodeInstrument:
         self.deltas: Dict[Site, torch.Tensor] = {}
         self.seed_pre_act: Optional[torch.Tensor] = None
 
+    def release(self) -> None:
+        """Deterministic teardown — reference cycles otherwise hold these
+        tensors until an eventual gc pass (vram-ledger 2026-07-31)."""
+        self.anchors.clear()
+        self.deltas.clear()
+        self.seed_pre_act = None
+
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
 
@@ -347,6 +354,7 @@ def integrated_baseline_scores(
                         c_pa_accum[site] = contrib
                 # Collapsed accumulators live on CPU; contributions are small.
                 c_scores[site] += (per_pos.sum(dim=(0, 1)) / ig_steps).detach().cpu()
+            instrument.release()   # deterministic teardown (vram-ledger 2026-07-31)
             del instrument
         # One transfer per site per chunk; selection stays CPU-side.
         return c_scores, {s: t.cpu() for s, t in c_pa_accum.items()}, m_start, m_end
