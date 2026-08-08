@@ -643,12 +643,23 @@ class RestorationConfig(BaseModel):
 
 class LearnedMaskConfig(BaseModel):
     """The learned continuous-mask modes (abl-mask, cf-mask_contrast,
-    cf-mask_negctx). Shared by all three objectives; beta is read only by
-    mask_contrast. Losses target the seed PRE-activation and every target is
-    a natural level ("reproduce, don't maximise"). Motivation: gradient signs
-    are state-dependent to near-independence (corr 0.05 at L8, 2026-07-24),
-    so membership is optimised against the loss rather than read off any
-    single gradient."""
+    cf-mask_negctx, and the TRI-AMP MASK — see below). Shared by all
+    objectives; beta is read only by mask_contrast. Losses target the seed
+    PRE-activation and every target is a natural level ("reproduce, don't
+    maximise"). Motivation: gradient signs are state-dependent to
+    near-independence (corr 0.05 at L8, 2026-07-24), so membership is
+    optimised against the loss rather than read off any single gradient.
+
+    TRI-AMP MASK (2026-08-05): objective="pos" + mask_floor_source="triple"
+    + free_amplitude=True (engine kwargs; the last two are not yet config
+    fields). Reproduces the seed under zero+negctx+posctx ablation at once,
+    with a learned per-latent amplitude. Produces WEIGHTED circuits (set +
+    coefficient vector) of ~100-600 latents at L2, ~250-1,600 at L9, that
+    are faithful under every floor convention with amplitudes applied —
+    null-validated against random same-size sets. NOT a drop-in for
+    abl-mask: the output object is different in kind (coefficients are part
+    of the circuit) and cf/sup under amp semantics are still unvalidated.
+    Evidence: dev-notes/data/floor-isolation-2026-08-05/README.md R1-R16."""
     model_config = ConfigDict(extra='forbid')
     # ------------------------------------------------------------------
     # HOUSE RECIPE (frozen 2026-07-30). Every default here is the measured
@@ -669,19 +680,34 @@ class LearnedMaskConfig(BaseModel):
     lr: float = 0.05
     # Per-latent price (the penalty is a SUM over latents, not a mean —
     # mean-normalising put the per-latent gradient under Adam's eps and
-    # nothing pruned). THE one free dial. 1e-5 is its PROBE ANCHOR, not a
-    # universal value: per-seed good lambdas span 1.7e-6..1.2e-5 with depth,
-    # and NO free predictor beats measurement (best feature model 24-29%
-    # size error vs 3.6% for one probe run). Calibrate per seed:
-    #   lambda_target = 1e-5 * (n_probe / n_target)^(1/0.759)
-    # where n_probe is the member count of a single run at 1e-5.
+    # nothing pruned). THE one free dial, and a PROBE ANCHOR rather than a
+    # universal value: per-seed good lambdas span orders of magnitude with
+    # depth (the L9 bisection found 1.09e-6..5.62e-3 across four seeds of
+    # ONE layer), and NO free predictor beats measurement. Calibrate per
+    # seed from one probe run AT THIS ANCHOR:
+    #   lambda_target = l1_lambda * (n_probe / n_target)^(1/0.759)
     # CAUTION: the exponent 0.759 was fitted at 400 steps, flat pricing,
     # SOFT gate (binarize="none"). Every training-dynamics change measured so
     # far (soft->anneal, 400->200 steps, descend->hold) moved the lambda->n
     # curve; under the now-default "anneal" the exponent is UNVERIFIED and a
-    # re-fit is pending (probe-corrections observed 1.45-1.78x). Sizes at the
-    # anchor also run larger under anneal (L8 31.6k vs 21.9k soft).
-    l1_lambda: float = 1e-5
+    # re-fit is pending (probe-corrections observed 1.45-1.78x).
+    #
+    # RETUNED 1e-5 -> 1e-4 on 2026-08-05
+    # (dev-notes/data/floor-isolation-2026-08-05). Judged on ALL-PASS —
+    # free0 AND freeM_dense AND freeM_topk all within [0.8, 1.25] AND
+    # cf > 0.7, i.e. faithful under every floor convention rather than only
+    # the one the mask trained on. At L2, 4/4 seeds:
+    #     1e-5 -> n=2,432   free0 0.985  freeM_d 1.033  ALL-PASS
+    #     1e-4 -> n=  942   free0 0.981  freeM_d 0.994  ALL-PASS
+    # Same status on every metric at 2.6x fewer latents, so the old anchor
+    # was simply over-provisioned. The smallest ALL-PASS circuits in the
+    # panel (747/863/1007/1151) are all at 1e-4.
+    #
+    # SCOPE OF THE EVIDENCE: L2 resid only, 4 seeds, pos/dual. NOT validated
+    # at depth — the L9 bisection's good lambdas span 1e-6..5.6e-3, so a
+    # single global anchor is certainly wrong for some seeds. This changes
+    # where the per-seed calibration STARTS, not the need for it.
+    l1_lambda: float = 1e-4
     beta: float = 1.0                # mask_contrast: weight of negctx silence
     # mask_inject only. delta is priced on its OWN scale: it carries
     # activation magnitudes while the mask's l1_lambda prices unitless edits,

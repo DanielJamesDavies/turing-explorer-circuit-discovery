@@ -1,5 +1,18 @@
 """Learned continuous-mask circuit discovery (the loss-following mode family).
 
+TRI-AMP MASK (named 2026-08-05): the recommended configuration is
+    objective="pos" + mask_floor_source="triple" + free_amplitude=True
+i.e. reproduce the seed's natural per-sequence pre-activation under THREE
+ablation semantics at once (zero + negctx + posctx — a latent must earn
+its place under all of them, which is what stops the mask specialising to
+any single evaluation floor), with a learned per-latent amplitude on top
+of the gate (off / natural / elevated — free range). The object it
+produces is a WEIGHTED CIRCUIT: a membership set PLUS a coefficient
+vector, and the two must be reported together — a 99-node weighted
+circuit is not comparable to a 99-node bare set. Evidence:
+dev-notes/data/floor-isolation-2026-08-05/README.md R1-R16, including
+the random-set null that validates the amplitude semantics (R16).
+
 Motivated by the 2026-07-24 gradient-observability findings: instantaneous
 gradient signs are state-dependent to near-independence (corr(g_natural,
 g_intervened) = 0.05 at L8), and the activator/inhibitor populations are
@@ -21,6 +34,31 @@ precedent — the _negctx suffix marks the counterfactual-distribution worker):
              Sparsity flips to the edit (1 - m) because the reference state
              is the natural stream, not the empty one. Reported residual gap
              measures suppression-gated vs drive-absent silence.
+  "raise"    (inhibitor-mask)   L = mse(pre_pos(m), gamma*a_pos) + l1.sum(1 - m)
+             The MIRROR of "pos": instead of "keep the seed at natural, pay
+             for every latent you KEEP" (smallest sufficient support), it is
+             "push the seed ABOVE natural, pay for every latent you SILENCE"
+             (smallest effective BRAKE set). Runs on POSCTX, where the seed
+             already fires, and asks which latents are holding it back even
+             there — the population D2.2 found carries necessity on attn
+             seeds. The L1-on-edits is what creates the tension: a latent
+             with no effect costs lambda to remove and buys nothing, so it
+             is evicted; an ACTIVATOR would lower the seed if removed, so it
+             is penalised twice and never recruited. Only genuine
+             suppressors survive. Target is gamma * target_act with
+             gamma = raise_gamma > 1. Scores are negative (inhibitors), as
+             for "negctx". Distinct from "negctx", which asks the same
+             question on SILENT contexts (a different population).
+  "pin"      (pin-mask, D3.1)     L = mse(pre_pos(m; PINNED), natural) + l1.mean(m)
+             The DRIVER twin of "pos". Identical loss shape, but a KEPT
+             latent is clamped to its clean POSCTX PIN value rather than
+             left at its live value, and a dropped latent goes to the
+             floor — i.e. the forward is the PINNED counterfactual the
+             pin0 metric measures, made differentiable. Because pinned
+             members do not re-encode, the state a member sees is fixed
+             by the pins, so training optimises the (P1) pinned-driver
+             objective directly instead of the (P2) free-execution one.
+             Members are delivered as supports, as for "pos".
   "inject"   (cf-mask_inject)    value' = m*value + delta, delta = softplus(psi) >= 0
              L = mse(pre_neg(m, delta), target_pos) + l1.(sum(1-m) + sum(delta))
              The FULL learned heir of the original counterfactual question
@@ -82,16 +120,17 @@ from sae.dense import sparse_topk_to_dense
 
 Site = Tuple[int, str]
 
-OBJECTIVES = ("pos", "contrast", "negctx", "inject")
+OBJECTIVES = ("pos", "contrast", "negctx", "inject", "raise", "pin", "logit",
+              "maximise")
 
-MASK_FLOOR_SOURCES = ("zero", "posctx", "negctx", "dual")
+MASK_FLOOR_SOURCES = ("zero", "posctx", "negctx", "dual", "triple", "pn")
 # The floors that need negative contexts to build. EXPORTED because callers
 # must gate their negative RETRIEVAL on the same set: gradient_base skips the
 # retrieval for non-"store" modes unless something will actually read it, and
 # hardcoding one member there (it said != "negctx") silently starved "dual" —
 # every dual arm on a close/random mode died on a missing floor. One tuple,
 # imported, so a new floor cannot drift out of sync again.
-FLOORS_NEEDING_NEGATIVES = ("negctx", "dual")
+FLOORS_NEEDING_NEGATIVES = ("negctx", "dual", "triple", "pn")
 
 
 class LearnedMaskPatcher:
@@ -104,16 +143,34 @@ class LearnedMaskPatcher:
                  seed_layer: int, seed_kind: str,
                  w_seed: torch.Tensor, b_seed: torch.Tensor,
                  deltas: Optional[Dict[Site, torch.Tensor]] = None,
+                 amps: Optional[Dict[Site, torch.Tensor]] = None,
                  code_dtype: str = "stream",
                  floors: Optional[Dict[Site, torch.Tensor]] = None,
+                 pins: Optional[Dict[Site, torch.Tensor]] = None,
                  binarize: str = "none",
-                 bin_threshold: float = 0.5) -> None:
+                 bin_threshold: float = 0.5,
+                 tap_seed: bool = True) -> None:
+        # tap_seed=False removes the seed site's special case entirely: it is
+        # masked like any other site and no pre-activation is captured. Used
+        # by objective='logit', whose endpoint is the OUTPUT, so there is no
+        # seed to tap and no reason to exempt the seed's own site from
+        # membership. Every pre-activation objective needs tap_seed=True.
+        self.tap_seed = bool(tap_seed)
         self.bank = bank
         self.thetas = thetas
         self.deltas = deltas or {}
+        # FREE AMPLITUDE (2026-08-05): per-latent multiplicative scale
+        # alpha = softplus(psi), giving each KEPT latent free range — 0 via
+        # the gate, its natural value at alpha=1, elevated above it — rather
+        # than gating between two fixed endpoints. code becomes
+        # m*alpha*dense + (1-m)*floor. None == historical gate-only.
+        self.amps = amps or {}
         # Per-site floor [d_sae]: the value a FULLY masked latent takes.
         # None == the zero floor (code * m), the historical behaviour.
         self.floors = floors or {}
+        # D3.1: per-site [d_sae] clean posctx values. When present the
+        # transform runs the PINNED counterfactual instead of the scaled one.
+        self.pins = pins or {}
         self.seed_layer = seed_layer
         self.seed_kind = seed_kind
         self.w_seed = w_seed
@@ -156,7 +213,8 @@ class LearnedMaskPatcher:
         return multi_patch(model, self.transform)
 
     def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
-        if layer_idx == self.seed_layer and kind == self.seed_kind:
+        if (self.tap_seed and layer_idx == self.seed_layer
+                and kind == self.seed_kind):
             w = self.w_seed.to(device=x.device, dtype=x.dtype)
             b = self.b_seed.to(device=x.device, dtype=x.dtype)
             self.seed_pre = x @ w + b
@@ -194,8 +252,29 @@ class LearnedMaskPatcher:
             if self.binarize == "ste":
                 hard = (m > self.bin_threshold).to(m.dtype)
                 m = hard + m - m.detach()
+            pin = self.pins.get((layer_idx, kind))
             floor = self.floors.get((layer_idx, kind))
-            if floor is None:
+            amp = self.amps.get((layer_idx, kind))
+            if amp is not None and pin is None:
+                # code = m*alpha*dense + (1-m)*floor, so
+                # delta = dense*(m*alpha - 1) + (1-m)*floor.
+                # At alpha=1 this reduces exactly to the gate-only forms
+                # below (algebraic identity, both floor branches).
+                alpha = torch.nn.functional.softplus(amp).to(
+                    device=dense.device, dtype=dense.dtype)
+                delta_code = dense * (m * alpha - 1.0)
+                if floor is not None:
+                    delta_code = delta_code + (1.0 - m) * floor.to(
+                        device=dense.device, dtype=dense.dtype)
+            elif pin is not None:
+                # PINNED execution (D3.1): kept -> clean pin value, dropped
+                # -> floor (or 0). code = m*pin + (1-m)*floor, so the delta
+                # against the live dense code is code - dense.
+                p = pin.to(device=dense.device, dtype=dense.dtype)
+                base = (floor.to(device=dense.device, dtype=dense.dtype)
+                        if floor is not None else torch.zeros_like(p))
+                delta_code = (m * p + (1.0 - m) * base) - dense
+            elif floor is None:
                 # zero floor: code - dense == -dense * (1 - m)
                 delta_code = -dense * (1.0 - m)
             else:
@@ -246,11 +325,68 @@ def _forward_preact(inference: Any, patcher: LearnedMaskPatcher,
     return patcher.seed_pre
 
 
+def _forward_logits(inference: Any, patcher: LearnedMaskPatcher,
+                    tokens: torch.Tensor, grad: bool) -> torch.Tensor:
+    """Masked forward returning OUTPUT LOGITS [B, T, V].
+
+    The behavioural counterpart of _forward_preact: the endpoint is the
+    model's next-token distribution rather than the seed latent's
+    pre-activation. Note this runs the FULL depth of the model — the
+    pre-act path can stop at the seed's layer, this one cannot — so a
+    logit-objective step is strictly more expensive than a pos one on the
+    same sites. Same no-compile policy, same reasoning as _forward_preact.
+    """
+    was_compiled = getattr(inference, "_compiled", False)
+    if was_compiled:
+        inference.disable_compile()
+    try:
+        out = inference.forward(tokens, patcher=patcher, grad_enabled=grad,
+                                all_logits=True, return_activations=False,
+                                tokenize_final=False)
+    finally:
+        if was_compiled:
+            inference.enable_compile()
+    logits = out[1] if isinstance(out, (tuple, list)) else out
+    if logits is None:
+        raise RuntimeError("learned_mask[logit]: forward returned no logits "
+                           "(all_logits=True not honoured?)")
+    return logits
+
+
+def _target_logprob(logits: torch.Tensor, anchors: torch.Tensor,
+                    targets: torch.Tensor) -> torch.Tensor:
+    """log p(target token) at each sequence's anchor position -> [B]."""
+    B = min(int(logits.shape[0]), int(anchors.shape[0]), int(targets.shape[0]))
+    idx = torch.arange(B, device=logits.device)
+    pa = anchors[:B].to(logits.device).clamp(0, logits.shape[1] - 1)
+    lp = torch.log_softmax(logits[:B][idx, pa].float(), dim=-1)
+    return lp[idx, targets[:B].to(logits.device).long()]
+
+
 def _at(pre: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
     B = min(pre.shape[0], anchors.shape[0])
     idx = torch.arange(B, device=pre.device)
     pa = anchors[:B].to(pre.device).clamp(0, pre.shape[1] - 1)
     return pre[:B][idx, pa]
+
+
+@torch.no_grad()
+def _natural_logprob(inference: Any, bank: Any, tokens: torch.Tensor,
+                     anchors: torch.Tensor, targets: torch.Tensor,
+                     seed_layer: int, seed_kind: str,
+                     w_seed: torch.Tensor, b_seed: torch.Tensor,
+                     code_dtype: str = "stream",
+                     batch: int = 8) -> torch.Tensor:
+    """Full-model log p(target) at each anchor -> [B]. The logit
+    objective's REPRODUCTION target, exactly as _natural is for pos."""
+    p = LearnedMaskPatcher(bank, {}, seed_layer, seed_kind, w_seed, b_seed,
+                           code_dtype=code_dtype)
+    out = []
+    for s in range(0, int(tokens.shape[0]), batch):
+        lg = _forward_logits(inference, p, tokens[s:s + batch], grad=False)
+        out.append(_target_logprob(lg, anchors[s:s + batch],
+                                   targets[s:s + batch]).detach())
+    return torch.cat(out, dim=0) if out else torch.zeros(0)
 
 
 @torch.no_grad()
@@ -316,6 +452,7 @@ def _run_learned_mask_impl(
     pos_tokens: torch.Tensor,
     pos_argmax: torch.Tensor,
     neg_tokens: Optional[torch.Tensor] = None,
+    target_tokens: Optional[torch.Tensor] = None,
     target_act: Optional[float] = None,
     steps: int = 200,
     lr: float = 0.05,
@@ -341,11 +478,70 @@ def _run_learned_mask_impl(
     warmup_frac: float = 0.0,
     mask_floor_source: str = "zero",
     dual_floor_weight: float = 1.0,
+    # gamma on the posctx term of mask_floor_source="triple" and "pn";
+    # ignored otherwise. Defaults to dual_floor_weight's house value so the
+    # third semantics enters at the same price as the second.
+    triple_floor_weight: float = 0.25,
+    # FREE AMPLITUDE (Daniel, 2026-08-05): every latent gets a learned
+    # multiplicative scale alpha = softplus(psi) on top of the gate, so the
+    # mask has free range — off (gate), natural (alpha=1), or elevated
+    # (alpha>1). psi initialises at softplus^-1(1) so training starts
+    # EXACTLY at the historical gate-only behaviour. The promise is
+    # compensation: one latent at 2x can replace two redundant latents,
+    # which no pure gate can express. Bounded via the objective's target
+    # (unlike `maximise`) — amplitudes that overshoot the target are pushed
+    # back down by the same squared error that prices undershoot.
+    free_amplitude: bool = False,
+    # optional price on |alpha - 1| for MEMBERS (weighted by the gate), so
+    # amplitudes deviate from natural only when the data term earns it.
+    # 0.0 = truly free range.
+    amp_l1: float = 0.0,
     binarize: str = "none",
     anneal_reach_frac: float = 1.0,
+    support: Optional[Dict[Site, torch.Tensor]] = None,
+    raise_gamma: float = 1.5,
+    pin_values: Optional[Dict[Site, torch.Tensor]] = None,
+    scale_normalize: bool = False,
+    delta_init: Optional[Dict[Site, Dict[int, float]]] = None,
+    suppress_weight: float = 0.0,
+    step_hook: Optional[Any] = None,
     logger: Any = None,
 ) -> Tuple[Dict[FeatureID, float], Dict[str, Any]]:
     """Optimise the mask and return (scores, provenance).
+
+    cf-mask v2 knobs (2026-08-02, all default-off so existing behaviour is
+    bit-identical):
+
+    ``scale_normalize`` (negctx/inject only): divide the data term by
+    target_act**2 (relative squared error — the dual floor's bounded-
+    normaliser lesson) and price delta per unit of TARGET (delta_sum /
+    target_act). Seed scales span ~100x on the panel, so without this one
+    lambda_inj default is simultaneously crushing on weak seeds and
+    toothless on strong ones — the diagnosed root cause of the MI arm's
+    dead-at-defaults verdict.
+
+    ``delta_init``: {site: {latent: value}} warm start in ACTIVATION units
+    (e.g. AMPC's alpha* x posctx pins) — psi is set to softplus^-1(value)
+    so training begins AT a working intervention and refines, instead of
+    having to find drive from scratch (the empty-circuit cliff).
+
+    ``suppress_weight`` (inject only): adds a posctx term driving the seed
+    to ZERO through the same gates/deltas (D3.2's dual-intervention second
+    half). Weighted like the main term; scale-normalised when
+    scale_normalize is set.
+
+    ``support`` (D3.6, 2026-08-01): restrict the SEARCH SPACE to a candidate
+    set per site — a bool mask [d_sae] or a LongTensor of latent indices.
+    Latents outside the support are hard-excluded: theta clamped to -12
+    (m ~= 6e-6, i.e. the floor) at init and re-clamped after every
+    optimizer step, so neither the data gradient nor AdamW's decoupled
+    decay can move them; they are unreachable by selection. Sites absent
+    from the dict are excluded entirely. This is NOT theta_init_mode
+    ("active" changes the START but still trains the full space); support
+    changes the space itself — the mask becomes a pruner/refiner over an
+    attribution-proposed candidate set, and its recall is capped at the
+    support's. Applies to thetas only (the inject objective's deltas are
+    not restricted).
 
     Scores: "pos"/"contrast" -> {fid: m} for kept members (m > keep_threshold,
     all positive). "negctx" -> {fid: -(1 - m)} for edited members
@@ -357,6 +553,26 @@ def _run_learned_mask_impl(
     if objective in ("contrast", "negctx", "inject"):
         if neg_tokens is None or int(neg_tokens.shape[0]) == 0:
             raise ValueError(f"objective={objective!r} requires neg_tokens")
+    if objective == "logit" and target_tokens is None:
+        raise ValueError("objective='logit' requires target_tokens (the token "
+                         "to predict at each sequence's pos_argmax): the "
+                         "endpoint is BEHAVIOURAL, not the seed latent")
+    if free_amplitude and objective == "pin":
+        raise ValueError("free_amplitude is not defined for objective='pin': "
+                         "pinned execution fixes kept latents to clean values, "
+                         "which contradicts a learned amplitude on them")
+    if objective == "pin" and pin_values is None:
+        raise ValueError("objective='pin' requires pin_values "
+                         "(per-site [d_sae] clean posctx anchors) — "
+                         "the pinned counterfactual is undefined "
+                         "without them")
+    if objective == "raise" and target_act is None:
+        raise ValueError("objective='raise' requires target_act "
+                         "(the seed's natural posctx level; the "
+                         "objective targets raise_gamma * it)")
+    if objective == "raise" and float(raise_gamma) <= 1.0:
+        raise ValueError("raise_gamma must be > 1: the objective is to push "
+                         f"the seed ABOVE natural, got {raise_gamma}")
     if objective in ("negctx", "inject") and target_act is None:
         raise ValueError(
             f"objective={objective!r} requires target_act (posctx level)")
@@ -392,18 +608,53 @@ def _run_learned_mask_impl(
     # floors are bit-identical to the eval anchors.
     if mask_floor_source not in MASK_FLOOR_SOURCES:
         raise ValueError(
-            "mask_floor_source must be 'zero', 'posctx', 'negctx' or 'dual', "
+            f"mask_floor_source must be one of {MASK_FLOOR_SOURCES}, "
             f"got {mask_floor_source!r} — 'global'/'diverse' need a data "
             "loader the mask engine does not take; add one before offering "
             "them rather than silently falling back to another floor")
-    # "dual" = zero AND negctx, both scored every step. Restricted to the pos
-    # objective: the negctx/inject objectives already put their loss on the
-    # negatives, so a second negctx-floored term there is not the same
-    # question and would need its own justification.
-    dual_floor = mask_floor_source == "dual"
-    if dual_floor and objective != "pos":
+    # "dual" = zero AND negctx, both scored every step. Allowed for the
+    # objectives whose loss lives on the POSITIVES (pos, maximise); barred for
+    # negctx/contrast/inject, which already put their loss on the negatives,
+    # so a second negctx-floored term there is not the same question.
+    #
+    # maximise was added to this list 2026-08-05 after the freeM panel showed
+    # a single-zero-floor maximise EXPLOITS that floor: it raises the seed by
+    # DELETING SUPPRESSORS, which only works when "deleted" means set-to-zero.
+    # Its free0/freeM_dense ratio was 10.7x median against pos's 1.17x. Under
+    # the dual floor a latent must earn its place under BOTH ablation
+    # semantics, and deletion buys nothing under the negctx floor — which is
+    # exactly the pressure that should suppress the exploit. The original
+    # restriction was a whitelist of one written before this objective
+    # existed, not a judgement about it.
+    #
+    # "triple" = zero AND negctx AND posctx, all three scored every step.
+    # Added 2026-08-05 on Daniel's suggestion. Note the third term trains on
+    # the floor the design comment above deliberately excluded, so it must be
+    # used knowingly: (a) posctx CREDITS ITSELF at depth (comment records
+    # 23%/29.9% of a_pos at L8/L9 — though measured on the 8 seeds of
+    # floor-isolation-2026-08-05 the leak is 0.0% on 7 and 3.5% on 1, so the
+    # exclusion may deserve re-examination), and (b) training on posctx makes
+    # freeM_dense IN-SAMPLE, costing the held-out metric that currently
+    # validates pos/dual. Expect a weak third gradient too: a dropped latent
+    # lands on its posctx mean, which on positive contexts is close to its
+    # actual value, so the intervention is gentle by construction.
+    # "pn" = negctx AND posctx, NO zero term. Added 2026-08-06 (Daniel's
+    # question: with free amplitudes, does the zero floor still earn its
+    # place, or can alpha->0 substitute for it?). The ablation is the direct
+    # test of the R1 finding that the zero term is what forces the set to
+    # carry the signal rather than the delta-from-baseline. Weighting:
+    # negctx PROMOTES to the primary 1.0 slot that zero held (this is the
+    # mode one would actually ship if zero were unnecessary — comparable
+    # overall loss scale to dual/triple); posctx keeps triple_floor_weight;
+    # dual_floor_weight is unused.
+    DUAL_OK = ("pos", "maximise")
+    triple_floor = mask_floor_source == "triple"
+    pos_floor = mask_floor_source in ("triple", "pn")
+    zero_term = mask_floor_source in ("dual", "triple")
+    dual_floor = mask_floor_source in ("dual", "triple", "pn")
+    if dual_floor and objective not in DUAL_OK:
         raise ValueError(
-            "mask_floor_source='dual' is only defined for objective='pos'; "
+            f"mask_floor_source='dual' is defined for {DUAL_OK}; "
             f"got {objective!r}. The negctx/contrast/inject objectives already "
             "carry a negative-context term, so composing them with a dual "
             "floor is a different experiment — do it deliberately, not by "
@@ -426,6 +677,15 @@ def _run_learned_mask_impl(
             logger.note(f"learned_mask: {mask_floor_source} floor over "
                         f"{int(floor_tokens.shape[0])} sequences, "
                         f"{len(floors)} sites")
+    # triple's/pn's posctx floor: collected separately because the shared
+    # `floors` slot is already carrying negctx.
+    floors_pos: Optional[Dict[Site, torch.Tensor]] = None
+    if pos_floor:
+        from eval.floors import collect_site_means as _csm
+        floors_pos = _csm(inference, bank, pos_tokens, set(sites))
+        if logger is not None:
+            logger.note(f"learned_mask: {mask_floor_source} posctx floor over "
+                        f"{int(pos_tokens.shape[0])} sequences")
 
     # Depth-adaptive VRAM guard (the sites x per-site-tensors law): every
     # backward holds dense-code graphs at ALL masked sites simultaneously,
@@ -523,6 +783,29 @@ def _run_learned_mask_impl(
                           requires_grad=True)
             for s in sites
         }
+
+    # ---- D3.6 support restriction --------------------------------------
+    SUPPORT_EXCL = -12.0          # sigmoid(-12) ~= 6e-6: at the floor
+    support_excl_masks: Dict[Site, torch.Tensor] = {}
+    if support is not None:
+        n_in = 0
+        for st in sites:
+            spec = support.get(st)
+            keep = torch.zeros(bank.d_sae, dtype=torch.bool, device=device)
+            if spec is not None:
+                spec = spec.to(device)
+                if spec.dtype == torch.bool:
+                    keep = spec.clone()
+                else:
+                    keep[spec.long()] = True
+            support_excl_masks[st] = ~keep
+            n_in += int(keep.sum())
+            with torch.no_grad():
+                thetas[st].masked_fill_(support_excl_masks[st], SUPPORT_EXCL)
+        if logger is not None:
+            logger.note(f"learned_mask: support restricted to {n_in:,} of "
+                        f"{len(sites) * bank.d_sae:,} latents "
+                        f"({100.0 * n_in / max(len(sites) * bank.d_sae, 1):.2f}%)")
     # "inject": an additive delta = softplus(psi) per latent, psi init -4
     # (delta ~= 0.018, small but with live gradient) — absent-on-negctx
     # latents are unreachable by the multiplicative mask, delta is their
@@ -536,6 +819,26 @@ def _run_learned_mask_impl(
         delta_sites = sites[:len(sites) - n_ex]
         deltas = {s: torch.full((bank.d_sae,), -4.0, device=device,
                                 requires_grad=True) for s in delta_sites}
+        if delta_init:
+            # Warm start: psi = softplus^-1(v), so softplus(psi) == v at
+            # step 0 — training begins AT the supplied intervention.
+            # (math is imported at module level — a local import here would
+            # shadow it for the whole function scope and break lr_at.)
+            n_warm_init = 0
+            with torch.no_grad():
+                for st, vals in delta_init.items():
+                    if st not in deltas:
+                        continue           # excluded or non-upstream site
+                    for idx, v in vals.items():
+                        v = float(v)
+                        if v <= 0:
+                            continue
+                        psi = v if v > 20 else math.log(math.expm1(v))
+                        deltas[st][int(idx)] = psi
+                        n_warm_init += 1
+            if logger is not None:
+                logger.note(f"learned_mask[inject]: warm-started {n_warm_init} "
+                            f"deltas from delta_init")
         if n_ex and logger is not None:
             logger.note(f"learned_mask[inject]: delta excluded from the "
                         f"{n_ex} seed-adjacent site(s); {len(delta_sites)} "
@@ -543,8 +846,25 @@ def _run_learned_mask_impl(
                         + (" — NO injectable sites left, this run is "
                            "gate-only (equivalent to mask_negctx)"
                            if not delta_sites else ""))
-    params = list(thetas.values()) + list(deltas.values())
+    # free amplitude: psi init at softplus^-1(1) = ln(e - 1), so alpha = 1
+    # exactly and step 0 reproduces the gate-only mask bit-for-bit.
+    amps: Dict[Site, torch.Tensor] = {}
+    if free_amplitude:
+        _psi1 = math.log(math.expm1(1.0))
+        amps = {s: torch.full((bank.d_sae,), _psi1, device=device,
+                              requires_grad=True) for s in sites}
+    params = list(thetas.values()) + list(deltas.values()) + list(amps.values())
     inj_lambda = float(l1_lambda if inject_lambda is None else inject_lambda)
+    # scale_normalize: relative error + target-relative delta pricing (see
+    # docstring). Bounded by construction — a normaliser must never be able
+    # to annihilate its own term.
+    if scale_normalize and objective in ("negctx", "inject", "raise"):
+        if target_act is None:
+            raise ValueError("scale_normalize requires target_act")
+        sn_data = 1.0 / max(float(target_act) ** 2, 1e-6)
+        sn_delta = 1.0 / max(float(target_act), 1e-6)
+    else:
+        sn_data, sn_delta = 1.0, 1.0
 
     # Learning-rate schedule. Membership here is a THRESHOLD CROSSING, so late
     # in training a latent oscillating across m = 0.5 has its inclusion decided
@@ -627,9 +947,15 @@ def _run_learned_mask_impl(
                 tokens[n_train:], anchors[n_train:])
 
     # ---- targets from the NATURAL stream (reproduce, don't maximise) -------
-    pos_nat = _natural(inference, bank, pos_tokens, seed_layer, seed_kind,
-                       w_seed, b_seed, code_dtype=code_dtype)
-    pos_tgt_all = _at(pos_nat, pos_argmax)
+    if objective == "logit":
+        # No seed tap: the seed's own site is masked like any other, so no
+        # pre-activation is captured and the pre-act target is undefined.
+        # The logit branch below sets the real (log-prob) target.
+        pos_tgt_all = torch.zeros(int(pos_tokens.shape[0]), device=device)
+    else:
+        pos_nat = _natural(inference, bank, pos_tokens, seed_layer, seed_kind,
+                           w_seed, b_seed, code_dtype=code_dtype)
+        pos_tgt_all = _at(pos_nat, pos_argmax)
     if objective in ("contrast", "negctx", "inject"):
         neg_nat = _natural(inference, bank, neg_tokens, seed_layer, seed_kind,
                            w_seed, b_seed, code_dtype=code_dtype)
@@ -641,16 +967,51 @@ def _run_learned_mask_impl(
     pt_tr, pa_tr, pt_ho, pa_ho = split(pos_tokens, pos_argmax)
     ptgt_tr = pos_tgt_all[:pt_tr.shape[0]]
     ptgt_ho = pos_tgt_all[pt_tr.shape[0]:]
+    logit_tok = logit_tok_tr = logit_tok_ho = None
+    if objective == "logit":
+        # accept [B] (already gathered at the anchor) or [B, T] (gather here)
+        tt = target_tokens
+        if tt.dim() > 1:
+            bidx = torch.arange(min(tt.shape[0], pos_argmax.shape[0]))
+            tt = tt[bidx, pos_argmax[:tt.shape[0]].clamp(0, tt.shape[1] - 1)]
+        logit_tok = tt[:pos_tokens.shape[0]]
+        # target = the FULL model's log-prob, so the mask REPRODUCES the
+        # behaviour rather than maximising it — the same "reproduce, don't
+        # maximise" contract every other objective follows.
+        lp_nat_all = _natural_logprob(inference, bank, pos_tokens, pos_argmax,
+                                      logit_tok, seed_layer, seed_kind,
+                                      w_seed, b_seed, code_dtype=code_dtype,
+                                      batch=max(1, int(micro_bs)))
+        ptgt_tr = lp_nat_all[:pt_tr.shape[0]]
+        ptgt_ho = lp_nat_all[pt_tr.shape[0]:]
+        logit_tok_tr = logit_tok[:pt_tr.shape[0]]
+        logit_tok_ho = logit_tok[pt_tr.shape[0]:]
     if objective in ("contrast", "negctx", "inject"):
         nt_tr, na_tr, nt_ho, na_ho = split(neg_tokens, neg_anchors)
         ntgt_tr = neg_tgt_all[:nt_tr.shape[0]]
         ntgt_ho = neg_tgt_all[nt_tr.shape[0]:]
 
+    # MAXIMISE normaliser. The data term is LINEAR in the seed's
+    # pre-activation, so it needs a scale or lambda's meaning changes with
+    # depth (a_pos ~3 at L2, ~19 at L8). One scalar — the mean natural
+    # target — not a per-sequence ratio: per-sequence division blows up
+    # wherever a target is near zero, and the per-sequence spread is small
+    # anyway (measured cv 0.054-0.403 over L2/L8 seeds, since probe
+    # sequences are selected as POSITIVE contexts and so sample the top of
+    # the seed's range). After dividing, loss -1.0 means "the seed sits at
+    # its natural level on average" and -2.0 means "twice natural".
+    max_scale = 1.0
+    if objective == "maximise":
+        max_scale = max(float(pos_tgt_all.abs().mean()), 1e-3)
+    _pins = pin_values if objective == "pin" else None
+    _tap = objective != "logit"
     patcher = LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind,
-                                 w_seed, b_seed, deltas=deltas,
+                                 w_seed, b_seed, deltas=deltas, amps=amps,
                                  code_dtype=code_dtype, floors=floors,
+                                 pins=_pins,
                                  binarize=binarize,
-                                 bin_threshold=keep_threshold)
+                                 bin_threshold=keep_threshold,
+                                 tap_seed=_tap)
     # DUAL FLOOR: a second patcher over the SAME thetas, differing only in the
     # floor, so one mask is scored under both ablation semantics and gradients
     # from both accumulate into the same parameters.
@@ -664,9 +1025,17 @@ def _run_learned_mask_impl(
     # from a near-identical non-firing context.
     patcher_zero = (
         LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
-                           deltas=deltas, code_dtype=code_dtype, floors=None,
+                           deltas=deltas, amps=amps, code_dtype=code_dtype,
+                           floors=None,
                            binarize=binarize, bin_threshold=keep_threshold)
-        if dual_floor else None)
+        if zero_term else None)
+    # triple's/pn's posctx patcher: same thetas again, posctx floor.
+    patcher_pos = (
+        LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
+                           deltas=deltas, amps=amps, code_dtype=code_dtype,
+                           floors=floors_pos, binarize=binarize,
+                           bin_threshold=keep_threshold)
+        if pos_floor else None)
 
     def mask_mean() -> torch.Tensor:
         return torch.stack([torch.sigmoid(t).mean() for t in thetas.values()]).mean()
@@ -717,10 +1086,30 @@ def _run_learned_mask_impl(
         tk, an = tokens[s:s + micro_bs], anchors[s:s + micro_bs]
         tg = targets[s:s + micro_bs].to(device)
         if tk.shape[0] == 0:
+            s = 0
             tk, an, tg = tokens[:micro_bs], anchors[:micro_bs], targets[:micro_bs].to(device)
+        if objective == "logit":
+            # BEHAVIOURAL endpoint: squared error of the masked forward's
+            # log p(target) against the full model's. Same gates, same
+            # sites, same positions as `pos` — only the endpoint moves.
+            tokid = logit_tok_tr[s:s + tk.shape[0]]
+            lg = _forward_logits(inference, pat, tk, grad=True)
+            lp = _target_logprob(lg, an, tokid)
+            return ((lp - tg[:lp.shape[0]].to(lp.device, lp.dtype)) ** 2).mean()
         pre = _forward_preact(inference, pat, tk, grad=True)
         vals = _at(pre, an)
-        if objective in ("negctx", "inject"):
+        if objective == "maximise":
+            # No target: drive the seed as high as the mask can, and let the
+            # L1 term set the price of each latent kept. UNBOUNDED by
+            # construction — there is no fixed point, so the member set is
+            # whatever survives "value gained per latent > lambda". This is
+            # a DRIVER objective (cf. `raise`, which is the bounded form
+            # targeting raise_gamma * natural); it does not reproduce the
+            # natural state and should not be read as a closure object.
+            return -(vals.mean() / max_scale)
+        if objective == "raise":
+            tgt = torch.full_like(vals, float(raise_gamma) * float(target_act))
+        elif objective in ("negctx", "inject"):
             tgt = torch.full_like(vals, float(target_act))
         else:
             tgt = tg[:vals.shape[0]].to(vals.device, vals.dtype)
@@ -796,6 +1185,8 @@ def _run_learned_mask_impl(
                 patcher.temperature = t_now
                 if patcher_zero is not None:
                     patcher_zero.temperature = t_now
+                if patcher_pos is not None:
+                    patcher_pos.temperature = t_now
             if lr_schedule != "constant":
                 lr_now = lr_at(step)
                 for group in opt.param_groups:
@@ -814,38 +1205,117 @@ def _run_learned_mask_impl(
                 # built its own — two full all-site graphs at once, which
                 # doubled peak VRAM and spilled into WDDM shared memory on L8
                 # (measured). Per-term backward holds one graph at a time.
-                if objective == "pos" and dual_floor:
+                if objective in ("pos", "maximise") and dual_floor:
                     # Same data, same anchors, same target — two ABLATION
                     # SEMANTICS. A latent must earn its place under both.
-                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dual_norm, patcher_zero),
-                             (pt_tr, pa_tr, ptgt_tr,
-                              float(dual_floor_weight) / dual_norm, patcher)]
+                    # `pos` divides by dual_norm = mean(target^2) to make its
+                    # squared errors relative; `maximise` is LINEAR and its
+                    # data_loss already divides by max_scale, so it needs no
+                    # second normaliser — applying dual_norm there would
+                    # rescale by the target's magnitude a second time.
+                    dn = dual_norm if objective == "pos" else 1.0
+                    if patcher_zero is not None:
+                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn,
+                                  patcher_zero),
+                                 (pt_tr, pa_tr, ptgt_tr,
+                                  float(dual_floor_weight) / dn, patcher)]
+                    else:
+                        # "pn": negctx promotes to the primary slot.
+                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn, patcher)]
+                    if patcher_pos is not None:
+                        terms.append((pt_tr, pa_tr, ptgt_tr,
+                                      float(triple_floor_weight) / dn,
+                                      patcher_pos))
                 elif objective == "pos":
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
+                elif objective in ("pin", "logit", "maximise"):
+                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
+                elif objective == "raise":
+                    # posctx data; the target inside data_loss is
+                    # gamma * target_act, so ptgt_tr is unused.
+                    terms = [(pt_tr, pa_tr, ptgt_tr, sn_data, None)]
                 elif objective == "contrast":
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None),
                              (nt_tr, na_tr, ntgt_tr, beta, None)]
                 else:  # negctx/inject — the loss lives on the negatives.
-                    terms = [(nt_tr, na_tr, ntgt_tr, 1.0, None)]
+                    terms = [(nt_tr, na_tr, ntgt_tr, sn_data, None)]
+                    if objective == "inject" and suppress_weight > 0:
+                        # dual-intervention second half: the SAME gates and
+                        # deltas must also silence the seed on posctx.
+                        terms.append((pt_tr, pa_tr,
+                                      torch.zeros_like(ptgt_tr),
+                                      float(suppress_weight) * sn_data, None))
                 for tokens_t, anchors_t, targets_t, w, pat_t in terms:
                     part = w * data_loss(tokens_t, anchors_t, targets_t, mi,
                                          pat_t) / accum
                     part.backward()
                     step_total += float(part.detach())
-            if objective == "negctx":
+            if objective in ("negctx", "raise"):
                 penalty = l1_lambda * edit_sum()
+            elif objective == "pin":
+                penalty = l1_lambda * mask_sum()
             elif objective == "inject":
                 # Two levers, two units, two prices: edits are unitless
                 # (1 - m in [0, 1]), deltas are activation magnitudes. Sharing
                 # one lambda let diffuse injection outbid the gate entirely
                 # (v1 degeneracy) — inject_lambda is swept on its own scale.
                 penalty = (l1_lambda * edit_sum()
-                           + inj_lambda * delta_sum())
+                           + inj_lambda * sn_delta * delta_sum())
             else:
                 penalty = l1_lambda * mask_sum()
+            if amps:
+                # LEAK GUARD (found by test, 2026-08-05): L1 prices the gate
+                # m but the signal is m*alpha, so the optimiser can push m
+                # BELOW the membership threshold (cheap) and inflate alpha to
+                # compensate — loss ~0, membership empty, nothing priced.
+                # Charging (1-m)*|alpha-1| at the same l1_lambda makes the
+                # sub-threshold-gate route strictly more expensive than
+                # honest membership (m~0.4, alpha~2.5 costs ~1.3*lambda vs a
+                # member's ~1.0*lambda), so amplitude can only be used by
+                # latents that PAY the membership price. Members' amplitudes
+                # stay free unless amp_l1 > 0.
+                off_member = torch.stack([
+                    ((1.0 - torch.sigmoid(thetas[s]))
+                     * (torch.nn.functional.softplus(a) - 1.0).abs()).sum()
+                    for s, a in amps.items()]).sum()
+                penalty = penalty + l1_lambda * off_member
+                if amp_l1 > 0:
+                    penalty = penalty + amp_l1 * torch.stack([
+                        (torch.sigmoid(thetas[s])
+                         * (torch.nn.functional.softplus(a) - 1.0).abs()).sum()
+                        for s, a in amps.items()]).sum()
             penalty.backward()
+            # step_hook (diagnostics only): called AFTER backward with the
+            # live gradients and BEFORE opt.step() applies them, then again
+            # after the step via `post`. Never mutates state; a None hook is
+            # a single branch per step.
+            grads_now = None
+            if step_hook is not None:
+                grads_now = {
+                    "theta": {s: (t.grad.detach().clone() if t.grad is not None
+                                  else None) for s, t in thetas.items()},
+                    "psi": {s: (d.grad.detach().clone() if d.grad is not None
+                                else None) for s, d in deltas.items()},
+                }
             opt.step()
+            if support_excl_masks:
+                # Re-clamp excluded latents: Adam momentum and AdamW's
+                # decoupled decay both move parameters with zero data
+                # gradient, so the exclusion must be re-imposed each step.
+                with torch.no_grad():
+                    for st, excl in support_excl_masks.items():
+                        thetas[st].masked_fill_(excl, SUPPORT_EXCL)
             losses.append(step_total + float(penalty.detach()))
+            if step_hook is not None:
+                step_hook(step, {
+                    "thetas": thetas, "deltas": deltas, "grads": grads_now,
+                    "data_loss": step_total,
+                    "penalty": float(penalty.detach()),
+                    "temperature": float(getattr(patcher, "temperature", 1.0)),
+                    "lr": float(opt.param_groups[0]["lr"]),
+                    "keep_threshold": float(keep_threshold),
+                    "patcher": patcher,
+                })
             if logger is not None and log_every and step % int(log_every) == 0:
                 logger.note(f"learned_mask[{objective}] step {step} "
                             f"loss {losses[-1]:.5f} mean_m {float(mask_mean().detach()):.4f}")
@@ -859,7 +1329,16 @@ def _run_learned_mask_impl(
 
         # held-out data loss at the final mask (no grad)
         with torch.no_grad():
-            if objective == "pos" and pt_ho.shape[0]:
+            if objective == "logit" and pt_ho.shape[0]:
+                lg = _forward_logits(inference, patcher, pt_ho, grad=False)
+                lp = _target_logprob(lg, pa_ho, logit_tok_ho)
+                ho = float(((lp - ptgt_ho[:lp.shape[0]].to(lp.device, lp.dtype))
+                            ** 2).mean())
+            elif objective == "maximise" and pt_ho.shape[0]:
+                pre = _forward_preact(inference, patcher, pt_ho, grad=False)
+                # -1.0 == natural on average; more negative == amplified
+                ho = float(-(_at(pre, pa_ho).mean() / max_scale))
+            elif objective in ("pos", "pin") and pt_ho.shape[0]:
                 pre = _forward_preact(inference, patcher, pt_ho, grad=False)
                 ho = float(((_at(pre, pa_ho) - ptgt_ho.to(device)) ** 2).mean())
             elif objective == "contrast" and pt_ho.shape[0] and nt_ho.shape[0]:
@@ -867,6 +1346,10 @@ def _run_learned_mask_impl(
                 pre_n = _forward_preact(inference, patcher, nt_ho, grad=False)
                 ho = float(((_at(pre_p, pa_ho) - ptgt_ho.to(device)) ** 2).mean()
                            + beta * ((_at(pre_n, na_ho) - ntgt_ho.to(device)) ** 2).mean())
+            elif objective == "raise" and pt_ho.shape[0]:
+                pre = _forward_preact(inference, patcher, pt_ho, grad=False)
+                v = _at(pre, pa_ho)
+                ho = float(((v - float(raise_gamma) * float(target_act)) ** 2).mean())
             elif objective in ("negctx", "inject") and nt_ho.shape[0]:
                 pre = _forward_preact(inference, patcher, nt_ho, grad=False)
                 v = _at(pre, na_ho)
@@ -879,6 +1362,35 @@ def _run_learned_mask_impl(
     # ---- selection ----------------------------------------------------------
     scores: Dict[FeatureID, float] = {}
     kept_m: List[float] = []
+    # free amplitude: converged alpha per KEPT member, plus summary stats.
+    _amp_stats = None
+    _amp_kept: Optional[Dict[str, Dict[int, float]]] = None
+    if amps:
+        _amp_kept = {}
+        _all_alpha: List[float] = []
+        with torch.no_grad():
+            for (layer, kind), theta in thetas.items():
+                m = torch.sigmoid(theta)
+                a_here = amps.get((layer, kind))
+                if a_here is None:
+                    continue
+                alpha = torch.nn.functional.softplus(a_here)
+                idx = (m > keep_threshold).nonzero(as_tuple=True)[0]
+                vals = alpha[idx].tolist()
+                _amp_kept["%d/%s" % (layer, kind)] = {
+                    int(i): round(v, 4) for i, v in zip(idx.tolist(), vals)}
+                _all_alpha.extend(vals)
+        if _all_alpha:
+            t = torch.tensor(_all_alpha)
+            _amp_stats = {
+                "n": t.numel(),
+                "median": round(float(t.median()), 4),
+                "p10": round(float(t.quantile(0.10)), 4),
+                "p90": round(float(t.quantile(0.90)), 4),
+                "max": round(float(t.max()), 4),
+                "frac_elevated": round(float((t > 1.1).float().mean()), 4),
+                "frac_reduced": round(float((t < 0.9).float().mean()), 4),
+            }
     with torch.no_grad():
         # DEVICE->HOST IN BULK. `m` lives on the GPU, so the obvious
         # `float(m[i])` inside the loop costs a full device sync PER ELEMENT.
@@ -910,7 +1422,7 @@ def _run_learned_mask_impl(
                     fid = FeatureID(layer, kind, i)
                     scores[fid] = max(scores.get(fid, 0.0), d_i)
                 continue
-            if objective == "negctx":
+            if objective in ("negctx", "raise"):
                 edit = 1.0 - m
                 idx = (edit > keep_threshold).nonzero(as_tuple=True)[0]
                 ids = idx.tolist()
@@ -978,6 +1490,14 @@ def _run_learned_mask_impl(
 
     provenance = {
         "objective": objective,
+        "support_n": (sum(int((~m).sum()) for m in support_excl_masks.values())
+                      if support_excl_masks else None),
+        "scale_normalize": bool(scale_normalize),
+        "raise_gamma": (float(raise_gamma) if objective == "raise" else None),
+        "n_pin_sites": (len(pin_values) if pin_values else None),
+        "suppress_weight": float(suppress_weight),
+        "n_delta_init": (sum(len(v) for v in delta_init.values())
+                         if delta_init else None),
         "code_dtype": code_dtype,
         "inject_lambda": inj_lambda if objective == "inject" else None,
         "inject_exclude_sites": int(inject_exclude_sites) if objective == "inject" else None,
@@ -994,7 +1514,14 @@ def _run_learned_mask_impl(
         "site_lambda_weighted": site_lambda_weights is not None,
         "mask_floor_source": mask_floor_source,
         "mask_floor_sites": len(floors) if floors else 0,
-        "dual_floor_weight": float(dual_floor_weight) if dual_floor else None,
+        "dual_floor_weight": (float(dual_floor_weight) if zero_term
+                              else None),
+        "triple_floor_weight": (float(triple_floor_weight) if pos_floor
+                                else None),
+        "free_amplitude": bool(free_amplitude),
+        "amp_l1": float(amp_l1) if free_amplitude else None,
+        "amp_stats": _amp_stats,
+        "amp_kept": _amp_kept,
         "dual_norm_shared": round(dual_norm, 6) if dual_floor else None,
         # diagnostics only — these no longer scale the loss
         "dual_norm_zero": float("%.6g" % norm_zero) if dual_floor else None,
@@ -1046,6 +1573,8 @@ def _run_learned_mask_impl(
     patcher.release()
     if patcher_zero is not None:
         patcher_zero.release()
+    if patcher_pos is not None:
+        patcher_pos.release()
     return scores, provenance
 
 

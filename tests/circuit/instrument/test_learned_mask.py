@@ -71,6 +71,14 @@ class _Inference:
     def __init__(self, x_pos, x_neg):
         self.streams = {0: x_pos, 1: x_neg}
         self._compiled = False
+        # Toy unembed for the BEHAVIOURAL endpoint. Only stream dim 0 reaches
+        # the logits, so latent 0 (which decodes to e0) is the sole
+        # logit-carrying latent and latent 3 is inert for the output while
+        # still being present in the code — exactly the discrimination the
+        # logit objective has to make.
+        Wv = torch.zeros(D, 4)
+        Wv[0, 1] = 2.0
+        self.Wv = Wv
 
     def disable_compile(self):
         pass
@@ -90,6 +98,8 @@ class _Inference:
             return None
         x = patcher.transform(0, "attn", x)
         patcher.transform(1, "resid", x)
+        if kwargs.get("all_logits"):
+            return None, x @ self.Wv, None
 
 
 def _setup(pos_dim0=2.0, pos_dim3=1.0, neg_lat5=1.0):
@@ -870,3 +880,739 @@ def test_anneal_reach_frac_holds_the_floor():
     assert prov["anneal_reach_frac"] == 0.5
     _, prov2 = _run("pos", bank, inf, pt, nt, pa, binarize="anneal")
     assert prov2["anneal_reach_frac"] == 1.0
+
+
+class TestSupport:
+    """D3.6 support restriction: the mask searches ONLY inside an
+    attribution-proposed candidate set; everything outside is frozen at
+    the floor and unreachable by selection."""
+
+    def test_members_subset_of_support(self):
+        bank, inf, pt, nt, pa = _setup()
+        sup = torch.tensor([0, 1, 2], dtype=torch.long)   # exclude 3..7
+        scores, prov = _run("pos", bank, inf, pt, nt, pa,
+                            support={SITE: sup})
+        assert prov["support_n"] == 3
+        for fid in scores:
+            assert fid.index in (0, 1, 2)
+
+    def test_index_and_bool_specs_agree(self):
+        bank, inf, pt, nt, pa = _setup()
+        idx = torch.tensor([0, 1, 2], dtype=torch.long)
+        boolm = torch.zeros(D, dtype=torch.bool)
+        boolm[:3] = True
+        s1, _ = _run("pos", bank, inf, pt, nt, pa, support={SITE: idx})
+        s2, _ = _run("pos", bank, inf, pt, nt, pa, support={SITE: boolm})
+        assert s1 == s2
+
+    def test_none_support_is_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        base, pb = _run("pos", bank, inf, pt, nt, pa)
+        same, ps = _run("pos", bank, inf, pt, nt, pa, support=None)
+        assert base == same
+        assert ps["support_n"] is None
+
+    def test_full_support_matches_unrestricted(self):
+        bank, inf, pt, nt, pa = _setup()
+        base, _ = _run("pos", bank, inf, pt, nt, pa)
+        full, _ = _run("pos", bank, inf, pt, nt, pa,
+                       support={SITE: torch.ones(D, dtype=torch.bool)})
+        assert base == full
+
+    def test_missing_site_excludes_everything(self):
+        bank, inf, pt, nt, pa = _setup()
+        scores, prov = _run("pos", bank, inf, pt, nt, pa, support={})
+        assert prov["support_n"] == 0
+        assert scores == {}
+
+    def test_exclusion_survives_adamw_decay(self):
+        # AdamW's decoupled decay pulls theta toward 0 (m toward 0.5) even
+        # with zero data gradient — the per-step re-clamp must hold the
+        # excluded latents at the floor through a full run.
+        bank, inf, pt, nt, pa = _setup()
+        sup = torch.tensor([0], dtype=torch.long)
+        scores, _ = _run("pos", bank, inf, pt, nt, pa,
+                         support={SITE: sup}, optimizer="adamw",
+                         weight_decay=0.5, steps=200)
+        for fid in scores:
+            assert fid.index == 0
+
+    def test_support_with_dual_floor(self):
+        bank, inf, pt, nt, pa = _setup()
+        sup = torch.tensor([0, 1], dtype=torch.long)
+        scores, prov = _run("pos", bank, inf, pt, nt, pa,
+                            support={SITE: sup}, neg_tokens=nt,
+                            mask_floor_source="dual", dual_floor_weight=0.25)
+        assert prov["support_n"] == 2
+        for fid in scores:
+            assert fid.index in (0, 1)
+
+
+class TestInjectV3:
+    """cf-mask v2 knobs: scale_normalize, delta_init warm start,
+    suppress_weight. All default-off; the toy geometry is the inject
+    class's (latent 0 = absent activator, latent 5 = present inhibitor)."""
+
+    def test_defaults_bitwise_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        a, pa_ = _run("inject", bank, inf, pt, nt, pa,
+                      neg_tokens=nt, target_act=2.5, steps=120)
+        b, pb_ = _run("inject", bank, inf, pt, nt, pa,
+                      neg_tokens=nt, target_act=2.5, steps=120,
+                      scale_normalize=False, suppress_weight=0.0,
+                      delta_init=None)
+        assert a == b
+        assert pb_["scale_normalize"] is False
+        assert pb_["n_delta_init"] is None
+
+    def test_scale_normalize_runs_and_flags(self):
+        bank, inf, pt, nt, pa = _setup()
+        scores, prov = _run("inject", bank, inf, pt, nt, pa,
+                            neg_tokens=nt, target_act=2.5, steps=200,
+                            scale_normalize=True)
+        assert prov["scale_normalize"] is True
+        # the objective still learns both roles under normalisation
+        assert scores[FeatureID(0, "attn", 0)] > 0
+        assert prov["loss_final"] < prov["loss_initial"]
+
+    def test_scale_normalize_requires_target(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="target_act"):
+            _run("negctx", bank, inf, pt, nt, pa, neg_tokens=nt,
+                 target_act=None, scale_normalize=True)
+
+    def test_delta_init_warm_start_is_exact(self):
+        bank, inf, pt, nt, pa = _setup()
+        # lr=0: the optimiser never moves, so softplus(psi) must equal the
+        # warm value and selection must deliver latent 0 at ~2.0.
+        scores, prov = _run("inject", bank, inf, pt, nt, pa,
+                            neg_tokens=nt, target_act=2.5, steps=1, lr=0.0,
+                            delta_init={SITE: {0: 2.0}})
+        assert prov["n_delta_init"] == 1
+        assert scores[FeatureID(0, "attn", 0)] == pytest.approx(2.0, abs=1e-4)
+
+    def test_delta_init_on_excluded_site_is_skipped(self):
+        bank, inf, pt, nt, pa = _setup()
+        # one site total; excluding it leaves a gate-only run — warm start
+        # must be silently ignored, not crash.
+        scores, prov = _run("inject", bank, inf, pt, nt, pa,
+                            neg_tokens=nt, target_act=1.0, steps=60,
+                            inject_exclude_sites=1,
+                            delta_init={SITE: {0: 2.0}})
+        assert all(v < 0 for v in scores.values())   # edits only
+
+    def test_suppress_weight_runs_and_still_fires(self):
+        bank, inf, pt, nt, pa = _setup()
+        scores, prov = _run("inject", bank, inf, pt, nt, pa,
+                            neg_tokens=nt, target_act=2.5, steps=200,
+                            scale_normalize=True, suppress_weight=0.25)
+        assert prov["suppress_weight"] == 0.25
+        # drive must survive the added suppression term
+        assert prov["p_both"] > 1.0
+
+
+class TestStepHook:
+    """Diagnostics hook: called once per step with live grads and state,
+    never mutating the run."""
+
+    def test_hook_called_every_step_with_grads(self):
+        bank, inf, pt, nt, pa = _setup()
+        seen = []
+
+        def hook(step, ctx):
+            seen.append((step, sorted(ctx["grads"]["theta"]),
+                         ctx["data_loss"], ctx["lr"]))
+
+        _run("pos", bank, inf, pt, nt, pa, steps=10, step_hook=hook)
+        assert [s for s, _, _, _ in seen] == list(range(10))
+        assert seen[0][1] == [SITE]           # grads present for the site
+        assert seen[0][3] > 0                 # lr reported
+
+    def test_hook_does_not_change_result(self):
+        bank, inf, pt, nt, pa = _setup()
+        base, _ = _run("pos", bank, inf, pt, nt, pa, steps=60)
+        hooked, _ = _run("pos", bank, inf, pt, nt, pa, steps=60,
+                         step_hook=lambda s, c: None)
+        assert base == hooked
+
+    def test_hook_sees_inject_psi_grads(self):
+        bank, inf, pt, nt, pa = _setup()
+        got = {}
+
+        def hook(step, ctx):
+            got["psi_sites"] = sorted(ctx["grads"]["psi"])
+
+        _run("inject", bank, inf, pt, nt, pa, neg_tokens=nt, target_act=2.5,
+             steps=5, step_hook=hook)
+        assert got["psi_sites"] == [SITE]
+
+
+class TestRaiseObjective:
+    """"raise" (inhibitor-mask): push the seed ABOVE natural on posctx,
+    pay per silenced latent. Toy geometry: latent 5 SUPPRESSES the seed
+    (decoder column 5 = -e0) and is present on posctx? — in _setup the
+    suppressor sits on negctx, so we build a posctx-suppressed variant."""
+
+    @staticmethod
+    def _setup_pos_suppressed():
+        # posctx carries BOTH the driver (dim 0) and the suppressor (dim 5),
+        # so the seed fires but is braked: silencing latent 5 raises it.
+        B, T = 4, 2
+        x_pos = torch.zeros(B, T, D)
+        x_pos[:, :, 0] = 3.0        # driver
+        x_pos[:, :, 3] = 1.0        # irrelevant
+        x_pos[:, :, 5] = 1.0        # SUPPRESSOR, present while firing
+        x_neg = torch.zeros(B, T, D)
+        x_neg[:, :, 5] = 1.0
+        bank = _Bank()
+        inf = _Inference(x_pos, x_neg)
+        pt = torch.zeros(B, T, dtype=torch.long)
+        nt = torch.ones(B, T, dtype=torch.long)
+        pa = torch.zeros(B, dtype=torch.long)
+        return bank, inf, pt, nt, pa
+
+    def test_finds_the_suppressor_and_ignores_inert(self):
+        bank, inf, pt, nt, pa = self._setup_pos_suppressed()
+        # m=1 is the identity, so the natural seed pre-act is the raw stream
+        # dim0 = 3.0. Latent 5 decodes to -e0, so SILENCING it removes a -1
+        # from the reconstruction: the seed rises to 4.0. gamma = 4/3 makes
+        # "silence exactly the suppressor" the exact solution.
+        scores, prov = _run("raise", bank, inf, pt, nt, pa,
+                            target_act=3.0, raise_gamma=4.0 / 3.0, steps=250,
+                            l1_lambda=0.02)
+        assert prov["raise_gamma"] == pytest.approx(4.0 / 3.0)
+        assert FeatureID(0, "attn", 5) in scores          # the brake
+        assert scores[FeatureID(0, "attn", 5)] < 0        # delivered as inhibitor
+        # the inert latent (3) must NOT be recruited: silencing it buys
+        # nothing and costs lambda — this is the tension the objective needs
+        assert FeatureID(0, "attn", 3) not in scores
+        # nor the DRIVER (silencing it lowers the seed: penalised twice)
+        assert FeatureID(0, "attn", 0) not in scores
+
+    def test_requires_target_and_gamma_above_one(self):
+        bank, inf, pt, nt, pa = self._setup_pos_suppressed()
+        with pytest.raises(ValueError, match="target_act"):
+            _run("raise", bank, inf, pt, nt, pa, steps=5)
+        with pytest.raises(ValueError, match="raise_gamma"):
+            _run("raise", bank, inf, pt, nt, pa, target_act=3.0,
+                 raise_gamma=1.0, steps=5)
+
+    def test_scale_normalize_and_holdout_reported(self):
+        bank, inf, pt, nt, pa = self._setup_pos_suppressed()
+        _, prov = _run("raise", bank, inf, pt, nt, pa, target_act=3.0,
+                       raise_gamma=1.5, steps=120, scale_normalize=True)
+        assert prov["scale_normalize"] is True
+        assert prov["holdout_data_loss"] is not None
+
+    def test_higher_lambda_recruits_no_more_than_lower(self):
+        bank, inf, pt, nt, pa = self._setup_pos_suppressed()
+        cheap, _ = _run("raise", bank, inf, pt, nt, pa, target_act=3.0,
+                        raise_gamma=1.5, steps=200, l1_lambda=0.005)
+        dear, _ = _run("raise", bank, inf, pt, nt, pa, target_act=3.0,
+                       raise_gamma=1.5, steps=200, l1_lambda=0.5)
+        assert len(dear) <= len(cheap)
+
+    def test_other_objectives_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        a, _ = _run("pos", bank, inf, pt, nt, pa, steps=80)
+        b, _ = _run("pos", bank, inf, pt, nt, pa, steps=80, raise_gamma=2.0)
+        assert a == b          # raise_gamma is inert outside "raise"
+
+
+class TestPinObjective:
+    """D3.1 pin-mask: kept latents are CLAMPED to clean pin values and
+    dropped ones go to the floor — the pinned counterfactual made
+    differentiable. Loss shape is "pos" (reproduce natural, pay to keep),
+    so the driver twin of the closure mask."""
+
+    def test_requires_pin_values(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="pin_values"):
+            _run("pin", bank, inf, pt, nt, pa, steps=5)
+
+    def test_keeps_the_driver_drops_the_irrelevant(self):
+        bank, inf, pt, nt, pa = _setup()
+        # pins = the clean posctx code: latent 0 = 2.0 (drives the seed),
+        # latent 3 = 1.0 (decodes to e3, irrelevant to the seed).
+        pins = torch.zeros(D)
+        pins[0] = 2.0
+        pins[3] = 1.0
+        scores, prov = _run("pin", bank, inf, pt, nt, pa,
+                            pin_values={SITE: pins}, steps=250,
+                            l1_lambda=0.02)
+        assert prov["n_pin_sites"] == 1
+        assert FeatureID(0, "attn", 0) in scores      # the driver is kept
+        assert FeatureID(0, "attn", 3) not in scores  # the inert one is not
+
+    def test_pin_forward_is_pinned_not_scaled(self):
+        # m=1 under "pin" reproduces the PIN value, not the live value:
+        # with a pin of 0 the seed must read the floor even though the
+        # live code is 2.0.
+        bank, inf, pt, nt, pa = _setup()
+        thetas = {SITE: torch.full((D,), 40.0)}      # sigmoid(40) == 1
+        pins = torch.zeros(D)                        # every pin is 0
+        sae = bank._sae
+        p = LearnedMaskPatcher(bank, thetas, SEED_LAYER, SEED_KIND,
+                               sae.encoder.weight[SEED_LATENT],
+                               sae._get_bias_eff()[SEED_LATENT],
+                               pins={SITE: pins})
+        x = torch.zeros(1, 1, D)
+        x[..., 0] = 2.0
+        out = p.transform(0, "attn", x)
+        assert float(out[0, 0, 0]) == pytest.approx(0.0, abs=1e-4)
+
+    def test_pins_ignored_for_other_objectives(self):
+        bank, inf, pt, nt, pa = _setup()
+        pins = torch.zeros(D); pins[0] = 2.0
+        a, _ = _run("pos", bank, inf, pt, nt, pa, steps=80)
+        b, _ = _run("pos", bank, inf, pt, nt, pa, steps=80,
+                    pin_values={SITE: pins})
+        assert a == b
+
+
+class TestLogitObjective:
+    """objective='logit' — the BEHAVIOURAL endpoint. Same gates, same sites,
+    same positions as 'pos'; the loss moves from the seed latent's
+    pre-activation to log p(target token) at the anchor. Built to make the
+    latent-vs-behavioural circuit-size comparison run one method over two
+    endpoints instead of comparing our method to someone else's."""
+
+    def _tok(self, pa, tok=1):
+        return torch.full((pa.shape[0],), tok, dtype=torch.long)
+
+    def test_logit_is_a_registered_objective(self):
+        assert "logit" in OBJECTIVES
+
+    def test_requires_target_tokens(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="target_tokens"):
+            _run("logit", bank, inf, pt, nt, pa)
+
+    def test_keeps_the_logit_carrying_latent_and_drops_the_inert_one(self):
+        """Latent 0 decodes to e0, the only stream dim the unembed reads;
+        latent 3 decodes to e3, which no logit sees. A behavioural objective
+        must keep 0 and let L1 take 3 — note 'pos' has no reason to
+        distinguish them differently, so this is the endpoint doing work."""
+        bank, inf, pt, nt, pa = _setup()
+        scores, meta = _run("logit", bank, inf, pt, nt, pa,
+                            target_tokens=self._tok(pa))
+        kept = {f.index for f in scores}
+        assert 0 in kept
+        assert 3 not in kept
+        assert meta["objective"] == "logit"
+
+    def test_accepts_2d_target_tokens(self):
+        """[B, T] targets are gathered at pos_argmax, matching the [B] form."""
+        bank, inf, pt, nt, pa = _setup()
+        flat, _ = _run("logit", bank, inf, pt, nt, pa,
+                       target_tokens=self._tok(pa))
+        wide = torch.zeros((pa.shape[0], pt.shape[1]), dtype=torch.long)
+        wide[:, :] = 1
+        grid, _ = _run("logit", bank, inf, pt, nt, pa, target_tokens=wide)
+        assert {f.index for f in flat} == {f.index for f in grid}
+
+    def test_reproduces_the_full_model_logprob_not_maximises_it(self):
+        """The target is the UNMASKED model's log p(target), so a converged
+        mask's held-out squared error must be small — a maximising objective
+        would drive the gap the other way and leave `ho` large."""
+        bank, inf, pt, nt, pa = _setup()
+        _, meta = _run("logit", bank, inf, pt, nt, pa, steps=200,
+                       target_tokens=self._tok(pa))
+        assert meta["holdout_data_loss"] is not None
+        assert meta["holdout_data_loss"] < 0.05
+
+    def test_sparsity_pressure_still_applies(self):
+        """A large lambda must shrink membership: the behavioural loss must
+        not be immune to the L1 term the size comparison depends on."""
+        bank, inf, pt, nt, pa = _setup()
+        loose, _ = _run("logit", bank, inf, pt, nt, pa, l1_lambda=0.0,
+                        target_tokens=self._tok(pa))
+        tight, _ = _run("logit", bank, inf, pt, nt, pa, l1_lambda=5.0,
+                        target_tokens=self._tok(pa))
+        assert len(tight) < len(loose)
+
+
+class TestMaximiseObjective:
+    """objective='maximise' — no target at all: drive the seed as high as
+    the mask can and let L1 price each latent kept. The unbounded limit of
+    `raise` (which targets raise_gamma * natural). A DRIVER objective: it
+    does not reproduce the natural state, so its members must not be read
+    as a closure circuit."""
+
+    def _both(self):
+        """Driver (latent 0 -> +e0) AND suppressor (latent 5 -> -e0) both
+        present on the POSITIVE stream, so maximising has a real choice:
+        keep 0, drop 5. Natural seed pre-act is x[...,0] = 2.0."""
+        bank = _Bank()
+        x = torch.zeros(4, 2, D)
+        x[:, :, 0] = 2.0
+        x[:, :, 5] = 1.0
+        inf = _Inference(x, x)
+        pt = torch.zeros(4, 2, dtype=torch.long)
+        pa = torch.zeros(4, dtype=torch.long)
+        return bank, inf, pt, pt, pa
+
+    def test_maximise_is_a_registered_objective(self):
+        assert "maximise" in OBJECTIVES
+
+    def test_drops_the_suppressor_and_keeps_the_driver(self):
+        bank, inf, pt, nt, pa = self._both()
+        scores, meta = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.01)
+        kept = {f.index for f in scores}
+        assert 0 in kept, "the driver must survive"
+        assert 5 not in kept, "the suppressor must be dropped to raise the seed"
+        assert meta["objective"] == "maximise"
+
+    def test_pushes_the_seed_above_its_natural_level(self):
+        """holdout is -(mean seed / mean natural): -1.0 is natural, more
+        negative is amplified. Dropping the suppressor takes 2.0 -> 3.0."""
+        bank, inf, pt, nt, pa = self._both()
+        _, meta = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.01)
+        assert meta["holdout_data_loss"] is not None
+        assert meta["holdout_data_loss"] < -1.0
+
+    def test_pos_objective_keeps_the_suppressor_that_maximise_drops(self):
+        """The endpoint difference, isolated: reproducing the natural state
+        REQUIRES the suppressor (without it the seed overshoots), while
+        maximising requires dropping it. Same data, same sites."""
+        bank, inf, pt, nt, pa = self._both()
+        pos_kept = {f.index for f in _run("pos", bank, inf, pt, nt, pa,
+                                          l1_lambda=1e-4)[0]}
+        max_kept = {f.index for f in _run("maximise", bank, inf, pt, nt, pa,
+                                          l1_lambda=1e-4)[0]}
+        assert 5 in pos_kept
+        assert 5 not in max_kept
+
+    def test_sparsity_pressure_still_bites(self):
+        bank, inf, pt, nt, pa = self._both()
+        loose, _ = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.0)
+        tight, _ = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=5.0)
+        assert len(tight) < len(loose)
+
+    def test_scale_normaliser_makes_lambda_depth_independent(self):
+        """A seed firing at 20 must not pay a different effective price from
+        one firing at 2: the linear data term is divided by the mean natural
+        level, so both land on the same loss scale."""
+        small = self._both()
+        big = self._both()
+        big[1].streams[0][:, :, 0] = 20.0
+        big[1].streams[1][:, :, 0] = 20.0
+        a, _ = _run("maximise", *small, l1_lambda=0.01)
+        b, _ = _run("maximise", *big, l1_lambda=0.01)
+        assert {f.index for f in a} == {f.index for f in b}
+
+
+class TestMaximiseDualFloor:
+    """`dual` was a whitelist of one objective, written before `maximise`
+    existed. Its stated reason — negctx/contrast/inject already carry a
+    negative-context term — does not apply to `maximise`, whose loss lives
+    on the POSITIVES exactly like `pos`. Enabling it matters because a
+    single zero floor lets maximise raise the seed by DELETING
+    SUPPRESSORS, which only works when deleted means set-to-zero."""
+
+    def _suppressor_on_pos(self):
+        """Suppressor (latent 5 -> -e0) present on the POSITIVE stream, and a
+        DISTINCT negative stream that also carries it — so under the negctx
+        floor a dropped latent 5 lands on ~1.0 (still suppressing) instead
+        of 0, and deletion stops paying."""
+        bank = _Bank()
+        x_pos = torch.zeros(4, 2, D)
+        x_pos[:, :, 0] = 2.0
+        x_pos[:, :, 5] = 1.0
+        x_neg = torch.zeros(4, 2, D)
+        x_neg[:, :, 5] = 1.0
+        inf = _Inference(x_pos, x_neg)
+        pt = torch.zeros(4, 2, dtype=torch.long)
+        nt = torch.ones(4, 2, dtype=torch.long)
+        pa = torch.zeros(4, dtype=torch.long)
+        return bank, inf, pt, nt, pa
+
+    def test_dual_is_accepted_for_maximise(self):
+        bank, inf, pt, nt, pa = self._suppressor_on_pos()
+        scores, meta = _run("maximise", bank, inf, pt, nt, pa,
+                            mask_floor_source="dual", neg_tokens=nt)
+        assert meta["objective"] == "maximise"
+        assert meta["mask_floor_source"] == "dual"
+
+    def test_dual_still_barred_for_negctx_family(self):
+        """The original restriction's REAL target must stay barred."""
+        bank, inf, pt, nt, pa = self._suppressor_on_pos()
+        for obj in ("negctx", "inject"):
+            with pytest.raises(ValueError, match="dual"):
+                _run(obj, bank, inf, pt, nt, pa, mask_floor_source="dual",
+                     neg_tokens=nt, target_act=2.0)
+
+    def test_dual_does_NOT_remove_the_deletion_incentive(self):
+        """MEASURED, and it is why `dual` is not the fix for the zero-floor
+        exploit. Dropping a suppressor still RAISES the seed in the
+        zero-floored term (weight 1.0), is merely NEUTRAL in the
+        negctx-floored term, and is REWARDED by L1 — net incentive
+        unchanged. dual_floor_weight defaults to 0.25, so the negctx term is
+        outweighed 4:1 regardless. The floor that actually removes the
+        incentive is a SINGLE mean floor, tested below."""
+        bank, inf, pt, nt, pa = self._suppressor_on_pos()
+        zero, _ = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.01,
+                       mask_floor_source="zero", neg_tokens=nt)
+        dual, _ = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.01,
+                       mask_floor_source="dual", neg_tokens=nt)
+        assert {f.index for f in zero} == {f.index for f in dual}
+        assert 5 not in {f.index for f in dual}   # suppressor dropped either way
+
+    def test_single_mean_floor_is_accepted_for_maximise(self):
+        """`posctx`/`negctx` alone are the arms that align TRAINING ablation
+        semantics with how freeM evaluates — the actual candidate fix for
+        the zero-floor exploit.
+
+        Membership is NOT asserted non-empty: this fixture's stream is
+        constant across positions, so each latent's mean equals its value,
+        m=0 and m=1 coincide, and the mask is vacuous — L1 then prunes
+        everything. That is a property of the toy, not of the floor. The
+        real-model version is measured in
+        dev-notes/data/maximise-objective-2026-08-05 (the `max/mean` arm)."""
+        bank, inf, pt, nt, pa = self._suppressor_on_pos()
+        for floor in ("posctx", "negctx"):
+            _, meta = _run("maximise", bank, inf, pt, nt, pa,
+                           mask_floor_source=floor, neg_tokens=nt)
+            assert meta["objective"] == "maximise"
+            assert meta["mask_floor_source"] == floor
+
+    def test_maximise_dual_does_not_use_the_squared_error_normaliser(self):
+        """`pos` divides its dual terms by dual_norm = mean(target^2) to make
+        squared errors relative. `maximise` is LINEAR and already divides by
+        max_scale, so applying dual_norm would rescale by target magnitude
+        twice — the run must stay finite and select something."""
+        bank, inf, pt, nt, pa = self._suppressor_on_pos()
+        big = self._suppressor_on_pos()
+        big[1].streams[0][:, :, 0] = 20.0
+        big[1].streams[1][:, :, 5] = 1.0
+        a, _ = _run("maximise", bank, inf, pt, nt, pa, l1_lambda=0.01,
+                    mask_floor_source="dual", neg_tokens=nt)
+        b, _ = _run("maximise", *big, l1_lambda=0.01,
+                    mask_floor_source="dual", neg_tokens=big[3])
+        assert len(a) > 0 and len(b) > 0
+        assert {f.index for f in a} == {f.index for f in b}
+
+
+class TestTripleFloor:
+    """mask_floor_source='triple' = zero AND negctx AND posctx, all three
+    scored every step over the SAME thetas. Added 2026-08-05.
+
+    Note what it costs: training on posctx makes freeM_dense IN-SAMPLE,
+    so the metric that currently validates pos/dual held-out stops being
+    evidence. And the posctx term is gentle by construction — a dropped
+    latent lands on its posctx mean, which on positive contexts is near
+    its actual value."""
+
+    def _streams(self):
+        bank = _Bank()
+        x_pos = torch.zeros(4, 2, D)
+        x_pos[:, :, 0] = 2.0
+        x_pos[:, :, 3] = 1.0
+        x_neg = torch.zeros(4, 2, D)
+        x_neg[:, :, 5] = 1.0
+        inf = _Inference(x_pos, x_neg)
+        pt = torch.zeros(4, 2, dtype=torch.long)
+        nt = torch.ones(4, 2, dtype=torch.long)
+        pa = torch.zeros(4, dtype=torch.long)
+        return bank, inf, pt, nt, pa
+
+    def test_triple_is_a_valid_floor_source(self):
+        from circuit.instrument.learned_mask import MASK_FLOOR_SOURCES
+        assert "triple" in MASK_FLOOR_SOURCES
+
+    def test_triple_runs_and_is_recorded(self):
+        bank, inf, pt, nt, pa = self._streams()
+        _, meta = _run("pos", bank, inf, pt, nt, pa,
+                       mask_floor_source="triple", neg_tokens=nt)
+        assert meta["mask_floor_source"] == "triple"
+        assert meta["triple_floor_weight"] == 0.25
+        assert meta["dual_floor_weight"] is not None
+
+    def test_triple_weight_is_none_for_other_floors(self):
+        """Provenance must not claim a third term that was never scored."""
+        bank, inf, pt, nt, pa = self._streams()
+        _, meta = _run("pos", bank, inf, pt, nt, pa,
+                       mask_floor_source="dual", neg_tokens=nt)
+        assert meta["triple_floor_weight"] is None
+
+    def test_triple_requires_negatives_like_dual(self):
+        bank, inf, pt, nt, pa = self._streams()
+        with pytest.raises(ValueError, match="neg_tokens"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="triple")
+
+    def test_triple_barred_for_the_negctx_family(self):
+        bank, inf, pt, nt, pa = self._streams()
+        with pytest.raises(ValueError, match="dual"):
+            _run("negctx", bank, inf, pt, nt, pa, mask_floor_source="triple",
+                 neg_tokens=nt, target_act=2.0)
+
+    def test_triple_accepted_for_maximise(self):
+        bank, inf, pt, nt, pa = self._streams()
+        _, meta = _run("maximise", bank, inf, pt, nt, pa,
+                       mask_floor_source="triple", neg_tokens=nt)
+        assert meta["objective"] == "maximise"
+        assert meta["mask_floor_source"] == "triple"
+
+    def test_third_term_actually_contributes(self):
+        """Weight 0 on the third term must reproduce plain dual exactly; a
+        non-zero weight must not. Guards against the posctx patcher being
+        constructed but never scored."""
+        bank, inf, pt, nt, pa = self._streams()
+        dual, _ = _run("pos", bank, inf, pt, nt, pa, steps=60,
+                       mask_floor_source="dual", neg_tokens=nt)
+        off, _ = _run("pos", bank, inf, pt, nt, pa, steps=60,
+                      mask_floor_source="triple", neg_tokens=nt,
+                      triple_floor_weight=0.0)
+        assert {f.index for f in off} == {f.index for f in dual}
+
+
+class TestPnFloor:
+    """mask_floor_source='pn' = negctx AND posctx, NO zero term. Added
+    2026-08-06 as the direct ablation of the zero floor's role under free
+    amplitudes: negctx PROMOTES to the primary 1.0 slot that zero held,
+    posctx keeps triple_floor_weight, dual_floor_weight is unused."""
+
+    def _streams(self):
+        bank = _Bank()
+        x_pos = torch.zeros(4, 2, D)
+        x_pos[:, :, 0] = 2.0
+        x_pos[:, :, 3] = 1.0
+        x_neg = torch.zeros(4, 2, D)
+        x_neg[:, :, 5] = 1.0
+        inf = _Inference(x_pos, x_neg)
+        pt = torch.zeros(4, 2, dtype=torch.long)
+        nt = torch.ones(4, 2, dtype=torch.long)
+        pa = torch.zeros(4, dtype=torch.long)
+        return bank, inf, pt, nt, pa
+
+    def test_pn_is_a_valid_floor_source(self):
+        from circuit.instrument.learned_mask import (
+            FLOORS_NEEDING_NEGATIVES, MASK_FLOOR_SOURCES)
+        assert "pn" in MASK_FLOOR_SOURCES
+        assert "pn" in FLOORS_NEEDING_NEGATIVES
+
+    def test_pn_runs_and_is_recorded(self):
+        bank, inf, pt, nt, pa = self._streams()
+        _, meta = _run("pos", bank, inf, pt, nt, pa,
+                       mask_floor_source="pn", neg_tokens=nt)
+        assert meta["mask_floor_source"] == "pn"
+        assert meta["triple_floor_weight"] == 0.25
+        # no zero term -> dual_floor_weight was never scored
+        assert meta["dual_floor_weight"] is None
+
+    def test_pn_requires_negatives(self):
+        bank, inf, pt, nt, pa = self._streams()
+        with pytest.raises(ValueError, match="neg_tokens"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="pn")
+
+    def test_pn_barred_for_the_negctx_family(self):
+        bank, inf, pt, nt, pa = self._streams()
+        with pytest.raises(ValueError, match="dual"):
+            _run("negctx", bank, inf, pt, nt, pa, mask_floor_source="pn",
+                 neg_tokens=nt, target_act=2.0)
+
+    def test_pn_differs_from_triple(self):
+        """Deleting the zero term must be able to change the outcome —
+        otherwise the mode silently still scores it. The recorded loss
+        endpoints must diverge even if the final sets agree."""
+        bank, inf, pt, nt, pa = self._streams()
+        _, m_tri = _run("pos", bank, inf, pt, nt, pa, steps=40,
+                        mask_floor_source="triple", neg_tokens=nt)
+        _, m_pn = _run("pos", bank, inf, pt, nt, pa, steps=40,
+                       mask_floor_source="pn", neg_tokens=nt)
+        assert (m_tri["loss_initial"], m_tri["loss_final"]) != \
+               (m_pn["loss_initial"], m_pn["loss_final"])
+
+
+class TestFreeAmplitude:
+    """free_amplitude=True — each latent gets alpha = softplus(psi) on top
+    of the gate, so the mask has FREE RANGE: off (gate), natural (alpha=1),
+    elevated (alpha>1). psi initialises at softplus^-1(1), so step 0
+    reproduces the gate-only mask exactly. The promise is COMPENSATION: one
+    latent at 2x can replace two redundant ones, which no pure gate can."""
+
+    def _redundant_drivers(self):
+        """Two latents (0 and 6) each contribute 1.0 to the seed direction;
+        natural seed pre-act = 2.0. A pure gate needs BOTH to reproduce it.
+        With amplitude, ONE at alpha~2 suffices — strictly cheaper under L1."""
+        bank = _Bank()
+        bank._sae._W_dec = torch.eye(D)
+        bank._sae._W_dec[:, 5] = 0.0
+        bank._sae._W_dec[0, 5] = -1.0
+        bank._sae._W_dec[:, 6] = 0.0
+        bank._sae._W_dec[0, 6] = 1.0      # latent 6 also drives e0
+        x = torch.zeros(4, 2, D)
+        x[:, :, 0] = 1.0
+        x[:, :, 6] = 1.0
+        inf = _Inference(x, x)
+        pt = torch.zeros(4, 2, dtype=torch.long)
+        pa = torch.zeros(4, dtype=torch.long)
+        return bank, inf, pt, pt, pa
+
+    def test_amp_off_is_the_default_and_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        a, meta = _run("pos", bank, inf, pt, nt, pa)
+        assert meta["free_amplitude"] is False
+        assert meta["amp_stats"] is None and meta["amp_kept"] is None
+
+    def test_alpha_initialises_at_one(self):
+        """softplus(psi_init) must be 1.0 so training starts AT the
+        gate-only behaviour; a wrong init would silently rescale every
+        latent at step 0."""
+        import math as _m
+        psi = _m.log(_m.expm1(1.0))
+        assert abs(torch.nn.functional.softplus(
+            torch.tensor(psi)).item() - 1.0) < 1e-6
+
+    def test_amplitude_enables_compensation(self):
+        """The load-bearing behaviour: with redundant drivers and a stiff
+        L1, the amplitude arm reproduces the target with FEWER members by
+        amplifying one of them; the gate-only arm needs both (or eats
+        loss). Assert the amp arm is no larger, its holdout is sound,
+        membership is NON-EMPTY (the leak guard working), and at least one
+        kept amplitude is genuinely elevated."""
+        bank, inf, pt, nt, pa = self._redundant_drivers()
+        plain, pmeta = _run("pos", bank, inf, pt, nt, pa, l1_lambda=0.2,
+                            steps=250)
+        amp, ameta = _run("pos", bank, inf, pt, nt, pa, l1_lambda=0.2,
+                          steps=250, free_amplitude=True)
+        assert len(amp) >= 1, "leak guard failed: empty membership carrying signal"
+        assert len(amp) <= len(plain)
+        assert ameta["holdout_data_loss"] < 0.2
+        assert ameta["amp_stats"] is not None
+        assert ameta["amp_stats"]["max"] > 1.3
+
+    def test_leak_guard_prevents_subthreshold_amplitude_route(self):
+        """The exploit the first version had: push m below keep_threshold
+        (cheap under L1) and inflate alpha so m*alpha ~ 1 — loss near zero
+        with EMPTY membership. The (1-m)*|alpha-1| charge must make honest
+        membership the cheaper route: a converged run with low holdout loss
+        must have kept at least one member."""
+        bank, inf, pt, nt, pa = self._redundant_drivers()
+        scores, meta = _run("pos", bank, inf, pt, nt, pa, l1_lambda=0.3,
+                            steps=250, free_amplitude=True)
+        if meta["holdout_data_loss"] is not None and meta["holdout_data_loss"] < 0.5:
+            assert len(scores) >= 1
+
+    def test_amp_l1_pulls_amplitudes_toward_natural(self):
+        bank, inf, pt, nt, pa = self._redundant_drivers()
+        free, fmeta = _run("pos", bank, inf, pt, nt, pa, l1_lambda=0.01,
+                           steps=150, free_amplitude=True, amp_l1=0.0)
+        priced, pmeta = _run("pos", bank, inf, pt, nt, pa, l1_lambda=0.01,
+                             steps=150, free_amplitude=True, amp_l1=1.0)
+        dev = lambda st: abs(st["median"] - 1.0) + abs(st["max"] - 1.0)
+        assert dev(pmeta["amp_stats"]) <= dev(fmeta["amp_stats"]) + 1e-6
+
+    def test_amp_kept_is_archived_per_member(self):
+        bank, inf, pt, nt, pa = _setup()
+        scores, meta = _run("pos", bank, inf, pt, nt, pa,
+                            free_amplitude=True)
+        assert meta["amp_kept"] is not None
+        archived = sum(len(v) for v in meta["amp_kept"].values())
+        assert archived == len(scores)
+
+    def test_amp_rejected_for_pin(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="free_amplitude"):
+            _run("pin", bank, inf, pt, nt, pa, free_amplitude=True,
+                 pin_values={SITE: torch.zeros(D)})
