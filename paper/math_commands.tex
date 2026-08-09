@@ -1,0 +1,16 @@
+% Notation macros: define each recurring symbol once so usage stays consistent.
+
+% Seed-intervention scores
+\newcommand{\phicf}{\phi_{\mathrm{cf}}}      % counterfactual faithfulness
+\newcommand{\phisup}{\phi_{\mathrm{sup}}}    % positive-context suppression
+
+% Sets and spaces
+\newcommand{\R}{\mathbb{R}}                  % the reals
+\newcommand{\posset}{\mathcal{P}_f}          % stored positive contexts of seed f
+\newcommand{\negset}{\mathcal{N}_f}          % contrast (negative) contexts of seed f
+
+% Discovery objective and attributions
+\newcommand{\Lcf}{\mathcal{L}^{\mathrm{cf}}} % counterfactual gap objective
+\newcommand{\Scf}{S_g^{\mathrm{cf}}}         % counterfactual attribution of upstream latent g
+\newcommand{\Sab}{S_g^{\mathrm{ab}}}         % ablation attribution of upstream latent g
+\newcommand{\preact}{\hat{a}_f}              % seed encoder pre-activation

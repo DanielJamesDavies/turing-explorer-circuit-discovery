@@ -1,0 +1,368 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{elhage2022toy}
+\citation{cunningham2024sparse,bricken2023monosemanticity,gao2024scaling,templeton2024scaling}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\citation{conmy2023towards,syed2023attribution}
+\citation{marks2025sparse,ameisen2025circuit}
+\citation{bhaskar2024finding,kharlapenko2025scaling}
+\citation{ge2024automatically}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview. For \emph  {any} SAE latent $f$ --- no behavioural task --- a per-seed problem instance $(f, \mathcal  {D}_f, \pi )$ is formed from stored contexts where the seed fires and retrieved contexts where it is silent (\S  \ref {sec:problem}). Discovery runs by gradient attribution (counterfactual and ablation objectives, ranked and cut) and by learned-mask optimization (a gate per upstream latent), and the discovered circuit is examined under the two criteria the word ``circuit'' conflates: \emph  {interventional control} (P1), validated by intervening on the seed itself, and \emph  {ablation faithfulness} \cref  {eq:p2} --- the measured cost of the circuit reproducing the seed alone under free execution, spanning every upstream site. Control is concentrated; faithfulness is collective, position-local, and depth-scaled (\S  \ref {sec:drivers-closure}).}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:overview}{{1}{2}{Overview. For \emph {any} SAE latent $f$ --- no behavioural task --- a per-seed problem instance $(f, \mathcal {D}_f, \pi )$ is formed from stored contexts where the seed fires and retrieved contexts where it is silent (\S \ref {sec:problem}). Discovery runs by gradient attribution (counterfactual and ablation objectives, ranked and cut) and by learned-mask optimization (a gate per upstream latent), and the discovered circuit is examined under the two criteria the word ``circuit'' conflates: \emph {interventional control} (P1), validated by intervening on the seed itself, and \emph {ablation faithfulness} \cref {eq:p2} --- the measured cost of the circuit reproducing the seed alone under free execution, spanning every upstream site. Control is concentrated; faithfulness is collective, position-local, and depth-scaled (\S \ref {sec:drivers-closure})}{figure.1}{}}
+\newlabel{fig:overview@cref}{{[figure][1][]1}{[1][2][]2}{}{}{}}
+\citation{bhaskar2024finding}
+\citation{miller2024transformer}
+\citation{marks2025sparse}
+\citation{olah2020zoom,wang2023interpretability}
+\citation{conmy2023towards}
+\citation{nanda2023attribution,syed2023attribution,kramar2024atp}
+\citation{marks2025sparse}
+\citation{dunefsky2024transcoders}
+\citation{ameisen2025circuit,lindsey2025biology}
+\citation{shu2025beyond}
+\citation{olmo2025features}
+\citation{bhaskar2024finding}
+\citation{louizos2018learning,savarese2020winning}
+\citation{kharlapenko2025scaling}
+\citation{li2024optimal}
+\citation{ge2024automatically}
+\citation{duprelatour2025debugging}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{3}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Circuit discovery.}{3}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Circuit discovery as optimization.}{3}{section*.2}\protected@file@percent }
+\citation{marks2025sparse}
+\citation{ameisen2025circuit}
+\citation{haklay2025position}
+\citation{li2024optimal}
+\citation{miller2024transformer}
+\citation{mueller2024missed}
+\citation{paulo2024automatically}
+\citation{paulo2025evaluating}
+\citation{oneill2024sparse}
+\citation{li2025geometry}
+\citation{deng2026coactivation}
+\citation{leask2025canonical}
+\citation{farnik2025jacobian}
+\citation{gurnee2024pathological}
+\citation{smith2025negative}
+\citation{leask2025canonical}
+\citation{abdin2024phi3}
+\@writefile{toc}{\contentsline {paragraph}{Latent-endpoint attribution.}{4}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Position-aware circuits.}{4}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ablation semantics and faithfulness metrics.}{4}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Negative and contrastive contexts.}{4}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The SAE basis.}{4}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Setting}{4}{section.3}\protected@file@percent }
+\newlabel{sec:setting}{{3}{4}{Setting}{section.3}{}}
+\newlabel{sec:setting@cref}{{[section][3][]3}{[1][4][]4}{}{}{}}
+\citation{conmy2023towards,marks2025sparse}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Method}{5}{section.4}\protected@file@percent }
+\newlabel{sec:method}{{4}{5}{Method}{section.4}{}}
+\newlabel{sec:method@cref}{{[section][4][]4}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Formulation and Problem Statement}{5}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:problem}{{4.1}{5}{Formulation and Problem Statement}{subsection.4.1}{}}
+\newlabel{sec:problem@cref}{{[subsection][1][4]4.1}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Instances.}{5}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Circuit-only execution.}{5}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Two criteria.}{5}{section*.10}\protected@file@percent }
+\citation{miller2024transformer,mueller2024missed}
+\newlabel{eq:p2}{{{P2}}{6}{Two criteria}{AMS.11}{}}
+\newlabel{eq:p2@cref}{{[equation][2147483647][]{P2}}{[1][6][]6}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{The semantics are part of the problem.}{6}{section*.12}\protected@file@percent }
+\newlabel{eq:p2star}{{{P2$^{\star }$}}{6}{The semantics are part of the problem}{AMS.13}{}}
+\newlabel{eq:p2star@cref}{{[equation][2147483647][]{P2$^{\star }$}}{[1][6][]6}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Weighted circuits.}{6}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Solutions are families.}{6}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Solvers.}{6}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Evidence Base}{6}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:evidence}{{4.2}{6}{Evidence Base}{subsection.4.2}{}}
+\newlabel{sec:evidence@cref}{{[subsection][2][4]4.2}{[1][6][]6}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Positive contexts.}{6}{section*.17}\protected@file@percent }
+\citation{nanda2023attribution,syed2023attribution}
+\@writefile{toc}{\contentsline {paragraph}{Negative contexts.}{7}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Co-activation graph.}{7}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Seed selection.}{7}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Attribution Objectives}{7}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:cfgrad}{{4.3}{7}{Attribution Objectives}{subsection.4.3}{}}
+\newlabel{sec:cfgrad@cref}{{[subsection][3][4]4.3}{[1][7][]7}{}{}{}}
+\newlabel{sec:abgrad}{{4.3}{7}{Attribution Objectives}{subsection.4.3}{}}
+\newlabel{sec:abgrad@cref}{{[subsection][3][4]4.3}{[1][7][]7}{}{}{}}
+\newlabel{sec:hybrid}{{4.3}{7}{Attribution Objectives}{subsection.4.3}{}}
+\newlabel{sec:hybrid@cref}{{[subsection][3][4]4.3}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Counterfactual gradient: why is the seed silent?}{7}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ablation gradient: what sustains the firing?}{7}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Hybrid fusion.}{7}{section*.23}\protected@file@percent }
+\citation{marks2025sparse}
+\citation{marks2025sparse}
+\citation{bhaskar2024finding,kharlapenko2025scaling}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Attribution Modes}{8}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:modes}{{4.4}{8}{Attribution Modes}{subsection.4.4}{}}
+\newlabel{sec:modes@cref}{{[subsection][4][4]4.4}{[1][7][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Membership Sets and Position-Aware Discovery}{8}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:membership}{{4.5}{8}{Membership Sets and Position-Aware Discovery}{subsection.4.5}{}}
+\newlabel{sec:membership@cref}{{[subsection][5][4]4.5}{[1][8][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Learned-Mask Discovery}{8}{subsection.4.6}\protected@file@percent }
+\newlabel{sec:ablmask}{{4.6}{8}{Learned-Mask Discovery}{subsection.4.6}{}}
+\newlabel{sec:ablmask@cref}{{[subsection][6][4]4.6}{[1][8][]8}{}{}{}}
+\citation{miller2024transformer,mueller2024missed}
+\citation{savarese2020winning}
+\@writefile{toc}{\contentsline {paragraph}{Objective.}{9}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Dual and triple floors.}{9}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Free amplitudes.}{9}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Binarisation and calibration.}{9}{section*.27}\protected@file@percent }
+\citation{li2024optimal,miller2024transformer}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The evaluation family. Intervention scores test interventional control (P1) --- $\phi _{\mathrm  {cf}}$ sufficiency to impose, $\phi _{\mathrm  {sup}}$ necessity to sustain; ablation faithfulness tests \cref  {eq:p2} --- pinned measures node selection, free measures whether the circuit reproduces the seed alone --- and each free variant names its ablation semantics $\pi $ (\cref  {sec:problem}). The $\alpha $ rows score weighted circuits with their amplitudes applied (\cref  {sec:weighted}). SAE reconstruction errors are preserved in every row.}}{10}{table.1}\protected@file@percent }
+\newlabel{tab:semantics}{{1}{10}{The evaluation family. Intervention scores test interventional control (P1) --- $\phicf $ sufficiency to impose, $\phisup $ necessity to sustain; ablation faithfulness tests \cref {eq:p2} --- pinned measures node selection, free measures whether the circuit reproduces the seed alone --- and each free variant names its ablation semantics $\pi $ (\cref {sec:problem}). The $\alpha $ rows score weighted circuits with their amplitudes applied (\cref {sec:weighted}). SAE reconstruction errors are preserved in every row}{table.1}{}}
+\newlabel{tab:semantics@cref}{{[table][1][]1}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Evaluation}{10}{subsection.4.7}\protected@file@percent }
+\newlabel{sec:eval}{{4.7}{10}{Evaluation}{subsection.4.7}{}}
+\newlabel{sec:eval@cref}{{[subsection][7][4]4.7}{[1][10][]10}{}{}{}}
+\newlabel{sec:eval-abl}{{4.7}{10}{Evaluation}{subsection.4.7}{}}
+\newlabel{sec:eval-abl@cref}{{[subsection][7][4]4.7}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Intervention scores.}{10}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ablation faithfulness.}{10}{section*.29}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Descriptive statistics for the 128-seed grid (3 methods $\times $ 3 negative modes; 384 runs per method). Median counterfactual faithfulness ($\phi _{\mathrm  {cf}}$) and node counts are over each method's accepted circuits, pooled across negative modes. The top-155 column is the median over each method's 155 highest-faithfulness circuits --- 155 being the smallest per-method accepted count --- for an equal-population comparison; values above 1 are intervention overshoot (\cref  {sec:eval}). Seeds accepted is the share of the method's 384 seed--mode discovery runs (128 seeds $\times $ 3 negative modes) whose circuit passed that method's own intervention gate (\cref  {sec:eval}).}}{11}{table.2}\protected@file@percent }
+\newlabel{tab:grid-descriptives}{{2}{11}{Descriptive statistics for the 128-seed grid (3 methods $\times $ 3 negative modes; 384 runs per method). Median counterfactual faithfulness ($\phicf $) and node counts are over each method's accepted circuits, pooled across negative modes. The top-155 column is the median over each method's 155 highest-faithfulness circuits --- 155 being the smallest per-method accepted count --- for an equal-population comparison; values above 1 are intervention overshoot (\cref {sec:eval}). Seeds accepted is the share of the method's 384 seed--mode discovery runs (128 seeds $\times $ 3 negative modes) whose circuit passed that method's own intervention gate (\cref {sec:eval})}{table.2}{}}
+\newlabel{tab:grid-descriptives@cref}{{[table][2][]2}{[1][11][]11}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Experiments and Results}{11}{section.5}\protected@file@percent }
+\newlabel{sec:results}{{5}{11}{Experiments and Results}{section.5}{}}
+\newlabel{sec:results@cref}{{[section][5][]5}{[1][11][]11}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Setup.}{11}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Control versus Faithfulness}{11}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:drivers-closure}{{5.1}{11}{Control versus Faithfulness}{subsection.5.1}{}}
+\newlabel{sec:drivers-closure@cref}{{[subsection][1][5]5.1}{[1][11][]11}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Control is concentrated.}{11}{section*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Faithfulness is collective, position-local, and depth-scaled.}{11}{section*.32}\protected@file@percent }
+\citation{marks2025sparse}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Control is sparse; faithfulness is collective. Cumulative score against members added in attribution order (one seed per depth band; position-aware path attribution, percentile selection): pinned faithfulness (node selection) rises steeply and plateaus near 1 by $10^{2}$--$10^{3}$ members, while free faithfulness (the circuit alone) sits at zero until $10^{4}$--$10^{5}$ members and rises with a long tail of individually negligible ones --- under the mean fill (solid) and the zero fill (dashed), each free variant naming its semantics. The shaded pinned--free gap widens with seed depth.}}{12}{figure.2}\protected@file@percent }
+\newlabel{fig:drivers-closure}{{2}{12}{Control is sparse; faithfulness is collective. Cumulative score against members added in attribution order (one seed per depth band; position-aware path attribution, percentile selection): pinned faithfulness (node selection) rises steeply and plateaus near 1 by $10^{2}$--$10^{3}$ members, while free faithfulness (the circuit alone) sits at zero until $10^{4}$--$10^{5}$ members and rises with a long tail of individually negligible ones --- under the mean fill (solid) and the zero fill (dashed), each free variant naming its semantics. The shaded pinned--free gap widens with seed depth}{figure.2}{}}
+\newlabel{fig:drivers-closure@cref}{{[figure][2][]2}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Individually negligible, collectively load-bearing.}{12}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The union survives its controls.}{12}{section*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Weighted Circuits: Amplitudes Index the Faithfulness Cost}{12}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:weighted}{{5.2}{12}{Weighted Circuits: Amplitudes Index the Faithfulness Cost}{subsection.5.2}{}}
+\newlabel{sec:weighted@cref}{{[subsection][2][5]5.2}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{The null that makes the claim safe.}{13}{section*.35}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The amplitudes carry causal weight.}{13}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The budget is part of the method.}{13}{section*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Method Comparison at Matched Size}{13}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:method-comparison}{{5.3}{13}{Method Comparison at Matched Size}{subsection.5.3}{}}
+\newlabel{sec:method-comparison@cref}{{[subsection][3][5]5.3}{[1][13][]13}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Median counterfactual faithfulness by discovery method and negative mode. Solid segments are medians over each method--mode group's accepted circuits; light segments extend to the median of the group's 44 highest-faithfulness circuits, 44 being the smallest accepted count among the nine groups, for an equal-population comparison. Negative modes are \emph  {close} (hard negatives retrieved by nearest-neighbour similarity), \emph  {random} (uniformly sampled sequences), and \emph  {distant} (sequences maximally dissimilar to the positive contexts).}}{14}{figure.3}\protected@file@percent }
+\newlabel{fig:median-cf-faithfulness}{{3}{14}{Median counterfactual faithfulness by discovery method and negative mode. Solid segments are medians over each method--mode group's accepted circuits; light segments extend to the median of the group's 44 highest-faithfulness circuits, 44 being the smallest accepted count among the nine groups, for an equal-population comparison. Negative modes are \emph {close} (hard negatives retrieved by nearest-neighbour similarity), \emph {random} (uniformly sampled sequences), and \emph {distant} (sequences maximally dissimilar to the positive contexts)}{figure.3}{}}
+\newlabel{fig:median-cf-faithfulness@cref}{{[figure][3][]3}{[1][13][]14}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Method and Negative Mode}{14}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Membership Is Underdetermined; Function Is Not}{14}{subsection.5.5}\protected@file@percent }
+\newlabel{sec:underdetermination}{{5.5}{14}{Membership Is Underdetermined; Function Is Not}{subsection.5.5}{}}
+\newlabel{sec:underdetermination@cref}{{[subsection][5][5]5.5}{[1][14][]14}{}{}{}}
+\citation{marks2025sparse}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}The Behaviour-Endpoint Boundary}{15}{subsection.5.6}\protected@file@percent }
+\newlabel{sec:sfc-boundary}{{5.6}{15}{The Behaviour-Endpoint Boundary}{subsection.5.6}{}}
+\newlabel{sec:sfc-boundary@cref}{{[subsection][6][5]5.6}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.7}Dependencies Are Not Recoverable from Co-activation}{15}{subsection.5.7}\protected@file@percent }
+\newlabel{sec:coact-results}{{5.7}{15}{Dependencies Are Not Recoverable from Co-activation}{subsection.5.7}{}}
+\newlabel{sec:coact-results@cref}{{[subsection][7][5]5.7}{[1][15][]15}{}{}{}}
+\citation{miller2024transformer}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{16}{section.6}\protected@file@percent }
+\newlabel{sec:discussion}{{6}{16}{Discussion}{section.6}{}}
+\newlabel{sec:discussion@cref}{{[section][6][]6}{[1][16][]16}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Circuit size is a measurement, not a knob.}{16}{section*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Evaluation semantics are part of the method.}{16}{section*.39}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Report memberships as families.}{16}{section*.40}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Generality has a price, and we pay it in the open.}{16}{section*.41}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{From neighbourhoods and memberships to chains.}{17}{section*.42}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Limitations}{17}{section.7}\protected@file@percent }
+\newlabel{sec:limitations}{{7}{17}{Limitations}{section.7}{}}
+\newlabel{sec:limitations@cref}{{[section][7][]7}{[1][17][]17}{}{}{}}
+\bibstyle{plainnat}
+\bibdata{references}
+\bibcite{abdin2024phi3}{{1}{2024}{{Abdin et~al.}}{{Abdin, Jacobs, Awan, Aneja, Awadallah, Awadalla, Bach, Bahree, Bakhtiari, Behl, et~al.}}}
+\bibcite{ameisen2025circuit}{{2}{2025}{{Ameisen et~al.}}{{Ameisen, Lindsey, Pearce, Gurnee, Turner, Chen, Citro, Abrahams, Carter, Hosmer, Marcus, Sklar, Templeton, Bricken, McDougall, Cunningham, Henighan, Jermyn, Jones, Persic, Qi, Thompson, Zimmerman, Rivoire, Conerly, Olah, and Batson}}}
+\bibcite{ba2014deep}{{3}{2014}{{Ba and Caruana}}{{}}}
+\bibcite{bhaskar2024finding}{{4}{2024}{{Bhaskar et~al.}}{{Bhaskar, Wettig, Friedman, and Chen}}}
+\bibcite{bricken2023monosemanticity}{{5}{2023}{{Bricken et~al.}}{{Bricken, Templeton, Batson, Chen, Jermyn, Conerly, Turner, Anil, Denison, Askell, Lasenby, Wu, Kravec, Schiefer, Maxwell, Joseph, Hatfield-Dodds, Tamkin, Nguyen, McLean, Burke, Hume, Carter, Henighan, and Olah}}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{18}{section.8}\protected@file@percent }
+\bibcite{conmy2023towards}{{6}{2023}{{Conmy et~al.}}{{Conmy, Mavor-Parker, Lynch, Heimersheim, and Garriga-Alonso}}}
+\bibcite{cunningham2024sparse}{{7}{2024}{{Cunningham et~al.}}{{Cunningham, Ewart, Riggs, Huben, and Sharkey}}}
+\bibcite{deng2026coactivation}{{8}{2026}{{Deng et~al.}}{{Deng, Hu, Gilberti, Storks, Taxali, Angstadt, Sripada, and Chai}}}
+\bibcite{dunefsky2024transcoders}{{9}{2024}{{Dunefsky et~al.}}{{Dunefsky, Chlenski, and Nanda}}}
+\bibcite{duprelatour2025debugging}{{10}{2025}{{Dupre~la Tour and Mossing}}{{}}}
+\bibcite{elhage2022toy}{{11}{2022}{{Elhage et~al.}}{{Elhage, Hume, Olsson, Schiefer, Henighan, Kravec, Hatfield-Dodds, Lasenby, Drain, Chen, Grosse, McCandlish, Kaplan, Amodei, Wattenberg, and Olah}}}
+\bibcite{farnik2025jacobian}{{12}{2025}{{Farnik et~al.}}{{Farnik, Lawson, Houghton, and Aitchison}}}
+\bibcite{gao2024scaling}{{13}{2024}{{Gao et~al.}}{{Gao, la~Tour, Tillman, Goh, Troll, Radford, Sutskever, Leike, and Wu}}}
+\bibcite{ge2024automatically}{{14}{2024}{{Ge et~al.}}{{Ge, Zhu, Shu, Wang, He, and Qiu}}}
+\bibcite{gurnee2024pathological}{{15}{2024}{{Gurnee}}{{}}}
+\bibcite{haklay2025position}{{16}{2025}{{Haklay et~al.}}{{Haklay, Orgad, Bau, Mueller, and Belinkov}}}
+\bibcite{hinton2015distilling}{{17}{2015}{{Hinton et~al.}}{{Hinton, Vinyals, and Dean}}}
+\bibcite{karpathy2024nanogpt}{{18}{2024}{{Karpathy}}{{}}}
+\bibcite{kharlapenko2025scaling}{{19}{2025}{{Kharlapenko et~al.}}{{Kharlapenko, Shabalin, Barez, Conmy, and Nanda}}}
+\bibcite{kramar2024atp}{{20}{2024}{{Kram{\'a}r et~al.}}{{Kram{\'a}r, Lieberum, Shah, and Nanda}}}
+\bibcite{leask2025canonical}{{21}{2025}{{Leask et~al.}}{{Leask, Bussmann, Pearce, Bloom, Tigges, Moubayed, Sharkey, and Nanda}}}
+\bibcite{li2024optimal}{{22}{2024}{{Li and Janson}}{{}}}
+\bibcite{li2025geometry}{{23}{2025}{{Li et~al.}}{{Li, Michaud, Baek, Engels, Sun, and Tegmark}}}
+\bibcite{lindsey2025biology}{{24}{2025}{{Lindsey et~al.}}{{Lindsey, Gurnee, Ameisen, Chen, Pearce, Turner, Citro, et~al.}}}
+\bibcite{louizos2018learning}{{25}{2018}{{Louizos et~al.}}{{Louizos, Welling, and Kingma}}}
+\bibcite{marks2025sparse}{{26}{2025}{{Marks et~al.}}{{Marks, Rager, Michaud, Belinkov, Bau, and Mueller}}}
+\bibcite{miller2024transformer}{{27}{2024}{{Miller et~al.}}{{Miller, Chughtai, and Saunders}}}
+\bibcite{mueller2024missed}{{28}{2024}{{Mueller}}{{}}}
+\bibcite{nanda2023attribution}{{29}{2023}{{Nanda}}{{}}}
+\bibcite{olah2020zoom}{{30}{2020}{{Olah et~al.}}{{Olah, Cammarata, Schubert, Goh, Petrov, and Carter}}}
+\bibcite{olmo2025features}{{31}{2025}{{Olmo et~al.}}{{Olmo, Wilson, Forsey, Hepner, Howe, and Wingate}}}
+\bibcite{oneill2024sparse}{{32}{2024}{{O'Neill and Bui}}{{}}}
+\bibcite{paulo2025evaluating}{{33}{2025}{{Paulo and Belrose}}{{}}}
+\bibcite{paulo2024automatically}{{34}{2024}{{Paulo et~al.}}{{Paulo, Mallen, Juang, and Belrose}}}
+\bibcite{radford2019language}{{35}{2019}{{Radford et~al.}}{{Radford, Wu, Child, Luan, Amodei, and Sutskever}}}
+\bibcite{raffel2020exploring}{{36}{2020}{{Raffel et~al.}}{{Raffel, Shazeer, Roberts, Lee, Narang, Matena, Zhou, Li, and Liu}}}
+\bibcite{ramachandran2017searching}{{37}{2017}{{Ramachandran et~al.}}{{Ramachandran, Zoph, and Le}}}
+\bibcite{savarese2020winning}{{38}{2020}{{Savarese et~al.}}{{Savarese, Silva, and Maire}}}
+\bibcite{shazeer2020glu}{{39}{2020}{{Shazeer}}{{}}}
+\bibcite{shu2025beyond}{{40}{2025}{{Shu et~al.}}{{Shu, Wu, Zhao, Du, and Liu}}}
+\bibcite{smith2025negative}{{41}{2025}{{Smith et~al.}}{{Smith, Rajamanoharan, Conmy, McDougall, Kram{\'a}r, Lieberum, Shah, and Nanda}}}
+\bibcite{syed2023attribution}{{42}{2023}{{Syed et~al.}}{{Syed, Rager, and Conmy}}}
+\bibcite{templeton2024scaling}{{43}{2024}{{Templeton et~al.}}{{Templeton, Conerly, Marcus, Lindsey, Bricken, Chen, Pearce, Citro, Ameisen, Jones, Cunningham, Turner, McDougall, MacDiarmid, Freeman, Sumers, Rees, Batson, Jermyn, Carter, Olah, and Henighan}}}
+\bibcite{touvron2023llama}{{44}{2023}{{Touvron et~al.}}{{Touvron, Lavril, Izacard, Martinet, Lachaux, Lacroix, Rozi{\`e}re, Goyal, Hambro, Azhar, Rodriguez, Joulin, Grave, and Lample}}}
+\bibcite{vorobev2023paraphraser}{{45}{2023}{{Vorobev and Kuznetsov}}{{}}}
+\bibcite{wang2023interpretability}{{46}{2023}{{Wang et~al.}}{{Wang, Variengien, Conmy, Shlegeris, and Steinhardt}}}
+\bibcite{zhang2019root}{{47}{2019}{{Zhang and Sennrich}}{{}}}
+\citation{abdin2024phi3}
+\citation{vorobev2023paraphraser,raffel2020exploring}
+\citation{ba2014deep,hinton2015distilling}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Corpus and Model Details}{21}{appendix.A}\protected@file@percent }
+\newlabel{app:corpus}{{A}{21}{Corpus and Model Details}{appendix.A}{}}
+\newlabel{app:corpus@cref}{{[appendix][1][]A}{[1][21][]21}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}A Corpus Built by Design}{21}{subsection.A.1}\protected@file@percent }
+\citation{radford2019language}
+\citation{shazeer2020glu,ramachandran2017searching}
+\citation{touvron2023llama}
+\citation{zhang2019root}
+\citation{karpathy2024nanogpt}
+\citation{marks2025sparse}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces TuringLLM-1.0-254M architecture summary.}}{22}{table.3}\protected@file@percent }
+\newlabel{tab:turinglm}{{3}{22}{TuringLLM-1.0-254M architecture summary}{table.3}{}}
+\newlabel{tab:turinglm@cref}{{[table][3][]3}{[1][22][]22}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Architecture and Training}{22}{subsection.A.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Fitness for Interpretability}{22}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Sparse Autoencoder Quality}{22}{subsection.A.4}\protected@file@percent }
+\newlabel{app:sae-quality}{{A.4}{22}{Sparse Autoencoder Quality}{subsection.A.4}{}}
+\newlabel{app:sae-quality@cref}{{[appendix][4][1]A.4}{[1][22][]22}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces TuringLLM-1.0-254M architecture: a 12-layer pre-norm decoder-only transformer with \mbox  {RMSNorm} and a SwiGLU feed-forward block. The circuit-discovery pipeline attaches SAEs at three sites per layer: attention output, MLP output, and the residual stream.}}{23}{figure.4}\protected@file@percent }
+\newlabel{fig:architecture}{{4}{23}{TuringLLM-1.0-254M architecture: a 12-layer pre-norm decoder-only transformer with \mbox {RMSNorm} and a SwiGLU feed-forward block. The circuit-discovery pipeline attaches SAEs at three sites per layer: attention output, MLP output, and the residual stream}{figure.4}{}}
+\newlabel{fig:architecture@cref}{{[figure][4][]4}{[1][22][]23}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces TuringLLM training and validation cross-entropy over the 3{,}985-step run (log scale). The dashed reference marks the validation loss reached by the same training infrastructure applied to GPT-2 (124M); the drop near step 3{,}700 corresponds to the final pass over only the high-quality Phi-3 Mini originals.}}{23}{figure.5}\protected@file@percent }
+\newlabel{fig:loss-curve}{{5}{23}{TuringLLM training and validation cross-entropy over the 3{,}985-step run (log scale). The dashed reference marks the validation loss reached by the same training infrastructure applied to GPT-2 (124M); the drop near step 3{,}700 corresponds to the final pass over only the high-quality Phi-3 Mini originals}{figure.5}{}}
+\newlabel{fig:loss-curve@cref}{{[figure][5][]5}{[1][22][]23}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Quality of the 36-SAE bank by site. Left: explained variance of each SAE's reconstruction. Middle: fraction of latents that fired at least once over the full collection pass. Right: percentage of the cross-entropy gap recovered when splicing each SAE's reconstruction into the model, relative to zero-ablating the site.}}{24}{figure.6}\protected@file@percent }
+\newlabel{fig:sae-quality}{{6}{24}{Quality of the 36-SAE bank by site. Left: explained variance of each SAE's reconstruction. Middle: fraction of latents that fired at least once over the full collection pass. Right: percentage of the cross-entropy gap recovered when splicing each SAE's reconstruction into the model, relative to zero-ablating the site}{figure.6}{}}
+\newlabel{fig:sae-quality@cref}{{[figure][6][]6}{[1][24][]24}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Representative TuringLLM completions (excerpts). Continuations are topical and grammatical, supporting the use of the model as an interpretability subject; occasional repetitions and factual slips (e.g.\ conflated terminology) reflect its 254M-parameter scale and synthetic corpus.}}{24}{figure.7}\protected@file@percent }
+\newlabel{fig:completions}{{7}{24}{Representative TuringLLM completions (excerpts). Continuations are topical and grammatical, supporting the use of the model as an interpretability subject; occasional repetitions and factual slips (e.g.\ conflated terminology) reflect its 254M-parameter scale and synthetic corpus}{figure.7}{}}
+\newlabel{fig:completions@cref}{{[figure][7][]7}{[1][24][]24}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Infrastructure and System Design}{24}{appendix.B}\protected@file@percent }
+\newlabel{app:infra}{{B}{24}{Infrastructure and System Design}{appendix.B}{}}
+\newlabel{app:infra@cref}{{[appendix][2][]B}{[1][24][]24}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}A Model Built for Intervention}{24}{subsection.B.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Pipeline and Stores}{25}{subsection.B.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Instrumentation and Patching}{25}{subsection.B.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.4}Native Kernels}{25}{subsection.B.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Pseudocode for the Gradient Methods}{25}{appendix.C}\protected@file@percent }
+\newlabel{app:pseudocode}{{C}{25}{Pseudocode for the Gradient Methods}{appendix.C}{}}
+\newlabel{app:pseudocode@cref}{{[appendix][3][]C}{[1][25][]25}{}{}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Counterfactual gradient discovery (one seed $f$)}}{26}{algorithm.1}\protected@file@percent }
+\newlabel{alg:cfgrad}{{1}{26}{Pseudocode for the Gradient Methods}{algorithm.1}{}}
+\newlabel{alg:cfgrad@cref}{{[algorithm][1][]1}{[1][25][]26}{}{}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Ablation gradient discovery (one seed $f$)}}{26}{algorithm.2}\protected@file@percent }
+\newlabel{alg:abgrad}{{2}{26}{Pseudocode for the Gradient Methods}{algorithm.2}{}}
+\newlabel{alg:abgrad@cref}{{[algorithm][2][]2}{[1][25][]26}{}{}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {3}{\ignorespaces Hybrid gradient discovery (one seed $f$)}}{26}{algorithm.3}\protected@file@percent }
+\newlabel{alg:hybrid}{{3}{26}{Pseudocode for the Gradient Methods}{algorithm.3}{}}
+\newlabel{alg:hybrid@cref}{{[algorithm][3][]3}{[1][25][]26}{}{}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {4}{\ignorespaces Restoration-mode attribution (one seed $f$; \texttt  {ig\_restoration} substitutes per-round integrated-gradient scoring in line 4)}}{27}{algorithm.4}\protected@file@percent }
+\newlabel{alg:restoration}{{4}{27}{Pseudocode for the Gradient Methods}{algorithm.4}{}}
+\newlabel{alg:restoration@cref}{{[algorithm][4][]4}{[1][25][]27}{}{}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {5}{\ignorespaces Learned-mask discovery (one seed $f$; house configuration shown)}}{27}{algorithm.5}\protected@file@percent }
+\newlabel{alg:ablmask}{{5}{27}{Pseudocode for the Gradient Methods}{algorithm.5}{}}
+\newlabel{alg:ablmask@cref}{{[algorithm][5][]5}{[1][25][]27}{}{}{}}
+\citation{marks2025sparse}
+\citation{ameisen2025circuit}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Additional Discovery Methods}{28}{appendix.D}\protected@file@percent }
+\newlabel{app:methods}{{D}{28}{Additional Discovery Methods}{appendix.D}{}}
+\newlabel{app:methods@cref}{{[appendix][4][]D}{[1][28][]28}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Graph expansion family.}{28}{section*.45}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Gradient-free baselines.}{28}{section*.46}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Output-rooted attribution methods.}{28}{section*.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Contrastive statistical method.}{28}{section*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {E}Context Stores, Selection Criteria, and Output-Level Metrics}{28}{appendix.E}\protected@file@percent }
+\newlabel{app:stores}{{E}{28}{Context Stores, Selection Criteria, and Output-Level Metrics}{appendix.E}{}}
+\newlabel{app:stores@cref}{{[appendix][5][]E}{[1][28][]28}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}Context Store Formalism}{28}{subsection.E.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Negative-context retrieval (moved from the body).}{28}{section*.49}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}Candidate Selection Criteria}{29}{subsection.E.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.3}Output-Level Evaluation Metrics}{29}{subsection.E.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {F}Evaluation Protocol Studies}{29}{appendix.F}\protected@file@percent }
+\newlabel{app:eval-protocol}{{F}{29}{Evaluation Protocol Studies}{appendix.F}{}}
+\newlabel{app:eval-protocol@cref}{{[appendix][6][]F}{[1][29][]29}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Why Position Aggregation Fails: Union Coverage}{29}{subsection.F.1}\protected@file@percent }
+\newlabel{app:union-coverage}{{F.1}{29}{Why Position Aggregation Fails: Union Coverage}{subsection.F.1}{}}
+\newlabel{app:union-coverage@cref}{{[appendix][1][6]F.1}{[1][29][]29}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}On-Manifold Mean Ablation}{29}{subsection.F.2}\protected@file@percent }
+\newlabel{app:respect-topk}{{F.2}{29}{On-Manifold Mean Ablation}{subsection.F.2}{}}
+\newlabel{app:respect-topk@cref}{{[appendix][2][6]F.2}{[1][29][]29}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Floor Sources}{30}{subsection.F.3}\protected@file@percent }
+\newlabel{app:floors}{{F.3}{30}{Floor Sources}{subsection.F.3}{}}
+\newlabel{app:floors@cref}{{[appendix][3][6]F.3}{[1][29][]30}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {G}Attribution-Mode, Pruning, and Role Studies}{30}{appendix.G}\protected@file@percent }
+\newlabel{app:mode-studies}{{G}{30}{Attribution-Mode, Pruning, and Role Studies}{appendix.G}{}}
+\newlabel{app:mode-studies@cref}{{[appendix][7][]G}{[1][30][]30}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.1}Mode Comparison at Scale}{30}{subsection.G.1}\protected@file@percent }
+\newlabel{app:tri-mode}{{G.1}{30}{Mode Comparison at Scale}{subsection.G.1}{}}
+\newlabel{app:tri-mode@cref}{{[appendix][1][7]G.1}{[1][30][]30}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.2}Budget Parity (Negative Result)}{30}{subsection.G.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.3}Consistent Re-Scoring}{30}{subsection.G.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.4}Signed Roles Are Metric-Relative}{30}{subsection.G.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.5}Recurrence Pruning}{30}{subsection.G.5}\protected@file@percent }
+\citation{marks2025sparse}
+\citation{marks2025sparse}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.6}Effect Thresholds Cannot Replace Validated Stopping}{31}{subsection.G.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.7}Direct-Effect Edges}{31}{subsection.G.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.8}Error Nodes at the Latent Endpoint}{31}{subsection.G.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {H}Membership-Set and Learned-Mask Studies}{31}{appendix.H}\protected@file@percent }
+\newlabel{app:membership-studies}{{H}{31}{Membership-Set and Learned-Mask Studies}{appendix.H}{}}
+\newlabel{app:membership-studies@cref}{{[appendix][8][]H}{[1][31][]31}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}The Non-Oracle Gate}{31}{subsection.H.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.2}Selection Rules and the Pruning Frontier}{31}{subsection.H.2}\protected@file@percent }
+\citation{bhaskar2024finding}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Correlational discovery baselines under the same 128-seed protocol, evidence base, and seed-intervention gates as the gradient methods (\cref  {sec:coact-results}). Dashes indicate that no circuit passed the gates, so no accepted-circuit medians exist. The ablation gradient row is the same-batch reference (121 of 128 seeds accepted).}}{32}{table.4}\protected@file@percent }
+\newlabel{tab:coact-methods}{{4}{32}{Correlational discovery baselines under the same 128-seed protocol, evidence base, and seed-intervention gates as the gradient methods (\cref {sec:coact-results}). Dashes indicate that no circuit passed the gates, so no accepted-circuit medians exist. The ablation gradient row is the same-batch reference (121 of 128 seeds accepted)}{table.4}{}}
+\newlabel{tab:coact-methods@cref}{{[table][4][]4}{[1][32][]32}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.3}Learned-Mask Design Ablations (Negative Results)}{32}{subsection.H.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.4}Binarisation Sweep}{32}{subsection.H.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {I}Additional Results}{32}{appendix.I}\protected@file@percent }
+\newlabel{app:extra-results}{{I}{32}{Additional Results}{appendix.I}{}}
+\newlabel{app:extra-results@cref}{{[appendix][9][]I}{[1][32][]32}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {I.1}Metric Distributions Across Methods}{32}{subsection.I.1}\protected@file@percent }
+\newlabel{app:eval-distributions}{{I.1}{32}{Metric Distributions Across Methods}{subsection.I.1}{}}
+\newlabel{app:eval-distributions@cref}{{[appendix][1][9]I.1}{[1][32][]32}{}{}{}}
+\citation{marks2025sparse}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Discovered dependencies are not co-activation neighbourhoods (\cref  {sec:coact-results}). Left: distribution of the percentage of each circuit's nodes that appear among its seed's top co-activation partners (mean 3.6\%). Right: the same overlap against the circuit's counterfactual faithfulness (Pearson $r = 0.02$ over all points; 135 of 4{,}741 points lie above the truncated axis). The dashed line marks the acceptance threshold (0.20), the minimum faithfulness an accepted circuit can have. Statistics are over the 4{,}741 circuits with post-analysis co-activation metrics from the 7{,}525-circuit run.}}{33}{figure.8}\protected@file@percent }
+\newlabel{fig:coact-overlap}{{8}{33}{Discovered dependencies are not co-activation neighbourhoods (\cref {sec:coact-results}). Left: distribution of the percentage of each circuit's nodes that appear among its seed's top co-activation partners (mean 3.6\%). Right: the same overlap against the circuit's counterfactual faithfulness (Pearson $r = 0.02$ over all points; 135 of 4{,}741 points lie above the truncated axis). The dashed line marks the acceptance threshold (0.20), the minimum faithfulness an accepted circuit can have. Statistics are over the 4{,}741 circuits with post-analysis co-activation metrics from the 7{,}525-circuit run}{figure.8}{}}
+\newlabel{fig:coact-overlap@cref}{{[figure][8][]8}{[1][32][]33}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {I.2}Faithfulness by Circuit Size (v1 grid)}{33}{subsection.I.2}\protected@file@percent }
+\newlabel{sec:size-curve}{{I.2}{33}{Faithfulness by Circuit Size (v1 grid)}{subsection.I.2}{}}
+\newlabel{sec:size-curve@cref}{{[appendix][2][9]I.2}{[1][33][]33}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Kernel density estimates of counterfactual faithfulness (top row) and positive-context suppression score (bottom row) by discovery method. Left column: all accepted circuits ($n = 857$). Right column: each method's best accepted circuit per seed by counterfactual faithfulness --- at most one circuit from a seed's three negative-mode runs, an equal-budget comparison that does not reward a larger accepted pool (66, 117, and 117 seeds for counterfactual, ablation, and hybrid gradient respectively). Dashed vertical lines mark medians; shaded regions span interquartile ranges.}}{34}{figure.9}\protected@file@percent }
+\newlabel{fig:eval-distribution}{{9}{34}{Kernel density estimates of counterfactual faithfulness (top row) and positive-context suppression score (bottom row) by discovery method. Left column: all accepted circuits ($n = 857$). Right column: each method's best accepted circuit per seed by counterfactual faithfulness --- at most one circuit from a seed's three negative-mode runs, an equal-budget comparison that does not reward a larger accepted pool (66, 117, and 117 seeds for counterfactual, ablation, and hybrid gradient respectively). Dashed vertical lines mark medians; shaded regions span interquartile ranges}{figure.9}{}}
+\newlabel{fig:eval-distribution@cref}{{[figure][9][]9}{[1][32][]34}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Counterfactual faithfulness against circuit size, pre-gate. Each seed's truncation trajectory is interpolated onto a common log-spaced node grid and aggregated pointwise across seeds (mean left, median right); grid positions covered by fewer than 25 seeds are dropped, which is where lines begin and end. The dotted line marks $\phi _{\mathrm  {cf}}= 1$; values above it are intervention overshoot (\cref  {sec:eval}).}}{34}{figure.10}\protected@file@percent }
+\newlabel{fig:size-curve}{{10}{34}{Counterfactual faithfulness against circuit size, pre-gate. Each seed's truncation trajectory is interpolated onto a common log-spaced node grid and aggregated pointwise across seeds (mean left, median right); grid positions covered by fewer than 25 seeds are dropped, which is where lines begin and end. The dotted line marks $\phicf = 1$; values above it are intervention overshoot (\cref {sec:eval})}{figure.10}{}}
+\newlabel{fig:size-curve@cref}{{[figure][10][]10}{[1][33][]34}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Counterfactual faithfulness of accepted grid circuits by seed layer (left) and seed component kind (right), pooled across methods and negative modes ($n = 857$). Diamonds mark means; boxes span interquartile ranges.}}{35}{figure.11}\protected@file@percent }
+\newlabel{fig:seed-breakdown}{{11}{35}{Counterfactual faithfulness of accepted grid circuits by seed layer (left) and seed component kind (right), pooled across methods and negative modes ($n = 857$). Diamonds mark means; boxes span interquartile ranges}{figure.11}{}}
+\newlabel{fig:seed-breakdown@cref}{{[figure][11][]11}{[1][35][]35}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Accepted circuit sizes (node counts) by discovery method and negative mode.}}{35}{figure.12}\protected@file@percent }
+\newlabel{fig:circuit-size}{{12}{35}{Accepted circuit sizes (node counts) by discovery method and negative mode}{figure.12}{}}
+\newlabel{fig:circuit-size@cref}{{[figure][12][]12}{[1][35][]35}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Coverage across the SAE bank.}{35}{section*.50}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Circuit sizes.}{35}{section*.51}\protected@file@percent }
+\gdef \@abspage@last{35}

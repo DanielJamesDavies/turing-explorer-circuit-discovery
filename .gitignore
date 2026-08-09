@@ -17,7 +17,7 @@ src/native/build/
 /data/
 outputs/
 profile_trace/
-/paper/*
+/paper/resources/*
 /paper-backups/*
 
 # Editor
