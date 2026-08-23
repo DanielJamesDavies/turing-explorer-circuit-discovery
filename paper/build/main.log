@@ -1,7 +1,6 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.2.7)  8 AUG 2026 15:27
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.2.7)  22 AUG 2026 18:02
 entering extended mode
  restricted \write18 enabled.
- file:line:error style messages enabled.
  %&-line parsing enabled.
 **./main.tex
 (main.tex
@@ -1304,242 +1303,250 @@ LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 5.0pt on input line 117.
 LaTeX Font Info:    Font shape `OT1/minntx/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `OML/ntxmi/m/it' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `LMS/ntxsy/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `LMX/ntxexx/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `U/ntxmia/m/it' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `U/ntxsym/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `U/ntxsyc/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
-(Font)              scaled to size 10.0pt on input line 180.
+(Font)              scaled to size 10.0pt on input line 181.
 LaTeX Font Info:    Font shape `TS1/ntxtlf/m/n' will be
-(Font)              scaled to size 10.0pt on input line 193.
+(Font)              scaled to size 10.0pt on input line 194.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 10.0pt on input line 193.
+(Font)              scaled to size 10.0pt on input line 194.
  [2{C:/Users/danie/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ot1-
 tlf.enc}
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.195 \item \textbf
+l.197 \item \textbf
                    {A learned-mask method for the latent endpoint.}]
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.0pt on input line 207.
+(Font)              scaled to size 10.0pt on input line 214.
  [3]
 [4]
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 7.3pt on input line 280.
+(Font)              scaled to size 7.3pt on input line 295.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 5.5pt on input line 280.
+(Font)              scaled to size 5.5pt on input line 295.
  [5] [6
 pdfTeX warning (ext4): destination with the same identifier (name{equation.1}) 
 has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.350 
-      ]
+l.360 
+      ] [7]
 LaTeX Font Info:    Font shape `T1/zi4/b/n' will be
-(Font)              scaled to size 10.0pt on input line 393.
- [7] [8] [9]
+(Font)              scaled to size 10.0pt on input line 411.
+ [8] [9]
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 9.0pt on input line 484.
+(Font)              scaled to size 9.0pt on input line 501.
 LaTeX Font Info:    Font shape `OT1/minntx/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `OML/ntxmi/m/it' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `LMS/ntxsy/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `LMX/ntxexx/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `U/ntxmia/m/it' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `U/ntxsym/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `U/ntxsyc/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
-(Font)              scaled to size 9.0pt on input line 486.
+(Font)              scaled to size 9.0pt on input line 503.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 9.0pt on input line 488.
+(Font)              scaled to size 9.0pt on input line 505.
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 9.0pt on input line 493.
+(Font)              scaled to size 9.0pt on input line 510.
  [10
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.525 \section
-              {Experiments and Results}] [11
+l.543 
+      ] [11
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.589 
-      ]
-<figures/control-vs-faithfulness.pdf, id=634, 1117.93538pt x 330.03238pt>
+l.600 \paragraph
+                {Faithfulness is collective, position-local, and depth-scaled.}
+]
+<figures/control-vs-faithfulness.pdf, id=653, 1117.93538pt x 339.12898pt>
 File: figures/control-vs-faithfulness.pdf Graphic file (type pdf)
 <use figures/control-vs-faithfulness.pdf>
 Package pdftex.def Info: figures/control-vs-faithfulness.pdf  used on input lin
-e 607.
-(pdftex.def)             Requested size: 397.48499pt x 117.34612pt.
- [12
+e 627.
+(pdftex.def)             Requested size: 397.48499pt x 120.58049pt.
+ [12] [13
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.626 
-       <./figures/control-vs-faithfulness.pdf>]
-<figures/median-cf-faithfulness.pdf, id=671, 713.18257pt x 351.49693pt>
+l.681 
+       <./figures/control-vs-faithfulness.pdf>] [14
+pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.749 
+      ]
+<figures/median-cf-faithfulness.pdf, id=729, 713.18257pt x 351.49693pt>
 File: figures/median-cf-faithfulness.pdf Graphic file (type pdf)
 <use figures/median-cf-faithfulness.pdf>
 Package pdftex.def Info: figures/median-cf-faithfulness.pdf  used on input line
- 663.
+ 762.
 (pdftex.def)             Requested size: 337.86465pt x 166.52296pt.
- [13] [14
+ [15] [16
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.690 \item \textbf
-                   {Time.} No gate ever freezes, under any schedule we teste...
- <./figures/median-cf-faithfulness.pdf>] [15] [16] [17]
+l.813 
+       <./figures/median-cf-faithfulness.pdf>] [17] [18] [19]
 (X:\Projects\AIs\Turing\Publication\3 Implementation\2\paper\build\main.bbl
-[18]
-Underfull \hbox (badness 2065) in paragraph at lines 131--135
+[20]
+Underfull \hbox (badness 2065) in paragraph at lines 138--142
 []\T1/ntxtlf/m/n/10 (+20) Wes Gurnee.  SAE re-con-struc-tion er-rors are (em-pi
 r-i-cally) patho-log-i-cal, 2024.  AI
  []
 
 
-Underfull \hbox (badness 6961) in paragraph at lines 131--135
+Underfull \hbox (badness 6961) in paragraph at lines 138--142
 \T1/ntxtlf/m/n/10 (+20) Align-ment Fo-rum. []$\T1/zi4/m/n/10 https : / / www . 
 alignmentforum . org / posts / rZPiuFxESMxCDHe4B / sae -[]
  []
 
-[19] [20]
-Underfull \hbox (badness 10000) in paragraph at lines 305--311
+[21]
+Underfull \hbox (badness 10000) in paragraph at lines 319--325
 \T1/zi4/m/n/10 for -[] sparse -[] autoencoders -[] on -[] downstream -[] tasks 
 -[] and -[] deprioritising -[] sae -[] research -[]
  []
 
-) [21]
-<figures/loss-curve.pdf, id=817, 712.86266pt x 351.91411pt>
+[22]) [23]
+<figures/loss-curve.pdf, id=875, 712.86266pt x 351.91411pt>
 File: figures/loss-curve.pdf Graphic file (type pdf)
 <use figures/loss-curve.pdf>
-Package pdftex.def Info: figures/loss-curve.pdf  used on input line 921.
+Package pdftex.def Info: figures/loss-curve.pdf  used on input line 1043.
 (pdftex.def)             Requested size: 357.73405pt x 176.601pt.
- [22
-pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has
- been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.947 
-      ] [23
-pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
-s been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.947 
-      
-pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) ha
-s been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.947 
-       <./figures/loss-curve.pdf>] [24
-pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) ha
-s been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.987 
-      
-pdfTeX warning (ext4): destination with the same identifier (name{figure.7}) ha
-s been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.987 
-      ]
-Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 1015.
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/sc' will be
-(Font)              scaled to size 10.0pt on input line 1019.
-Package microtype Info: Character `029' is missing
-(microtype)             in font `T1/ntxtlf/m/sc/10'.
-(microtype)             Ignoring protrusion settings for this character.
- [25] [26{C:/Users/danie/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/nt
-x-ec-tlf-pc.enc}] [27] [28] [29] [30] [31]
-<figures/circuit-coact-overlap-paper.pdf, id=926, 771.34358pt x 330.23314pt>
-File: figures/circuit-coact-overlap-paper.pdf Graphic file (type pdf)
-<use figures/circuit-coact-overlap-paper.pdf>
-Package pdftex.def Info: figures/circuit-coact-overlap-paper.pdf  used on input
- line 1324.
-(pdftex.def)             Requested size: 397.48499pt x 170.18028pt.
-<figures/gradient-method-eval-distribution.pdf, id=929, 770.99855pt x 604.49777
-pt>
-File: figures/gradient-method-eval-distribution.pdf Graphic file (type pdf)
-<use figures/gradient-method-eval-distribution.pdf>
-Package pdftex.def Info: figures/gradient-method-eval-distribution.pdf  used on
- input line 1340.
-(pdftex.def)             Requested size: 397.48499pt x 311.6565pt.
- [32
+ [24
 pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has
  been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1355 
-       ] [33
+l.1069 
+       ] [25
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1069 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1069 
+        <./figures/loss-curve.pdf>] [26
+pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1116 
+       
+pdfTeX warning (ext4): destination with the same identifier (name{figure.7}) ha
+s been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1116 
+       ]
+Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
+put line 1137.
+LaTeX Font Info:    Font shape `T1/ntxtlf/m/sc' will be
+(Font)              scaled to size 10.0pt on input line 1141.
+Package microtype Info: Character `029' is missing
+(microtype)             in font `T1/ntxtlf/m/sc/10'.
+(microtype)             Ignoring protrusion settings for this character.
+ [27] [28{C:/Users/danie/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/nt
+x-ec-tlf-pc.enc}] [29] [30] [31] [32] [33]
+<figures/circuit-coact-overlap-paper.pdf, id=981, 771.34358pt x 330.23314pt>
+File: figures/circuit-coact-overlap-paper.pdf Graphic file (type pdf)
+<use figures/circuit-coact-overlap-paper.pdf>
+Package pdftex.def Info: figures/circuit-coact-overlap-paper.pdf  used on input
+ line 1450.
+(pdftex.def)             Requested size: 397.48499pt x 170.18028pt.
+ [34
+pdfTeX warning (ext4): destination with the same identifier (name{table.5}) has
+ been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.1476 
+       ]
+<figures/gradient-method-eval-distribution.pdf, id=990, 770.99855pt x 604.49777
+pt>
+File: figures/gradient-method-eval-distribution.pdf Graphic file (type pdf)
+<use figures/gradient-method-eval-distribution.pdf>
+Package pdftex.def Info: figures/gradient-method-eval-distribution.pdf  used on
+ input line 1484.
+(pdftex.def)             Requested size: 397.48499pt x 311.6565pt.
+ [35
 pdfTeX warning (ext4): destination with the same identifier (name{figure.8}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1390 
-        <./figures/circuit-coact-overlap-paper.pdf>] [34
+l.1509 
+        <./figures/circuit-coact-overlap-paper.pdf>] [36
 pdfTeX warning (ext4): destination with the same identifier (name{figure.9}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1390 
-       
+l.1509 
+        <./figures/gradient-method-eval-distribution.pdf>]
+<figures/gradient-grid-seed-breakdown.pdf, id=1049, 770.99855pt x 329.81593pt>
+File: figures/gradient-grid-seed-breakdown.pdf Graphic file (type pdf)
+<use figures/gradient-grid-seed-breakdown.pdf>
+Package pdftex.def Info: figures/gradient-grid-seed-breakdown.pdf  used on inpu
+t line 1537.
+(pdftex.def)             Requested size: 397.48499pt x 170.04079pt.
+ [37
 pdfTeX warning (ext4): destination with the same identifier (name{figure.10}) h
 as been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1390 
-        <./figures/gradient-method-eval-distribution.pdf>]
-<figures/gradient-grid-seed-breakdown.pdf, id=993, 770.99855pt x 329.81593pt>
-File: figures/gradient-grid-seed-breakdown.pdf Graphic file (type pdf)
-<use figures/gradient-grid-seed-breakdown.pdf>
-Package pdftex.def Info: figures/gradient-grid-seed-breakdown.pdf  used on inpu
-t line 1393.
-(pdftex.def)             Requested size: 397.48499pt x 170.04079pt.
-<figures/gradient-neg-mode-circuit-size-by-method.pdf, id=995, 1118.32747pt x 3
-34.9471pt>
+l.1546 
+       ]
+<figures/gradient-neg-mode-circuit-size-by-method.pdf, id=1059, 1118.32747pt x 
+334.9471pt>
 File: figures/gradient-neg-mode-circuit-size-by-method.pdf Graphic file (type p
 df)
 <use figures/gradient-neg-mode-circuit-size-by-method.pdf>
 Package pdftex.def Info: figures/gradient-neg-mode-circuit-size-by-method.pdf  
-used on input line 1405.
+used on input line 1549.
 (pdftex.def)             Requested size: 397.48499pt x 119.04759pt.
- [35
+ [38
 pdfTeX warning (ext4): destination with the same identifier (name{figure.11}) h
 as been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1410 \end{document}
+l.1554 \end{document}
                      
 pdfTeX warning (ext4): destination with the same identifier (name{figure.12}) h
 as been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.1410 \end{document}
+l.1554 \end{document}
                       <./figures/gradient-grid-seed-breakdown.pdf> <./figures/g
 radient-neg-mode-circuit-size-by-method.pdf>]
 (X:\Projects\AIs\Turing\Publication\3 Implementation\2\paper\build\main.aux)
@@ -1548,16 +1555,16 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: A92D4D8227F13286D0D303B990703738;11737.
+(rerunfilecheck)             Checksum: 49D136DB3D6D7D5DF249A8DDBD6692D8;12187.
  ) 
 Here is how much of TeX's memory you used:
- 31054 strings out of 467871
- 571628 string characters out of 5418377
- 985751 words of memory out of 5000000
- 58927 multiletter control sequences out of 15000+600000
- 755944 words of font info for 307 fonts, out of 8000000 for 9000
+ 31085 strings out of 467871
+ 572267 string characters out of 5418377
+ 986811 words of memory out of 5000000
+ 58944 multiletter control sequences out of 15000+600000
+ 756263 words of font info for 309 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 84i,11n,94p,1013b,864s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 84i,11n,94p,1003b,864s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/danie/AppData/Local/Programs/MiKTeX/fonts/type1/public/inconsolata/
 Inconsolata-zi4b.pfb><C:/Users/danie/AppData/Local/Programs/MiKTeX/fonts/type1/
 public/inconsolata/Inconsolata-zi4r.pfb><C:/Users/danie/AppData/Local/Programs/
@@ -1573,9 +1580,9 @@ nie/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmb.pfb><C:/Users/d
 anie/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmr.pfb><C:/Users/
 danie/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmri.pfb>
 Output written on "X:\Projects\AIs\Turing\Publication\3 Implementation\2\paper\
-build\main.pdf" (35 pages, 791243 bytes).
+build\main.pdf" (38 pages, 824782 bytes).
 PDF statistics:
- 1149 PDF objects out of 1200 (max. 8388607)
- 215 named destinations out of 1000 (max. 500000)
- 58376 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 1218 PDF objects out of 1440 (max. 8388607)
+ 225 named destinations out of 1000 (max. 500000)
+ 58384 words of extra memory for PDF output out of 61914 (max. 10000000)
 
