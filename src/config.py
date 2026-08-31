@@ -651,8 +651,10 @@ class LearnedMaskConfig(BaseModel):
     optimised against the loss rather than read off any single gradient.
 
     TRI-AMP MASK (2026-08-05): objective="pos" + mask_floor_source="triple"
-    + free_amplitude=True (engine kwargs; the last two are not yet config
-    fields). Reproduces the seed under zero+negctx+posctx ablation at once,
+    + free_amplitude=True (promoted to config fields 2026-08-31 for the
+    H100 production driver, together with the neg-amp variants:
+    signed_amplitude, neg_suppress_weight, and margin_topk).
+    Reproduces the seed under zero+negctx+posctx ablation at once,
     with a learned per-latent amplitude. Produces WEIGHTED circuits (set +
     coefficient vector) of ~100-600 latents at L2, ~250-1,600 at L9, that
     are faithful under every floor convention with amplitudes applied —
@@ -797,6 +799,28 @@ class LearnedMaskConfig(BaseModel):
     # gamma = 0.25 beat 0.5 and 1.0 at every lambda tested (L5 scan), and
     # is what all one-probe calibration numbers were measured at.
     dual_floor_weight: float = 0.25   # gamma on the negctx term
+    # gamma on the posctx term when mask_floor_source is "triple"/"pn";
+    # ignored otherwise. The 029-panel bands used 0.10 shallow (<=L5) and
+    # 0.05 deep (>=L7); the engine default 0.25 predates that calibration.
+    triple_floor_weight: float = 0.25
+    # TRI-AMP: learned per-latent amplitude alpha = softplus(psi) on top of
+    # the gate (see class docstring). Off = historical gate-only mask.
+    free_amplitude: bool = False
+    # optional price on |alpha - 1| for members (weighted by the gate);
+    # 0.0 = truly free range (the panel/production setting).
+    amp_l1: float = 0.0
+    # NEG-AMP, signed variant: alpha = raw psi (may go negative), psi init
+    # 1.0. Circuits may contain negative-amplitude members (the
+    # register-discriminator latents of the 2026-08 sign census).
+    signed_amplitude: bool = False
+    # NEG-AMP, suppress variant: dual_norm-normalised penalty on the seed's
+    # read over the stored negctx hard negatives (know_runner NEG_W;
+    # calibrated default there was 0.5). 0.0 = off.
+    neg_suppress_weight: float = 0.0
+    # FIRING-MARGIN objective (2026-08-30): the seed tap reports pre-act
+    # minus the site's k-th largest pre-act, so the loss sees top-k
+    # competition. None = value frame (default; the production setting).
+    margin_topk: Optional[int] = None
     # Gate discretisation during TRAINING (TopK-SAE lesson: its top-k lives
     # inside the training forward, so no soft/hard gap exists there).
     # HOUSE RECIPE: "anneal" (adopted 2026-07-31 after Sweep 0 +
@@ -864,9 +888,23 @@ class LearnedMaskConfig(BaseModel):
     @field_validator("mask_floor_source")
     @classmethod
     def validate_mask_floor_source(cls, v: str) -> str:
-        if v not in ("zero", "posctx", "negctx", "dual"):
+        if v not in ("zero", "posctx", "negctx", "dual", "triple", "pn"):
             raise ValueError("mask_floor_source must be 'zero', 'posctx', "
-                             f"'negctx' or 'dual', got {v!r}")
+                             f"'negctx', 'dual', 'triple' or 'pn', got {v!r}")
+        return v
+
+    @field_validator("amp_l1", "neg_suppress_weight")
+    @classmethod
+    def validate_nonneg_weights(cls, v: float) -> float:
+        if v < 0.0:
+            raise ValueError(f"weight must be >= 0, got {v}")
+        return v
+
+    @field_validator("margin_topk")
+    @classmethod
+    def validate_margin_topk(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError(f"margin_topk must be None or >= 1, got {v}")
         return v
 
     @field_validator("code_dtype")
@@ -1387,6 +1425,13 @@ class SeedFilterConfig(BaseModel):
 
 
 class DiscoveryConfig(BaseModel):
+    # Seed sharding for multi-GPU discovery (2026-08-31): "i/k" means this
+    # process takes candidates where enumeration_index % k == i. Each shard
+    # writes discovered_circuits.shard<i>.pt (plain discovered_circuits.pt
+    # when "0/1", the default) and resumes from its own file — launch one
+    # process per GPU with CUDA_VISIBLE_DEVICES pinned. Concatenation is a
+    # store merge; every circuit carries seed_comp/seed_latent/method.
+    seed_shard: str = "0/1"
     model_config = ConfigDict(extra='forbid')
     n_seeds: int = 128
     # Sequence COUNT vs batch SIZE are separate ideas (the neg side has had

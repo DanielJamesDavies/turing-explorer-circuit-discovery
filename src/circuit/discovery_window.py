@@ -10,6 +10,18 @@ from sae.bank import SAEBank
 from data.loader import DataLoader
 from config import config
 from store.circuits import circuit_store
+
+
+def _parse_seed_shard() -> tuple:
+    """config.discovery.seed_shard "i/k" -> (i, k), validated loudly."""
+    raw = str(config.discovery.seed_shard)
+    try:
+        i, k = (int(x) for x in raw.split("/"))
+    except ValueError:
+        raise ValueError(f"discovery.seed_shard must be 'i/k', got {raw!r}")
+    if k < 1 or not 0 <= i < k:
+        raise ValueError(f"discovery.seed_shard needs 0 <= i < k, got {raw!r}")
+    return i, k
 from store.latent_stats import latent_stats
 from store.top_coactivation import top_coactivation
 from store.logit_context import logit_ctx
@@ -186,6 +198,26 @@ class DiscoveryWindow:
 
     def run(self, candidates: List[Dict[str, Any]], save_interval: int = 10):
         """Runs all discovery methods for each seed candidate."""
+        shard_i, shard_k = _parse_seed_shard()
+        if shard_k > 1:
+            candidates = [c for j, c in enumerate(candidates)
+                          if j % shard_k == shard_i]
+            print(f"--- seed_shard {shard_i}/{shard_k}: "
+                  f"{len(candidates)} candidates this shard ---")
+        # Resume: reload this shard's own store and skip
+        # (seed, method) pairs already discovered. A seed whose method ran
+        # but was REJECTED is not in the store and will re-run — rejects
+        # are re-decided on resume, accepted circuits never re-fit.
+        _done: set = set()
+        if os.path.exists(self._store_path()):
+            circuit_store.load(self._store_path())
+            for _c in circuit_store.circuits.values():
+                _md = _c.metadata
+                _done.add((_md.get("seed_comp"), _md.get("seed_latent"),
+                           _md.get("discovery_method")))
+            if _done:
+                print(f"--- resume: {len(_done)} (seed, method) pairs "
+                      f"already in {self._store_path()} ---")
         print(f"--- Starting Discovery Window: {len(candidates)} candidates × {len(self.methods)} method(s) ---")
 
         # Build (comp_idx, latent_idx) → candidate lookup for seed_criteria annotation
@@ -206,6 +238,8 @@ class DiscoveryWindow:
             for method in self.methods:
                 method_name = self._method_name(method)
                 if allowed_methods and method_name not in allowed_methods:
+                    continue
+                if (comp_idx, latent_idx, method_name) in _done:
                     continue
                 m_t0 = time.perf_counter()
                 forwards_before = obs.forward_passes
@@ -639,9 +673,17 @@ class DiscoveryWindow:
 
         return table
 
+    def _store_path(self) -> str:
+        """Shard-aware store filename: plain for 0/1, .shard<i> otherwise
+        so concurrent shard processes never clobber one file."""
+        i, k = _parse_seed_shard()
+        name = ("discovered_circuits.pt" if k == 1
+                else "discovered_circuits.shard%d.pt" % i)
+        return os.path.join(self.output_dir, name)
+
     def save_store(self):
         """Persists the circuit store to disk."""
-        path = os.path.join(self.output_dir, "discovered_circuits.pt")
+        path = self._store_path()
         tmp_path = f"{path}.tmp"
         circuit_store.save(tmp_path)
         os.replace(tmp_path, path)

@@ -287,6 +287,12 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             neg_tokens=self._floor_neg_tokens,
             mask_floor_source=cfg.mask_floor_source,
             dual_floor_weight=cfg.dual_floor_weight,
+            triple_floor_weight=cfg.triple_floor_weight,
+            free_amplitude=cfg.free_amplitude,
+            amp_l1=cfg.amp_l1,
+            signed_amplitude=cfg.signed_amplitude,
+            neg_suppress_weight=cfg.neg_suppress_weight,
+            margin_topk=cfg.margin_topk,
             binarize=cfg.binarize,
             steps=cfg.steps, lr=cfg.lr, l1_lambda=cfg.l1_lambda,
             keep_threshold=cfg.keep_threshold,
@@ -302,6 +308,7 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             logger=logger,
         )
         self._pending_inhibitors = {}
+        self._stash_amplitudes(prov)
         return scores, float(prov.get("loss_initial") or 0.0), float(
             prov.get("loss_final") or 0.0)
 

@@ -180,6 +180,13 @@ class GradientDiscoveryBase(DiscoveryMethod):
         self.eval_batch_size = cast(int, config.discovery.eval_batch_size)
         self._last_restoration = None
         self._pending_inhibitors: Dict[FeatureID, float] = {}
+        # Tri-amp: fitted per-latent amplitudes from the mask engine's
+        # provenance (amp_kept). Stashed by the mask hops, attached to
+        # node metadata in _assemble — without this the stored circuit
+        # keeps the membership but loses the alpha vector, which is half
+        # the tri-amp object (the 044-behaviours keep_scales lesson).
+        self._pending_amplitudes: Dict[FeatureID, float] = {}
+        self._pending_amp_stats: dict[str, Any] = {}
         self._last_neg_selection_metadata: dict[str, Any] = {}
 
     def _init_support_profile(
@@ -213,6 +220,9 @@ class GradientDiscoveryBase(DiscoveryMethod):
 
     def discover(self, seed_comp_idx: int, seed_latent_idx: int) -> Optional[Circuit]:
         logger = CircuitLogger(seed_comp_idx, seed_latent_idx, self.method_name)
+        # Per-seed state: never let one seed's amplitudes leak into the next.
+        self._pending_amplitudes = {}
+        self._pending_amp_stats = {}
         try:
             return self._discover(seed_comp_idx, seed_latent_idx, logger)
         finally:
@@ -409,6 +419,8 @@ class GradientDiscoveryBase(DiscoveryMethod):
                 **self._extra_metadata(ctx, hop, n_pos, n_neg, sup_score),
             }
         )
+        if self._pending_amp_stats:
+            circuit.metadata["amp_stats"] = dict(self._pending_amp_stats)
         logger.nodes(list(circuit.nodes.values()))
         logger.accept(len(circuit.nodes), len(circuit.edges))
         return circuit
@@ -416,6 +428,21 @@ class GradientDiscoveryBase(DiscoveryMethod):
     # ------------------------------------------------------------------
     # Assembly (shared mechanics)
     # ------------------------------------------------------------------
+
+    def _stash_amplitudes(self, prov: Any) -> None:
+        """Convert the mask engine's amp_kept provenance ({"layer/kind":
+        {latent: alpha}}) into FeatureID-keyed amplitudes for _assemble.
+        Empty when free_amplitude is off — nodes then carry no amplitude
+        field and stored circuits are byte-identical to before."""
+        ak = (prov or {}).get("amp_kept") or {}
+        amps: Dict[FeatureID, float] = {}
+        for site_key, d in ak.items():
+            lyr, knd = site_key.split("/")
+            for i, a in d.items():
+                amps[FeatureID(layer=int(lyr), kind=knd,
+                               index=int(i))] = float(a)
+        self._pending_amplitudes = amps
+        self._pending_amp_stats = dict((prov or {}).get("amp_stats") or {})
 
     def _assemble(
         self,
@@ -431,13 +458,15 @@ class GradientDiscoveryBase(DiscoveryMethod):
             if not admit(upstream_fid, score):
                 continue
             if upstream_fid not in fid_to_uuid:
-                node = CircuitNode(
-                    metadata={
-                        "feature_id": upstream_fid,
-                        "role": role,
-                        "attribution_score": score,
-                    }
-                )
+                meta = {
+                    "feature_id": upstream_fid,
+                    "role": role,
+                    "attribution_score": score,
+                }
+                amp = self._pending_amplitudes.get(upstream_fid)
+                if amp is not None:
+                    meta["amplitude"] = amp
+                node = CircuitNode(metadata=meta)
                 circuit.add_node(node)
                 fid_to_uuid[upstream_fid] = node.uuid
             circuit.add_edge(fid_to_uuid[upstream_fid], seed_uuid, weight=score)

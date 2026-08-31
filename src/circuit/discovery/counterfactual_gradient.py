@@ -480,9 +480,16 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             warmup_frac=cfg.warmup_frac,
             mask_floor_source=cfg.mask_floor_source,
             dual_floor_weight=cfg.dual_floor_weight,
+            triple_floor_weight=cfg.triple_floor_weight,
+            free_amplitude=cfg.free_amplitude,
+            amp_l1=cfg.amp_l1,
+            signed_amplitude=cfg.signed_amplitude,
+            neg_suppress_weight=cfg.neg_suppress_weight,
+            margin_topk=cfg.margin_topk,
             binarize=cfg.binarize,
             logger=logger,
         )
+        self._stash_amplitudes(prov)
         if objective == "negctx":
             return {}, scores          # all edits, delivered as inhibitors
         if objective == "inject":
