@@ -276,6 +276,17 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             logger.note("mask: seed has no upstream sites")
             return {}, 0.0, 0.0
         cfg = config.discovery.learned_mask
+        # Per-seed data condition, not an error: floors that score against
+        # negatives cannot run for a seed with no stored negctx. Skip the
+        # seed (visible in the log) instead of crashing the shard — the
+        # engine's own refusal is correct per-fit but wrong per-run.
+        from circuit.instrument.learned_mask import FLOORS_NEEDING_NEGATIVES
+        _nt = self._floor_neg_tokens
+        if (cfg.mask_floor_source in FLOORS_NEEDING_NEGATIVES
+                and (_nt is None or int(_nt.shape[0]) == 0)):
+            logger.note("mask: floor %r needs negctx but seed has none — "
+                        "skipped" % cfg.mask_floor_source)
+            return {}, 0.0, 0.0
         scores, prov = run_learned_mask(
             self.inference, self.sae_bank,
             objective="pos", sites=sites,

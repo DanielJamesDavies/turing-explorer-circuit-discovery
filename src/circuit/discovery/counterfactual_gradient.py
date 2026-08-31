@@ -434,6 +434,9 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
     ) -> Tuple[Dict[FeatureID, float], Dict[FeatureID, float]]:
         """The cf-hosted learned-mask modes.
 
+        (Negctx-needing floors skip seeds with no negatives — see the
+        matching guard in ablation_gradient._run_mask_hop.)
+
         mask_contrast: reconstruction on posctx PLUS beta-weighted silence on
         negctx — selectivity, not just drive. All kept members are supports
         (m >= 0; the mask never asks for a sign).
@@ -460,6 +463,12 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
             logger.note("mask: seed has no upstream sites")
             return {}, {}
         cfg = config.discovery.learned_mask
+        from circuit.instrument.learned_mask import FLOORS_NEEDING_NEGATIVES
+        if (cfg.mask_floor_source in FLOORS_NEEDING_NEGATIVES
+                and (neg_tokens is None or int(neg_tokens.shape[0]) == 0)):
+            logger.note("mask: floor %r needs negctx but seed has none — "
+                        "skipped" % cfg.mask_floor_source)
+            return {}, {}
         objective = {"mask_contrast": "contrast", "mask_negctx": "negctx",
                      "mask_inject": "inject"}[self.attribution_mode]
         scores, prov = run_learned_mask(

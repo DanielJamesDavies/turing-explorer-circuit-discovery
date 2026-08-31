@@ -230,6 +230,17 @@ class DiscoveryWindow:
 
         discovered_count = 0
         task_metrics: List[Dict[str, Any]] = []
+        # Incremental metrics sink: one line per seed AS IT COMPLETES, so
+        # a killed or crashed shard keeps every finished seed's timing.
+        i_sh, k_sh = _parse_seed_shard()
+        _mname = ("task_metrics.jsonl" if k_sh == 1
+                  else "task_metrics.shard%d.jsonl" % i_sh)
+        _mfh = open(os.path.join(self.output_dir, _mname), "a")
+
+        def _log_tm(tm: Dict[str, Any]) -> None:
+            task_metrics.append(tm)
+            _mfh.write(json.dumps(tm) + "\n")
+            _mfh.flush()
         from observability.tracking import obs
 
         pbar = tqdm(candidates, desc="Discovering Circuits")
@@ -248,7 +259,7 @@ class DiscoveryWindow:
                 forwards_before = obs.forward_passes
                 circuit = method.discover(comp_idx, latent_idx)
                 _m_dt = time.perf_counter() - m_t0
-                task_metrics.append(
+                _log_tm(
                     {
                         "task_key": f"{cand.get('candidate_index', '?')}:{method_name}",
                         "candidate_index": cand.get("candidate_index"),
@@ -295,7 +306,7 @@ class DiscoveryWindow:
             for c in cluster_circuits:
                 circuit_store.add_circuit(c)
             cluster_count = len(cluster_circuits)
-            task_metrics.append(
+            _log_tm(
                 {
                     "task_key": "seed_free:cluster_contrast",
                     "candidate_index": None,
@@ -318,15 +329,7 @@ class DiscoveryWindow:
         if obs.forward_passes > 0:
             print(f"Average Forward Duration: {obs.total_forward_time / obs.forward_passes * 1000:.1f} ms")
         print("")
-        # Persist per-seed metrics (duration, forward passes, peak CUDA
-        # memory) — collected since May but previously discarded with the
-        # return value. Append-mode so resumes accumulate one file.
-        i, k = _parse_seed_shard()
-        mname = ("task_metrics.jsonl" if k == 1
-                 else "task_metrics.shard%d.jsonl" % i)
-        with open(os.path.join(self.output_dir, mname), "a") as mfh:
-            for tm in task_metrics:
-                mfh.write(json.dumps(tm) + "\n")
+        _mfh.close()
         self._print_summary_table()
         self._print_eval_stats_table()
         return task_metrics
