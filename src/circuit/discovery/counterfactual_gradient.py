@@ -401,6 +401,10 @@ class CounterfactualGradientDiscovery(GradientDiscoveryBase):
         )
 
     def _accept(self, cf_faith: float, sup_score: float) -> Optional[str]:
+        # Mask modes bypass the threshold — see GradientDiscoveryBase._accept.
+        if getattr(self, "attribution_mode", "") in (
+                "mask", "mask_contrast", "mask_negctx", "mask_inject"):
+            return None
         if cf_faith < self.min_faithfulness:
             return (
                 f"counterfactual_faithfulness {cf_faith:.4f} < "

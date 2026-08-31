@@ -586,6 +586,14 @@ class GradientDiscoveryBase(DiscoveryMethod):
         )
 
     def _accept(self, cf_faith: float, sup_score: float) -> Optional[str]:
+        # Learned-mask modes: never threshold-reject. The gate metrics are
+        # measured on the BARE member set (amplitudes stripped), which
+        # systematically undervalues tri-amp circuits — the keep_scales
+        # lesson. Mask circuits are stored unconditionally and judged
+        # post-hoc with amp-aware evals.
+        if getattr(self, "attribution_mode", "") in (
+                "mask", "mask_contrast", "mask_negctx", "mask_inject"):
+            return None
         if sup_score < self.min_suppression_score:
             return (
                 f"posctx_suppression_score {sup_score:.4f} < "
