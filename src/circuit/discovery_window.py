@@ -487,6 +487,15 @@ class DiscoveryWindow:
                     misc_parts.append(f"InhAbs%={np_['node_absence_pct_inhibitors']:.1f}")
                 if "posctx_circuit_sufficiency" in np_:
                     misc_parts.append(f"CircSuff={np_['posctx_circuit_sufficiency']:.4f}")
+                amp = m.get("amp_stats") or {}
+                if amp:
+                    misc_parts.append(
+                        "α:med=%.2f p90=%.2f ↑%d%% ↓%d%%"
+                        % (amp.get("median", 0.0), amp.get("p90", 0.0),
+                           round(100 * amp.get("frac_elevated", 0.0)),
+                           round(100 * amp.get("frac_reduced", 0.0))))
+                if m.get("target_loss") is not None:
+                    misc_parts.append("MaskLoss=%.4f" % m["target_loss"])
                 pa = m.get("post_analysis", {})
                 _post_fmt = {
                     "coact_overlap_pct":              lambda v: f"Coact%={v:.1f}",
@@ -596,6 +605,15 @@ class DiscoveryWindow:
             ("e.np.inh_abs%",  lambda m: (m.get("evals", {}).get("node_presence") or {}).get("node_absence_pct_inhibitors")),
             ("e.np.inh_rate",  lambda m: (m.get("evals", {}).get("node_presence") or {}).get("node_inhibitor_rate_mean")),
             ("e.np.circ_suff", lambda m: (m.get("evals", {}).get("node_presence") or {}).get("posctx_circuit_sufficiency")),
+            ("amp.n",          lambda m: (m.get("amp_stats") or {}).get("n")),
+            ("amp.median",     lambda m: (m.get("amp_stats") or {}).get("median")),
+            ("amp.p10",        lambda m: (m.get("amp_stats") or {}).get("p10")),
+            ("amp.p90",        lambda m: (m.get("amp_stats") or {}).get("p90")),
+            ("amp.max",        lambda m: (m.get("amp_stats") or {}).get("max")),
+            ("amp.elev_frac",  lambda m: (m.get("amp_stats") or {}).get("frac_elevated")),
+            ("amp.red_frac",   lambda m: (m.get("amp_stats") or {}).get("frac_reduced")),
+            ("mask.loss",      lambda m: m.get("target_loss")),
+            ("mask.target",    lambda m: m.get("target_pre_act")),
             ("pa.coact_pct",   lambda m: (m.get("post_analysis") or {}).get("coact_overlap_pct")),
             ("pa.coact_act",   lambda m: (m.get("post_analysis") or {}).get("coact_overlap_pct_activators")),
             ("pa.coact_inh",   lambda m: (m.get("post_analysis") or {}).get("coact_overlap_pct_inhibitors")),
