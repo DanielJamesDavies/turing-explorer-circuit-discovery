@@ -1,0 +1,272 @@
+weights:
+  model_path: models/TuringLLM/model_1722550239_03986.pt
+  sae_path: models/TuringLLM/SAE
+data:
+  dataset_path: data
+  n_shards: 3030
+  batch_size: 512
+hardware:
+  multi_gpu: false
+  memory: efficient
+  compile: true
+  parallel_kinds: false
+  ann_device: auto
+  keep_model_loaded_for_neg_ctx: false
+sae:
+  encode_backend: standard
+  topk_backend: pytorch
+  fused_exact_topk_use_native: false
+first_pass:
+  sae_encode_mode: streaming
+latents:
+  top_ctx:
+    n_sequences: 64
+  mid_ctx:
+    n_sequences: 64
+    mode: reservoir_cpu
+    band_low_sigma: 0.5
+    band_high_sigma: 1.5
+    warmup_batches: 100
+  neg_ctx:
+    n_sequences: 64
+    n_neighbors: 512
+    min_pos_ctx: 8
+    backend: single_gpu_exact
+    devices: []
+    repr_mode: mean_pool
+    max_repr_seqs: 200000
+  logit_ctx:
+    n_tokens_per_latent: 32
+    topk_output_tokens: 32
+  top_coactivation:
+    n_latents_per_latent: 64
+    n_candidates_per_component: 16
+    freq_alpha: 2.0
+    mode: pmi
+    pmi_clamp_min: -5.0
+    pmi_clamp_max: 10.0
+    dump_device: gpu
+    dump_profile: true
+    reduce_backend: single_process
+    reduce_shards: 1
+    reduce_shard_output_dir: null
+    reduce_omp_threads: null
+    reduce_schedule_chunk: 256
+  seq_latent_index:
+    enabled: true
+    top_k_per_component: 12
+discovery:
+  n_seeds: 16
+  probe_sequence_count: 64
+  probe_batch_size: 4
+  eval_sequence_count: 64
+  eval_batch_size: 64
+  position_aware: false
+  position_aware_select: abs_pctl
+  position_aware_threshold: 90
+  neg_ctx_eval_max: 16
+  min_faithfulness: 0.2
+  min_active_count: 1
+  max_neighbors: 32
+  focal_monosemantic_min_partners: 4
+  seed_criteria:
+  - stratified_random
+  seed_filter:
+    layers: []
+    kinds: []
+  methods:
+  - ablation_gradient
+  differential_activation:
+    n_activator_candidates: 64
+    n_inhibitor_candidates: 32
+    attribution_threshold: 0.01
+    pruning_threshold: 0.0
+  gradient_upstream:
+    depth: 36
+    top_k_per_hop: 8
+    attribution_threshold: 0.01
+    min_active_count: 1
+    max_ctx_sequences: 16
+    hop_batch_size: 16
+    absent_inhibitor_top_k: 0
+    absent_inhibitor_threshold: 0.01
+    pruning_threshold: 0.0
+    min_faithfulness: 0.2
+  layerwise_gradient_upstream:
+    top_k_per_node: 8
+    attribution_threshold: 0.01
+    min_active_count: 1
+    max_ctx_sequences: 16
+    hop_batch_size: 8
+    absent_inhibitor_top_k: 0
+    absent_inhibitor_threshold: 0.01
+    max_layers_back: 0
+    include_same_layer: true
+    pruning_threshold: 0.0
+    min_faithfulness: 0.2
+    profile_first_node: false
+  hard_negative_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    neg_candidate_limit: 64
+    attribution_threshold: 0.01
+    pruning_threshold: 0.0
+  coactivation_statistical:
+    coactivation_threshold: 0.1
+    pmi_coactivation_threshold: 1.0
+    max_neighbors: 32
+    pruning_threshold: 0.0
+  logit_attribution:
+    logit_threshold: 0.001
+    edge_threshold: 1.0e-05
+    max_neighbors: 32
+    pruning_threshold: 0.0
+  sfc_attribution_patching:
+    node_threshold: 0.1
+    edge_threshold: 0.01
+    patch_mode: mean_neg
+    max_neg: 8
+    pruning_threshold: 0.0
+    ig_steps: 10
+  neighborhood_expansion:
+    n_expand: 16
+    m_neighbors: 16
+    pruning_threshold: 0.0
+  attn_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  mlp_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  resid_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  attn_mlp_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  attn_resid_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  mlp_resid_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  all_top_coact_sparse_expansion:
+    coact_depth:
+    - 32
+    - 16
+    pruning_threshold: 0.0
+  counterfactual_gradient:
+    neg_mode: random
+    attribution_mode: local
+    ig_negctx_objective: drive
+    distant_pool_size: 512
+    top_k_activators: 12
+    top_k_inhibitors: 12
+    top_k_scope: layer_kind
+    activator_signal: gradient
+    activator_threshold: 0.01
+    inhibitor_threshold: 0.01
+    min_active_count: 1
+    max_neg_sequences: 16
+    neg_batch_size: 16
+    pruning_threshold: 0
+    min_faithfulness: 0.2
+    node_presence_eval: true
+  ablation_gradient:
+    neg_mode: close
+    distant_pool_size: 512
+    top_k_supports: 12
+    top_k_scope: layer_kind
+    support_threshold: 0.01
+    min_active_count: 1
+    max_neg_sequences: 16
+    pruning_threshold: 0.0
+    min_suppression_score: 0.2
+    attribution_mode: mask
+  hybrid_gradient:
+    run_counterfactual: true
+    run_ablation: true
+    min_counterfactual_faithfulness: 0.2
+    min_suppression_score: 0.2
+    acceptance_mode: either
+    pruning_enabled: false
+    pruning_method: leave_one_out
+    pruning_threshold: 0.0
+    pruning_objective: both
+    sfc_node_threshold: 0.01
+    sfc_edge_threshold: 0.01
+    sfc_score_mode: abs
+  circuit_tracer_baseline:
+    probe_batch_size: 1
+    max_sequences: 8
+    target_chunk_size: 8
+    logit_top_k: 5
+    desired_logit_prob: 0.95
+    influence_max_iter: 1000
+    node_threshold: 0.8
+    edge_threshold: 0.98
+    min_faithfulness: 0.2
+    pruning_threshold: 0.0
+    min_active_count: 1
+    max_feature_nodes: 2048
+    stop_error_grad: false
+    include_error_nodes: true
+    online_ranking_interval: 4
+    feature_batch_size: 32
+    include_token_nodes: false
+  cluster_contrast:
+    n_clusters: 3000
+    top_clusters: 8
+    kmeans_iters: 1024
+    kmeans_seed: 42
+    num_pos_seqs: 64
+    num_neg_seqs: 64
+    batch_size: 1
+    eval_position: last
+    top_k_activators: 12
+    top_k_inhibitors: 12
+    top_k_scope: layer_kind
+    activator_threshold: 0.01
+    inhibitor_threshold: 0.01
+    min_active_count: 1
+    pruning_threshold: 0.0
+    run_eval: true
+  top_coact_attr:
+    attribution_threshold: 0.01
+    max_neighbors: 32
+    max_hops: 2
+    pruning_threshold: 0.01
+  learned_mask:
+    mask_floor_source: triple
+    free_amplitude: true
+    l1_lambda: 0.001
+    deep_site_threshold: 99
+persist:
+  save_workers: 1
+  search_cache_enabled: false
+  build_search_cache_after_pipeline: false
+  atomic_saves: true
+  search_cache_n_sequences: 8
+  search_cache_component_chunk: 4
+analysis:
+  methods:
+  - coactivation_overlap
+  - layer_distribution
+  - edge_weight_gini
+  - node_activity
+  - node_rarity
+  - top_token_consistency
+  - internode_coact_density
