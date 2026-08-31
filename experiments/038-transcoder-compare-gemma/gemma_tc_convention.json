@@ -1,0 +1,18 @@
+{
+ "fvu_pos_ge1": 0.157,
+ "fvu_all_pos": 0.6184,
+ "input": "TL ln2.hook_normalized = HF mlp_in / (1 + w_pre_ffw)",
+ "target": "post_feedforward_layernorm(mlp_out) \u2014 the MLP residual contribution, WITH its (1+w_post) weight",
+ "subtract_b_dec": false,
+ "gate": "jumprelu raw",
+ "measured_l0": 83.2,
+ "advertised_l0": 88,
+ "layer_probed": 4,
+ "tc_repo": "mwhanna/gemma-scope-transcoders",
+ "model": "unsloth/gemma-2-2b",
+ "notes": [
+  "Gemma RMSNorm scales by (1+w): folding w is silently wrong (trap 3).",
+  "BOS position 0 dominates naive FVU (0.62 -> 0.16 excluding it); all downstream FVU/agreement checks must exclude position 0.",
+  "Intervention point: the transcoder predicts the POST-ln image, so deltas inject at post_feedforward_layernorm OUTPUT (same hook as the SAE harness) while features READ from mlp input / (1+w_pre)."
+ ]
+}

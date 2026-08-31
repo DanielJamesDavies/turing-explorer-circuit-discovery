@@ -1,0 +1,298 @@
+{
+  "tag": "L10",
+  "layer": 10,
+  "kind": "resid",
+  "latent": 3021,
+  "d_sae": 40960,
+  "n_sites": 32,
+  "rows": [
+    {
+      "layer": 0,
+      "kind": "attn",
+      "constant": 2714,
+      "hotflat": 1374,
+      "kept_frac": 0.5062638172439204,
+      "constant_frac_of_dsae": 0.066259765625,
+      "hotflat_frac_of_dsae": 0.033544921875
+    },
+    {
+      "layer": 0,
+      "kind": "mlp",
+      "constant": 7669,
+      "hotflat": 3333,
+      "kept_frac": 0.4346068587821098,
+      "constant_frac_of_dsae": 0.1872314453125,
+      "hotflat_frac_of_dsae": 0.0813720703125
+    },
+    {
+      "layer": 0,
+      "kind": "resid",
+      "constant": 6696,
+      "hotflat": 2106,
+      "kept_frac": 0.31451612903225806,
+      "constant_frac_of_dsae": 0.1634765625,
+      "hotflat_frac_of_dsae": 0.051416015625
+    },
+    {
+      "layer": 1,
+      "kind": "attn",
+      "constant": 506,
+      "hotflat": 255,
+      "kept_frac": 0.5039525691699605,
+      "constant_frac_of_dsae": 0.012353515625,
+      "hotflat_frac_of_dsae": 0.0062255859375
+    },
+    {
+      "layer": 1,
+      "kind": "mlp",
+      "constant": 5208,
+      "hotflat": 863,
+      "kept_frac": 0.16570660522273425,
+      "constant_frac_of_dsae": 0.1271484375,
+      "hotflat_frac_of_dsae": 0.0210693359375
+    },
+    {
+      "layer": 1,
+      "kind": "resid",
+      "constant": 7650,
+      "hotflat": 1373,
+      "kept_frac": 0.17947712418300654,
+      "constant_frac_of_dsae": 0.186767578125,
+      "hotflat_frac_of_dsae": 0.0335205078125
+    },
+    {
+      "layer": 2,
+      "kind": "attn",
+      "constant": 762,
+      "hotflat": 314,
+      "kept_frac": 0.4120734908136483,
+      "constant_frac_of_dsae": 0.018603515625,
+      "hotflat_frac_of_dsae": 0.007666015625
+    },
+    {
+      "layer": 2,
+      "kind": "mlp",
+      "constant": 4897,
+      "hotflat": 633,
+      "kept_frac": 0.12926281396773534,
+      "constant_frac_of_dsae": 0.1195556640625,
+      "hotflat_frac_of_dsae": 0.0154541015625
+    },
+    {
+      "layer": 2,
+      "kind": "resid",
+      "constant": 6873,
+      "hotflat": 1065,
+      "kept_frac": 0.15495416848537757,
+      "constant_frac_of_dsae": 0.1677978515625,
+      "hotflat_frac_of_dsae": 0.0260009765625
+    },
+    {
+      "layer": 3,
+      "kind": "attn",
+      "constant": 877,
+      "hotflat": 324,
+      "kept_frac": 0.3694412770809578,
+      "constant_frac_of_dsae": 0.0214111328125,
+      "hotflat_frac_of_dsae": 0.00791015625
+    },
+    {
+      "layer": 3,
+      "kind": "mlp",
+      "constant": 5178,
+      "hotflat": 832,
+      "kept_frac": 0.16067979915025107,
+      "constant_frac_of_dsae": 0.126416015625,
+      "hotflat_frac_of_dsae": 0.0203125
+    },
+    {
+      "layer": 3,
+      "kind": "resid",
+      "constant": 6961,
+      "hotflat": 1067,
+      "kept_frac": 0.15328257434276685,
+      "constant_frac_of_dsae": 0.1699462890625,
+      "hotflat_frac_of_dsae": 0.0260498046875
+    },
+    {
+      "layer": 4,
+      "kind": "attn",
+      "constant": 1158,
+      "hotflat": 371,
+      "kept_frac": 0.32037996545768566,
+      "constant_frac_of_dsae": 0.028271484375,
+      "hotflat_frac_of_dsae": 0.0090576171875
+    },
+    {
+      "layer": 4,
+      "kind": "mlp",
+      "constant": 5106,
+      "hotflat": 909,
+      "kept_frac": 0.17802585193889542,
+      "constant_frac_of_dsae": 0.124658203125,
+      "hotflat_frac_of_dsae": 0.0221923828125
+    },
+    {
+      "layer": 4,
+      "kind": "resid",
+      "constant": 6795,
+      "hotflat": 1028,
+      "kept_frac": 0.15128771155261223,
+      "constant_frac_of_dsae": 0.1658935546875,
+      "hotflat_frac_of_dsae": 0.02509765625
+    },
+    {
+      "layer": 5,
+      "kind": "attn",
+      "constant": 818,
+      "hotflat": 300,
+      "kept_frac": 0.36674816625916873,
+      "constant_frac_of_dsae": 0.019970703125,
+      "hotflat_frac_of_dsae": 0.00732421875
+    },
+    {
+      "layer": 5,
+      "kind": "mlp",
+      "constant": 4251,
+      "hotflat": 835,
+      "kept_frac": 0.19642437073629734,
+      "constant_frac_of_dsae": 0.1037841796875,
+      "hotflat_frac_of_dsae": 0.0203857421875
+    },
+    {
+      "layer": 5,
+      "kind": "resid",
+      "constant": 5862,
+      "hotflat": 828,
+      "kept_frac": 0.14124872057318322,
+      "constant_frac_of_dsae": 0.143115234375,
+      "hotflat_frac_of_dsae": 0.02021484375
+    },
+    {
+      "layer": 6,
+      "kind": "attn",
+      "constant": 772,
+      "hotflat": 293,
+      "kept_frac": 0.3795336787564767,
+      "constant_frac_of_dsae": 0.01884765625,
+      "hotflat_frac_of_dsae": 0.0071533203125
+    },
+    {
+      "layer": 6,
+      "kind": "mlp",
+      "constant": 3408,
+      "hotflat": 842,
+      "kept_frac": 0.24706572769953053,
+      "constant_frac_of_dsae": 0.083203125,
+      "hotflat_frac_of_dsae": 0.020556640625
+    },
+    {
+      "layer": 6,
+      "kind": "resid",
+      "constant": 5164,
+      "hotflat": 852,
+      "kept_frac": 0.16498838109992253,
+      "constant_frac_of_dsae": 0.12607421875,
+      "hotflat_frac_of_dsae": 0.02080078125
+    },
+    {
+      "layer": 7,
+      "kind": "attn",
+      "constant": 658,
+      "hotflat": 242,
+      "kept_frac": 0.3677811550151976,
+      "constant_frac_of_dsae": 0.016064453125,
+      "hotflat_frac_of_dsae": 0.005908203125
+    },
+    {
+      "layer": 7,
+      "kind": "mlp",
+      "constant": 2654,
+      "hotflat": 967,
+      "kept_frac": 0.3643556895252449,
+      "constant_frac_of_dsae": 0.064794921875,
+      "hotflat_frac_of_dsae": 0.0236083984375
+    },
+    {
+      "layer": 7,
+      "kind": "resid",
+      "constant": 3883,
+      "hotflat": 1000,
+      "kept_frac": 0.25753283543651817,
+      "constant_frac_of_dsae": 0.0947998046875,
+      "hotflat_frac_of_dsae": 0.0244140625
+    },
+    {
+      "layer": 8,
+      "kind": "attn",
+      "constant": 457,
+      "hotflat": 227,
+      "kept_frac": 0.49671772428884026,
+      "constant_frac_of_dsae": 0.0111572265625,
+      "hotflat_frac_of_dsae": 0.0055419921875
+    },
+    {
+      "layer": 8,
+      "kind": "mlp",
+      "constant": 2035,
+      "hotflat": 838,
+      "kept_frac": 0.4117936117936118,
+      "constant_frac_of_dsae": 0.0496826171875,
+      "hotflat_frac_of_dsae": 0.020458984375
+    },
+    {
+      "layer": 8,
+      "kind": "resid",
+      "constant": 2842,
+      "hotflat": 947,
+      "kept_frac": 0.3332160450387051,
+      "constant_frac_of_dsae": 0.069384765625,
+      "hotflat_frac_of_dsae": 0.0231201171875
+    },
+    {
+      "layer": 9,
+      "kind": "attn",
+      "constant": 354,
+      "hotflat": 215,
+      "kept_frac": 0.6073446327683616,
+      "constant_frac_of_dsae": 0.008642578125,
+      "hotflat_frac_of_dsae": 0.0052490234375
+    },
+    {
+      "layer": 9,
+      "kind": "mlp",
+      "constant": 1779,
+      "hotflat": 666,
+      "kept_frac": 0.37436762225969644,
+      "constant_frac_of_dsae": 0.0434326171875,
+      "hotflat_frac_of_dsae": 0.016259765625
+    },
+    {
+      "layer": 9,
+      "kind": "resid",
+      "constant": 2433,
+      "hotflat": 940,
+      "kept_frac": 0.38635429510891905,
+      "constant_frac_of_dsae": 0.0593994140625,
+      "hotflat_frac_of_dsae": 0.02294921875
+    },
+    {
+      "layer": 10,
+      "kind": "attn",
+      "constant": 294,
+      "hotflat": 213,
+      "kept_frac": 0.7244897959183674,
+      "constant_frac_of_dsae": 0.007177734375,
+      "hotflat_frac_of_dsae": 0.0052001953125
+    },
+    {
+      "layer": 10,
+      "kind": "mlp",
+      "constant": 1354,
+      "hotflat": 398,
+      "kept_frac": 0.29394387001477107,
+      "constant_frac_of_dsae": 0.033056640625,
+      "hotflat_frac_of_dsae": 0.009716796875
+    }
+  ]
+}

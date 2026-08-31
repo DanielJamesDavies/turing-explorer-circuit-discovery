@@ -1,0 +1,9 @@
+{"latent": 386, "set": "discovered", "n": 217, "cf_bare": 0.6432, "cf_amp": 1.2529, "sup": 0.9892, "secs": 32.3}
+{"latent": 386, "set": "random0", "n": 217, "cf_amp": 0.0512, "secs": 28.7}
+{"latent": 386, "set": "random1", "n": 217, "cf_amp": 0.2159, "secs": 26.1}
+{"latent": 2927, "set": "discovered", "n": 142, "cf_bare": 0.5502, "cf_amp": 0.8956, "sup": 1.0016, "secs": 29.1}
+{"latent": 2927, "set": "random0", "n": 142, "cf_amp": 0.5002, "secs": 27.9}
+{"latent": 2927, "set": "random1", "n": 142, "cf_amp": -0.0473, "secs": 28.7}
+{"latent": 7019, "set": "discovered", "n": 225, "cf_bare": 0.6054, "cf_amp": 1.1706, "sup": 1.0, "secs": 26.2}
+{"latent": 7019, "set": "random0", "n": 225, "cf_amp": 0.0166, "secs": 29.1}
+{"latent": 7019, "set": "random1", "n": 225, "cf_amp": 0.0472, "secs": 27.1}

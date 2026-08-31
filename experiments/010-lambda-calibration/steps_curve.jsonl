@@ -1,0 +1,15 @@
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "steps": 200, "n": 1765, "free0": 0.936, "freeN_topk": 1.1486, "freeM_topk": 1.1159}
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "steps": 400, "n": 1307, "free0": 0.8877, "freeN_topk": 1.0894, "freeM_topk": 1.0423}
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "steps": 600, "n": 1155, "free0": 0.9143, "freeN_topk": 1.1184, "freeM_topk": 1.0616}
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "steps": 800, "n": 1081, "free0": 0.901, "freeN_topk": 1.0664, "freeM_topk": 1.0374}
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "steps": 1000, "n": 1059, "free0": 0.8889, "freeN_topk": 1.0109, "freeM_topk": 0.994}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "steps": 200, "n": 56490, "free0": 0.9195, "freeN_topk": 1.1553, "freeM_topk": -2.5}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "steps": 400, "n": 21932, "free0": 0.7483, "freeN_topk": 0.9184, "freeM_topk": 0.8}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "steps": 600, "n": 10318, "free0": 0.8425, "freeN_topk": 0.9806, "freeM_topk": -14.5}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "steps": 800, "n": 5920, "free0": 0.792, "freeN_topk": 1.0117, "freeM_topk": -26.4}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "steps": 1000, "n": 4341, "free0": 0.8598, "freeN_topk": 1.7029, "freeM_topk": -52.8}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "steps": 200, "n": 59139, "free0": 0.5494, "freeN_topk": 0.9198, "freeM_topk": 0.8906}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "steps": 400, "n": 26256, "free0": 0.6931, "freeN_topk": 0.9235, "freeM_topk": 0.9242}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "steps": 600, "n": 16033, "free0": 0.4939, "freeN_topk": 0.7285, "freeM_topk": 0.7999}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "steps": 800, "n": 12167, "free0": 0.5658, "freeN_topk": 0.7164, "freeM_topk": 0.7874}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "steps": 1000, "n": 10614, "free0": 0.3955, "freeN_topk": 0.5149, "freeM_topk": 0.785}

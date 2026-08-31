@@ -1,0 +1,22 @@
+# Hypothesis: L8/2016 detects POLAR DOUBLE BONDS TO A HETEROATOM
+# (C=O, C=N, S=O) -- electrophilic centres for nucleophilic attack --
+# NOT "amides" specifically and NOT chemistry vocabulary in general.
+== POSITIVE: polar C=O / C=N / S=O named (predict: fires)
+The ketone reacted slowly because the carbonyl was sterically hindered.
+Treatment of the acid gave the amide, which showed a strong CO stretch.
+The imine was formed by condensation of the aldehyde with the amine.
+Oxidation of the sulfide produced the sulfoxide in good yield.
+Glycine has an amino group and a carboxyl group on the same carbon.
+The ester was hydrolysed to the carboxylic acid under reflux.
+== NEGATIVE: chemistry, but NO polar double bond (predict: quiet)
+The alkene underwent hydrogenation to give the alkane.
+The benzene ring was substituted with a methyl group.
+The alkyl chain was extended by two carbon atoms.
+Sodium chloride dissolved readily in the aqueous phase.
+The alkane was purified by distillation at reduced pressure.
+== CONTROL: reaction language, no functional group (predict: quiet)
+The reaction was stirred overnight and then quenched with water.
+Nucleophilic attack proceeds with inversion of configuration.
+== CONTROL: non-chemistry (predict: silent)
+She walked to the shop and bought some bread for the weekend.
+The company reported strong quarterly sales and raised its guidance.

@@ -1,0 +1,6 @@
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "stop_at": 200, "n": 1991, "free0": 0.9638, "freeN_topk": 1.1498, "freeM_topk": 1.0954, "flips_last25": 8.56, "temperature": 0.2228}
+{"comp_idx": 8, "latent": 17043, "label": "L2-resid", "stop_at": 400, "n": 1736, "free0": 0.9903, "freeN_topk": 1.1643, "freeM_topk": 1.1171, "flips_last25": 2.28, "temperature": 0.0496}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "stop_at": 200, "n": 54368, "free0": 0.9552, "freeN_topk": 1.1631, "freeM_topk": -2.0, "flips_last25": 348.48, "temperature": 0.2228}
+{"comp_idx": 25, "latent": 4085, "label": "L8-mlp", "stop_at": 400, "n": 31557, "free0": 0.9391, "freeN_topk": 1.0524, "freeM_topk": -11.1, "flips_last25": 151.48, "temperature": 0.0496}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "stop_at": 200, "n": 63819, "free0": 0.9049, "freeN_topk": 1.0056, "freeM_topk": 1.005, "flips_last25": 519.12, "temperature": 0.2228}
+{"comp_idx": 32, "latent": 36965, "label": "L10-resid", "stop_at": 400, "n": 40684, "free0": 0.9114, "freeN_topk": 0.9011, "freeM_topk": 0.9254, "flips_last25": 123.04, "temperature": 0.0496}

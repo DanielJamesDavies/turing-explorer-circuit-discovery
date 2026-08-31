@@ -1,0 +1,90 @@
+{"layer": 6, "latent": 14044, "arm": "triamp400", "n": 86, "ampF0": 1.0608, "ampFM": 1.0984, "sup": 0.7928, "cf_amp": 1.2625, "a_pos_ho": 4.562, "secs": 59.0}
+{"layer": 6, "latent": 14044, "arm": "gate400", "n": 129, "ampF0": 1.0988, "ampFM": 0.6831, "sup": 0.8014, "cf_amp": 0.6891, "a_pos_ho": 4.562, "secs": 55.2}
+{"layer": 6, "latent": 14044, "arm": "anchor_support", "n": 83683, "anchor_support_rate": 0.00396}
+{"layer": 6, "latent": 14044, "arm": "null0", "n": 86, "ampF0": 0.01, "ampFM": 0.0492, "sup": 0.0, "cf_amp": -0.0013, "a_pos_ho": 4.562, "secs": 52.8}
+{"layer": 6, "latent": 14044, "arm": "null1", "n": 86, "ampF0": -0.0038, "ampFM": 0.0464, "sup": -0.0411, "cf_amp": -0.0017, "a_pos_ho": 4.562, "secs": 56.7}
+{"layer": 6, "latent": 14044, "arm": "null2", "n": 86, "ampF0": 0.0123, "ampFM": 0.0027, "sup": 0.0068, "cf_amp": -0.0009, "a_pos_ho": 4.562, "secs": 57.2}
+{"layer": 6, "latent": 5287, "arm": "triamp400", "n": 447, "ampF0": 0.3772, "ampFM": 0.4811, "sup": 0.9933, "cf_amp": 0.2115, "a_pos_ho": 1.305, "secs": 59.6}
+{"layer": 6, "latent": 5287, "arm": "gate400", "n": 529, "ampF0": 0.3473, "ampFM": 0.3424, "sup": 0.9401, "cf_amp": -0.0131, "a_pos_ho": 1.305, "secs": 58.4}
+{"layer": 6, "latent": 5287, "arm": "anchor_support", "n": 84893, "anchor_support_rate": 0.00943}
+{"layer": 6, "latent": 5287, "arm": "null0", "n": 447, "ampF0": 0.0, "ampFM": 0.0249, "sup": 0.0299, "cf_amp": 0.0227, "a_pos_ho": 1.305, "secs": 56.9}
+{"layer": 6, "latent": 5287, "arm": "null1", "n": 447, "ampF0": 0.0, "ampFM": 0.0128, "sup": -0.006, "cf_amp": 0.0166, "a_pos_ho": 1.305, "secs": 56.6}
+{"layer": 6, "latent": 5287, "arm": "null2", "n": 447, "ampF0": 0.0, "ampFM": 0.0226, "sup": 0.018, "cf_amp": -0.007, "a_pos_ho": 1.305, "secs": 58.9}
+{"layer": 4, "latent": 16193, "arm": "triamp400", "n": 78, "ampF0": 1.2466, "ampFM": 1.0158, "sup": 0.7466, "cf_amp": 0.4681, "a_pos_ho": 6.938, "secs": 55.7}
+{"layer": 4, "latent": 16193, "arm": "gate400", "n": 110, "ampF0": 1.1553, "ampFM": 0.7049, "sup": 0.8491, "cf_amp": 0.2181, "a_pos_ho": 6.938, "secs": 49.4}
+{"layer": 4, "latent": 16193, "arm": "anchor_support", "n": 54415, "anchor_support_rate": 0.0141}
+{"layer": 4, "latent": 16193, "arm": "null0", "n": 78, "ampF0": -0.0069, "ampFM": 0.0092, "sup": 0.0045, "cf_amp": 0.0006, "a_pos_ho": 6.938, "secs": 48.4}
+{"layer": 4, "latent": 16193, "arm": "null1", "n": 78, "ampF0": 0.0077, "ampFM": 0.0883, "sup": 0.0045, "cf_amp": -0.0003, "a_pos_ho": 6.938, "secs": 51.4}
+{"layer": 4, "latent": 16193, "arm": "null2", "n": 78, "ampF0": 0.0191, "ampFM": 0.0461, "sup": 0.0225, "cf_amp": 0.0004, "a_pos_ho": 6.938, "secs": 50.9}
+{"layer": 4, "latent": 9025, "arm": "triamp400", "n": 118, "ampF0": 0.6149, "ampFM": 0.5544, "sup": 0.9612, "cf_amp": 0.1519, "a_pos_ho": 2.766, "secs": 48.2}
+{"layer": 4, "latent": 9025, "arm": "gate400", "n": 108, "ampF0": 0.5269, "ampFM": 0.3509, "sup": 0.8672, "cf_amp": 0.0598, "a_pos_ho": 2.766, "secs": 48.1}
+{"layer": 4, "latent": 9025, "arm": "anchor_support", "n": 54310, "anchor_support_rate": 0.00333}
+{"layer": 4, "latent": 9025, "arm": "null0", "n": 118, "ampF0": 0.0553, "ampFM": 0.0912, "sup": 0.0169, "cf_amp": 0.0258, "a_pos_ho": 2.766, "secs": 47.9}
+{"layer": 4, "latent": 9025, "arm": "null1", "n": 118, "ampF0": 0.0015, "ampFM": 0.0123, "sup": -0.0056, "cf_amp": -0.0032, "a_pos_ho": 2.766, "secs": 51.5}
+{"layer": 4, "latent": 9025, "arm": "null2", "n": 118, "ampF0": 0.0144, "ampFM": 0.0211, "sup": -0.0056, "cf_amp": 0.0057, "a_pos_ho": 2.766, "secs": 52.9}
+{"layer": 4, "latent": 8251, "arm": "triamp400", "n": 71, "ampF0": 1.0599, "ampFM": 1.1712, "sup": 0.9147, "cf_amp": 0.1284, "a_pos_ho": 5.219, "secs": 51.5}
+{"layer": 4, "latent": 8251, "arm": "gate400", "n": 88, "ampF0": 1.1198, "ampFM": 1.0306, "sup": 0.951, "cf_amp": 0.0912, "a_pos_ho": 5.219, "secs": 52.2}
+{"layer": 4, "latent": 8251, "arm": "anchor_support", "n": 55095, "anchor_support_rate": 0.00508}
+{"layer": 4, "latent": 8251, "arm": "null0", "n": 71, "ampF0": 0.0006, "ampFM": 0.0115, "sup": 0.0, "cf_amp": -0.0009, "a_pos_ho": 5.219, "secs": 51.8}
+{"layer": 4, "latent": 8251, "arm": "null1", "n": 71, "ampF0": -0.0002, "ampFM": 0.0036, "sup": -0.006, "cf_amp": -0.0013, "a_pos_ho": 5.219, "secs": 51.6}
+{"layer": 4, "latent": 8251, "arm": "null2", "n": 71, "ampF0": -0.0006, "ampFM": 0.0071, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 5.219, "secs": 52.7}
+{"layer": 6, "latent": 5011, "arm": "triamp400", "n": 77, "ampF0": 0.6488, "ampFM": 0.595, "sup": 0.8244, "cf_amp": 0.6843, "a_pos_ho": 1.891, "secs": 57.8}
+{"layer": 6, "latent": 5011, "arm": "gate400", "n": 130, "ampF0": 0.624, "ampFM": 0.4277, "sup": 0.9427, "cf_amp": 0.2576, "a_pos_ho": 1.891, "secs": 56.6}
+{"layer": 6, "latent": 5011, "arm": "anchor_support", "n": 83849, "anchor_support_rate": 0.00599}
+{"layer": 6, "latent": 5011, "arm": "null0", "n": 77, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0041, "cf_amp": 0.0, "a_pos_ho": 1.891, "secs": 57.6}
+{"layer": 6, "latent": 5011, "arm": "null1", "n": 77, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0083, "cf_amp": 0.0016, "a_pos_ho": 1.891, "secs": 57.0}
+{"layer": 6, "latent": 5011, "arm": "null2", "n": 77, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0041, "cf_amp": 0.0005, "a_pos_ho": 1.891, "secs": 57.5}
+{"layer": 6, "latent": 15932, "arm": "triamp400", "n": 95, "ampF0": 1.0476, "ampFM": 0.9603, "sup": 1.0, "cf_amp": 0.1656, "a_pos_ho": 3.938, "secs": 56.3}
+{"layer": 6, "latent": 15932, "arm": "gate400", "n": 148, "ampF0": 0.8651, "ampFM": 0.881, "sup": 1.0, "cf_amp": 0.0764, "a_pos_ho": 3.938, "secs": 56.0}
+{"layer": 6, "latent": 15932, "arm": "anchor_support", "n": 80584, "anchor_support_rate": 0.01824}
+{"layer": 6, "latent": 15932, "arm": "null0", "n": 95, "ampF0": 0.004, "ampFM": 0.0, "sup": -0.0079, "cf_amp": 0.0015, "a_pos_ho": 3.938, "secs": 52.3}
+{"layer": 6, "latent": 15932, "arm": "null1", "n": 95, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 3.938, "secs": 52.2}
+{"layer": 6, "latent": 15932, "arm": "null2", "n": 95, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0079, "cf_amp": -0.0028, "a_pos_ho": 3.938, "secs": 54.2}
+{"layer": 4, "latent": 16193, "arm": "anchor_support", "n": 54415, "anchor_support_rate": 0.0141}
+{"layer": 4, "latent": 16193, "arm": "nullsup0", "n": 78, "ampF0": 0.211, "ampFM": 0.863, "sup": -0.1171, "cf_amp": 0.0156, "a_pos_ho": 6.938, "secs": 52.3}
+{"layer": 4, "latent": 16193, "arm": "nullsup1", "n": 78, "ampF0": 0.2646, "ampFM": 0.6206, "sup": -0.0631, "cf_amp": 0.0371, "a_pos_ho": 6.938, "secs": 48.7}
+{"layer": 4, "latent": 16193, "arm": "nullsup2", "n": 78, "ampF0": 0.356, "ampFM": 0.6364, "sup": -0.1126, "cf_amp": 0.034, "a_pos_ho": 6.938, "secs": 50.3}
+{"layer": 4, "latent": 9025, "arm": "anchor_support", "n": 54310, "anchor_support_rate": 0.00333}
+{"layer": 4, "latent": 9025, "arm": "nullsup0", "n": 118, "ampF0": 0.3935, "ampFM": 0.6, "sup": 0.1469, "cf_amp": -0.0771, "a_pos_ho": 2.766, "secs": 49.2}
+{"layer": 4, "latent": 9025, "arm": "nullsup1", "n": 118, "ampF0": 0.3541, "ampFM": 0.5825, "sup": 0.1356, "cf_amp": -0.1086, "a_pos_ho": 2.766, "secs": 52.2}
+{"layer": 4, "latent": 9025, "arm": "nullsup2", "n": 118, "ampF0": 0.4905, "ampFM": 0.7544, "sup": 0.1751, "cf_amp": -0.0852, "a_pos_ho": 2.766, "secs": 50.8}
+{"layer": 4, "latent": 8251, "arm": "anchor_support", "n": 55095, "anchor_support_rate": 0.00508}
+{"layer": 4, "latent": 8251, "arm": "nullsup0", "n": 71, "ampF0": 0.1425, "ampFM": 0.4132, "sup": -0.0838, "cf_amp": 0.0006, "a_pos_ho": 5.219, "secs": 52.8}
+{"layer": 4, "latent": 8251, "arm": "nullsup1", "n": 71, "ampF0": 0.2106, "ampFM": 0.4926, "sup": 0.0539, "cf_amp": -0.0063, "a_pos_ho": 5.219, "secs": 52.2}
+{"layer": 4, "latent": 8251, "arm": "nullsup2", "n": 71, "ampF0": 0.2556, "ampFM": 0.5568, "sup": 0.024, "cf_amp": -0.012, "a_pos_ho": 5.219, "secs": 51.9}
+{"layer": 6, "latent": 14044, "arm": "anchor_support", "n": 83683, "anchor_support_rate": 0.00396}
+{"layer": 6, "latent": 14044, "arm": "nullsup0", "n": 86, "ampF0": 0.6999, "ampFM": 1.5137, "sup": -0.1781, "cf_amp": 0.0361, "a_pos_ho": 4.562, "secs": 58.2}
+{"layer": 6, "latent": 14044, "arm": "nullsup1", "n": 86, "ampF0": 0.4986, "ampFM": 0.9016, "sup": -0.2603, "cf_amp": 0.0026, "a_pos_ho": 4.562, "secs": 56.5}
+{"layer": 6, "latent": 14044, "arm": "nullsup2", "n": 86, "ampF0": 0.7607, "ampFM": 1.2077, "sup": -0.2945, "cf_amp": 0.1048, "a_pos_ho": 4.562, "secs": 53.9}
+{"layer": 6, "latent": 5011, "arm": "anchor_support", "n": 83849, "anchor_support_rate": 0.00599}
+{"layer": 6, "latent": 5011, "arm": "nullsup0", "n": 77, "ampF0": 0.5455, "ampFM": 0.5, "sup": -0.1074, "cf_amp": 0.0235, "a_pos_ho": 1.891, "secs": 52.8}
+{"layer": 6, "latent": 5011, "arm": "nullsup1", "n": 77, "ampF0": 0.5186, "ampFM": 0.5537, "sup": -0.0248, "cf_amp": 0.0208, "a_pos_ho": 1.891, "secs": 54.0}
+{"layer": 6, "latent": 5011, "arm": "nullsup2", "n": 77, "ampF0": 0.595, "ampFM": 0.4814, "sup": -0.0289, "cf_amp": 0.0501, "a_pos_ho": 1.891, "secs": 54.1}
+{"layer": 6, "latent": 15932, "arm": "anchor_support", "n": 80584, "anchor_support_rate": 0.01824}
+{"layer": 6, "latent": 15932, "arm": "nullsup0", "n": 95, "ampF0": 0.0913, "ampFM": 0.0, "sup": -0.0238, "cf_amp": 0.0054, "a_pos_ho": 3.938, "secs": 52.7}
+{"layer": 6, "latent": 15932, "arm": "nullsup1", "n": 95, "ampF0": 0.1508, "ampFM": 0.0, "sup": 0.0238, "cf_amp": 0.0395, "a_pos_ho": 3.938, "secs": 53.1}
+{"layer": 6, "latent": 15932, "arm": "nullsup2", "n": 95, "ampF0": 0.3175, "ampFM": 0.0397, "sup": 0.119, "cf_amp": 0.0323, "a_pos_ho": 3.938, "secs": 52.6}
+{"layer": 4, "latent": 16193, "arm": "anchor_support", "n": 54415, "anchor_support_rate": 0.0141}
+{"layer": 4, "latent": 9025, "arm": "anchor_support", "n": 54310, "anchor_support_rate": 0.00333}
+{"layer": 4, "latent": 8251, "arm": "anchor_support", "n": 55095, "anchor_support_rate": 0.00508}
+{"layer": 6, "latent": 14044, "arm": "anchor_support", "n": 83683, "anchor_support_rate": 0.00396}
+{"layer": 6, "latent": 5011, "arm": "anchor_support", "n": 83849, "anchor_support_rate": 0.00599}
+{"layer": 6, "latent": 15932, "arm": "anchor_support", "n": 80584, "anchor_support_rate": 0.01824}
+{"layer": 4, "latent": 16193, "arm": "anchor_support", "n": 54415, "anchor_support_rate": 0.0141}
+{"layer": 4, "latent": 16193, "arm": "coact_raw", "n": 78, "ampF0": 0.7671, "ampFM": 0.5942, "sup": 0.6599, "cf_amp": 0.084, "a_pos_ho": 6.938, "secs": 0.0}
+{"layer": 4, "latent": 16193, "arm": "coact_amp", "n": 78, "ampF0": 1.2649, "ampFM": 1.3162, "sup": 0.6599, "cf_amp": 0.6318, "a_pos_ho": 6.938, "secs": 56.4}
+{"layer": 4, "latent": 9025, "arm": "anchor_support", "n": 54310, "anchor_support_rate": 0.00333}
+{"layer": 4, "latent": 9025, "arm": "coact_raw", "n": 118, "ampF0": 0.1539, "ampFM": 0.0702, "sup": 0.7627, "cf_amp": 0.0598, "a_pos_ho": 2.766, "secs": 0.0}
+{"layer": 4, "latent": 9025, "arm": "coact_amp", "n": 118, "ampF0": 0.2267, "ampFM": 0.3333, "sup": 0.7627, "cf_amp": 0.1664, "a_pos_ho": 2.766, "secs": 55.0}
+{"layer": 4, "latent": 8251, "arm": "anchor_support", "n": 55095, "anchor_support_rate": 0.00508}
+{"layer": 4, "latent": 8251, "arm": "coact_raw", "n": 71, "ampF0": 0.5357, "ampFM": 0.5293, "sup": 0.9049, "cf_amp": 0.0177, "a_pos_ho": 5.219, "secs": 0.0}
+{"layer": 4, "latent": 8251, "arm": "coact_amp", "n": 71, "ampF0": 1.0539, "ampFM": 1.1467, "sup": 0.9049, "cf_amp": 0.5988, "a_pos_ho": 5.219, "secs": 56.2}
+{"layer": 6, "latent": 14044, "arm": "anchor_support", "n": 83683, "anchor_support_rate": 0.00396}
+{"layer": 6, "latent": 14044, "arm": "coact_raw", "n": 86, "ampF0": 0.1292, "ampFM": -0.2131, "sup": 0.5445, "cf_amp": 0.2692, "a_pos_ho": 4.562, "secs": 0.0}
+{"layer": 6, "latent": 14044, "arm": "coact_amp", "n": 86, "ampF0": 1.1747, "ampFM": 1.4372, "sup": 0.5445, "cf_amp": 1.4385, "a_pos_ho": 4.562, "secs": 56.6}
+{"layer": 6, "latent": 5011, "arm": "anchor_support", "n": 83849, "anchor_support_rate": 0.00599}
+{"layer": 6, "latent": 5011, "arm": "coact_raw", "n": 77, "ampF0": 0.1529, "ampFM": 0.1715, "sup": 0.8182, "cf_amp": 0.0773, "a_pos_ho": 1.891, "secs": 0.0}
+{"layer": 6, "latent": 5011, "arm": "coact_amp", "n": 77, "ampF0": 0.8223, "ampFM": 0.781, "sup": 0.8182, "cf_amp": 1.384, "a_pos_ho": 1.891, "secs": 60.2}
+{"layer": 6, "latent": 15932, "arm": "anchor_support", "n": 80584, "anchor_support_rate": 0.01824}
+{"layer": 6, "latent": 15932, "arm": "coact_raw", "n": 95, "ampF0": 0.2698, "ampFM": 0.2143, "sup": 0.5635, "cf_amp": 0.0784, "a_pos_ho": 3.938, "secs": 0.0}
+{"layer": 6, "latent": 15932, "arm": "coact_amp", "n": 95, "ampF0": 1.0714, "ampFM": 1.1349, "sup": 0.5635, "cf_amp": 0.7663, "a_pos_ho": 3.938, "secs": 61.9}

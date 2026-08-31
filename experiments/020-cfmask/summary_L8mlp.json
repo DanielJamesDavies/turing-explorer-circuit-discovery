@@ -1,0 +1,18 @@
+{
+ "tag": "L8mlp",
+ "seed": "25/10628",
+ "layer": 8,
+ "kind": "mlp",
+ "objective": "inject",
+ "inject_lambda": 0.0003,
+ "warm": true,
+ "n_final": 31,
+ "secs": 41.3,
+ "holdout_loss": 0.0277099609375,
+ "loss_final": 0.2778492271900177,
+ "p_both": 7.25,
+ "p_gate_only": 0.7148,
+ "p_inject_only": 6.625,
+ "a_pos_ev": 6.5938,
+ "a_pos_tr": 6.5938
+}

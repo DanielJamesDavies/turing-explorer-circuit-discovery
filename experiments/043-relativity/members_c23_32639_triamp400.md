@@ -1,0 +1,65 @@
+# Member analysis: c23/32639, arm triamp400 (n=285, top 12 by alpha)
+
+Profiles over each member's OWN top contexts. peakiness ~1 =
+one-token detector; small = distributed context accumulator.
+No member was sought; classify by reading.
+
+## alpha 3.16 | L1 mlp latent 1428 | peakiness 0.04
+  peak 7.4 | use[sat=2][[ell=4]][ites=3]to[[launch=4]][[orbit=5]][ing=3][[satellite=7]][[systems=5]][that=2][util=3][ize=3][las=3]er[range=2][tracking=2][with=2][Do=2][pp=4][ler=2][data=3][and=2][other=2][remote=3][sens=3][[ing=5]][techniques=3][for=2][[accurate=4]][[ge=4]][od=2][etic=3][position=3][[ing=4]][along=3]with[[ge=4]][od=2][ynamic=1][measurements=2].[advanced=3][methods=3][also=2][provide=2][us=1]wi
+  peak 7.4 | use[sat=2][[ell=4]][ites=3]to[[launch=4]][[orbit=5]][ing=3][[satellite=7]][[systems=5]][that=2][util=3][ize=3][las=3]er[range=2][tracking=2][with=2][Do=2][pp=4][ler=2][data=3][and=2][other=2][remote=3][sens=3][[ing=5]][techniques=3][for=2][[accurate=4]][[ge=4]][od=2][etic=3][position=3][[ing=4]][along=3]with[[ge=4]][od=2][ynamic=1][measurements=2].[advanced=3][methods=3][also=2][provide=2][us=1]wi
+  peak 7.3 | era[[pe=4]][ut=3][ic=3][strateg=2][ies=3]that[target=3][specific=2][auto=2][[imm=4]][[une=6]][[path=4]][[ways=4]][may=2]offerprom[ising=2]out[comes=2]forimpro[ving=2][[cancer=5]][[treat=6]][[ments=5]][and=2][potentially=2]tre[ating=4]ne[[uro=4]][der=3][mic=3][[synd=4]][[rome=4]][[patients=6]].<s>The[auto=2][[imm=5]][[une=5]][[disease=7]][ne=3][[uro=5]][de=2][gener=4][[ative=4]][[dise=6]][[ases=4]]
+
+## alpha 3.11 | L2 resid latent 22635 | peakiness 0.38
+  peak 7.5 | iswhenthenew[[mill=7]]enial[[mill=6]]eniasawtheestablishmentofsustainablepracticesbecomingincreasinglyimportantforbusinessestochallengethisbalanceagainstthestatusbarchanges.<s>Agrowingrecognitionofglobalinterdependenceandarisinginterestinsustainabilitybegantoemergearoundtheturnofthe[[mill=7]]enni
+  peak 7.4 | theUS,[[mill=7]]ipsand[[mil=5]]oarecommonlyusedasmeasurementsinscientificandculinarysettingsotherthan[[mill=6]]iums.,anotter(oz)referstoanavoirdupoispound,whichisthemostcommonunitofweightbothinconventionalandimperialsystems,andalsoservesasameasureofvolumefor
+  peak 7.4 | theUS,[[mill=7]]ipsand[[mil=5]]oarecommonlyusedasmeasurementsinscientificandculinarysettingsotherthan[[mill=6]]iums.,anotter(oz)referstoanavoirdupoispound,whichisthemostcommonunitofweightbothinconventionalandimperialsystems,andalsoservesasameasureofvolumefor
+
+## alpha 2.93 | L1 resid latent 2102 | peakiness 0.30
+  peak 3.1 | ground[[bre=3]]aking[investig=1]ationswouldtakeusbeyondthesurfacelevelintothefuture.<s>The[[year=2]]1865markedthebeginningofMendel'sgroundbreakingworkinclassicalgenetics.extensiveresearchonpeaplantsledtothepublicationof"[Ex=1]perimentsonPlantHybridization,"
+  peak 3.0 | photoelectriceffectwasonemanifestationfromthe[[year=2]]'Sfinal[[year=2]],attainedbythis[[year=3]];sfor.<s>Inthe[[year=2]]thatfollowed,AlbertEinsteinmadehismostproductiveattemptattheoreticalphysics:hisAnnusMirabilis—the"miracle[[year=2]]."ThefirstwasanAprilpaper
+  peak 2.9 | valenceandincidencearesignificantindicatorsofthiscondition.,prevalenceratesdeterminethepercentageofapopulationthathaveinherited'acondition'within-definedtimeperiods;whileduration([month=1]or[[year=3]])isdefinedasperiod(one[month=1]toSeptembereach[[year=3]]),intervals(quarterlyor[annual=1])
+
+## alpha 2.82 | L1 resid latent 24600 | peakiness 0.17
+  peak 6.6 | expressingdates,considertheregionalstandard—aformatthatincludes[[day=6]],[[month=4]],and[[year=5]],forexample,requirescommasonlywhenseparating[[day=7]]and[[year=5]].thewidelyused"Month[[day=6]],[[year=5]]"form,placethe[comma=2]afterthe[[day=6]]andbeforethe[[year=4]].contrast,the"day[[month=4]][[year=5]]"
+  peak 6.6 | instance,forthepopular"Month[[day=6]],[[year=5]]"form,putyourCOMMUNALPROVENafterthe[[day=7]]andthenbeforethe[[year=5]];whileformostforms,likethe"day[[month=4]][[year=5]]",you’llfindnoneedtore-useeither–asitalwaysdoesinsomecaseswhereyou
+  peak 6.6 | thewidelyused"Month[[day=6]],[[year=5]]"form,placethe[comma=2]afterthe[[day=7]]andbeforethe[[year=4]].contrast,the"day[[month=4]][[year=5]]"formattypicallyrequiresno[comma=2].,insomecontextslikefinancialdocuments,consistentlyusingcommasregardlessoftheformatcanpreventmisinterpretation.dopting
+
+## alpha 2.81 | L0 attn latent 39065 | peakiness 0.08
+  peak 2.3 | [[ing=2]][[factor=1]][[ing=2]][[is=1]][cru=1][cial=1][for=1][solving=1][equations=1][,=1][understanding=1][number=1][theory=1][,=1][and=1][simpl=1][ifying=1][algebraic=1][expressions=1][,=1][as=1][it=1][allows=1][mathemat=1][icians=0][and=0][students=0][al=0]ike[to=0][navigate=0][towards=0]thefundamental[building=1][blocks=0]ofthesubject.<s>###2.TheRoleofFactoringinAlgebra**.<s>Factoringisafundame
+  peak 2.3 | [[ing=2]][–=1][and=1][maintain=1][ing=1][—=1][primarily=1][mon=1][et=1][ary=1][growth=1][over=1][time=1][;=0][maintain=0][ing=1][low=1][levels=0][of=0][vol=0][atile=0]([infl=0][ation=1][ary=0])[and=0]employmentrateswhilemaintain[ing=1][fis=0]calsustainability,thereby[creating=0][for=0][ese=0][e=0][able=0]uncertaintieswithinthemarketenvironment.<s>Economicsecurityandprosperityarecrucial
+  peak 2.3 | [[ing=2]][[design=1]][is=1][essential=0][in=0][creating=1][visual=1][spect=0][acle=0][,=0][setting=1][the=0][m=0]ood[,=0][direct=0][ing=1][the=0][focus=1][,=0]undo[ing=0][,=0][etc=0][.=0][aging=1][requires=0][careful=0]considerationofambientlight[ing=0][for=0]atmospheric[light=0][ing=0][effects=0][while=0][maintain=0][ing=0][proper=0][position=0][ing=1][.=1][<s>=0][When=0]organ[izing=0][a=0]musicp
+
+## alpha 2.68 | L0 mlp latent 25103 | peakiness 0.03
+  peak 12.7 | identification[[process=9]][[begins=8]][with=5][[gather=9]][[ing=8]][[information=7]][from=5][internal=6][[records=9]][,=5][industry=5][[reports=8]][,=5][or=6][[expert=8]][[consult=8]][[ations=7]][.=2][[identification=10]][is=5][[identified=11]][,=6][[each=8]][[identified=13]][[risk=8]][is=6][[quant=7]][[ified=7]][by=5][[considering=7]][the=6][[potential=7]][impact=5][of=5][its=5][ris=4][ks=4][and
+  peak 12.7 | identification[[process=9]][[begins=8]][with=5][[gather=9]][[ing=8]][[information=7]][from=5][internal=6][[records=9]][,=5][industry=5][[reports=8]][,=5][or=6][[expert=8]][[consult=8]][[ations=7]][.=2][[identification=10]][is=5][[identified=11]][,=6][[each=8]][[identified=13]][[risk=8]][is=6][[quant=7]][[ified=7]][by=5][[considering=7]][the=6][[potential=7]][impact=5][of=5][its=5][ris=4][ks=4][and
+  peak 11.8 | [identify=3][[potential=12]][[issues=7]][[or=6]][[indicate=7]][future=4][growth=4][opportun=4][ities=4][,=2][tr=5][end=6][[analysis=8]][involves=5][[exam=8]][[ining=8]][[historical=7]][[data=8]][to=6][[identify=11]][[patterns=9]][[in=6]][[line=8]][[items=8]][such=5][[as=6]][[reven=8]][[ues=7]][,=5][exp=5][enses=5][,=4][[assets=7]][,=4][[li=6]][abilities=5][,=4][and=4][equ=2][ity=3].[approach=4][in
+
+## alpha 2.66 | L1 resid latent 24655 | peakiness 0.22
+  peak 6.2 | writingdates,itisimportanttoconsidertheregionalstandard,whichincludesday,[[month=3]]or[[year=6]]terms.example,placetheCOMMaafterthe[date=1](andbeforetheactualterm)for"Monthday/[year=2]"form,whiletypicallythereisNOCommArequiredforthe"day[[month=4]][[year=6]]"format;
+  peak 6.2 | writingdatesyoushouldconsidertheregionalstandard—aformatthatincludesday,[[month=4]]or[[year=6]],whichrequirescombsonlywhenseparating[day=1]and[[years=4]].themostpopularform"Monthday/[year=2]":followthisrulewithnoremark;forthemoreclassic"day[[month=4]][[year=6]]"format,followtherulewithoutany
+  peak 6.2 | writingdatesyoushouldconsidertheregionalstandard—aformatthatincludesday,[[month=4]]or[[year=6]],whichrequirescombsonlywhenseparating[day=1]and[[years=4]].themostpopularform"Monthday/[year=2]":followthisrulewithnoremark;forthemoreclassic"day[[month=4]][[year=6]]"format,followtherulewithoutany
+
+## alpha 2.59 | L1 attn latent 23274 | peakiness 0.02
+  peak 2.8 | [atmos=1][[pher=1]][[ic=2]][[CO=3]][[2=2]][[through=2]][[photos=2]][[yn=2]][[thesis=3]][[while=2]][[resp=2]][[iration=3]][[,=2]][[comb=2]][[ust=3]][[ion=2]][[und=2]][[decomposition=2]][[release=2]][[it=2]][[back=2]][[again=2]][[--=2]][[essentially=2]][[providing=2]][[food=2]][[for=2]][[various=2]][[organ=2]][[isms=2]][[including=2]][[living=2]][[organ=2]][[ism=1]][[species=2]][[which=1]][[depend=2
+  peak 2.8 | [atmos=1][[pher=1]][[ic=2]][[CO=3]][[2=2]][[through=2]][[photos=2]][[yn=2]][[thesis=3]][[while=2]][[resp=2]][[iration=3]][[,=2]][[comb=2]][[ust=3]][[ion=2]][[und=2]][[decomposition=2]][[release=2]][[it=2]][[back=2]][[again=2]][[--=2]][[essentially=2]][[providing=2]][[food=2]][[for=2]][[various=2]][[organ=2]][[isms=2]][[including=2]][[living=2]][[organ=2]][[ism=1]][[species=2]][[which=1]][[depend=2
+  peak 2.7 | [solar=1][[thermal=1]][[energy=2]][[systems=2]][[,=2]][[lat=2]][[ent=2]][[heat=3]][[storage=2]][[enables=2]][[the=2]][[capture=2]][[of=2]][[solar=2]][[energy=3]][[by=2]][[storing=3]][[heat=3]][[in=2]][[a=2]][[phase=2]][[-=2]][[change=3]][[material=2]][[,=2]][[which=2]][[can=2]][[be=2]][[released=2]][[to=2]][[produce=2]][[steam=2]][[and=2]][[generate=2]][[electric=2]][[ity=2]][[even=2]][[when=2]][[
+
+## alpha 2.52 | L1 resid latent 15887 | peakiness 0.23
+  peak 3.7 | photoelectriceffectwasonemanifestationfromthe[[year=4]]'Sfinal[[year=4]],attainedbythis[[year=4]];sfor.<s>Inthe[[year=4]]thatfollowed,AlbertEinsteinmadehismostproductiveattemptattheoreticalphysics:hisAnnusMirabilis—the"miracle[[year=3]]."ThefirstwasanAprilpaper
+  peak 3.4 | writingdowndates,considertheregionalstandard—anexampleisaformthatincludes[[day=2]]insteadofmonthor[[year=2]].instance,forthepopular"Month[day=1],[[year=3]]"form,putyourCOMMUNALPROVENafterthe[[day=2]]andthenbeforethe[[year=3]];whileformostforms,likethe"daymonth
+  peak 3.4 | writingdowndates,considertheregionalstandard—anexampleisaformthatincludes[[day=2]]insteadofmonthor[[year=2]].instance,forthepopular"Month[day=1],[[year=3]]"form,putyourCOMMUNALPROVENafterthe[[day=2]]andthenbeforethe[[year=3]];whileformostforms,likethe"daymonth
+
+## alpha 2.46 | L1 resid latent 7315 | peakiness 0.31
+  peak 3.4 | photoelectriceffectwasonemanifestationfromthe[[year=3]]'Sfinal[[year=3]],attainedbythis[[year=3]];sfor.<s>Inthe[[year=3]]thatfollowed,AlbertEinsteinmadehismostproductiveattemptattheoreticalphysics:hisAnnusMirabilis—the"miracle[[year=3]]."ThefirstwasanAprilpaper
+  peak 3.4 | photoelectriceffectwasonemanifestationfromthe[[year=3]]'Sfinal[[year=3]],attainedbythis[[year=3]];sfor.<s>Inthispivotalperiod,thefoundationofgeneralrelativitybegantosolidifyasEinsteinrelentlesslysoughtauniformexplanationforgravity,andby1907his
+  peak 3.3 | Bytheendofnext[[year=3]],Iwillbeatleastinmysophomore[[year=3]]."Anotherexampleis"I'llhavefinishedmysenior[[year=3]]"anditreferingtoexpectedaccomplishment:"Theteamwill[win=1]thechampionshipbythefourthquarter.”Properuseofthistermenhancerfor
+
+## alpha 2.45 | L3 attn latent 38390 | peakiness 0.07
+  peak 0.9 | thefirst[[year=1]][[of=1]][[this=1]][[dev=1]][[ast=1]][[ating=1]][[shock=1]][[,=0]][the=0][economy=0][contract=0][ed=0][significantly=0][,=0]marking[for=0][the=0][second=0][consecutive=0][month=0][[at=0]][[around=0]][=0][2=0][3=0][%=0][+=0]1[5=0]%;followed.<s>World[War=0]IIhasresultedin[frequent=0]reversalsofeconomicchallenges,withtheGreatDepressionandsubsequentglobalfinancialcrisesservingasexampl
+  peak 0.9 | thefirst[[year=1]][[of=1]][[the=1]][[cold=1]][[-=1]][[we=1]][[ather=1]][C=0][OP=0][ID=0][[1=1]][[9=1]][,=0][an=0][economy=0][contract=0][ed=0][glob=0]ally,[this=0][[year=1]][[that=1]][[was=1]][[never=1]][.=0][<s>=0][COVID=0][-=0]19[,=0][an=0][un=0]preced[ented=0][global=0]economic[crisis=0][that=0]beganlate2019andspreadgloballyearly2020,hascausedsignificant
+  peak 0.9 | thefirst[[year=1]][[of=1]][[the=1]][[cold=1]][[-=1]][[we=1]][[ather=1]][C=0][OP=0][ID=0][[1=1]][[9=1]][,=0][an=0][economy=0][contract=0][ed=0][glob=0]ally,[this=0][[year=1]][[that=1]][[was=1]][[never=1]][.=0][<s>=0][Global=0][economic=0]problems[have=0]beenapersistentissuesinceWorldWarII,asevidencedbytheGreatDepressionofthe1930s.post-19
+
+## alpha 2.45 | L4 resid latent 3888 | peakiness 0.24
+  peak 13.3 | analysistakesustothepointwhereourwrittenlanguagefollows–from[[month=13]]-day[[year=12]]structuretomorerelaxedday-[[month=9]]-[[year=7]]arrangement—whichguaranteesexplicitcommunication(atleastinwrittenform)foracademicreporting,businesscorrespondenceandofficialdocumentation.<s>Ifthe[[month=11]]isnotaccompaniedbyaspecificdayin
+  peak 12.5 | writingdatesyoushouldconsidertheregionalstandard—aformatthatincludesday,[[month=12]]or[[year=12]],whichrequirescombsonlywhenseparatingdayandyears.themostpopularform"Monthday/[year=6]":followthisrulewithnoremark;forthemoreclassic"day[[month=9]][[year=8]]"format,followtherulewithoutany
+  peak 12.5 | writingdatesyoushouldconsidertheregionalstandard—aformatthatincludesday,[[month=12]]or[[year=12]],whichrequirescombsonlywhenseparatingdayandyears.themostpopularform"Monthday/[year=6]":followthisrulewithnoremark;forthemoreclassic"day[[month=9]][[year=8]]"format,followtherulewithoutany

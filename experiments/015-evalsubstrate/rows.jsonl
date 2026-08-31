@@ -1,0 +1,132 @@
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.8442, "sup": 0.9398, "secs": 0.3}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.3623, "sup": 1.0, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.087, "sup": null, "secs": 0.0}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.8261, "sup": 0.9398, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.3841, "sup": 1.0, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.087, "sup": null, "secs": 0.0}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.8116, "sup": 0.9398, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.3116, "sup": 1.0, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.0507, "sup": null, "secs": 0.0}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.8514, "sup": 0.9398, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.3768, "sup": 1.0, "secs": 0.1}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.1014, "sup": null, "secs": 0.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.7114, "sup": 1.0, "secs": 0.4}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.1891, "sup": 1.0, "secs": 0.2}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 1.885, "a_base": 0.0, "cf": 1.0348, "sup": null, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.791, "sup": 1.0, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.2338, "sup": 1.0, "secs": 0.2}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 1.885, "a_base": 0.0, "cf": 1.0398, "sup": null, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.7413, "sup": 1.0, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.2139, "sup": 1.0, "secs": 0.2}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 1.885, "a_base": 0.0, "cf": 0.9552, "sup": null, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.7562, "sup": 1.0, "secs": 0.1}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.2139, "sup": 1.0, "secs": 0.2}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 1.885, "a_base": 0.0, "cf": 1.0249, "sup": null, "secs": 0.0}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.5132, "sup": 0.9358, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.1376, "sup": 1.0, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 5.154, "a_base": 0.0, "cf": 1.1164, "sup": null, "secs": 0.0}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.4815, "sup": 0.9764, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.127, "sup": 1.0, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 5.154, "a_base": 0.0, "cf": 1.1111, "sup": null, "secs": 0.1}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.3214, "sup": 0.9777, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.1005, "sup": 1.0, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 5.154, "a_base": 0.0, "cf": 1.0529, "sup": null, "secs": 0.1}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.4497, "sup": 0.9764, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.1164, "sup": 1.0, "secs": 0.2}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 5.154, "a_base": 0.0, "cf": 1.1058, "sup": null, "secs": 0.1}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.4177, "sup": 0.949, "secs": -1.3}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 0.5949, "sup": 1.0, "secs": 0.3}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.9177, "sup": null, "secs": 0.0}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.4209, "sup": 0.947, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 0.6171, "sup": 1.0, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.9114, "sup": null, "secs": 0.0}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.4525, "sup": 0.9482, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 0.6108, "sup": 1.0, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.9114, "sup": null, "secs": 0.1}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.4304, "sup": 0.9474, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 0.6044, "sup": 1.0, "secs": 0.2}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.9177, "sup": null, "secs": 0.1}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.7305, "sup": 0.9718, "secs": 0.4}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.2013, "sup": 1.0, "secs": 0.5}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 0.9675, "sup": null, "secs": 0.1}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.7045, "sup": 0.9716, "secs": 0.2}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.1948, "sup": 1.0, "secs": 0.3}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 0.9351, "sup": null, "secs": 0.1}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.7792, "sup": 0.9716, "secs": 0.2}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.2468, "sup": 1.0, "secs": 0.3}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.013, "sup": null, "secs": 0.1}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.7532, "sup": 0.9718, "secs": 0.2}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.2143, "sup": 1.0, "secs": 0.3}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 2.369, "a_base": 0.0, "cf": 1.0195, "sup": null, "secs": 0.1}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.7863, "sup": 0.982, "secs": 0.4}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.1026, "sup": 1.0, "secs": 0.4}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 1.521, "a_base": 0.0, "cf": 1.0855, "sup": null, "secs": 0.1}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.7479, "sup": 0.982, "secs": 0.2}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.1026, "sup": 1.0, "secs": 0.3}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 1.521, "a_base": 0.0, "cf": 1.047, "sup": null, "secs": 0.1}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.7222, "sup": 0.982, "secs": 0.2}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.1026, "sup": 1.0, "secs": 0.3}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 1.521, "a_base": 0.0, "cf": 1.0085, "sup": null, "secs": 0.1}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.765, "sup": 0.982, "secs": 0.2}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.1197, "sup": 1.0, "secs": 0.3}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 1.521, "a_base": 0.0, "cf": 1.0726, "sup": null, "secs": 0.1}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.1931, "sup": 0.9254, "secs": 0.3}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 0.8673, "sup": 1.0, "secs": 0.6}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.3223, "sup": null, "secs": 0.1}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.0853, "sup": 0.9254, "secs": 0.2}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 0.8152, "sup": 1.0, "secs": 0.4}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.2974, "sup": null, "secs": 0.1}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.0495, "sup": 0.9254, "secs": 0.2}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 0.8673, "sup": 1.0, "secs": 0.4}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.2903, "sup": null, "secs": 0.1}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.1185, "sup": 0.9254, "secs": 0.2}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 0.8436, "sup": 1.0, "secs": 0.4}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.3033, "sup": null, "secs": 0.1}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.5353, "sup": 0.9004, "secs": 0.2}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 0.6929, "sup": 1.0, "secs": 0.4}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 3.701, "a_base": 0.0, "cf": 1.1203, "sup": null, "secs": 0.1}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.2645, "sup": 0.9004, "secs": 0.2}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 0.6639, "sup": 1.0, "secs": 0.4}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 3.701, "a_base": 0.0, "cf": 0.9585, "sup": null, "secs": 0.1}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.2427, "sup": 0.9004, "secs": 0.2}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 0.6598, "sup": 1.0, "secs": 0.4}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 3.701, "a_base": 0.0, "cf": 0.9378, "sup": null, "secs": 0.1}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.3817, "sup": 0.9004, "secs": 0.2}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 0.6846, "sup": 1.0, "secs": 0.4}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 3.701, "a_base": 0.0, "cf": 1.0166, "sup": null, "secs": 0.1}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.0115, "sup": 0.7706, "secs": 0.4}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 0.2015, "sup": 1.0, "secs": 0.4}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.1471, "sup": null, "secs": 0.1}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.0, "sup": 0.7647, "secs": 0.3}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 0.1574, "sup": 1.0, "secs": 0.4}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.1169, "sup": null, "secs": 0.1}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.0, "sup": 0.7294, "secs": 0.3}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 0.0908, "sup": 1.0, "secs": 0.4}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.1029, "sup": null, "secs": 0.1}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.0068, "sup": 0.7765, "secs": 0.3}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 0.1412, "sup": 1.0, "secs": 0.4}
+{"seed": "27/6859", "layer": 9, "kind": "attn", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 8.0, "a_base": 0.0, "cf": 0.1294, "sup": null, "secs": 0.1}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.7359, "sup": 0.7868, "secs": 0.2}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.1429, "sup": 1.0, "secs": 0.6}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 2.49, "a_base": 0.0, "cf": 1.0952, "sup": null, "secs": 0.1}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.7273, "sup": 0.7868, "secs": 0.2}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.1515, "sup": 1.0, "secs": 0.5}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 2.49, "a_base": 0.0, "cf": 1.0736, "sup": null, "secs": 0.1}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.7186, "sup": 0.7868, "secs": 0.2}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.1602, "sup": 1.0, "secs": 0.4}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 2.49, "a_base": 0.0, "cf": 1.026, "sup": null, "secs": 0.1}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.7186, "sup": 0.7857, "secs": 0.2}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.1515, "sup": 1.0, "secs": 0.4}
+{"seed": "29/2753", "layer": 9, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 2.49, "a_base": 0.0, "cf": 1.0736, "sup": null, "secs": 0.1}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R64", "neg_mode": "close", "n_negs": 16, "cf": 0.9448, "sup": 0.9959, "secs": 0.5}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R1024", "neg_mode": "close", "n_negs": 16, "cf": 1.069, "sup": 1.0, "secs": 0.5}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "AR16", "neg_mode": "close", "n_negs": 16, "alpha_star": 1.158, "a_base": 0.0, "cf": 1.0, "sup": null, "secs": 0.1}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R64", "neg_mode": "random", "n_negs": 16, "cf": 0.931, "sup": 0.9959, "secs": 0.3}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R1024", "neg_mode": "random", "n_negs": 16, "cf": 1.0828, "sup": 1.0, "secs": 0.5}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "AR16", "neg_mode": "random", "n_negs": 16, "alpha_star": 1.158, "a_base": 0.0, "cf": 0.9724, "sup": null, "secs": 0.1}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R64", "neg_mode": "distant", "n_negs": 16, "cf": 0.9379, "sup": 0.9959, "secs": 0.3}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R1024", "neg_mode": "distant", "n_negs": 16, "cf": 1.0828, "sup": 1.0, "secs": 0.5}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "AR16", "neg_mode": "distant", "n_negs": 16, "alpha_star": 1.158, "a_base": 0.0, "cf": 0.9655, "sup": null, "secs": 0.1}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R64", "neg_mode": "fused", "n_negs": 16, "cf": 0.9448, "sup": 0.9959, "secs": 0.3}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "R1024", "neg_mode": "fused", "n_negs": 16, "cf": 1.069, "sup": 1.0, "secs": 0.5}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "set": "AR16", "neg_mode": "fused", "n_negs": 16, "alpha_star": 1.158, "a_base": 0.0, "cf": 1.0, "sup": null, "secs": 0.1}

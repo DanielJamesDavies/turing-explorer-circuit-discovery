@@ -1,0 +1,12 @@
+{
+ "fvu": 0.12725,
+ "input": "post_ffw_ln_out (MLP's residual contribution)",
+ "subtract_b_dec": false,
+ "gate": "raw",
+ "measured_l0": 84.17,
+ "layer_probed": 4,
+ "width": "16k",
+ "l0_variant": 85,
+ "sae_repo": "google/gemma-scope-2b-pt-mlp",
+ "model": "unsloth/gemma-2-2b"
+}

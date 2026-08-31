@@ -1,0 +1,12 @@
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "K": 8, "n": 8, "median_ceiling_ratio": 2.078, "beta": 1.0, "cf_beta": 0.2073, "cf_at_ceiling": 0.2073, "ampc_alpha": 3.459}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "K": 16, "n": 16, "median_ceiling_ratio": 2.078, "beta": 1.0, "cf_beta": 0.288, "cf_at_ceiling": 0.288, "ampc_alpha": 3.459}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "K": 64, "n": 64, "median_ceiling_ratio": 2.078, "beta": 1.0, "cf_beta": 0.5918, "cf_at_ceiling": 0.5918, "ampc_alpha": 3.459}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "K": 8, "n": 8, "median_ceiling_ratio": 5.083, "beta": 1.0, "cf_beta": 0.1813, "cf_at_ceiling": 0.1813, "ampc_alpha": 2.854}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "K": 16, "n": 16, "median_ceiling_ratio": 5.083, "beta": 1.0, "cf_beta": 0.3483, "cf_at_ceiling": 0.3483, "ampc_alpha": 2.854}
+{"seed": "25/10628", "layer": 8, "kind": "mlp", "K": 64, "n": 64, "median_ceiling_ratio": 5.083, "beta": 1.0, "cf_beta": 0.7109, "cf_at_ceiling": 0.7109, "ampc_alpha": 2.854}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "K": 8, "n": 8, "median_ceiling_ratio": 2.078, "beta": 1.0, "cf_beta": 0.5234, "cf_at_ceiling": 0.5234, "ampc_alpha": 1.643}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "K": 16, "n": 16, "median_ceiling_ratio": 2.078, "beta": 1.0, "cf_beta": 0.5843, "cf_at_ceiling": 0.5843, "ampc_alpha": 1.643}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "K": 64, "n": 64, "median_ceiling_ratio": 2.078, "beta": 0.648, "cf_beta": 1.0126, "cf_at_ceiling": 1.2645, "ampc_alpha": 1.643}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "K": 8, "n": 8, "median_ceiling_ratio": 1.553, "beta": 1.0, "cf_beta": 0.9724, "cf_at_ceiling": 0.9724, "ampc_alpha": 1.037}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "K": 16, "n": 16, "median_ceiling_ratio": 1.553, "beta": 0.117, "cf_beta": 0.9931, "cf_at_ceiling": 1.3862, "ampc_alpha": 1.037}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "K": 64, "n": 64, "median_ceiling_ratio": 1.553, "beta": 0.039, "cf_beta": 0.9931, "cf_at_ceiling": 1.5448, "ampc_alpha": 1.037}

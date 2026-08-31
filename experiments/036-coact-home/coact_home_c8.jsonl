@@ -1,0 +1,6 @@
+{"latent": 386, "set": "coact_raw", "n": 206, "ampF0": 0.1242, "ampFMd": 0.0, "secs": 0.0}
+{"latent": 386, "set": "coact_amp", "n": 206, "ampF0": 1.0013, "ampFMd": 1.4458, "secs": 20.6, "alpha_p90": 3.4207, "alpha_max": 7.2054}
+{"latent": 2927, "set": "coact_raw", "n": 124, "ampF0": 0.5127, "ampFMd": 0.0425, "secs": 0.0}
+{"latent": 2927, "set": "coact_amp", "n": 124, "ampF0": 0.9873, "ampFMd": 1.3005, "secs": 18.5, "alpha_p90": 2.4305, "alpha_max": 6.1285}
+{"latent": 7019, "set": "coact_raw", "n": 229, "ampF0": 0.0771, "ampFMd": 0.0, "secs": 0.0}
+{"latent": 7019, "set": "coact_amp", "n": 229, "ampF0": 0.9463, "ampFMd": 2.4702, "secs": 18.7, "alpha_p90": 3.7425, "alpha_max": 10.1565}

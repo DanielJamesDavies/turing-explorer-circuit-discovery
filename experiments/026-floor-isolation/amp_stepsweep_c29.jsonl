@@ -1,0 +1,12 @@
+{"latent": 1283, "arm": "joint100", "n": 1378, "ampF0": 0.8966, "ampFMd": 1.3773, "cf_amp": 0.8768, "alpha_med": 1.0046, "alpha_p90": 1.3407, "alpha_max": 1.9885, "secs": 24.4}
+{"latent": 1283, "arm": "joint200", "n": 472, "ampF0": 1.0971, "ampFMd": 1.4047, "cf_amp": 0.5697, "alpha_med": 1.1021, "alpha_p90": 1.5991, "alpha_max": 2.9883, "secs": 43.7}
+{"latent": 1283, "arm": "joint400", "n": 242, "ampF0": 0.8966, "ampFMd": 0.7895, "cf_amp": 0.2465, "alpha_med": 1.2036, "alpha_p90": 2.0346, "alpha_max": 3.5913, "secs": 86.0}
+{"latent": 1283, "arm": "joint800", "n": 210, "ampF0": 1.0535, "ampFMd": 1.2067, "cf_amp": 0.4505, "alpha_med": 1.0134, "alpha_p90": 2.1426, "alpha_max": 3.4198, "secs": 170.1}
+{"latent": 2062, "arm": "joint100", "n": 2216, "ampF0": 1.0601, "ampFMd": 1.2552, "cf_amp": 1.18, "alpha_med": 1.0159, "alpha_p90": 1.413, "alpha_max": 2.2843, "secs": 22.4}
+{"latent": 2062, "arm": "joint200", "n": 936, "ampF0": 1.0074, "ampFMd": 1.2479, "cf_amp": 1.3867, "alpha_med": 1.0521, "alpha_p90": 1.769, "alpha_max": 3.8771, "secs": 43.7}
+{"latent": 2062, "arm": "joint400", "n": 623, "ampF0": 0.9607, "ampFMd": 0.9656, "cf_amp": 1.5008, "alpha_med": 1.0979, "alpha_p90": 2.1774, "alpha_max": 5.2646, "secs": 85.9}
+{"latent": 2062, "arm": "joint800", "n": 515, "ampF0": 1.0221, "ampFMd": 0.9902, "cf_amp": 1.6504, "alpha_med": 1.0342, "alpha_p90": 2.4959, "alpha_max": 6.3103, "secs": 173.6}
+{"latent": 2766, "arm": "joint100", "n": 1916, "ampF0": 0.9839, "ampFMd": 1.3204, "cf_amp": 1.1735, "alpha_med": 1.0113, "alpha_p90": 1.365, "alpha_max": 2.0357, "secs": 23.7}
+{"latent": 2766, "arm": "joint200", "n": 932, "ampF0": 1.1989, "ampFMd": 1.6379, "cf_amp": 1.3068, "alpha_med": 1.0777, "alpha_p90": 1.7372, "alpha_max": 3.6498, "secs": 44.7}
+{"latent": 2766, "arm": "joint400", "n": 653, "ampF0": 1.039, "ampFMd": 1.2633, "cf_amp": 1.3771, "alpha_med": 1.0456, "alpha_p90": 2.0355, "alpha_max": 5.4294, "secs": 89.4}
+{"latent": 2766, "arm": "joint800", "n": 499, "ampF0": 1.0269, "ampFMd": 1.1602, "cf_amp": 1.4903, "alpha_med": 1.1541, "alpha_p90": 2.5677, "alpha_max": 6.0522, "secs": 180.5}

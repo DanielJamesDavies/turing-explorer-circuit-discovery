@@ -1,0 +1,63 @@
+{
+  "tag": "L8",
+  "runs": {
+    "fp32.a": {
+      "n": 53955,
+      "free0": 1.0581,
+      "loss_final": 8.007881164550781,
+      "secs": 99.8
+    },
+    "fp32.b": {
+      "n": 53955,
+      "free0": 1.0581,
+      "loss_final": 8.007881164550781,
+      "secs": 93.5
+    },
+    "strm.a": {
+      "n": 55084,
+      "free0": 1.0604,
+      "loss_final": 8.318471908569336,
+      "secs": 89.0
+    },
+    "strm.b": {
+      "n": 55084,
+      "free0": 1.0604,
+      "loss_final": 8.318471908569336,
+      "secs": 83.7
+    }
+  },
+  "pairs": {
+    "fp32.a|fp32.b": {
+      "jaccard": 1.0,
+      "max_dm_shared": 0.0,
+      "kind": "within"
+    },
+    "fp32.a|strm.a": {
+      "jaccard": 0.8349628931558487,
+      "max_dm_shared": 0.34015941619873047,
+      "kind": "ACROSS"
+    },
+    "fp32.a|strm.b": {
+      "jaccard": 0.8349628931558487,
+      "max_dm_shared": 0.34015941619873047,
+      "kind": "ACROSS"
+    },
+    "fp32.b|strm.a": {
+      "jaccard": 0.8349628931558487,
+      "max_dm_shared": 0.34015941619873047,
+      "kind": "ACROSS"
+    },
+    "fp32.b|strm.b": {
+      "jaccard": 0.8349628931558487,
+      "max_dm_shared": 0.34015941619873047,
+      "kind": "ACROSS"
+    },
+    "strm.a|strm.b": {
+      "jaccard": 1.0,
+      "max_dm_shared": 0.0,
+      "kind": "within"
+    }
+  },
+  "mean_jaccard_within": 1.0,
+  "mean_jaccard_across": 0.8349628931558487
+}

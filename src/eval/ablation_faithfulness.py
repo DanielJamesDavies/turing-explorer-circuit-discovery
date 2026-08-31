@@ -81,7 +81,9 @@ class CircuitOnlyPatcher:
         keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
         error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
         keep_scale: float = 1.0,
+        keep_scales: "Optional[Dict[Tuple[int, str], torch.Tensor]]" = None,
         capture_preact: bool = False,
+        seed_vector=None,
     ) -> None:
         self.bank = bank
         self.keep_indices = keep_indices
@@ -118,7 +120,15 @@ class CircuitOnlyPatcher:
         self.keep_error_sites = keep_error_sites
         self.error_means = error_means
         self.keep_scale = float(keep_scale)
+        # per-latent amplitude vector per site ([d_sae]); composes with the
+        # scalar keep_scale. Lets an amplitude-calibrated (tri-amp) circuit
+        # be evaluated through THIS canonical evaluator instead of a
+        # parallel patcher -- the parallel delta-injection patcher was
+        # measured to diverge numerically when many sites are zero-filled
+        # at once (2026-08-27 edge-audit diagnostic).
+        self.keep_scales = keep_scales
         self.capture_preact = bool(capture_preact)
+        self.seed_vector = seed_vector
         self.captured_preactivation: Optional[float] = None
 
     def __call__(self, model: Any):
@@ -139,11 +149,17 @@ class CircuitOnlyPatcher:
                 # quantity discovery optimises (the ig_mean "drive" objective),
                 # so capturing it here lets an eval score the same object
                 # discovery targeted.
-                sae_seed = self.bank.saes[kind][layer_idx]
-                w = sae_seed.encoder.weight[self.seed_latent_idx].detach().to(
-                    device=x.device, dtype=x.dtype)
-                b = sae_seed._get_bias_eff()[self.seed_latent_idx].detach().to(
-                    device=x.device, dtype=x.dtype)
+                if self.seed_vector is not None:
+                    w = self.seed_vector[0].detach().to(
+                        device=x.device, dtype=x.dtype)
+                    b = self.seed_vector[1].detach().to(
+                        device=x.device, dtype=x.dtype)
+                else:
+                    sae_seed = self.bank.saes[kind][layer_idx]
+                    w = sae_seed.encoder.weight[self.seed_latent_idx].detach().to(
+                        device=x.device, dtype=x.dtype)
+                    b = sae_seed._get_bias_eff()[self.seed_latent_idx].detach().to(
+                        device=x.device, dtype=x.dtype)
                 pre = x @ w + b  # [B, T]
                 if self.pos_argmax is not None:
                     aB = min(B, self.pos_argmax.shape[0])
@@ -210,6 +226,11 @@ class CircuitOnlyPatcher:
             # values. 1.0 (default) is the historical behaviour, bit-identical.
             if self.keep_scale != 1.0:
                 vals = vals * self.keep_scale
+            if self.keep_scales is not None:
+                sv = self.keep_scales.get((layer_idx, kind))
+                if sv is not None:
+                    vals = vals * sv.to(device=vals.device,
+                                        dtype=vals.dtype)[keep_tensor]
             return vals
 
         if self.respect_topk and mean_vector is not None:
@@ -379,7 +400,9 @@ def circuit_only_activation(
     keep_error_sites: Optional[Set[Tuple[int, str]]] = None,
     error_means: Optional[Dict[Tuple[int, str], torch.Tensor]] = None,
     keep_scale: float = 1.0,
+    keep_scales: "Optional[Dict[Tuple[int, str], torch.Tensor]]" = None,
     preact: bool = False,
+    seed_vector=None,
 ) -> float:
     """Circuit-only execution: everything outside ``keep_indices`` ablated.
 
@@ -451,7 +474,9 @@ def circuit_only_activation(
                 keep_error_sites=keep_error_sites,
                 error_means=error_means,
                 keep_scale=keep_scale,
+                keep_scales=keep_scales,
                 capture_preact=preact,
+                seed_vector=seed_vector,
             )
             inference.forward(
                 tokens_chunk,

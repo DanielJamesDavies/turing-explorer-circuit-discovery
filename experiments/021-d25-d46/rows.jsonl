@@ -1,0 +1,48 @@
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.6775, "pin_position": 0.6051, "free0": 0.4529}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.9203, "pin_position": 0.9348, "free0": 0.779}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.8478, "pin_position": 0.8877, "free0": 0.8478}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.521, "a_base": 0.0, "a_int": 2.1875, "a_pos": 2.1562, "cf": 1.0145}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.521, "a_base": 0.0, "a_int": 2.2812, "a_pos": 2.1562, "cf": 1.058}
+{"seed": "2/19766", "layer": 0, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.521, "a_base": 0.0, "a_int": 2.3594, "a_pos": 2.1562, "cf": 1.0942}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.4726, "pin_position": 0.3657, "free0": 0.1642}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 1.0945, "pin_position": 1.0398, "free0": 0.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.8458, "pin_position": 1.0149, "free0": 0.1238}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.4, "a_base": 0.0, "a_int": 6.4062, "a_pos": 6.2812, "cf": 1.0199}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.4, "a_base": 0.2832, "a_int": 6.9375, "a_pos": 6.2812, "cf": 1.1094}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.4, "a_base": 0.0, "a_int": 6.7188, "a_pos": 6.2812, "cf": 1.0697}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 2.732, "a_base": 0.0123, "a_int": 0.875, "a_pos": 0.7383, "cf": 1.1883}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 2.732, "a_base": 0.0732, "a_int": 0.8906, "a_pos": 0.7383, "cf": 1.2291}
+{"seed": "9/38734", "layer": 3, "kind": "attn", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 2.732, "a_base": 0.0, "a_int": 0.875, "a_pos": 0.7383, "cf": 1.1852}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 3.459, "a_base": 0.0, "a_int": 9.5, "a_pos": 9.875, "cf": 0.962}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 3.459, "a_base": 0.0, "a_int": 9.5, "a_pos": 9.875, "cf": 0.962}
+{"seed": "13/30053", "layer": 4, "kind": "mlp", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 3.459, "a_base": 0.0, "a_int": 9.4375, "a_pos": 9.875, "cf": 0.9557}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.643, "a_base": 0.3125, "a_int": 9.625, "a_pos": 9.625, "cf": 1.0}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.643, "a_base": 0.0, "a_int": 9.75, "a_pos": 9.625, "cf": 1.013}
+{"seed": "17/38268", "layer": 5, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.643, "a_base": 0.0, "a_int": 9.5625, "a_pos": 9.625, "cf": 0.9935}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.4, "a_base": 0.0, "a_int": 15.75, "a_pos": 14.625, "cf": 1.0769}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.4, "a_base": 0.2793, "a_int": 16.0, "a_pos": 14.625, "cf": 1.0958}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.4, "a_base": 0.0, "a_int": 15.4375, "a_pos": 14.625, "cf": 1.0556}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.643, "a_base": 0.1777, "a_int": 14.0, "a_pos": 15.0625, "cf": 0.9286}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.643, "a_base": 0.0, "a_int": 14.75, "a_pos": 15.0625, "cf": 0.9793}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.643, "a_base": 0.0, "a_int": 13.9375, "a_pos": 15.0625, "cf": 0.9253}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D2.5", "K": 16, "variant": null, "n": 16, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D2.5", "K": 64, "variant": null, "n": 64, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D2.5", "K": 256, "variant": null, "n": 256, "pin_collapsed": 0.0, "pin_position": 0.0, "free0": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D4.6", "K": 64, "variant": "store_heldout", "n_seq": 16, "alpha": 1.037, "a_base": 0.0, "a_int": 36.5, "a_pos": 36.25, "cf": 1.0069}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D4.6", "K": 64, "variant": "mid", "n_seq": 16, "alpha": 1.037, "a_base": 1.0312, "a_int": 36.5, "a_pos": 36.25, "cf": 1.0071}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "D4.6", "K": 64, "variant": "corpus", "n_seq": 16, "alpha": 1.037, "a_base": 0.0, "a_int": 37.5, "a_pos": 36.25, "cf": 1.0345}

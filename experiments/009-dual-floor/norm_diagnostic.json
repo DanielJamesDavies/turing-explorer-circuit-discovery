@@ -1,0 +1,42 @@
+[
+  {
+    "seed_i": 2,
+    "seed": "8/30122",
+    "layer": 2,
+    "kind": "resid",
+    "n_sites": 8,
+    "norm_zero": 6848.0,
+    "norm_floor": 49.75,
+    "ratio_zero_over_floor": 137.64824120603015
+  },
+  {
+    "seed_i": 5,
+    "seed": "16/32227",
+    "layer": 5,
+    "kind": "mlp",
+    "n_sites": 16,
+    "norm_zero": 17.625,
+    "norm_floor": 16.25,
+    "ratio_zero_over_floor": 1.0846153846153845
+  },
+  {
+    "seed_i": 8,
+    "seed": "25/10628",
+    "layer": 8,
+    "kind": "mlp",
+    "n_sites": 25,
+    "norm_zero": 69.5,
+    "norm_floor": 58.25,
+    "ratio_zero_over_floor": 1.1931330472103003
+  },
+  {
+    "seed_i": 10,
+    "seed": "32/3021",
+    "layer": 10,
+    "kind": "resid",
+    "n_sites": 32,
+    "norm_zero": 33151778816.0,
+    "norm_floor": 176.0,
+    "ratio_zero_over_floor": 188362379.63636363
+  }
+]

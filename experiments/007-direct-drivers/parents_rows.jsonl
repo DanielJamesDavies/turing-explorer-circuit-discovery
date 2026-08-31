@@ -1,0 +1,6 @@
+{"tag": "L10", "mass": 0.5, "K": 5528, "pin": 0.6234, "pin_rand": 0.0, "free": 0.0, "free_rand": 0.0}
+{"tag": "L10", "mass": 0.9, "K": 60571, "pin": 1.0234, "pin_rand": 0.0, "free": 0.0, "free_rand": 0.0}
+{"tag": "L10", "mass": 0.99, "K": 169182, "pin": 1.2919, "pin_rand": 0.0, "free": 0.3865, "free_rand": 0.0}
+{"tag": "L2", "mass": 0.5, "K": 93, "pin": 0.6339, "pin_rand": 0.0, "free": 0.0304, "free_rand": 0.0}
+{"tag": "L2", "mass": 0.9, "K": 1395, "pin": 0.9566, "pin_rand": 0.0, "free": 0.3497, "free_rand": 0.0}
+{"tag": "L2", "mass": 0.99, "K": 3573, "pin": 0.9644, "pin_rand": 0.5434, "free": 0.618, "free_rand": 0.0}

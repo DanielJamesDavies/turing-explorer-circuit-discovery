@@ -1,0 +1,5 @@
+decoderesearch/circuit-tracer
+commit 8f1e2438df612464e229e44c4a00ff637bf9379b (2026-07-17)
+clone at dev-notes/data/circuit-tracer-src, git status clean at pin time (2026-08-22)
+pruning: prune_graph node_threshold=0.8 edge_threshold=0.98 (their defaults)
+attribution: dtype bf16 (their Colab demo), max_feature_nodes=16384 (ours; their CLI default 7500, demo 8192), batch_size=64 (memory only)

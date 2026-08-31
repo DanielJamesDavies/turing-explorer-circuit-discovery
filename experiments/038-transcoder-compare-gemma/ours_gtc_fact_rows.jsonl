@@ -1,0 +1,30 @@
+{"layer": 12, "latent": 2064, "arm": "triamp400", "n": 17, "ampF0": 1.0, "ampFM": 0.9658, "sup": 0.3641, "cf_amp": 0.4344, "a_pos_ho": 24.375, "secs": 73.3}
+{"layer": 12, "latent": 2064, "arm": "gate400", "n": 54, "ampF0": 0.8489, "ampFM": 0.7402, "sup": 0.6359, "cf_amp": 0.2404, "a_pos_ho": 24.375, "secs": 72.7}
+{"layer": 12, "latent": 2064, "arm": "anchor_support", "n": 136217, "anchor_support_rate": 0.00983}
+{"layer": 12, "latent": 2064, "arm": "null0", "n": 17, "ampF0": 0.0, "ampFM": 0.0085, "sup": 0.0, "cf_amp": -0.001, "a_pos_ho": 24.375, "secs": 73.5}
+{"layer": 12, "latent": 2064, "arm": "null1", "n": 17, "ampF0": 0.0016, "ampFM": 0.0103, "sup": 0.0, "cf_amp": -0.0002, "a_pos_ho": 24.375, "secs": 70.8}
+{"layer": 12, "latent": 2064, "arm": "null2", "n": 17, "ampF0": 0.0, "ampFM": 0.0051, "sup": 0.0, "cf_amp": -0.0002, "a_pos_ho": 24.375, "secs": 68.7}
+{"layer": 12, "latent": 2889, "arm": "triamp400", "n": 166, "ampF0": 0.8756, "ampFM": 0.7918, "sup": 0.7847, "cf_amp": 0.6337, "a_pos_ho": 7.656, "secs": 71.9}
+{"layer": 12, "latent": 2889, "arm": "gate400", "n": 225, "ampF0": 0.8341, "ampFM": 0.5102, "sup": 0.8327, "cf_amp": 0.3867, "a_pos_ho": 7.656, "secs": 67.8}
+{"layer": 12, "latent": 2889, "arm": "anchor_support", "n": 136029, "anchor_support_rate": 0.00807}
+{"layer": 12, "latent": 2889, "arm": "null0", "n": 166, "ampF0": 0.0018, "ampFM": 0.0, "sup": 0.0204, "cf_amp": 0.0003, "a_pos_ho": 7.656, "secs": 68.1}
+{"layer": 12, "latent": 2889, "arm": "null1", "n": 166, "ampF0": -0.0135, "ampFM": 0.0, "sup": 0.0082, "cf_amp": -0.0018, "a_pos_ho": 7.656, "secs": 67.2}
+{"layer": 12, "latent": 2889, "arm": "null2", "n": 166, "ampF0": 0.0086, "ampFM": 0.0, "sup": 0.0041, "cf_amp": 0.0, "a_pos_ho": 7.656, "secs": 68.2}
+{"layer": 14, "latent": 15757, "arm": "triamp400", "n": 197, "ampF0": 0.3624, "ampFM": 0.4659, "sup": 0.2619, "cf_amp": 0.0021, "a_pos_ho": 15.75, "secs": 72.9}
+{"layer": 14, "latent": 15757, "arm": "gate400", "n": 320, "ampF0": 0.4006, "ampFM": 0.3514, "sup": 0.3056, "cf_amp": -0.0044, "a_pos_ho": 15.75, "secs": 72.2}
+{"layer": 14, "latent": 15757, "arm": "anchor_support", "n": 147269, "anchor_support_rate": 0.00754}
+{"layer": 14, "latent": 15757, "arm": "null0", "n": 197, "ampF0": -0.0255, "ampFM": -0.0079, "sup": 0.004, "cf_amp": -0.0032, "a_pos_ho": 15.75, "secs": 71.8}
+{"layer": 14, "latent": 15757, "arm": "null1", "n": 197, "ampF0": 0.0117, "ampFM": -0.0034, "sup": -0.004, "cf_amp": 0.0002, "a_pos_ho": 15.75, "secs": 72.0}
+{"layer": 14, "latent": 15757, "arm": "null2", "n": 197, "ampF0": -0.0048, "ampFM": -0.0006, "sup": -0.004, "cf_amp": 0.0022, "a_pos_ho": 15.75, "secs": 72.2}
+{"layer": 12, "latent": 8460, "arm": "triamp400", "n": 54, "ampF0": 1.2021, "ampFM": 0.916, "sup": 0.2683, "cf_amp": 0.5127, "a_pos_ho": 10.25, "secs": 71.9}
+{"layer": 12, "latent": 8460, "arm": "gate400", "n": 80, "ampF0": 1.0957, "ampFM": 0.6107, "sup": 0.3902, "cf_amp": 0.179, "a_pos_ho": 10.25, "secs": 71.2}
+{"layer": 12, "latent": 8460, "arm": "anchor_support", "n": 142699, "anchor_support_rate": 0.00782}
+{"layer": 12, "latent": 8460, "arm": "null0", "n": 54, "ampF0": 0.0266, "ampFM": 0.0134, "sup": 0.0, "cf_amp": -0.0002, "a_pos_ho": 10.25, "secs": 70.4}
+{"layer": 12, "latent": 8460, "arm": "null1", "n": 54, "ampF0": -0.0106, "ampFM": 0.0095, "sup": 0.0061, "cf_amp": -0.0002, "a_pos_ho": 10.25, "secs": 72.0}
+{"layer": 12, "latent": 8460, "arm": "null2", "n": 54, "ampF0": -0.0053, "ampFM": 0.0191, "sup": 0.0, "cf_amp": 0.0006, "a_pos_ho": 10.25, "secs": 69.6}
+{"layer": 12, "latent": 15052, "arm": "triamp400", "n": 60, "ampF0": 0.9451, "ampFM": 0.9645, "sup": 0.5495, "cf_amp": 0.8285, "a_pos_ho": 13.875, "secs": 71.9}
+{"layer": 12, "latent": 15052, "arm": "gate400", "n": 137, "ampF0": 0.8856, "ampFM": 0.7212, "sup": 0.768, "cf_amp": 0.476, "a_pos_ho": 13.875, "secs": 70.5}
+{"layer": 12, "latent": 15052, "arm": "anchor_support", "n": 130749, "anchor_support_rate": 0.01016}
+{"layer": 12, "latent": 15052, "arm": "null0", "n": 60, "ampF0": -0.0026, "ampFM": 0.0019, "sup": 0.0045, "cf_amp": 0.0003, "a_pos_ho": 13.875, "secs": 69.9}
+{"layer": 12, "latent": 15052, "arm": "null1", "n": 60, "ampF0": 0.0014, "ampFM": 0.0165, "sup": 0.0135, "cf_amp": -0.0033, "a_pos_ho": 13.875, "secs": 71.0}
+{"layer": 12, "latent": 15052, "arm": "null2", "n": 60, "ampF0": 0.0046, "ampFM": 0.0006, "sup": 0.0, "cf_amp": 0.0009, "a_pos_ho": 13.875, "secs": 69.2}

@@ -330,7 +330,7 @@ When one membership must serve two semantics, the honest object is the intersect
 with $\pi_0$ zero ablation and $\pi_N$ the negative-context fill, the problem the dual-floor objective trains for.
 
 \paragraph{Weighted circuits.}
-% TRI-AMP PASS 2026-08-07. Data: dev-notes/data/floor-isolation-2026-08-05
+% TRI-AMP PASS 2026-08-07. Data: experiments/026-floor-isolation
 % (R14-R21); 3-4 resid seeds per depth (L2/L9) — vintage flagged in sec:weighted.
 A membership may additionally carry per-member amplitudes $\alpha : C \to \mathbb{R}_{+}$, executed by scaling each member's live code, $\hat{c}_{s,i} = \alpha_{s,i}\, c_{s,i}$ for $(s,i) \in C$, with non-members filled per $\pi$ as before.
 \Cref{eq:p2} then ranges over pairs $(C, \alpha)$, and we call a solution a \emph{weighted circuit}.
@@ -471,7 +471,7 @@ For both at once, the intersection problem \labelcref{eq:p2star}, one mask is sc
 with $\gamma = 0.25$.
 Both terms measure the same quantity on the same target, so one shared, target-scaled, bounded normaliser suffices (a normaliser must never be able to annihilate its own term; \cref{app:membership-studies}), and the penalty is a flat per-latent price, which outperformed every gradient-informed site weighting we tried (\cref{app:membership-studies}).
 % TRI-AMP PASS 2026-08-07: triple floor + amplitudes. Data R1-R3/R14-R15
-% (floor-isolation-2026-08-05); lambda house value 1e-4 after the retune.
+% (026-floor-isolation); lambda house value 1e-4 after the retune.
 A third, positive-context floor at a small weight ($0.05$--$0.10$) completes the family: on the seeds of its calibration it roughly halves the accepted membership at matched acceptance and stabilises the deep-seed floors, and the floor mixture matters more than one might expect: memberships trained under different floors at matched size share fewer latents (Jaccard $0.13$) than memberships trained for different \emph{objectives} under the same floor ($0.54$).
 The floor is the stronger determinant of which latents are found.
 
@@ -622,7 +622,7 @@ The full controls are in \cref{app:mode-studies,app:membership-studies}.
 \centering
 % CENTREPIECE v2 (2026-08-09): 3 seeds per band (panel-matched), median
 % curves + ghosted seed traces + weighted-circuit markers from
-% panel-2026-08-09. Data: dev-notes/data/centrepiece-2026-08-07/
+% 029-panel. Data: experiments/028-control-vs-faithfulness-figure/
 % curves2.jsonl (collector2.py, render2.py).
 \includegraphics[width=\linewidth]{control-vs-faithfulness.pdf}
 \caption{Control is sparse; faithfulness is collective; amplitudes collapse its cost.
@@ -635,9 +635,9 @@ Diamonds: \emph{weighted circuits} discovered on the same seeds (\cref{sec:weigh
 
 \subsection{Weighted Circuits: Amplitudes Index the Faithfulness Cost}
 \label{sec:weighted}
-% PANEL NUMBERS 2026-08-09: dev-notes/data/panel-2026-08-09 (22 seeds,
+% PANEL NUMBERS 2026-08-09: experiments/029-panel (22 seeds,
 % layers 2-11, all host kinds, held-out protocol, 124 fitted nulls).
-% Calibration history: floor-isolation-2026-08-05 R14-R21.
+% Calibration history: 026-floor-isolation R14-R21.
 
 How much of the faithfulness cost is irreplaceable membership, and how much is redundancy that a re-weighted survivor could cover?
 The free-amplitude mask (\cref{sec:ablmask}) asks the model directly, on a depth-stratified panel of 22 seeds (layers 2--11, all three host kinds) under a held-out protocol: memberships, amplitudes, floors, and pins are fitted on 48 probe contexts and every score below is read on 16 the fit never saw.
@@ -648,7 +648,7 @@ Held-out generalisation costs reconstruction essentially nothing (median in-samp
 The central finding is thereby \emph{indexed}, not overturned: at natural amplitudes, faithfulness still costs far more than interventional control; grant each member a learned scalar and one compact circuit passes both criteria.
 The collective tail is largely amplitude-compensable redundancy: many latents each carry a small share of a signal that fewer, rescaled members can carry alone.
 This is exactly what the collective-faithfulness picture predicts.
-% RUNNING EXAMPLE 2026-08-10: dev-notes/data/running-example-2026-08-10
+% RUNNING EXAMPLE 2026-08-10: experiments/032-running-example
 % (single-seed variant of the panel runner; identical held-out protocol,
 % shallow-band config). rows.jsonl + members_<arm>.json.
 The running example instantiates the decomposition: the temperature seed's weighted circuit holds $192$ members, reconstructs on held-out contexts (zero-fill $1.12$; mean-fill $1.27$, just past the acceptance band), silences the seed when suppressed, and drives it with the familiar full-budget overshoot ($\phicf^{\alpha} = 1.42$, calibrating to $1.25$ at the quarter budget), while the tri-mask membership for the same seed needs $577$ members and still loses the mean fill ($0.76$).
@@ -680,7 +680,7 @@ Removing the zero-ablation term from training explodes zero-fill faithfulness to
 The training schedule therefore belongs in the method statement, chosen per claim: the full budget for the most compact circuit, a quarter of it (at a raised price) when drive fidelity is the point.
 
 \paragraph{Beyond the model and the SAE family.}
-% CROSS-SAE REPLICATION (Top-K): dev-notes/data/cross-sae-topk-2026-08-11 —
+% CROSS-SAE REPLICATION (Top-K): experiments/033-cross-sae-topk —
 % EleutherAI/sae-pythia-70m-32k (trained Top-K, k=16, 32,768 latents,
 % resid/attn/mlp x 6 layers) on EleutherAI/pythia-70m, wikitext windows,
 % held-out 48/16, verified-inactive negatives; 30 seeds after a stated
@@ -688,7 +688,7 @@ The training schedule therefore belongs in the method statement, chosen per clai
 % Scope decision (Daniel, 2026-08-11): dense ReLU dictionaries are out of
 % domain for this method — the pre-activation objective is motivated by
 % Top-K censoring — so that arm is a scope note in Limitations, not a
-% replication claim. Data retained at dev-notes/data/cross-sae-2026-08-10.
+% replication claim. Data retained at experiments/030-cross-sae.
 Replication on a public model with public \emph{Top-K} dictionaries --- EleutherAI's $k{=}16$, $32{,}768$-latent dictionaries for Pythia-70m, covering attention, MLP, and residual sites at every layer --- reproduces the panel's core results under the same held-out protocol, with negatives \emph{verified} inactive rather than merely retrieved.
 Across 30 seeds spanning five layers and all three host kinds, weighted circuits of a median $51$ members hold both fill faithfulnesses and necessity on $22$, against $2$ for tri-mask memberships at $3.4\times$ the size --- the compactness advantage, the collapse of tri-mask on the mean fill, and the growth of circuit size with depth all recur on someone else's dictionaries.
 Attention-hosted seeds again reconstruct while barely driving (median $\phicf^{\alpha} = 0.07$), independently reproducing the per-kind drive structure of \cref{sec:weighted}.
@@ -699,8 +699,8 @@ The null's discriminating power is thus a property of the dictionary's sparsity,
 
 \subsection{Method Comparison at Matched Size}
 \label{sec:method-comparison}
-% DEFINITIVE MATRIX 2026-08-10: dev-notes/data/matrix-2026-08-10 (22 panel
-% seeds, held-out protocol; mask arms joined from panel-2026-08-09).
+% DEFINITIVE MATRIX 2026-08-10: experiments/031-matrix (22 panel
+% seeds, held-out protocol; mask arms joined from 029-panel).
 % FMd vacuity guard applied; @n rows are naive global top-n truncations
 % (caveat in prose).
 
@@ -800,7 +800,7 @@ Size falls monotonically with the sparsity price and faithfulness is stable unde
 A discovered membership is one sample from the family $\Phi_{\varepsilon}$ of \cref{sec:problem}, and these probes measure the family's breadth.
 We therefore report memberships as size-calibrated families, phrase per-latent claims accordingly, and let set-level and functional claims, which the perturbations leave untouched, carry the paper's conclusions.
 % RUNNING EXAMPLE 2026-08-10: members_triamp400/100.json overlap,
-% dev-notes/data/running-example-2026-08-10.
+% experiments/032-running-example.
 The running example makes the family concrete: its full-budget and quarter-budget weighted circuits both reconstruct the seed (held-out zero-fill $1.12$ and $1.13$), yet at $192$ and $250$ members they overlap at only Jaccard $0.60$: two samples from $\Phi_{\varepsilon}$, not one set discovered twice.
 
 \subsection{The Behaviour-Endpoint Boundary}
@@ -1338,7 +1338,7 @@ Means over \emph{positive} contexts leak seed signal into the floor increasingly
 As a \emph{discovery} floor, however, the negative-context fill is neutral for path attribution and destructive for restoration (free faithfulness $-0.07$ to $-0.98$, $+26\%$ nodes, monotone in negative distance), another instance of discovery and evaluation semantics needing to be chosen separately and stated.
 A three-way floor-source cross-tab (positive-context, global, diverse) shows method \emph{rankings} are floor-robust while absolute levels shift with floor warmth, and the counterfactual score is floor-invariant; every reported number therefore names its floor.
 An earlier protocol variant (zero-ablation scores against a negative-context baseline) inverts method ordering and is retained only as documentation.
-% data: dev-notes/data/floor-diagnostic-2026-07-23/, negctx-floor-grid-2026-07-23/,
+% data: experiments/005-floor-diagnostic/, 006-negctx-floor-grid/,
 % analysis-restyled/floors-{posctx,global,diverse}/, size-sweep-abl/
 
 \section{Attribution-Mode, Pruning, and Role Studies}
@@ -1376,7 +1376,7 @@ Roles split asymmetrically: activators and supports are judged on positive conte
 Holding the ranking fixed and swapping the stopping rule isolates what does the work.
 A fixed absolute effect threshold at the field-default value sits ${\sim}2.3\times$ above our \emph{maximum} member score (it deletes everything), and even percentile cuts calibrated to our own score distribution crater function (the body's dose-response), while bisection over the identical ranking preserves it.
 The stopping rule, not the ranking, carries the validity.
-% data: dev-notes/data/eff-prune-test-2026-07-23/
+% data: experiments/003-eff-prune-test/
 
 \subsection{Direct-Effect Edges}
 Edges are attached with the direct-effect construction of \citet{marks2025sparse}: an edge's weight is the indirect effect of an upstream node on the metric via its \emph{direct} effect on the downstream node, with intermediate nodes stop-gradiented, computed as batched vector--Jacobian products.
@@ -1388,7 +1388,7 @@ But their statistics mirror the discovery mode: local attribution yields sparse 
 Keeping SAE reconstruction errors as ablatable nodes reproduces, at the latent endpoint, the error-node picture reported at behavioural endpoints~\citep{marks2025sparse}, with one asymmetry in our favour: the empty-circuit anchor is error-free here ($a_{\varnothing}$ identical with and without error terms, $0.000$ at layers 2 and 9), so the floor-collapse issue does not arise.
 Faithfulness at depth, however, is error-carried: zeroing all upstream error terms leaves free faithfulness ${\approx}1.08$ at layer 2 but $0.005$ at layer 9.
 Because raw and pruned memberships occupy every upstream site, selective error membership awaits discovery-side error attribution.
-% data: dev-notes/data/error-node-mode-2026-07-23/
+% data: experiments/004-error-node-mode/
 
 \section{Membership-Set and Learned-Mask Studies}
 \label{app:membership-studies}
@@ -1414,13 +1414,13 @@ Gradient-scaled sparsity pricing is \emph{anti}-correlated with need; pricing in
 Two further design records support \cref{sec:ablmask}.
 The dual-floor normaliser is target-scaled and bounded by construction because its predecessor was not: normalising each term by its own fully-closed-mask loss, which is unbounded off-manifold, silently annihilated the zero term at depth (the two closed-mask losses differ there by up to eight orders of magnitude), reducing dual training to negctx-only; the design rule is that a normaliser must never be able to annihilate its own term.
 The one-probe size calibration is the formula $\lambda = \lambda_0 \, (n_{\mathrm{probe}} / n_{\mathrm{target}})^{1/q}$: a single reference run at $\lambda_0$ measures $n_{\mathrm{probe}}$, landing requested sizes within a few percent where a per-target search~\citep[cf.\ the sparsity-targeting of][]{bhaskar2024finding} would cost several runs per seed.
-% data: dev-notes/data/lambda-calibration-2026-07-30/ (README carries the full trail)
+% data: experiments/010-lambda-calibration/ (README carries the full trail)
 
 \subsection{Binarisation Sweep}
 The straight-through estimator makes interior gate values forward-irrelevant, so the sparsity penalty drifts members toward just-above-threshold: the decision boundary becomes an \emph{attractor}, and per-step membership flips grow through training ($218$ per step at layer 10), a stopping-step lottery.
 Annealing instead yields the tightest zero-ablation faithfulness in the programme ($0.002$--$0.10$ deviation from unity) at slightly worse fill scores, another home-turf demonstration.
 Schedule compression does not help: a $200$-step run matches the $400$-step metrics at ${\sim}2\times$ the per-step churn (churn is priced by per-step pressure, not schedule shape); reach-then-hold leaves churn unchanged and inflates size $21$--$48\%$; and truncating a $400$-step run at $200$ yields memberships $57$--$72\%$ oversized with the gate still half-soft.
-% data: dev-notes/data/binarize-sweep-2026-07-31/
+% data: experiments/011-binarize-sweep/
 
 \section{Additional Results}
 \label{app:extra-results}
@@ -1458,10 +1458,10 @@ Statistics are over the 4{,}741 circuits with post-analysis co-activation metric
 
 \subsection{Co-Activation with Fitted Amplitudes: the Strongest Correlational Baseline}
 \label{app:coact-amp}
-% COACT ARC 2026-08-12: dev-notes/data/coact-home-2026-08-12 (home bank,
+% COACT ARC 2026-08-12: experiments/036-coact-home (home bank,
 % best-vs-best triple floor), plus the same construction on the Llama
-% skip-transcoder and GemmaScope banks (transcoder-compare-2026-08-11,
-% gemmascope-2026-08-12). Held-out protocol throughout; scored through the
+% skip-transcoder and GemmaScope banks (035-transcoder-compare,
+% 037-gemmascope). Held-out protocol throughout; scored through the
 % same code path as the discovered arms (selfcheck-certified on the Llama
 % harness).
 \Cref{sec:coact-results} shows correlational proposals failing the intervention gates outright; the fairest possible strengthening of that challenger is to hand it the weighted-circuit machinery itself.

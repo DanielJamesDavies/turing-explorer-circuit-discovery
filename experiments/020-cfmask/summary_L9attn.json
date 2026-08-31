@@ -1,0 +1,18 @@
+{
+ "tag": "L9attn",
+ "seed": "27/6859",
+ "layer": 9,
+ "kind": "attn",
+ "objective": "inject",
+ "inject_lambda": 0.003,
+ "warm": true,
+ "n_final": 318,
+ "secs": 46.9,
+ "holdout_loss": 0.08251953125,
+ "loss_final": 0.9348165392875671,
+ "p_both": 3.6719,
+ "p_gate_only": 0.9062,
+ "p_inject_only": -1.2812,
+ "a_pos_ev": 5.3125,
+ "a_pos_tr": 5.2396
+}

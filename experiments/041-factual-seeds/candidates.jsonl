@@ -1,0 +1,535 @@
+{"layer": 8, "feat": 10364, "label": "dates and years", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 13770, "label": "Dates and years", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 14964, "label": "Dates and years", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 6532, "label": "Dates/Years", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 12239, "label": "Dates and time periods", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 8682, "label": "references to specific dates and events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 13404, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 13622, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 15083, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 9960, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 7525, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 1157, "label": "year ranges", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 11776, "label": "references to specific dates", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 3541, "label": "Dates with years", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 15557, "label": "references to time and dates, particularly in relation to historical events and processes.", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 9627, "label": "dates and years, as well as words associated with specific objects", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 4860, "label": "references to dates and spans of time", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 11483, "label": "dates and years, mostly in the 1990s", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 1235, "label": "Ages and dates", "query": "specific years and historical dates"}
+{"layer": 8, "feat": 9996, "label": "historical/political events", "query": "historical events and wars"}
+{"layer": 8, "feat": 5718, "label": "historical figures/events", "query": "historical events and wars"}
+{"layer": 8, "feat": 8110, "label": "People and historical events", "query": "historical events and wars"}
+{"layer": 8, "feat": 1009, "label": "historical facts", "query": "historical events and wars"}
+{"layer": 8, "feat": 236, "label": "Political actions/historical events", "query": "historical events and wars"}
+{"layer": 8, "feat": 12625, "label": "significant events in time", "query": "historical events and wars"}
+{"layer": 8, "feat": 6124, "label": "references to historical events", "query": "historical events and wars"}
+{"layer": 8, "feat": 15655, "label": "mentions of wars, especially related to the two world wars", "query": "historical events and wars"}
+{"layer": 8, "feat": 7202, "label": "european history", "query": "historical events and wars"}
+{"layer": 8, "feat": 6333, "label": "war and conflict", "query": "historical events and wars"}
+{"layer": 8, "feat": 15676, "label": "war and weapons", "query": "historical events and wars"}
+{"layer": 8, "feat": 16381, "label": "words relating to historical or current events", "query": "historical events and wars"}
+{"layer": 8, "feat": 2212, "label": "historical names, places and events", "query": "historical events and wars"}
+{"layer": 8, "feat": 144, "label": "country names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 5332, "label": "country names/regions", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 10888, "label": "countries and geography", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 1932, "label": "countries and geography", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 6462, "label": "mentions of cities, capitals, and other places", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 16026, "label": "location names, particularly cities and countries", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 705, "label": "country names and related adjectives", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 1747, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 4149, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 1773, "label": "city and state names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 12655, "label": "names of geographic locations", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 9713, "label": "location names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 15865, "label": "names of places and municipalities", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 11371, "label": "location names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 16306, "label": "the names of geographic regions, especially cities and towns, as well as general words for places like capital, region", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 8418, "label": "names of places and organizations", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 10370, "label": "names of people and locations", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 15026, "label": "place names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 4445, "label": "place names", "query": "names of countries and capital cities"}
+{"layer": 8, "feat": 6043, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 16251, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 14760, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 157, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 6806, "label": "measurement units", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 15082, "label": "measurement units", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 1220, "label": "measurement units", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 5735, "label": "measurements with associated units and values", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 1304, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 4460, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 9819, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 11679, "label": "Measurements and units", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 15353, "label": "physical measurement values and associated units", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 7406, "label": "units of measurement and technical terms associated with engineering", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 5674, "label": "numbers, units, and calculations related to scientific measurements", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 436, "label": "measurements and calculations", "query": "scientific units and measurements"}
+{"layer": 8, "feat": 15528, "label": "famous people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 11713, "label": "historical figures", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 3921, "label": "names of famous people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 2919, "label": "political figures", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 2903, "label": "celebrities", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 7576, "label": "names, ages and roles of people, including people involved in government and sports.", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 9217, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 6320, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 2061, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 6615, "label": "Celebrities", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 4744, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 12039, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 10677, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 2946, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 6018, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 8, "feat": 2042, "label": "geographic locations, especially rivers, roads and political regions, and actions related to them", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 11323, "label": "geographic locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 9551, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 5234, "label": "geographical features", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 10408, "label": "geographic locations and geological terms", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 6141, "label": "places on maps and geographic regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 13262, "label": "locations, especially cities, states, and geographical regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 1193, "label": "place names and locations.", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 12194, "label": "geographical place names", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 9873, "label": "mentions of geographic locations and their relative positions", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 2238, "label": "forests and mountains", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 7511, "label": "geographic locations and references like cities, regions, constituencies and trails including locations with and without names", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 6862, "label": "nature and geography", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 3259, "label": "Places and Regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 6180, "label": "locations and borders", "query": "geographic locations, rivers and mountains"}
+{"layer": 8, "feat": 10927, "label": "elements and compounds", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 15765, "label": "chemical elements", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 733, "label": "chemical compounds", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 4598, "label": "chemical compounds and scientific terms", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 14575, "label": "substances and processes", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 8360, "label": "chemicals and materials", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 5861, "label": "chemical formulas including lists of elements", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 8270, "label": "chemicals", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 10346, "label": "scientific text describing elements and composition of materials", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 15651, "label": "words related to materials and chemical elements", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 8743, "label": "scientific terms and processes including chemical elements and abbreviations", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 13723, "label": "chemical formulas and measurement units", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 3478, "label": "chemical combination", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 12367, "label": "chemical processes", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 11706, "label": "terms related to chemical composition and scientific studies", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 4404, "label": "words related to chemical compounds and structures", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 8337, "label": "chemical formulas and measurements", "query": "chemical elements and compounds"}
+{"layer": 8, "feat": 5423, "label": "Sports teams and competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 3235, "label": "sports teams and games", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 10549, "label": "sports competitions", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 13544, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 6084, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 9921, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 8611, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 10739, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 7224, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 14378, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 6397, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 12566, "label": "sports and competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 6625, "label": "sports teams and players", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 1227, "label": "Sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 14088, "label": "Sports teams", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 476, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 14708, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 4099, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 9191, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 5678, "label": "sports teams and cities", "query": "sports teams and competitions"}
+{"layer": 8, "feat": 606, "label": "music albums and songs", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 5290, "label": "musical compositions", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 11302, "label": "words associated with musical composition", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 13151, "label": "information about musical albums, specifically track listings, personnel, and related terms", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 2400, "label": "songs", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 15295, "label": "songs", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 13903, "label": "songs", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 4332, "label": "music artists and bands", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 14256, "label": "terms related to music composition and performance", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 10513, "label": "short or musical compositions", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 11778, "label": "musical instruments, musicians, and music-related terms.", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 15100, "label": "musical groups", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 3474, "label": "information about musical groups, songs, and records", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 14006, "label": "information about musical artists, specifically band member names and album details", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 8399, "label": "terms related to musical instruments, musicians, and ensembles", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 9703, "label": "information about musical artists and bands", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 10592, "label": "music genres", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 143, "label": "music and band members", "query": "musical works, composers and albums"}
+{"layer": 8, "feat": 11807, "label": "organizations and administrative bodies", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 14415, "label": "government agencies", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 9573, "label": "government agencies", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 9806, "label": "institutions and departments", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 14809, "label": "legal and/or formal organizations.", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 14331, "label": "government and organizations", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 2835, "label": "institutions", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 10136, "label": "institutions", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 4158, "label": "agencies and organizations", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 4769, "label": "legal and regulatory documents", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 13103, "label": "legal/regulatory context", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 10469, "label": "legal, governmental, and educational terminology", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 1573, "label": "corporations and organizations", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 8989, "label": "legal/regulatory matters", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 7810, "label": "legal/corporate contexts", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 8911, "label": "legal and policy documents", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 14188, "label": "government and court", "query": "government institutions and legal bodies"}
+{"layer": 8, "feat": 15260, "label": "legal and government documents", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 8243, "label": "dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 3283, "label": "dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 14492, "label": "specific dates or years in historical texts", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 3334, "label": "years and dates", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 8413, "label": "references to specific dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 13119, "label": "dates (years)", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 3593, "label": "references to years and dates", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 1983, "label": "Dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 10709, "label": "Dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 14922, "label": "Dates and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 11382, "label": "years, dates, and age information", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 11801, "label": "references to specific years and numbers, especially in historical or list-like contexts", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 15123, "label": "Dates and historical context", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 9652, "label": "words that relate to dates and historical events", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 8465, "label": "references to dates, times, and years", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 12570, "label": "dates and times, including years and ages", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 13085, "label": "Time periods and dates", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 15475, "label": "words and numbers related to historical time periods", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 10248, "label": "dates and periods of time", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 9482, "label": "specific dates, including the month and at least the last two digits of the year", "query": "specific years and historical dates"}
+{"layer": 10, "feat": 182, "label": "historical events", "query": "historical events and wars"}
+{"layer": 10, "feat": 16112, "label": "conflicts, historical events", "query": "historical events and wars"}
+{"layer": 10, "feat": 7027, "label": "historical events, especially related to battles, empires, and conquests in Europe", "query": "historical events and wars"}
+{"layer": 10, "feat": 10867, "label": "historical events/achievements", "query": "historical events and wars"}
+{"layer": 10, "feat": 12535, "label": "Historical/political events", "query": "historical events and wars"}
+{"layer": 10, "feat": 3028, "label": "things related to historical events and their impact", "query": "historical events and wars"}
+{"layer": 10, "feat": 12081, "label": "events and history", "query": "historical events and wars"}
+{"layer": 10, "feat": 784, "label": "historical events and terminology related to war, treaties, and political transitions", "query": "historical events and wars"}
+{"layer": 10, "feat": 11212, "label": "European places and wars", "query": "historical events and wars"}
+{"layer": 10, "feat": 15426, "label": "world events", "query": "historical events and wars"}
+{"layer": 10, "feat": 4518, "label": "historical topics", "query": "historical events and wars"}
+{"layer": 10, "feat": 9950, "label": "historical facts", "query": "historical events and wars"}
+{"layer": 10, "feat": 14735, "label": "historical battles", "query": "historical events and wars"}
+{"layer": 10, "feat": 1998, "label": "historical conflicts", "query": "historical events and wars"}
+{"layer": 10, "feat": 14181, "label": "references to warfare and historical events", "query": "historical events and wars"}
+{"layer": 10, "feat": 1064, "label": "mentions of dates and historical events.", "query": "historical events and wars"}
+{"layer": 10, "feat": 2488, "label": "people and history", "query": "historical events and wars"}
+{"layer": 10, "feat": 4499, "label": "historical accounts of conflicts and battles", "query": "historical events and wars"}
+{"layer": 10, "feat": 16331, "label": "Country names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 3587, "label": "location names and country related terms", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 8629, "label": "countries and places", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 3677, "label": "names of places/people", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 5337, "label": "place names, particularly cities and countries", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 5878, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 3067, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 15580, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 2270, "label": "place names, countries, nationality and languages", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 1883, "label": "names of cities, towns or other places", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 15336, "label": "places, countries", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 12633, "label": "place names, especially of cities and countries", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 1612, "label": "names and locations", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 7304, "label": "location names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 12461, "label": "names of people and places", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 9920, "label": "countries and territories", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 4989, "label": "place names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 444, "label": "place names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 11758, "label": "place names", "query": "names of countries and capital cities"}
+{"layer": 10, "feat": 8655, "label": "units and measurements", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 9392, "label": "measurements and units", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 12280, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 4221, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 1943, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 4310, "label": "units of measurement and associated notation", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 14392, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 5432, "label": "numbers and units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 10265, "label": "Units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 12234, "label": "Units of measurement", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 9051, "label": "quantities and units of measure.", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 14004, "label": "measurements and quantities", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 3309, "label": "measurements and quantities", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 11776, "label": "measurement quantities and units", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 15960, "label": "Measurement units", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 9218, "label": "units of measure in scientific contexts", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 5030, "label": "Units of measure", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 9209, "label": "Units of measure", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 16100, "label": "numbers, units of measurement, and related terms", "query": "scientific units and measurements"}
+{"layer": 10, "feat": 8262, "label": "political figures and concepts", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 4568, "label": "Historical locations and people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 759, "label": "famous", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 11905, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 14425, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 6319, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 1266, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 12913, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 12133, "label": "Celebrities", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 9277, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 2122, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 10889, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 5840, "label": "people's biographies", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 9110, "label": "People and History", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 12567, "label": "Music and sports figures", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 3126, "label": "references to famous people or intellectual property", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 10913, "label": "fame and movies", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 14453, "label": "names of people and organizations", "query": "famous people and historical figures"}
+{"layer": 10, "feat": 1039, "label": "geography, location, environment", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 5700, "label": "geographic locations and place names", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 2604, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 3174, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 513, "label": "locations, places, and geographic regions.", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 5194, "label": "geographic regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 10378, "label": "mentions of rivers, ridges, and other geographical features plus named locations, especially towns", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 6910, "label": "locations and infrastructure, including roads, county names, trails, rivers, states, and parish names.", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 13810, "label": "geographic locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 3236, "label": "geographic directions and locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 7775, "label": "references to islands, rivers, and coastal regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 859, "label": "places and regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 410, "label": "History and geography", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 7902, "label": "geographical areas", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 5178, "label": "geographic directions, locations, and related terms", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 4707, "label": "locations, geographic regions, and organizations.", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 10329, "label": "geographic locations and transportation terms", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 6814, "label": "places and locations, including towns, cities, counties, and states", "query": "geographic locations, rivers and mountains"}
+{"layer": 10, "feat": 3590, "label": "chemical elements and processes", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 4507, "label": "chemical elements", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 14268, "label": "chemical elements", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 5162, "label": "biochemistry and elements", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 10280, "label": "chemicals/compounds", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 5543, "label": "Chemical compounds", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 13542, "label": "chemical compounds and elements, especially related to metals, acids, and nitrates.", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 5060, "label": "biological compounds", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 13856, "label": "drugs and compounds", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 12041, "label": "scientific compounds", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 16085, "label": "chemical compounds and their effects", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 5514, "label": "words relating to chemical compounds and materials", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 12531, "label": "code and chemistry terms", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 1233, "label": "chemicals/technical", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 11805, "label": "formulas and chemical structures", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 766, "label": "chemical reactions", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 9354, "label": "chemical reactions", "query": "chemical elements and compounds"}
+{"layer": 10, "feat": 12146, "label": "sports teams and games", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 15822, "label": "sports teams/games", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 1345, "label": "sports competitions", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 11913, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 8542, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 14952, "label": "sports and competition", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 6535, "label": "sports and competition", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 12752, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 8886, "label": "sports competition", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 3546, "label": "Sports competition", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 6325, "label": "content related to sports teams, leagues, and competitions", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 3468, "label": "sports championships", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 15473, "label": "Sports teams and locations", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 9577, "label": "sports championships/series", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 1065, "label": "racing and sports competitions", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 1885, "label": "Sports teams and place names", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 7645, "label": "sporting events", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 7061, "label": "sports/games", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 1423, "label": "Sports teams and cities", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 9224, "label": "Soccer competitions", "query": "sports teams and competitions"}
+{"layer": 10, "feat": 14891, "label": "musical groups, releases, songs, and albums", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 10798, "label": "titles of publications, books and musical works.", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 15269, "label": "proper nouns, especially names of musicians, composers, and musical pieces", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 557, "label": "words and phrases associated with the creation and description of music and creative works, including references to songs, albums and their musical component parts such as verses", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 6276, "label": "music genres", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 2649, "label": "musical ensembles", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 9242, "label": "album", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 7151, "label": "musicals", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 7329, "label": "words and phrases associated with music and performance, particularly album/song reviews", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 4491, "label": "music", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 2260, "label": "music", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 9273, "label": "track listings on albums, including bonus tracks", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 5870, "label": "words relating to musical groups or musical performances", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 14545, "label": "information about music albums, including the year and people involved in the production", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 4689, "label": "Songs", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 7319, "label": "composition", "query": "musical works, composers and albums"}
+{"layer": 10, "feat": 4056, "label": "government and institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 2176, "label": "government agencies", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 3963, "label": "government organizations", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 5096, "label": "organizations and official entities", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 12948, "label": "organizations and institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 16011, "label": "organizations and institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 7766, "label": "organizations and institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 3693, "label": "locations, institutions, and governmental bodies", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 6035, "label": "Legal and governmental processes", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 15184, "label": "institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 13438, "label": "legal and governmental information/acronyms/terminology", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 10575, "label": "legal/regulatory context", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 1075, "label": "academic institutions", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 11121, "label": "legal and financial contexts", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 9029, "label": "terms related to law and government organizations", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 8528, "label": "legal and financial regulations and requirements", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 5105, "label": "addresses of government or legal entities", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 14852, "label": "Legal and governmental topics", "query": "government institutions and legal bodies"}
+{"layer": 10, "feat": 3893, "label": "words related to institutional organizations", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 14352, "label": "dates and years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 9008, "label": "specific years or date ranges", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 4147, "label": "dates/years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 12198, "label": "dates or references to specific years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 11857, "label": "dates, especially years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 14819, "label": "dates, especially years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 4542, "label": "year dates", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 7317, "label": "dates, especially years and parts of years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 6574, "label": "dates or references to years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 404, "label": "dates or years connected to political or natural events", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 8099, "label": "time periods/dates", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 8834, "label": "Historical events", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 4278, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 4618, "label": "historical events", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 630, "label": "dates or years mentioned in the text", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 9177, "label": "Numbers and years", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 9976, "label": "references to dates with the year", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 13965, "label": "Time periods/years ago", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 9191, "label": "Time and historical periods", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 14139, "label": "words and phrases related to dates, time periods, and historical events", "query": "specific years and historical dates"}
+{"layer": 12, "feat": 15251, "label": "historical events/stories", "query": "historical events and wars"}
+{"layer": 12, "feat": 2613, "label": "violence, historical events", "query": "historical events and wars"}
+{"layer": 12, "feat": 6230, "label": "historical events and companies", "query": "historical events and wars"}
+{"layer": 12, "feat": 903, "label": "art or historical events", "query": "historical events and wars"}
+{"layer": 12, "feat": 9226, "label": "historical events related to military or political administration", "query": "historical events and wars"}
+{"layer": 12, "feat": 6696, "label": "battles and conflicts", "query": "historical events and wars"}
+{"layer": 12, "feat": 7877, "label": "historical conflict and politics", "query": "historical events and wars"}
+{"layer": 12, "feat": 1328, "label": "words related to historical events, research, and conflict", "query": "historical events and wars"}
+{"layer": 12, "feat": 12770, "label": "descriptions of historical political and military conflicts", "query": "historical events and wars"}
+{"layer": 12, "feat": 15905, "label": "Historical events, beginnings", "query": "historical events and wars"}
+{"layer": 12, "feat": 15593, "label": "conflict or military events", "query": "historical events and wars"}
+{"layer": 12, "feat": 8448, "label": "Historical locations/events", "query": "historical events and wars"}
+{"layer": 12, "feat": 2064, "label": "words, dates, and phrases associated with 20th-century wars and the military", "query": "historical events and wars"}
+{"layer": 12, "feat": 12910, "label": "historical/political issues", "query": "historical events and wars"}
+{"layer": 12, "feat": 2082, "label": "city and country names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 14702, "label": "country and city names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 11126, "label": "country names and travel", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 3919, "label": "country and region names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 12832, "label": "country and region names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 3854, "label": "city names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 1868, "label": "city names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 6712, "label": "city names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 9042, "label": "names of places", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 8466, "label": "names of places and locations", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 137, "label": "country or region names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 12040, "label": "place names and locations", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 13486, "label": "places and names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 8312, "label": "countries and locations", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 11929, "label": "the names of places", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 12846, "label": "town and city names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 6552, "label": "locations and names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 10739, "label": "places names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 1886, "label": "locations and countries", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 4088, "label": "location names", "query": "names of countries and capital cities"}
+{"layer": 12, "feat": 1628, "label": "scientific units of measure", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 14986, "label": "measurements and units", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 3990, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 11387, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 2061, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 10635, "label": "units of measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 3651, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 11171, "label": "units of measure", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 6720, "label": "Units of Measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 5488, "label": "Units of measurement", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 2014, "label": "numbers and units of measure", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 7568, "label": "measurements and values", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 2122, "label": "scientific measurements/calculations", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 16372, "label": "scientific measurements", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 4598, "label": "scientific measurements", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 9033, "label": "scientific measurements", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 2171, "label": "scientific measurements", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 12073, "label": "quantities and measurements", "query": "scientific units and measurements"}
+{"layer": 12, "feat": 14830, "label": "names of famous people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 12884, "label": "mentions of famous people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 11711, "label": "Famous/Powerful people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 12199, "label": "political figures", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 11509, "label": "famous people in arts", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 4523, "label": "political figures and locations", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 5242, "label": "Historical figures/writers", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 5653, "label": "celebrities", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 3705, "label": "celebrities", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 7725, "label": "biographies of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 15499, "label": "references to people, especially famous people, being quoted", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 13901, "label": "names of people and fictional characters", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 2275, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 7018, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 13038, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 6908, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 3328, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 13380, "label": "names of people", "query": "famous people and historical figures"}
+{"layer": 12, "feat": 10048, "label": "geographic locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 1949, "label": "geographic locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 14409, "label": "geographic places", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 7927, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 4767, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 8580, "label": "Geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 8632, "label": "cities, states, countries, and other geographic locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 14161, "label": "geographic locations, especially cities and states, along with some numbers.", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 2270, "label": "geographical locations", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 8887, "label": "locations, regions, and political divisions", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 3707, "label": "geographical regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 15537, "label": "geographical regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 10619, "label": "geographic place names", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 3531, "label": "geographical locations and groups of people", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 16138, "label": "geography and politics", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 2652, "label": "mentions of trails, rivers, railways, corridors, counties, and borders", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 15349, "label": "geographical boundaries", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 11885, "label": "Place names and regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 8889, "label": "geographic place names, especially islands and regions", "query": "geographic locations, rivers and mountains"}
+{"layer": 12, "feat": 9176, "label": "chemical elements", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 15644, "label": "chemical compounds and processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 9904, "label": "words related to chemical elements and compounds", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 4646, "label": "chemical substances", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 605, "label": "chemical concentrations", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 9048, "label": "mentions of both chemical elements and biological processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 14726, "label": "chemical formulas and references to scientific papers", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 13228, "label": "chemical processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 14733, "label": "scientific language and explanations, including references to studies and properties of elements", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 12077, "label": "biological and chemical processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 6763, "label": "chemical compounds and recipes.", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 13528, "label": "components elements parts", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 10291, "label": "words and symbols commonly found in scientific abstracts that describe the chemical make up of organic compounds", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 938, "label": "manufacturing and chemical processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 3472, "label": "chemical formulas", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 12531, "label": "chemical/biological processes", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 2097, "label": "scientific text involving numbers, units, elements, and prepositions", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 10304, "label": "words related to scientific studies about chemical compounds", "query": "chemical elements and compounds"}
+{"layer": 12, "feat": 1434, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 16290, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 12789, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 4293, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 12026, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 13432, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 14117, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 11720, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 1681, "label": "sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 13019, "label": "Sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 7143, "label": "Sports teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 11384, "label": "sports matches", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 7118, "label": "sports team", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 11601, "label": "Sports/Competition", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 11958, "label": "Sports team categories", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 13802, "label": "Sports/competition", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 16219, "label": "sports teams, stadiums and leagues", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 3334, "label": "sports championships", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 437, "label": "football teams", "query": "sports teams and competitions"}
+{"layer": 12, "feat": 6341, "label": "music bands and albums", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 7023, "label": "titles of songs or musical works", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 7461, "label": "musical features", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 7919, "label": "music genres and bands", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 4744, "label": "words related to musical performance tours and/or book writing/publishing", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 10790, "label": "music or entertainment", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 9004, "label": "musical albums with particular emphasis on release date and orchestral arrangements", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 16050, "label": "discographies and associated roles", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 13758, "label": "references to songs and albums, especially their titles and descriptions", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 2252, "label": "names of opera singers and orchestras", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 11100, "label": "terms related to performances and tours", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 15608, "label": "music recordings", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 4504, "label": "Lists of bands/players", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 8542, "label": "music artist or band names", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 14551, "label": "proper nouns associated with music", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 11452, "label": "titles of creative works like movies, books, and songs", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 14317, "label": "terms related to writing or performing music, in a religious context like church", "query": "musical works, composers and albums"}
+{"layer": 12, "feat": 16191, "label": "legal and government entities", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 8546, "label": "text related to legal and regulatory institutions", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 13482, "label": "institutions and organizations", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 2514, "label": "legal and government", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 127, "label": "legal and financial entities", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 2273, "label": "organizations and institutions", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 2439, "label": "Institutions", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 8169, "label": "legal/government contexts", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 10125, "label": "Organizations/institutions", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 3679, "label": "Legal and governmental issues", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 3485, "label": "government or legal documents.", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 591, "label": "academic institutions", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 4939, "label": "references to courts, legal proceedings and government regulatory bodies", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 7634, "label": "government offices", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 12568, "label": "general terms related to government, organizations, and institutional practices", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 13813, "label": "Business/legal entities", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 7147, "label": "regulations and government matters", "query": "government institutions and legal bodies"}
+{"layer": 12, "feat": 7353, "label": "organizational and governmental bodies, especially departments and security-related agencies", "query": "government institutions and legal bodies"}

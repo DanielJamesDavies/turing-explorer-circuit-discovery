@@ -1,0 +1,4 @@
+{"latent": 1283, "set": "coact_raw", "n": 283, "ampF0": 9.0959, "ampFMd": 0.0, "secs": 0.0}
+{"latent": 1283, "set": "coact_amp", "n": 283, "ampF0": 1.5081, "ampFMd": 0.9141, "secs": 59.4, "alpha_p90": 2.5682, "alpha_max": 5.805}
+{"latent": 2062, "set": "coact_raw", "n": 596, "ampF0": 1.4509, "ampFMd": 0.0, "secs": 0.0}
+{"latent": 2062, "set": "coact_amp", "n": 596, "ampF0": 0.9546, "ampFMd": 1.227, "secs": 57.8, "alpha_p90": 2.5163, "alpha_max": 5.1768}

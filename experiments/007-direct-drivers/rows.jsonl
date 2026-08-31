@@ -1,0 +1,20 @@
+{"seed": "32/3021", "tag": "L10", "K": 16, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 64, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 256, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 1024, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 4096, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 16384, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 566099, "free0_direct": 1.0486, "free0_attr": 1.0486, "free0_rand": 1.0486, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 16, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.0, "pin0_attr": 0.0, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 64, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.0, "pin0_attr": 0.0, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 256, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.0, "pin0_attr": 0.0, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 1024, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.0, "pin0_attr": 0.0, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 4096, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.582, "pin0_attr": 0.6757, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 16384, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.855, "pin0_attr": 1.164, "pin0_rand": 0.0, "n_members": 566099, "grad_batch": 8}
+{"seed": "32/3021", "tag": "L10", "K": 566099, "free0_direct": 1.0486, "free0_attr": 1.0486, "free0_rand": 1.0486, "pin0_direct": 1.7784, "pin0_attr": 1.7784, "pin0_rand": 1.7784, "n_members": 566099, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 16, "free0_direct": 0.0, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.7505, "pin0_attr": 4.7245, "pin0_rand": 0.0, "n_members": 15590, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 64, "free0_direct": 0.0097, "free0_attr": 0.0, "free0_rand": 0.0, "pin0_direct": 0.6262, "pin0_attr": 0.7197, "pin0_rand": 0.0, "n_members": 15590, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 256, "free0_direct": 0.0835, "free0_attr": 0.0082, "free0_rand": 0.0, "pin0_direct": 0.7148, "pin0_attr": 0.6667, "pin0_rand": 0.0, "n_members": 15590, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 1024, "free0_direct": 0.3068, "free0_attr": 0.4668, "free0_rand": 0.0, "pin0_direct": 0.9489, "pin0_attr": 0.8083, "pin0_rand": 0.0, "n_members": 15590, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 4096, "free0_direct": 0.6416, "free0_attr": 0.8102, "free0_rand": 0.0, "pin0_direct": 0.9644, "pin0_attr": 1.1021, "pin0_rand": 0.0372, "n_members": 15590, "grad_batch": 8}
+{"seed": "8/30122", "tag": "L2", "K": 15590, "free0_direct": 0.9653, "free0_attr": 0.9653, "free0_rand": 0.9653, "pin0_direct": 1.1618, "pin0_attr": 1.1618, "pin0_rand": 1.1618, "n_members": 15590, "grad_batch": 8}

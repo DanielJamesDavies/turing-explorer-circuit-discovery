@@ -1,0 +1,397 @@
+{"layer": 0, "feat": 127, "label": "proper names, particularly of people and places."}
+{"layer": 0, "feat": 589, "label": "abbreviations or references composed of one or two letters separated by periods"}
+{"layer": 0, "feat": 800, "label": "code-related terms and names of programming languages, especially related to Java and Swift"}
+{"layer": 0, "feat": 822, "label": "code related to functions and variables"}
+{"layer": 0, "feat": 996, "label": "proper nouns and other capitalized words."}
+{"layer": 0, "feat": 1165, "label": "words relating to abstract concepts, like properties, associations or figures of speech"}
+{"layer": 0, "feat": 1168, "label": "parenthetical statements."}
+{"layer": 0, "feat": 1509, "label": "proper nouns and parts of proper nouns"}
+{"layer": 0, "feat": 1607, "label": "proper nouns"}
+{"layer": 0, "feat": 1847, "label": "scientific terms and experimental details related to biological and chemical research"}
+{"layer": 0, "feat": 2072, "label": "proper nouns and numbers"}
+{"layer": 0, "feat": 2115, "label": "data reported as a percentage inside brackets, especially in a laboratory or medical context, and also recognizes countries"}
+{"layer": 0, "feat": 2158, "label": "the word \"with\""}
+{"layer": 0, "feat": 2238, "label": "the word \"about\" when followed by a numerical value"}
+{"layer": 0, "feat": 2247, "label": "single quotes"}
+{"layer": 0, "feat": 2368, "label": "technical terms used in scientific writing"}
+{"layer": 0, "feat": 2405, "label": "proper nouns, especially last names, and some location names or categories"}
+{"layer": 0, "feat": 2455, "label": "the word \"case\", sometimes in relation to a preposition"}
+{"layer": 0, "feat": 2718, "label": "syntax related to programming languages"}
+{"layer": 0, "feat": 2808, "label": "mentions of religion"}
+{"layer": 0, "feat": 2848, "label": "the word \"of\""}
+{"layer": 0, "feat": 2994, "label": "the pronoun \"his\" and the pronoun \"he.\""}
+{"layer": 0, "feat": 3084, "label": "numerical values preceded by line breaks"}
+{"layer": 0, "feat": 3298, "label": "colons and commas within technical documents"}
+{"layer": 0, "feat": 3474, "label": "initials separated by periods and action verbs"}
+{"layer": 0, "feat": 3498, "label": "the pronoun \"they\" or its possessive form."}
+{"layer": 0, "feat": 3564, "label": "mathematical notation symbols"}
+{"layer": 0, "feat": 3604, "label": "commands and filenames in code"}
+{"layer": 0, "feat": 3636, "label": "proper nouns, especially names of people and places"}
+{"layer": 0, "feat": 3820, "label": "the word \"the\""}
+{"layer": 0, "feat": 3850, "label": "punctuation marks"}
+{"layer": 0, "feat": 4270, "label": "LaTeX or HTML code"}
+{"layer": 0, "feat": 4448, "label": "terms related to different languages, code, medicine, politics, and parsing."}
+{"layer": 0, "feat": 4687, "label": "place names"}
+{"layer": 0, "feat": 4789, "label": "names, especially last names, which often contain \"thaler\""}
+{"layer": 0, "feat": 5057, "label": "articles and pronouns."}
+{"layer": 0, "feat": 5215, "label": "code-related terms, especially from multiple languages (C, Swift, etc.) and technical documentation."}
+{"layer": 0, "feat": 5228, "label": "colons and related formatting"}
+{"layer": 0, "feat": 5358, "label": "words related to medical devices and procedures, particularly cardiac and chair-related"}
+{"layer": 0, "feat": 5366, "label": "words related to study design, experiment analysis and genetics"}
+{"layer": 0, "feat": 6051, "label": "periods, spaces, and the number 1"}
+{"layer": 0, "feat": 6144, "label": "chunks of source code, math formulas, and other structured text."}
+{"layer": 0, "feat": 6745, "label": "parenthesized lists, or comma separated elements within a math environment, or a question and answer block"}
+{"layer": 0, "feat": 7104, "label": "abbreviations followed by periods and associated words such as and, also, helped, read, testified, and conducted."}
+{"layer": 0, "feat": 7279, "label": "proper nouns"}
+{"layer": 0, "feat": 7403, "label": "technical words related to chemistry, biology or medicine"}
+{"layer": 0, "feat": 7424, "label": "the word \"each\" and words that could modify \"each\" like \"more,\" \"most,\" or comparative adjectives."}
+{"layer": 0, "feat": 7490, "label": "initial letters, often those of people's names, places, organizations or abbreviations"}
+{"layer": 0, "feat": 7532, "label": "proper nouns"}
+{"layer": 0, "feat": 7894, "label": "line breaks that indicate a paragraph or section beginning"}
+{"layer": 0, "feat": 8061, "label": "the preposition \"in\""}
+{"layer": 0, "feat": 8191, "label": "names and words in languages other than English"}
+{"layer": 0, "feat": 8232, "label": "the articles \"a\" and \"the\" and the preposition \"in\""}
+{"layer": 0, "feat": 8300, "label": "code and related markup"}
+{"layer": 0, "feat": 8444, "label": "the word \"to\""}
+{"layer": 0, "feat": 8773, "label": "words and abbreviations related to scientific studies and medical terminology"}
+{"layer": 0, "feat": 8954, "label": "present tense verbs"}
+{"layer": 0, "feat": 9022, "label": "technical words used in computing, science, or engineering"}
+{"layer": 0, "feat": 9026, "label": "technical documents or data, including numbers, units, and references to figures or tables."}
+{"layer": 0, "feat": 9246, "label": "legal documents where a point-by-point analysis is being made"}
+{"layer": 0, "feat": 9263, "label": "mentions of academic qualifications and precise temperature values"}
+{"layer": 0, "feat": 9267, "label": "the word \"expressed\""}
+{"layer": 0, "feat": 9588, "label": "instances of the phrase \"such as\""}
+{"layer": 0, "feat": 9654, "label": "square brackets and related math and reference symbols"}
+{"layer": 0, "feat": 9739, "label": "citations, references, and code snippets within the text, often indicated by specific punctuation and formatting."}
+{"layer": 0, "feat": 9747, "label": "code snippets dealing with user interfaces and visualizers"}
+{"layer": 0, "feat": 9936, "label": "words or names related to biology, disease, and scientific study"}
+{"layer": 0, "feat": 10109, "label": "the word \"other.\""}
+{"layer": 0, "feat": 10535, "label": "words related to medical procedures and studies, especially prospective studies"}
+{"layer": 0, "feat": 10902, "label": "words used in scientific or biological taxonomy, particularly names of species and classifications."}
+{"layer": 0, "feat": 11248, "label": "code in various programming languages"}
+{"layer": 0, "feat": 11835, "label": "terms used in software code such as \"assembly\", \"using\", \"namespace\", and \"license\""}
+{"layer": 0, "feat": 11927, "label": "technical words and names of people, places, and things."}
+{"layer": 0, "feat": 12607, "label": "the letter \"e\" and possibly any letter followed by a single digit"}
+{"layer": 0, "feat": 13004, "label": "parenthetical numerical references and citations to literature, laws, and statistics"}
+{"layer": 0, "feat": 13437, "label": "the word \"who\""}
+{"layer": 0, "feat": 13564, "label": "the word \"which\""}
+{"layer": 0, "feat": 13750, "label": "the word \"cream,\" especially in the context of \"ice cream,\" and also the letter B"}
+{"layer": 0, "feat": 14352, "label": "somewhat technical, scientific, and legal words and phrases"}
+{"layer": 0, "feat": 14396, "label": "words related to scientific, medical, and technical jargon"}
+{"layer": 0, "feat": 15484, "label": "the word \"each\" appearing in formal writing"}
+{"layer": 0, "feat": 15492, "label": "the word \"for\""}
+{"layer": 0, "feat": 15498, "label": "legal and court related terms."}
+{"layer": 0, "feat": 15544, "label": "the word \"which\""}
+{"layer": 0, "feat": 16170, "label": "words related to programming code, math, anatomy, medicine, structure, and anything that can range."}
+{"layer": 0, "feat": 16290, "label": "surnames and other words that commonly appear in legal documents"}
+{"layer": 0, "feat": 16302, "label": "the word \"region\" and some other words such as nutrients, rate, vitamin, and expected."}
+{"layer": 1, "feat": 5, "label": "a variety of programming language related terms, legal terms, math/CS terms and words ending in \"kins\", \"mazoo\", or \"ish\""}
+{"layer": 1, "feat": 696, "label": "scientific writing about species categorizations, especially when those species are wildlife"}
+{"layer": 1, "feat": 930, "label": "the word \"walk\" in the context of a random walk"}
+{"layer": 1, "feat": 1286, "label": "the word \"each\""}
+{"layer": 1, "feat": 1315, "label": "commas"}
+{"layer": 1, "feat": 1378, "label": "a mix of names and location words"}
+{"layer": 1, "feat": 1820, "label": "mentions of \"consumers.\""}
+{"layer": 1, "feat": 2415, "label": "text containing mathematical or scientific notation and symbols"}
+{"layer": 1, "feat": 3153, "label": "code documentation and code related terms like AttributeSet, class, Java, C++, etc"}
+{"layer": 1, "feat": 3959, "label": "the word \"each\" appearing in mathematical or scientific writing"}
+{"layer": 1, "feat": 7541, "label": "words referencing insects, larvae, and fungi, specifically related to their life cycle and interaction with plants."}
+{"layer": 1, "feat": 7816, "label": "the word \"with\""}
+{"layer": 1, "feat": 9065, "label": "technical botanical descriptions of plants and flowers"}
+{"layer": 1, "feat": 9148, "label": "information related to chess tournaments"}
+{"layer": 1, "feat": 9523, "label": "prepositions and related words."}
+{"layer": 1, "feat": 9824, "label": "the word \"remote\" as it's used in computer code"}
+{"layer": 1, "feat": 10132, "label": "the abbreviation for Doctorate of Philosophy, \"Ph.D.\" (or \"PhD\") written as \"D\""}
+{"layer": 1, "feat": 10568, "label": "biological taxonomic language about new species' formal description"}
+{"layer": 1, "feat": 11752, "label": "scientific names of organisms that cause plant galls"}
+{"layer": 1, "feat": 12115, "label": "code comments"}
+{"layer": 1, "feat": 12879, "label": "parenthetical phrases, especially those containing acronyms and/or numbers"}
+{"layer": 1, "feat": 13370, "label": "the word \"other.\""}
+{"layer": 1, "feat": 14212, "label": "the article \"a\""}
+{"layer": 1, "feat": 14999, "label": "scientific classification names"}
+{"layer": 1, "feat": 15725, "label": "LaTeX markup"}
+{"layer": 1, "feat": 15795, "label": "words related to education and school admissions"}
+{"layer": 2, "feat": 1208, "label": "parts of proper nouns and names"}
+{"layer": 2, "feat": 2030, "label": "words used when making comparisons in scientific studies"}
+{"layer": 2, "feat": 2374, "label": "scientific names of living things"}
+{"layer": 2, "feat": 2669, "label": "biological taxonomy classifications, especially of viruses and insects."}
+{"layer": 2, "feat": 3418, "label": "math and scientific notation"}
+{"layer": 2, "feat": 3889, "label": "the substrings \"ata\", \"otype\", and \"partitioned\""}
+{"layer": 2, "feat": 3978, "label": "the word \"and\""}
+{"layer": 2, "feat": 5594, "label": "the word \"another\""}
+{"layer": 2, "feat": 5959, "label": "the end of sentences or list items."}
+{"layer": 2, "feat": 6008, "label": "the words \"literally,\" \"useless,\" and \"respectively\""}
+{"layer": 2, "feat": 6153, "label": "the word \"with\", and one instance of Portuguese that translates to \"with\""}
+{"layer": 2, "feat": 6294, "label": "various syntax characters related to code"}
+{"layer": 2, "feat": 7337, "label": "a mixed bag of words with no clear association"}
+{"layer": 2, "feat": 7453, "label": "the word \"effectively\" and words and phrases with similar meaning such as \"improvement\" and \"function\""}
+{"layer": 2, "feat": 7602, "label": "verbs ending in \"ate\" or \"ates\""}
+{"layer": 2, "feat": 7658, "label": "strings containing the character sequence \u00c3\u00a9"}
+{"layer": 2, "feat": 8122, "label": "instances of HTML or Javascript code using JQuery"}
+{"layer": 2, "feat": 8882, "label": "the word \"each\""}
+{"layer": 2, "feat": 9299, "label": "the words \"so\", \"whom\", \"that\", \"them\", \"they\", \"mind\", and \"war\""}
+{"layer": 2, "feat": 9832, "label": "parts of names"}
+{"layer": 2, "feat": 10605, "label": "scientific names, especially related to bacteria and shrimp"}
+{"layer": 2, "feat": 10852, "label": "academic titles and degrees"}
+{"layer": 2, "feat": 11080, "label": "code snippets and programming terms"}
+{"layer": 2, "feat": 11363, "label": "colors and words like Diamond."}
+{"layer": 2, "feat": 12330, "label": "proper nouns denoting the names of people"}
+{"layer": 2, "feat": 12386, "label": "advanced mathematical or scientific writing"}
+{"layer": 2, "feat": 13850, "label": "proper nouns alongside governing bodies or errors relating to laws"}
+{"layer": 2, "feat": 14218, "label": "the word \"respectively\""}
+{"layer": 2, "feat": 14359, "label": "words associated with college admissions"}
+{"layer": 2, "feat": 14577, "label": "jargon related to biological laboratory experiments"}
+{"layer": 2, "feat": 14726, "label": "words in Croatian related to phone verification and user accounts"}
+{"layer": 2, "feat": 14784, "label": "the word \"respectively\""}
+{"layer": 3, "feat": 315, "label": "references to government or legal entities"}
+{"layer": 3, "feat": 373, "label": "word beginnings with the letters \"a,\" \"h,\"\"i,\" \"r,\" and \"p\" (perhaps prefixes and/or related to medical or scientific terms)"}
+{"layer": 3, "feat": 417, "label": "LaTeX markup"}
+{"layer": 3, "feat": 461, "label": "proper nouns or code-specific terms"}
+{"layer": 3, "feat": 1182, "label": "academic or technical writing describing a process or system."}
+{"layer": 3, "feat": 1300, "label": "the letter \"F\" in different contexts such as math formulas, sports, and acronyms"}
+{"layer": 3, "feat": 1481, "label": "various seemingly unrelated character sequences"}
+{"layer": 3, "feat": 2045, "label": "the word \"against.\""}
+{"layer": 3, "feat": 3004, "label": "the SQL keyword \"GROUP BY\""}
+{"layer": 3, "feat": 3205, "label": "code snippets and documentation references, possibly related to web development"}
+{"layer": 3, "feat": 3638, "label": "words associated with symbolic representation and religious festivals"}
+{"layer": 3, "feat": 4558, "label": "connections and relationships between multiple entities"}
+{"layer": 3, "feat": 4583, "label": "words and phrases dealing with conflict, violence, and harmful situations"}
+{"layer": 3, "feat": 4938, "label": "capitalized 2-4 letter acronyms and short words"}
+{"layer": 3, "feat": 5021, "label": "the word \"whom\" or a few specific short sequences of characters"}
+{"layer": 3, "feat": 5520, "label": "scientific names of organisms, especially bacteria"}
+{"layer": 3, "feat": 6213, "label": "references to library paths and flags in code"}
+{"layer": 3, "feat": 6445, "label": "scientific names of organisms, especially bacteria and plants"}
+{"layer": 3, "feat": 6533, "label": "the abbreviation \"PA\" and variations of \"Pa\" within words"}
+{"layer": 3, "feat": 6835, "label": "scientific names of organisms, especially bacteria, often using abbreviations and taxonomic ranks."}
+{"layer": 3, "feat": 6937, "label": "text related to the scientific classification of organisms"}
+{"layer": 3, "feat": 7999, "label": "misspelled or non-English words"}
+{"layer": 3, "feat": 8075, "label": "code snippets referring to administrative tasks or emails"}
+{"layer": 3, "feat": 8510, "label": "expressions of love or affection"}
+{"layer": 3, "feat": 8603, "label": "information about baseball and court cases"}
+{"layer": 3, "feat": 9345, "label": "words and phrases from a variety of languages related to technical and religious topics"}
+{"layer": 3, "feat": 11547, "label": "instances where a group of authors are cited using \"et al.\""}
+{"layer": 3, "feat": 11994, "label": "academic degrees and professional titles, especially involving \"Ph.D.\""}
+{"layer": 3, "feat": 12119, "label": "words related to educational background and professional history"}
+{"layer": 3, "feat": 12693, "label": "terms and phrases that appear in a person's biography or resume, such as awards, credentials, previous positions, and skills."}
+{"layer": 3, "feat": 12967, "label": "the number 'one' appearing in the text"}
+{"layer": 3, "feat": 13888, "label": "words and abbreviations used in scientific or medical research papers"}
+{"layer": 3, "feat": 14236, "label": "words ending in \"shaped\" or the word \"section\""}
+{"layer": 3, "feat": 14469, "label": "legal references such as case names, 's Ct', and dates"}
+{"layer": 3, "feat": 14545, "label": "a variety of things including names and formulas, possibly related to technology, research or academia."}
+{"layer": 3, "feat": 15241, "label": "mentions of pairs of people or entities"}
+{"layer": 3, "feat": 15887, "label": "words that occur near the word \"with.\""}
+{"layer": 3, "feat": 15899, "label": "titles of people, especially medical or academic titles"}
+{"layer": 3, "feat": 15943, "label": "the word \"whom\" and words like \"which\" and \"anyone\""}
+{"layer": 3, "feat": 15962, "label": "abbreviations and phrases indicating alternatives or missing information"}
+{"layer": 3, "feat": 16191, "label": "verbs or legal names, pointing to its use in citing facts or sources"}
+{"layer": 4, "feat": 48, "label": "words suggesting relationship or dependence between entities"}
+{"layer": 4, "feat": 93, "label": "words related to scientific writing with medical, chemical, or biological connotations"}
+{"layer": 4, "feat": 123, "label": "mathematical formulas and chemical structures"}
+{"layer": 4, "feat": 1260, "label": "last names of people"}
+{"layer": 4, "feat": 1620, "label": "words related to paleontology, especially those about crocodiles and older geologic eras."}
+{"layer": 4, "feat": 1630, "label": "words and phrases related to love and affection, including romantic and platonic love"}
+{"layer": 4, "feat": 1657, "label": "words related to plants biology and chemistry"}
+{"layer": 4, "feat": 2030, "label": "words with title, property, code, or diversity following them as well as specific punctuation"}
+{"layer": 4, "feat": 2092, "label": "words associated with education and research institutions"}
+{"layer": 4, "feat": 2267, "label": "words related to legal or scientific research like testimony, detection, interrupt, or publication"}
+{"layer": 4, "feat": 2577, "label": "references to publications or legal citations, especially abbreviated names and numbers"}
+{"layer": 4, "feat": 2670, "label": "mentions of relationships and interactions with others."}
+{"layer": 4, "feat": 2803, "label": "words related to teamwork and cooperation"}
+{"layer": 4, "feat": 3727, "label": "mentions of academic degrees"}
+{"layer": 4, "feat": 4066, "label": "occurrences of the word \"fenugreek.\""}
+{"layer": 4, "feat": 5288, "label": "technical/scientific documents mentioning specific quantities or measurements regarding medical imaging or related instruments"}
+{"layer": 4, "feat": 6128, "label": "references to romantic relationships, affairs, and family dynamics"}
+{"layer": 4, "feat": 6758, "label": "mentions of people with the degrees PhD or MD"}
+{"layer": 4, "feat": 7115, "label": "the word \"respectively\""}
+{"layer": 4, "feat": 7536, "label": "the word \"each\""}
+{"layer": 4, "feat": 8302, "label": "legal citations"}
+{"layer": 4, "feat": 8364, "label": "technical and legal terms"}
+{"layer": 4, "feat": 9363, "label": "references to legal cases and research papers"}
+{"layer": 4, "feat": 9483, "label": "academic degrees and job titles."}
+{"layer": 4, "feat": 9591, "label": "code snippets about quizzes and camps and legal testimonies about agents"}
+{"layer": 4, "feat": 10182, "label": "file extensions, properties, libraries, or arguments in code"}
+{"layer": 4, "feat": 10430, "label": "relative clauses starting with \"which.\""}
+{"layer": 4, "feat": 11633, "label": "words related to education and employment history"}
+{"layer": 4, "feat": 12424, "label": "scientific names ending in \"us\", \"a\", or \"ii\"."}
+{"layer": 4, "feat": 12510, "label": "last names"}
+{"layer": 4, "feat": 13120, "label": "latin names of plant species written in italics preceded by an asterisk"}
+{"layer": 4, "feat": 13826, "label": "the word \"single\" preceded by \"every\""}
+{"layer": 4, "feat": 13943, "label": "words and abbreviations related to academic research"}
+{"layer": 4, "feat": 14506, "label": "the words 'one' or 'ones'"}
+{"layer": 4, "feat": 14647, "label": "scientific names of species"}
+{"layer": 4, "feat": 14775, "label": "words related to teaching and education"}
+{"layer": 4, "feat": 14857, "label": "code snippets and license agreements"}
+{"layer": 5, "feat": 260, "label": "text that mentions people helping each other"}
+{"layer": 5, "feat": 504, "label": "names of medical or academic degrees"}
+{"layer": 5, "feat": 1562, "label": "abbreviations, version numbers, and other legal or formal language constructs"}
+{"layer": 5, "feat": 2267, "label": "law related terminology and references to specific cases or legal entities."}
+{"layer": 5, "feat": 2279, "label": "a variety of seemingly unrelated proper nouns and jargon terms"}
+{"layer": 5, "feat": 3470, "label": "scientific names of organisms, especially bacteria and plants."}
+{"layer": 5, "feat": 3560, "label": "words that act as unit of measurement or quantification"}
+{"layer": 5, "feat": 4545, "label": "last names"}
+{"layer": 5, "feat": 5120, "label": "Latin names of species"}
+{"layer": 5, "feat": 5725, "label": "people's educational history including degrees and schools"}
+{"layer": 5, "feat": 6384, "label": "words related to higher education and professions"}
+{"layer": 5, "feat": 6535, "label": "scientific and legal terms"}
+{"layer": 5, "feat": 7254, "label": "scientific names of plants and related information"}
+{"layer": 5, "feat": 8173, "label": "proper nouns, especially those associated with legal contexts, people's names, and geographic locations."}
+{"layer": 5, "feat": 8656, "label": "mentions of historical events in Europe and the British Isles including people, locations, and dates."}
+{"layer": 5, "feat": 8777, "label": "terms related to medicine and medical information"}
+{"layer": 5, "feat": 9593, "label": "code snippets"}
+{"layer": 5, "feat": 10136, "label": "proper names"}
+{"layer": 5, "feat": 10148, "label": "code snippets, URLs, software licenses, and file extensions."}
+{"layer": 5, "feat": 10392, "label": "fields of academic study"}
+{"layer": 5, "feat": 11245, "label": "various mathematical terms, theorems, and people known for their contribution to math"}
+{"layer": 5, "feat": 11327, "label": "references to wars, military ranks, and battles"}
+{"layer": 5, "feat": 12906, "label": "phrases related to academic degrees from universities"}
+{"layer": 5, "feat": 13801, "label": "abbreviations for degrees and mentions of educational attainment"}
+{"layer": 5, "feat": 13828, "label": "words relating to education, especially colleges, performance, and student applications"}
+{"layer": 5, "feat": 14152, "label": "words related to a variety of coding languages, science, or other languages"}
+{"layer": 5, "feat": 14614, "label": "the phrase \"each other\""}
+{"layer": 5, "feat": 14729, "label": "legal citations and references to court cases"}
+{"layer": 5, "feat": 14757, "label": "words, formulas, or names related to mathematical research"}
+{"layer": 5, "feat": 15544, "label": "terms from the Kyuranger universe"}
+{"layer": 5, "feat": 15605, "label": "citations and names"}
+{"layer": 6, "feat": 2254, "label": "references to academic degrees"}
+{"layer": 6, "feat": 6649, "label": "the words \"each\" and \"other\" and the place name \"Los\""}
+{"layer": 6, "feat": 16231, "label": "scientific names of plants."}
+{"layer": 0, "feat": 424, "label": "words and phrases related to scientific research, especially experimental studies and data analysis."}
+{"layer": 0, "feat": 944, "label": "punctuation marks, especially commas and periods"}
+{"layer": 0, "feat": 1354, "label": "the word \"speed\" sometimes preceded by the word \"high\""}
+{"layer": 0, "feat": 2111, "label": "the word \"respectively\""}
+{"layer": 0, "feat": 3090, "label": "JavaScript or other C-style code with member access via \".\" and \"->\""}
+{"layer": 0, "feat": 3123, "label": "text in languages besides English, like French and Japanese, as well as programming terms and data."}
+{"layer": 0, "feat": 3202, "label": "proper nouns"}
+{"layer": 0, "feat": 3255, "label": "the word \"and\""}
+{"layer": 0, "feat": 3256, "label": "SSH public key authentication details"}
+{"layer": 0, "feat": 3512, "label": "words related to ancient history, mythology, and royalty"}
+{"layer": 0, "feat": 3890, "label": "words related to scientific studies including capabilities, probabilities and friendly relations"}
+{"layer": 0, "feat": 4273, "label": "the word \"each\""}
+{"layer": 0, "feat": 4823, "label": "the word \"part\" followed by prepositions or words related to sections or components."}
+{"layer": 0, "feat": 4991, "label": "words or phrases associated with scientific or formal writing, particularly words relating to natural history, archeology, or formal analysis"}
+{"layer": 0, "feat": 5194, "label": "a technical terms and concepts from a variety of fields, including computer science, physics and politics."}
+{"layer": 0, "feat": 5297, "label": "code snippets, programming or technical terminology"}
+{"layer": 0, "feat": 5876, "label": "capitalized letters and abbreviations, possibly indicating names or references"}
+{"layer": 0, "feat": 6116, "label": "words related to money or business transactions"}
+{"layer": 0, "feat": 6133, "label": "something the user looked at, is looking at, or will look at."}
+{"layer": 0, "feat": 6360, "label": "varied words, some related to legal or technical language, others to fantasy narratives"}
+{"layer": 0, "feat": 8008, "label": "mentions of a female subject"}
+{"layer": 0, "feat": 8163, "label": "words and phrases related to societal and political issues"}
+{"layer": 0, "feat": 8489, "label": "words related to reports, experiments, systems and research"}
+{"layer": 0, "feat": 8870, "label": "scientific names of organisms"}
+{"layer": 0, "feat": 9598, "label": "words and phrases of greeting in different languages, especially French, along with terms related to fantasy and religion"}
+{"layer": 0, "feat": 9685, "label": "periods"}
+{"layer": 0, "feat": 9734, "label": "code snippets using \"delegate\" and parentheses."}
+{"layer": 0, "feat": 9773, "label": "references to dates and times"}
+{"layer": 0, "feat": 9818, "label": "indented code blocks or code-related formatting."}
+{"layer": 0, "feat": 10013, "label": "mentions of economic systems, and relates them by using terms like \"as\""}
+{"layer": 0, "feat": 10046, "label": "words related to history, politics, medicine, genetics, and microscopy"}
+{"layer": 0, "feat": 11612, "label": "technical or scientific terms, especially in a research context"}
+{"layer": 0, "feat": 11846, "label": "legal jargon related to court cases, particularly citing names of cases"}
+{"layer": 0, "feat": 12200, "label": "a variety of specific nouns"}
+{"layer": 0, "feat": 12205, "label": "questions using the words \"where,\" \"which,\" or \"something\""}
+{"layer": 0, "feat": 12440, "label": "words and phrases related to food and botany"}
+{"layer": 0, "feat": 12677, "label": "botanical or forestry terms"}
+{"layer": 0, "feat": 12747, "label": "occurrences of the words 'they', 'them', 'that', 'these', or something that can be replaced with 'they' or 'them'"}
+{"layer": 0, "feat": 12763, "label": "parentheses, especially those enclosing a number or letter"}
+{"layer": 0, "feat": 13988, "label": "proper nouns, code syntax, and scientific words related to medicine, botany, or climate science"}
+{"layer": 0, "feat": 14037, "label": "words and phrases in Spanish (and to some extent also technical terms \"copy\", \"sites\" \"description\", \"product\", \"figure\") and terms related to elections"}
+{"layer": 0, "feat": 14172, "label": "words ending in \"ings\" and \"etc\""}
+{"layer": 0, "feat": 14426, "label": "a mix of words that appear to be technical, scientific or legal jargon"}
+{"layer": 0, "feat": 14725, "label": "code-related terms like project names, libraries, or tags."}
+{"layer": 0, "feat": 14918, "label": "words in the domain of plant biology dealing with genetics, reproduction, and traits"}
+{"layer": 0, "feat": 14963, "label": "words related to medical/legal/scientific terminology"}
+{"layer": 0, "feat": 15089, "label": "proper nouns, especially names of people, places, and organizations, as well as some words related to academic or technical fields."}
+{"layer": 0, "feat": 15504, "label": "words related to conflict, religion, and politics"}
+{"layer": 0, "feat": 15951, "label": "HTML formatting tags"}
+{"layer": 0, "feat": 16183, "label": "words and phrases related to paganism, especially Wicca, Druids, and associated celebrations"}
+{"layer": 1, "feat": 873, "label": "descriptive words in gardening contexts"}
+{"layer": 1, "feat": 1709, "label": "descriptions of a new variety of plant including its characteristics and how it was created."}
+{"layer": 1, "feat": 3042, "label": "mentions of logos, listeners, versions and sweethearts"}
+{"layer": 1, "feat": 3620, "label": "mentions of repeating something"}
+{"layer": 1, "feat": 4359, "label": "the word \"handle\" or \"diaper\""}
+{"layer": 1, "feat": 4403, "label": "titles or names enclosed within quotation marks and/or followed by periods"}
+{"layer": 1, "feat": 5178, "label": "the terms \"master\" and \"slave\" in relation to devices"}
+{"layer": 1, "feat": 5273, "label": "mathematical formulas and variable assignments, particularly the variable 'z'"}
+{"layer": 1, "feat": 5668, "label": "words starting with \"che\" or the French word \"que\" or \"qui\""}
+{"layer": 1, "feat": 5704, "label": "scientific taxonomy of living things"}
+{"layer": 1, "feat": 6022, "label": "the word Which capitalized or not"}
+{"layer": 1, "feat": 6547, "label": "measurements in degrees"}
+{"layer": 1, "feat": 6856, "label": "scientific terms for animals and nature"}
+{"layer": 1, "feat": 7035, "label": "scientific or technical words, especially related to plants."}
+{"layer": 1, "feat": 9861, "label": "the word \"which,\" sometimes in conjunction with affect/influence"}
+{"layer": 1, "feat": 10230, "label": "the phrase \"get rid\""}
+{"layer": 1, "feat": 12377, "label": "the word \"tight\" or \"scripted\""}
+{"layer": 1, "feat": 12494, "label": "the word \"procedure\" and words associated with processes"}
+{"layer": 1, "feat": 14006, "label": "information about a person's life and career."}
+{"layer": 1, "feat": 14042, "label": "references to United States District Courts"}
+{"layer": 1, "feat": 14356, "label": "code-switching between English and languages like French or Spanish, especially focusing on pronouns or common articles in those languages"}
+{"layer": 1, "feat": 14794, "label": "words related to forestry and ecological research, especially focused on the effects of treatments and environmental changes on vegetation, runoff, and related elements"}
+{"layer": 1, "feat": 15024, "label": "code or code-like text, especially related to math or science"}
+{"layer": 1, "feat": 15764, "label": "variations of the word \"focus\""}
+{"layer": 1, "feat": 15841, "label": "mentions of learning and personal development."}
+{"layer": 2, "feat": 763, "label": "scientific writing about plant biology experiments and analysis"}
+{"layer": 2, "feat": 1490, "label": "words related to education, qualifications, and political fellowships"}
+{"layer": 2, "feat": 4486, "label": "instances of the word \"whom.\""}
+{"layer": 2, "feat": 5245, "label": "the word \"each\""}
+{"layer": 2, "feat": 5364, "label": "names or initials followed by a period"}
+{"layer": 2, "feat": 6310, "label": "text having to do with school credit requirements"}
+{"layer": 2, "feat": 6675, "label": "the word \"each\"."}
+{"layer": 2, "feat": 7676, "label": "the preposition \"in,\" sometimes within the context of code or technical writing"}
+{"layer": 2, "feat": 9722, "label": "code or code-like syntax especially code snippets using particular open/close markers"}
+{"layer": 2, "feat": 10435, "label": "words related to military or civil conflicts and political entities."}
+{"layer": 2, "feat": 12868, "label": "text discussing universities and academic life"}
+{"layer": 2, "feat": 13360, "label": "words related to academic titles and positions."}
+{"layer": 2, "feat": 13900, "label": "the words \"master\" and \"slave\" in a technical context"}
+{"layer": 2, "feat": 16003, "label": "\"which\" preceded by a word ending in a vowel or \"to which,\" in legal or medical contexts."}
+{"layer": 3, "feat": 1208, "label": "parts of people's last names"}
+{"layer": 3, "feat": 1411, "label": "instances of academic degrees"}
+{"layer": 3, "feat": 1532, "label": "a combination of words related to voting, language, study participants and trees"}
+{"layer": 3, "feat": 3116, "label": "words related to education and medical training"}
+{"layer": 3, "feat": 5569, "label": "instances of the word \"respectively\" sometimes in conjunction with technical terms"}
+{"layer": 3, "feat": 5895, "label": "the word \"each\""}
+{"layer": 3, "feat": 6670, "label": "technical vocabulary related to the natural sciences"}
+{"layer": 3, "feat": 6725, "label": "words related to academic degrees"}
+{"layer": 3, "feat": 6954, "label": "abbreviations or words associated with academic degrees and accreditation"}
+{"layer": 3, "feat": 7529, "label": "words and phrases related to governmental or organizational statistics and reports"}
+{"layer": 3, "feat": 7592, "label": "words associated with commerce or products"}
+{"layer": 3, "feat": 7988, "label": "text enclosed in parentheses or quotation marks"}
+{"layer": 3, "feat": 8266, "label": "pronouns and certain nouns that usually go with them, like \"the study group\" and \"bile\""}
+{"layer": 3, "feat": 8370, "label": "the word \"whom\", and sometimes words ending in \"-ing\" or words related to dislocations."}
+{"layer": 3, "feat": 12339, "label": "the possessive form followed by the word \"degree\" and the preposition \"in\""}
+{"layer": 3, "feat": 13167, "label": "words like 'all', 'both', and 'respectively' indicating a group or multiplicity"}
+{"layer": 3, "feat": 15214, "label": "the word \"each\" in the context of highly technical documents"}
+{"layer": 4, "feat": 143, "label": "words related to academic and professional titles"}
+{"layer": 4, "feat": 185, "label": "university departments and professors"}
+{"layer": 4, "feat": 220, "label": "code snippets with mathematical functions and the symbols '(', ')', and '>'"}
+{"layer": 4, "feat": 263, "label": "scientific language relating to taxonomy and genetics."}
+{"layer": 4, "feat": 708, "label": "C++ code"}
+{"layer": 4, "feat": 976, "label": "phrases related to academic degrees"}
+{"layer": 4, "feat": 1545, "label": "a mix of programming code and scientific nomenclature related to bacterial species"}
+{"layer": 4, "feat": 4016, "label": "a variety of things, including brand names, dates, theories, historical periods, and figures in mythology"}
+{"layer": 4, "feat": 6310, "label": "words related to academic degrees, graduations, and offers"}
+{"layer": 4, "feat": 7053, "label": "taxonomic names of organisms"}
+{"layer": 4, "feat": 7617, "label": "scientific names of fungi"}
+{"layer": 4, "feat": 10252, "label": "references to academic publications"}
+{"layer": 4, "feat": 10652, "label": "single letters followed by decimals"}
+{"layer": 4, "feat": 11474, "label": "descriptions of plants, particularly their physical characteristics and flowers"}
+{"layer": 4, "feat": 12414, "label": "various symbols and signs used in mathematical equations and code"}
+{"layer": 4, "feat": 13471, "label": "parts of people's names"}
+{"layer": 5, "feat": 1498, "label": "references to external documents using a bracketed author-year format"}
+{"layer": 5, "feat": 1504, "label": "a variety of seemingly unrelated things, making it hard to summarize"}
+{"layer": 5, "feat": 1644, "label": "scientific journal names and abbreviations"}
+{"layer": 5, "feat": 2039, "label": "scientific names."}
+{"layer": 5, "feat": 4177, "label": "mentions of academic degrees related to higher education"}
+{"layer": 5, "feat": 4780, "label": "words related to higher education and universities"}
+{"layer": 5, "feat": 7154, "label": "scientific names of organisms, especially plants."}
+{"layer": 5, "feat": 7646, "label": "words related to academic research, funding, and authorship"}
+{"layer": 5, "feat": 8939, "label": "words relating to scientific classification of living and fossil organisms"}
+{"layer": 5, "feat": 10668, "label": "mentions of people's names"}
+{"layer": 5, "feat": 10918, "label": "the word \"each\" and words immediately around it"}
+{"layer": 5, "feat": 11028, "label": "terms and phrases related to academic study and institutions"}
+{"layer": 5, "feat": 11093, "label": "information relating to education and profession"}
+{"layer": 5, "feat": 12233, "label": "names of people"}
+{"layer": 5, "feat": 12870, "label": "scientific names of organisms, especially plants"}
+{"layer": 5, "feat": 13271, "label": "Arabic names and associated terms"}
+{"layer": 5, "feat": 14094, "label": "titles and awards given to people or organizations"}
+{"layer": 5, "feat": 15866, "label": "descriptions of people's academic achievements"}

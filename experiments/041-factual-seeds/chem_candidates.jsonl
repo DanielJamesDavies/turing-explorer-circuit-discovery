@@ -1,0 +1,85 @@
+{"layer": 8, "feat": 15765, "label": "chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 10927, "label": "elements and compounds", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 5861, "label": "chemical formulas including lists of elements", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 7563, "label": "words and symbols related to chemistry and physics", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 8374, "label": "words and symbols related to chemistry", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 8743, "label": "scientific terms and processes including chemical elements and abbreviations", "query": "chemical elements and the periodic table"}
+{"layer": 10, "feat": 3590, "label": "chemical elements and processes", "query": "chemical elements and the periodic table"}
+{"layer": 10, "feat": 4507, "label": "chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 10, "feat": 14268, "label": "chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 10, "feat": 5162, "label": "biochemistry and elements", "query": "chemical elements and the periodic table"}
+{"layer": 10, "feat": 3309, "label": "words relating to scientific measurements, chemical elements, chemical compounds, and scientific publications or categories", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 9176, "label": "chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 14733, "label": "scientific language and explanations, including references to studies and properties of elements", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 9904, "label": "words related to chemical elements and compounds", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 4696, "label": "code snippets and lists of numbers or chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 9048, "label": "mentions of both chemical elements and biological processes", "query": "chemical elements and the periodic table"}
+{"layer": 12, "feat": 2479, "label": "various uses of \"the\", especially in scientific literature, and also chemical elements", "query": "chemical elements and the periodic table"}
+{"layer": 8, "feat": 9353, "label": "chemical reactions and enzymes", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 1375, "label": "biochemical research procedures and reagents", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 1585, "label": "chemical reactions, especially related to oxides, nitrates, and gas generation", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 9342, "label": "mentions of scientific research and brand names of reagents", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 3704, "label": "words related to chemical reactions, temperatures, and materials science", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 12367, "label": "chemical processes", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 766, "label": "chemical reactions", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 9354, "label": "chemical reactions", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 5123, "label": "chemical reactions", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 445, "label": "chemical tests", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 15385, "label": "words and abbreviations used in scientific laboratory procedures and reagents", "query": "chemical reactions and reagents"}
+{"layer": 10, "feat": 1772, "label": "Chemical/mathematical expressions", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 5906, "label": "formulas and chemical reactions", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 2648, "label": "words and phrases related to chemical reactions and related experimental conditions", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 15644, "label": "chemical compounds and processes", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 13228, "label": "chemical processes", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 11115, "label": "Scientific/chemical procedures", "query": "chemical reactions and reagents"}
+{"layer": 12, "feat": 12215, "label": "laboratory chemicals or biological media names", "query": "chemical reactions and reagents"}
+{"layer": 8, "feat": 733, "label": "chemical compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 5001, "label": "references to organic chemistry compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 14601, "label": "chemistry and NMR", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 4404, "label": "words related to chemical compounds and structures", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 8156, "label": "multi-ringed chemical compounds and formulas", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 4582, "label": "technical terms related to organic chemistry and computer code", "query": "organic chemistry and molecular compounds"}
+{"layer": 10, "feat": 5543, "label": "Chemical compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 10, "feat": 10280, "label": "chemicals/compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 10, "feat": 11805, "label": "formulas and chemical structures", "query": "organic chemistry and molecular compounds"}
+{"layer": 10, "feat": 10639, "label": "chemical synthesis", "query": "organic chemistry and molecular compounds"}
+{"layer": 12, "feat": 10291, "label": "words and symbols commonly found in scientific abstracts that describe the chemical make up of organic compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 12, "feat": 10304, "label": "words related to scientific studies about chemical compounds", "query": "organic chemistry and molecular compounds"}
+{"layer": 12, "feat": 13366, "label": "technology and chemistry", "query": "organic chemistry and molecular compounds"}
+{"layer": 12, "feat": 10975, "label": "scientific terms relating to the structure and function of molecules, particularly in the fields of chemistry, biology, and genetics", "query": "organic chemistry and molecular compounds"}
+{"layer": 12, "feat": 7114, "label": "technical terms for biological studies and chemical compounds.", "query": "organic chemistry and molecular compounds"}
+{"layer": 8, "feat": 8965, "label": "pH", "query": "acids bases and pH"}
+{"layer": 8, "feat": 9608, "label": "mentions of chemical compounds, acids, and their concentrations", "query": "acids bases and pH"}
+{"layer": 8, "feat": 8270, "label": "chemicals", "query": "acids bases and pH"}
+{"layer": 8, "feat": 4598, "label": "chemicals", "query": "acids bases and pH"}
+{"layer": 10, "feat": 14739, "label": "Acids", "query": "acids bases and pH"}
+{"layer": 10, "feat": 14340, "label": "oxides", "query": "acids bases and pH"}
+{"layer": 10, "feat": 13542, "label": "chemical compounds and elements, especially related to metals, acids, and nitrates.", "query": "acids bases and pH"}
+{"layer": 10, "feat": 12531, "label": "code and chemistry terms", "query": "acids bases and pH"}
+{"layer": 12, "feat": 605, "label": "chemical concentrations", "query": "acids bases and pH"}
+{"layer": 12, "feat": 4646, "label": "chemical substances", "query": "acids bases and pH"}
+{"layer": 12, "feat": 8508, "label": "terms related to chemistry, biology, and medicine", "query": "acids bases and pH"}
+{"layer": 12, "feat": 7332, "label": "variable declarations, mathematical operators, and chemical indicators", "query": "acids bases and pH"}
+{"layer": 8, "feat": 2016, "label": "multi-atom chemical bonds and amides", "query": "chemical bonds and molecular structure"}
+{"layer": 8, "feat": 12140, "label": "Phonics and chemical structures", "query": "chemical bonds and molecular structure"}
+{"layer": 8, "feat": 12727, "label": "chemical formulas and compound names, including numbers, letters, and symbols representing the chemical structure", "query": "chemical bonds and molecular structure"}
+{"layer": 10, "feat": 5060, "label": "biological compounds", "query": "chemical bonds and molecular structure"}
+{"layer": 10, "feat": 7196, "label": "structures/materials", "query": "chemical bonds and molecular structure"}
+{"layer": 12, "feat": 3472, "label": "chemical formulas", "query": "chemical bonds and molecular structure"}
+{"layer": 12, "feat": 14035, "label": "components and structure", "query": "chemical bonds and molecular structure"}
+{"layer": 8, "feat": 5205, "label": "precious metals", "query": "metals alloys and minerals"}
+{"layer": 8, "feat": 8360, "label": "chemicals and materials", "query": "metals alloys and minerals"}
+{"layer": 8, "feat": 14877, "label": "Mining and industrial processes", "query": "metals alloys and minerals"}
+{"layer": 8, "feat": 7400, "label": "industrial materials or processes", "query": "metals alloys and minerals"}
+{"layer": 8, "feat": 504, "label": "oil and gas", "query": "metals alloys and minerals"}
+{"layer": 10, "feat": 4503, "label": "industrial processes/materials", "query": "metals alloys and minerals"}
+{"layer": 10, "feat": 8743, "label": "industrial processes and resources", "query": "metals alloys and minerals"}
+{"layer": 10, "feat": 3358, "label": "industries and manufacturing", "query": "metals alloys and minerals"}
+{"layer": 10, "feat": 3469, "label": "metal", "query": "metals alloys and minerals"}
+{"layer": 10, "feat": 10124, "label": "chemistry/materials science", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 13061, "label": "raw materials", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 5785, "label": "construction materials", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 938, "label": "manufacturing and chemical processes", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 6437, "label": "industries and technologies", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 3059, "label": "Soil and building materials", "query": "metals alloys and minerals"}
+{"layer": 12, "feat": 56, "label": "manufacturing/materials", "query": "metals alloys and minerals"}

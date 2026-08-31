@@ -1,0 +1,22 @@
+{
+  "tag": "L10",
+  "fp32": {
+    "n": 106609,
+    "free0": 1.0703,
+    "peak_gb": 14.74,
+    "secs": 633.1
+  },
+  "stream": {
+    "n": 108068,
+    "free0": 1.045,
+    "peak_gb": 13.8,
+    "secs": 127.6
+  },
+  "n_fp32_only": 11022,
+  "n_stream_only": 12481,
+  "n_shared": 95587,
+  "jaccard": 0.8026450583592241,
+  "flipped_margin_median": 0.06787967681884766,
+  "flipped_margin_max": 0.421372652053833,
+  "max_delta_m_shared": 0.39055752754211426
+}

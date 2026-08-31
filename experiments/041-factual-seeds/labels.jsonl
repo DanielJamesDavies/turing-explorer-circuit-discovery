@@ -1,0 +1,702 @@
+{"layer": 0, "feat": 253, "label": "the contraction \"ve\" and also finds other words like \"scale\", \"screen\", \"personally\", and \"idio\""}
+{"layer": 0, "feat": 355, "label": "text related to numbers, especially those representing currency or measurements, and also related to statistical analysis or auditing"}
+{"layer": 0, "feat": 424, "label": "words and phrases related to scientific research, especially experimental studies and data analysis."}
+{"layer": 0, "feat": 944, "label": "punctuation marks, especially commas and periods"}
+{"layer": 0, "feat": 996, "label": "proper nouns and other capitalized words."}
+{"layer": 0, "feat": 1165, "label": "words relating to abstract concepts, like properties, associations or figures of speech"}
+{"layer": 0, "feat": 1660, "label": "words and names related to the Kyuranger series"}
+{"layer": 0, "feat": 1680, "label": "words and phrases used when making comparisons"}
+{"layer": 0, "feat": 1847, "label": "scientific terms and experimental details related to biological and chemical research"}
+{"layer": 0, "feat": 1903, "label": "instances of sentences starting with \"The\""}
+{"layer": 0, "feat": 2004, "label": "the word \"called\""}
+{"layer": 0, "feat": 2115, "label": "data reported as a percentage inside brackets, especially in a laboratory or medical context, and also recognizes countries"}
+{"layer": 0, "feat": 2189, "label": "technical writing related to scientific studies"}
+{"layer": 0, "feat": 2455, "label": "the word \"case\", sometimes in relation to a preposition"}
+{"layer": 0, "feat": 2475, "label": "mentions of nationalities and ethnicities"}
+{"layer": 0, "feat": 2508, "label": "references to figures, tables, equations, and authors in academic publications"}
+{"layer": 0, "feat": 2848, "label": "the word \"of\""}
+{"layer": 0, "feat": 2870, "label": "parts of words, specifically suffixes, that indicate a name or location."}
+{"layer": 0, "feat": 3084, "label": "numerical values preceded by line breaks"}
+{"layer": 0, "feat": 3202, "label": "proper nouns"}
+{"layer": 0, "feat": 3256, "label": "SSH public key authentication details"}
+{"layer": 0, "feat": 3498, "label": "the pronoun \"they\" or its possessive form."}
+{"layer": 0, "feat": 3503, "label": "the word \"lift\""}
+{"layer": 0, "feat": 3564, "label": "mathematical notation symbols"}
+{"layer": 0, "feat": 3699, "label": "misspelled, foreign, or made-up words"}
+{"layer": 0, "feat": 3820, "label": "the word \"the\""}
+{"layer": 0, "feat": 4379, "label": "words relating to government, economy, or global politics"}
+{"layer": 0, "feat": 4687, "label": "place names"}
+{"layer": 0, "feat": 4871, "label": "place names in Germany and people discussing missile defense"}
+{"layer": 0, "feat": 4956, "label": "capitalized words and phrases, often related to titles, locations, or organizations"}
+{"layer": 0, "feat": 5215, "label": "code-related terms, especially from multiple languages (C, Swift, etc.) and technical documentation."}
+{"layer": 0, "feat": 5217, "label": "the number 12 preceded by a digit \"1\" (likely \"11\", \"12\", \"13\", etc., used to represent dates or years)"}
+{"layer": 0, "feat": 5626, "label": "names of places located in Europe"}
+{"layer": 0, "feat": 6515, "label": "the year 199X or 200X."}
+{"layer": 0, "feat": 6555, "label": "capitalized jargon words, especially those related to legal or anime contexts"}
+{"layer": 0, "feat": 6745, "label": "parenthesized lists, or comma separated elements within a math environment, or a question and answer block"}
+{"layer": 0, "feat": 7279, "label": "proper nouns"}
+{"layer": 0, "feat": 7532, "label": "proper nouns"}
+{"layer": 0, "feat": 7681, "label": "statements that describe something, often including a past tense verb"}
+{"layer": 0, "feat": 7845, "label": "the word \"signal\" and related terms in technical contexts"}
+{"layer": 0, "feat": 7894, "label": "line breaks that indicate a paragraph or section beginning"}
+{"layer": 0, "feat": 8061, "label": "the preposition \"in\""}
+{"layer": 0, "feat": 8163, "label": "words and phrases related to societal and political issues"}
+{"layer": 0, "feat": 8300, "label": "code and related markup"}
+{"layer": 0, "feat": 8409, "label": "technical or jargonistic terms that are specific to certain fields."}
+{"layer": 0, "feat": 8444, "label": "the word \"to\""}
+{"layer": 0, "feat": 8974, "label": "the word \"from\""}
+{"layer": 0, "feat": 9022, "label": "technical words used in computing, science, or engineering"}
+{"layer": 0, "feat": 9026, "label": "technical documents or data, including numbers, units, and references to figures or tables."}
+{"layer": 0, "feat": 9545, "label": "terms related to stating, deciding, and opting"}
+{"layer": 0, "feat": 9588, "label": "instances of the phrase \"such as\""}
+{"layer": 0, "feat": 9654, "label": "square brackets and related math and reference symbols"}
+{"layer": 0, "feat": 9774, "label": "what appears to be code, names, and abbreviations"}
+{"layer": 0, "feat": 9830, "label": "code documentation and file headers"}
+{"layer": 0, "feat": 10155, "label": "words related to membership in a group"}
+{"layer": 0, "feat": 10562, "label": "the word \"up\""}
+{"layer": 0, "feat": 11248, "label": "code in various programming languages"}
+{"layer": 0, "feat": 11927, "label": "technical words and names of people, places, and things."}
+{"layer": 0, "feat": 13096, "label": "instances of the word \"the\", often followed by nouns or other determiners"}
+{"layer": 0, "feat": 13316, "label": "certain common suffix endings and related words."}
+{"layer": 0, "feat": 13333, "label": "words that introduce or are part of an explanation or description, often in the context of research, studies, or instructions"}
+{"layer": 0, "feat": 13400, "label": "discussions about value and being economical"}
+{"layer": 0, "feat": 14426, "label": "a mix of words that appear to be technical, scientific or legal jargon"}
+{"layer": 0, "feat": 14883, "label": "words and phrases about nationalities, languages, and conflicts"}
+{"layer": 0, "feat": 14963, "label": "words related to medical/legal/scientific terminology"}
+{"layer": 0, "feat": 14964, "label": "articles and pronouns"}
+{"layer": 0, "feat": 15115, "label": "words or acronyms related to medicine, technology, or scientific research"}
+{"layer": 0, "feat": 15492, "label": "the word \"for\""}
+{"layer": 0, "feat": 16037, "label": "the word \"around\" and prepositions such as \"for.\""}
+{"layer": 0, "feat": 16183, "label": "words and phrases related to paganism, especially Wicca, Druids, and associated celebrations"}
+{"layer": 0, "feat": 16290, "label": "surnames and other words that commonly appear in legal documents"}
+{"layer": 1, "feat": 1315, "label": "commas"}
+{"layer": 1, "feat": 2187, "label": "words generally associated with military weaponry"}
+{"layer": 1, "feat": 4618, "label": "dates, units of the military, and related terms"}
+{"layer": 1, "feat": 7394, "label": "mentions of military"}
+{"layer": 1, "feat": 12115, "label": "code comments"}
+{"layer": 1, "feat": 13247, "label": "references to the military"}
+{"layer": 1, "feat": 14137, "label": "words or phrases that appear in legal or technical documents, like names of laws, legal terms (pleaded, testified), and technical terms, especially when abbreviated or in code"}
+{"layer": 1, "feat": 15996, "label": "terms for places and nationalities, especially those associated with old European conflicts"}
+{"layer": 2, "feat": 118, "label": "references to sports teams and people with some activation for place names."}
+{"layer": 2, "feat": 1017, "label": "mathematical equations and scientific symbols"}
+{"layer": 2, "feat": 2532, "label": "proper nouns, like names of people"}
+{"layer": 2, "feat": 2787, "label": "words related to time served in an official capacity"}
+{"layer": 2, "feat": 2910, "label": "terms related to European geopolitical history, especially conflicts between different kingdoms and peoples"}
+{"layer": 2, "feat": 3609, "label": "words related to conflict and competition"}
+{"layer": 2, "feat": 3738, "label": "job titles and words associated with politics"}
+{"layer": 2, "feat": 4859, "label": "words associated with users, skills, and magic"}
+{"layer": 2, "feat": 5404, "label": "references to historical events and media"}
+{"layer": 2, "feat": 5959, "label": "the end of sentences or list items."}
+{"layer": 2, "feat": 8303, "label": "mentions of sports teams"}
+{"layer": 2, "feat": 9436, "label": "the word \"conflict\" and words semantically related to it"}
+{"layer": 2, "feat": 9832, "label": "parts of names"}
+{"layer": 2, "feat": 10403, "label": "the word \"war\" and related words"}
+{"layer": 2, "feat": 10539, "label": "references to military units"}
+{"layer": 2, "feat": 10553, "label": "the word \"the\""}
+{"layer": 2, "feat": 11380, "label": "words and phrases related to war and conflict"}
+{"layer": 2, "feat": 12115, "label": "the word \"in\" and abbreviations \"nc\""}
+{"layer": 2, "feat": 13544, "label": "scientific jargon related to immune cells, chemical reactions, and political science"}
+{"layer": 2, "feat": 13679, "label": "words related to conflict and violence"}
+{"layer": 2, "feat": 14934, "label": "years in the 1900s"}
+{"layer": 2, "feat": 15900, "label": "the word \"mission\", and also sometimes the word \"lucky\" in close proximity."}
+{"layer": 2, "feat": 16170, "label": "mentions of months, and geopolitics"}
+{"layer": 2, "feat": 16263, "label": "the word \"world\" and related terms"}
+{"layer": 3, "feat": 371, "label": "words related to employment and job positions"}
+{"layer": 3, "feat": 373, "label": "word beginnings with the letters \"a,\" \"h,\"\"i,\" \"r,\" and \"p\" (perhaps prefixes and/or related to medical or scientific terms)"}
+{"layer": 3, "feat": 417, "label": "LaTeX markup"}
+{"layer": 3, "feat": 461, "label": "proper nouns or code-specific terms"}
+{"layer": 3, "feat": 1182, "label": "academic or technical writing describing a process or system."}
+{"layer": 3, "feat": 4193, "label": "historical events, discoveries, their dates of unveiling, and their inventors/discoverers."}
+{"layer": 3, "feat": 6047, "label": "year ranges"}
+{"layer": 3, "feat": 6644, "label": "the word \"scientific\" or mentions of wars"}
+{"layer": 3, "feat": 7210, "label": "the preposition \"on\" followed by the word \"the\", as well as the preposition \"in\""}
+{"layer": 3, "feat": 8917, "label": "words related to military rank, as well as specific calendar months"}
+{"layer": 3, "feat": 8926, "label": "references to documents, articles, and footnotes in the text"}
+{"layer": 3, "feat": 11444, "label": "words ending in suffixes commonly found in scientific and medical texts"}
+{"layer": 3, "feat": 12344, "label": "LaTeX math delimiters and punctuation within them"}
+{"layer": 3, "feat": 12704, "label": "uses of the word \"serve\" (or \"grant\") as a verb"}
+{"layer": 3, "feat": 13011, "label": "language related to military actions and political conflicts"}
+{"layer": 3, "feat": 13319, "label": "words related to leadership and management and sports"}
+{"layer": 3, "feat": 15369, "label": "a diverse collection of strings, including directory paths, code snippets, phrases \"operate along,\" and \"as far as\"."}
+{"layer": 3, "feat": 16012, "label": "references to wars, governments, and historical events"}
+{"layer": 4, "feat": 93, "label": "words related to scientific writing with medical, chemical, or biological connotations"}
+{"layer": 4, "feat": 1529, "label": "mentions of the United Kingdom and words related to it"}
+{"layer": 4, "feat": 2267, "label": "words related to legal or scientific research like testimony, detection, interrupt, or publication"}
+{"layer": 4, "feat": 2338, "label": "words and phrases related to sports, especially baseball and football"}
+{"layer": 4, "feat": 2633, "label": "various symbols and punctuation used in technical contexts, particularly programming languages and scientific notation"}
+{"layer": 4, "feat": 2958, "label": "periods and colons immediately following numbers and math symbols"}
+{"layer": 4, "feat": 3285, "label": "terms related to space, astrophysics and subatomic physics"}
+{"layer": 4, "feat": 3757, "label": "words indicating time, including days of the week and words ending with \"ward\""}
+{"layer": 4, "feat": 4317, "label": "words like \"in\", \"on\", \"under\" often prepositions, suggesting location and relationship within a context."}
+{"layer": 4, "feat": 4948, "label": "descriptions of sports statistics"}
+{"layer": 4, "feat": 5034, "label": "references to sports scores, deficits, and leads"}
+{"layer": 4, "feat": 6945, "label": "words related to Facebook settings and policies, in Croatian."}
+{"layer": 4, "feat": 7427, "label": "the word \"latter\" and nearby auxiliary verbs"}
+{"layer": 4, "feat": 7499, "label": "words and phrases related to employment history"}
+{"layer": 4, "feat": 7711, "label": "references to the Resident Evil game, and specifically the characters Leon, Link, Saddler, and Resident Evil 4."}
+{"layer": 4, "feat": 7933, "label": "text about baseball teams and leagues"}
+{"layer": 4, "feat": 8364, "label": "technical and legal terms"}
+{"layer": 4, "feat": 8546, "label": "references to wars, especially World War II"}
+{"layer": 4, "feat": 9591, "label": "code snippets about quizzes and camps and legal testimonies about agents"}
+{"layer": 4, "feat": 9843, "label": "references to WWII or Nazi Germany"}
+{"layer": 4, "feat": 11208, "label": "proper nouns and terms related to locations, organizations, and events"}
+{"layer": 4, "feat": 11350, "label": "mentions of \"Washington, D.C.\" along with other locations and entities"}
+{"layer": 4, "feat": 11526, "label": "words and short phrases related to political and military conflict"}
+{"layer": 4, "feat": 11603, "label": "references to years expressed as numbers"}
+{"layer": 4, "feat": 11897, "label": "reports of baseball games and scores"}
+{"layer": 4, "feat": 12975, "label": "mentions of Asian countries, calendars, and paganism/eastern religions"}
+{"layer": 4, "feat": 13809, "label": "names of media works and famous people"}
+{"layer": 4, "feat": 14279, "label": "mentions of historical events, people, or movements in the 1900s."}
+{"layer": 4, "feat": 14733, "label": "content related to the Israel-Palestine conflict and possibly some related topics like NBA trades."}
+{"layer": 4, "feat": 14857, "label": "code snippets and license agreements"}
+{"layer": 4, "feat": 16273, "label": "words related to military service, especially soldiers in the US Marine Corps"}
+{"layer": 5, "feat": 2120, "label": "words that are used when talking about recruitment or military service"}
+{"layer": 5, "feat": 2146, "label": "people's names"}
+{"layer": 5, "feat": 2267, "label": "law related terminology and references to specific cases or legal entities."}
+{"layer": 5, "feat": 3506, "label": "references to historical time periods, particularly decades"}
+{"layer": 5, "feat": 3992, "label": "the start of documentation blocks in code"}
+{"layer": 5, "feat": 4358, "label": "names, locations, dates and any text that might belong to genealogy or biography contexts"}
+{"layer": 5, "feat": 5696, "label": "words related to bacterial or viral infection or microbiological classification"}
+{"layer": 5, "feat": 7489, "label": "the last three letters of words."}
+{"layer": 5, "feat": 8777, "label": "terms related to medicine and medical information"}
+{"layer": 5, "feat": 9704, "label": "military-related terms"}
+{"layer": 5, "feat": 10611, "label": "statistics or events in a baseball game."}
+{"layer": 5, "feat": 10704, "label": "hexadecimal codes and ordinal numbers"}
+{"layer": 5, "feat": 11284, "label": "American and British sports teams and locations"}
+{"layer": 5, "feat": 11327, "label": "references to wars, military ranks, and battles"}
+{"layer": 5, "feat": 12787, "label": "jobs and industry positions"}
+{"layer": 5, "feat": 12865, "label": "names, titles, or units"}
+{"layer": 5, "feat": 13360, "label": "proper nouns, especially names of people."}
+{"layer": 5, "feat": 14427, "label": "language related to violence, political struggles, and national identity."}
+{"layer": 5, "feat": 14606, "label": "mentions of sports teams and players"}
+{"layer": 5, "feat": 15776, "label": "words that are technical or scientific and often have a suffix."}
+{"layer": 5, "feat": 15885, "label": "words related to legal, business, academic or technical vocabulary"}
+{"layer": 6, "feat": 1288, "label": "words related to scientific studies or membership of a military or civil group"}
+{"layer": 6, "feat": 1359, "label": "a wide range of common English words, including numbers, prepositions, and nouns"}
+{"layer": 6, "feat": 1489, "label": "technical research writing, especially genetics"}
+{"layer": 6, "feat": 1652, "label": "proper nouns, especially names of people, places, companies or products and technical/medical terms in abstracts"}
+{"layer": 6, "feat": 1879, "label": "references to legal documents and war"}
+{"layer": 6, "feat": 2187, "label": "names, locations, and titles"}
+{"layer": 6, "feat": 2267, "label": "words that appear in programming code, legal jargon, or scientific texts"}
+{"layer": 6, "feat": 2319, "label": "words and numbers related to military aviation in World War II"}
+{"layer": 6, "feat": 2329, "label": "numbers with percent signs or mathematical symbols"}
+{"layer": 6, "feat": 2498, "label": "dates, people, places, and named entities in history"}
+{"layer": 6, "feat": 3065, "label": "proper names"}
+{"layer": 6, "feat": 3195, "label": "years"}
+{"layer": 6, "feat": 3349, "label": "years in the 1900s and military references"}
+{"layer": 6, "feat": 3961, "label": "the word \"section\""}
+{"layer": 6, "feat": 4311, "label": "words and ranks related to the military"}
+{"layer": 6, "feat": 5355, "label": "names and identifiers"}
+{"layer": 6, "feat": 5783, "label": "proper nouns or institutions, often related to academia, government, or official recognition and labels."}
+{"layer": 6, "feat": 6712, "label": "what appears to be strings of code or file names"}
+{"layer": 6, "feat": 6757, "label": "This neuron appears to activate on seemingly random code snippets, words, and phrases, without a clear unifying theme"}
+{"layer": 6, "feat": 7692, "label": "terms related to military history and warfare, especially concerning WWII, prisoners of war and persons in the military."}
+{"layer": 6, "feat": 7765, "label": "terms related to conflict and antagonists."}
+{"layer": 6, "feat": 8629, "label": "references to historical European political entities"}
+{"layer": 6, "feat": 8884, "label": "common conversational words and terms related to scientific measurements"}
+{"layer": 6, "feat": 9865, "label": "code and file paths"}
+{"layer": 6, "feat": 10600, "label": "numbers appearing in years or legal citations"}
+{"layer": 6, "feat": 10629, "label": "text describing professional career experience, especially positions and companies"}
+{"layer": 6, "feat": 11037, "label": "words related to fighting or revenge"}
+{"layer": 6, "feat": 11219, "label": "instances of being called upon or summoned for a purpose."}
+{"layer": 6, "feat": 11492, "label": "words and phrases related to war and peace"}
+{"layer": 6, "feat": 12426, "label": "periods, plus signs, question marks, dollar signs, and quotation marks"}
+{"layer": 6, "feat": 12479, "label": "proper nouns related to political figures and organizations"}
+{"layer": 6, "feat": 12661, "label": "proper nouns, potentially technical terms or names related to specific fields."}
+{"layer": 6, "feat": 13550, "label": "code and/or other computer-related text."}
+{"layer": 6, "feat": 13832, "label": "verbs indicating change or decision-making"}
+{"layer": 6, "feat": 14898, "label": "words related to community service, government, legal proceedings, and military service/duty/personnel"}
+{"layer": 7, "feat": 462, "label": "code documentation and import statements"}
+{"layer": 7, "feat": 687, "label": "references to places with political or religious conflict"}
+{"layer": 7, "feat": 833, "label": "words and phrases related to military conflicts and organizations"}
+{"layer": 7, "feat": 1208, "label": "mentions of military operations."}
+{"layer": 7, "feat": 1819, "label": "language related to armed conflict and military action"}
+{"layer": 7, "feat": 2318, "label": "a variety of numeric and statistical data, including p-values, BMI, ages, and measurements"}
+{"layer": 7, "feat": 2609, "label": "terms related to sports, the military, or technology."}
+{"layer": 7, "feat": 3085, "label": "words and phrases related to societal ills as well as human efforts to understand their world."}
+{"layer": 7, "feat": 3099, "label": "a variety of reference codes, abbreviations, and identifiers from different fields."}
+{"layer": 7, "feat": 3142, "label": "mentions of war, especially World War I."}
+{"layer": 7, "feat": 3784, "label": "terms related to American football and other American sports, like baseball."}
+{"layer": 7, "feat": 4904, "label": "words referring to people, their emotions, and their relationships to each other"}
+{"layer": 7, "feat": 5500, "label": "words that are related to military and war"}
+{"layer": 7, "feat": 5538, "label": "references to the Iraq War"}
+{"layer": 7, "feat": 6213, "label": "historical events and people."}
+{"layer": 7, "feat": 6578, "label": "language related to military conscription"}
+{"layer": 7, "feat": 6611, "label": "passages related to scientific achievements or discoveries"}
+{"layer": 7, "feat": 7651, "label": "words and phrases describing negative situations, issues, or dangers."}
+{"layer": 7, "feat": 8394, "label": "sequences of numbers, typically a date, code, issue or measurement"}
+{"layer": 7, "feat": 9363, "label": "words related to family disputes and disagreements, especially those involving conflict"}
+{"layer": 7, "feat": 10516, "label": "words and statistics related to israel and palestine"}
+{"layer": 7, "feat": 11262, "label": "words and phrases related to baseball games, especially teams and scores"}
+{"layer": 7, "feat": 11669, "label": "things related to war and conflict, particularly in the context of WWII."}
+{"layer": 7, "feat": 11836, "label": "terms related to armed conflict, military service and military honors"}
+{"layer": 7, "feat": 12052, "label": "words and phrases indicative of public and government jobs and service"}
+{"layer": 7, "feat": 13018, "label": "information about a person's life, age, and work"}
+{"layer": 7, "feat": 13215, "label": "terms used to describe military fortifications."}
+{"layer": 7, "feat": 13330, "label": "words and phrases related to law, legislation, and government"}
+{"layer": 7, "feat": 14505, "label": "words and phrases related to combat and enemies in fantasy games"}
+{"layer": 7, "feat": 14986, "label": "mentions of military units, military actions or military personnel."}
+{"layer": 7, "feat": 15028, "label": "references to military aviation units or organizations"}
+{"layer": 7, "feat": 15572, "label": "text about wars and governments"}
+{"layer": 7, "feat": 15821, "label": "military designations"}
+{"layer": 8, "feat": 21, "label": "references to sewing, historical eras (specifically the 1900s with specific decades), and family members/generations."}
+{"layer": 8, "feat": 1211, "label": "words and phrases associated with wars, battles, or armies"}
+{"layer": 8, "feat": 1386, "label": "a mix of programming code, scientific writing about semiconductors, and scientific writing about statistical bias"}
+{"layer": 8, "feat": 1417, "label": "terms related to war, military and service"}
+{"layer": 8, "feat": 1860, "label": "random words, proper nouns, and jargon specific to this document"}
+{"layer": 8, "feat": 2118, "label": "mentions of political activity, especially in groups and time periods."}
+{"layer": 8, "feat": 2415, "label": "words and phrases related to military conflicts and political figures"}
+{"layer": 8, "feat": 2830, "label": "words related to either sports or medical treatment"}
+{"layer": 8, "feat": 3099, "label": "code snippets with specific coding keywords and markup tags"}
+{"layer": 8, "feat": 4713, "label": "words related to military conflict, medical progress, physical exertion, and goals"}
+{"layer": 8, "feat": 4874, "label": "words related to historical expeditions, military actions, travel, and people's titles."}
+{"layer": 8, "feat": 5182, "label": "words or phrases related to war, especially involving the United States, Iraq, or Iran."}
+{"layer": 8, "feat": 5364, "label": "conversation snippets in languages other than English and URLs"}
+{"layer": 8, "feat": 5522, "label": "content with many non-alphanumeric characters"}
+{"layer": 8, "feat": 5904, "label": "sentences containing the word \"however\""}
+{"layer": 8, "feat": 7745, "label": "words related to the economic use of natural resources like electricity and water"}
+{"layer": 8, "feat": 8473, "label": "words referring to territories, empires, or political entities, especially in a historical context."}
+{"layer": 8, "feat": 8653, "label": "words and phrases related to government organizations and disaster response"}
+{"layer": 8, "feat": 8905, "label": "proper nouns, universities, cities, countries, and other organizations"}
+{"layer": 8, "feat": 9064, "label": "military ranks and units of the US armed forces."}
+{"layer": 8, "feat": 9468, "label": "references to World War II, the Holocaust, and related topics"}
+{"layer": 8, "feat": 9801, "label": "words related to political unrest, conflict, and tribalism"}
+{"layer": 8, "feat": 10032, "label": "references to conflicts, particularly the American Civil War and good vs. evil"}
+{"layer": 8, "feat": 11595, "label": "military information and dates"}
+{"layer": 8, "feat": 11750, "label": "words related to violence, politics, and conflict"}
+{"layer": 8, "feat": 11821, "label": "code-related tokens involving assemblies and object generation/persistence"}
+{"layer": 8, "feat": 12164, "label": "words related to politics, finance, or economics"}
+{"layer": 8, "feat": 12706, "label": "terms and names related to fantasy stories with heroes and villains"}
+{"layer": 8, "feat": 12785, "label": "words and phrases related to military conscription and service"}
+{"layer": 8, "feat": 13489, "label": "words related to military conscription and service"}
+{"layer": 8, "feat": 13842, "label": "the names of countries, especially those involved in 19th century European politics"}
+{"layer": 8, "feat": 13997, "label": "words related to war and violence, especially killings, rebels, and armed conflict"}
+{"layer": 8, "feat": 14335, "label": "words related to fantasy and conflict"}
+{"layer": 8, "feat": 14497, "label": "proper nouns, especially names of places, people and institutions"}
+{"layer": 8, "feat": 15106, "label": "military and political history terms, particularly names of battles, military units, or political bodies."}
+{"layer": 8, "feat": 15254, "label": "references to sports teams, leagues, and player activities"}
+{"layer": 8, "feat": 15655, "label": "mentions of wars, especially related to the two world wars"}
+{"layer": 9, "feat": 331, "label": "content related to military service in wars"}
+{"layer": 9, "feat": 1068, "label": "LaTeX code for matrices and other mathematical notation."}
+{"layer": 9, "feat": 1932, "label": "proper nouns and organizations"}
+{"layer": 9, "feat": 2184, "label": "words relating to baseball games, especially innings, players, and statistics"}
+{"layer": 9, "feat": 2762, "label": "various code snippets, especially javascript"}
+{"layer": 9, "feat": 3787, "label": "historical battles and conquest"}
+{"layer": 9, "feat": 3915, "label": "context about formal documents or computer code"}
+{"layer": 9, "feat": 4008, "label": "words related to religion, sports, personal relationships, and personal accounts or challenges related to mental or physical health."}
+{"layer": 9, "feat": 4147, "label": "references to armed conflicts, military units and related terms"}
+{"layer": 9, "feat": 4870, "label": "words or phrases related to sports, especially when describing team performances or wrestling matches."}
+{"layer": 9, "feat": 5684, "label": "words and phrases related to law and legal defense scenarios."}
+{"layer": 9, "feat": 6241, "label": "words related to groups of people, locations, and creatures, and possibly historical events"}
+{"layer": 9, "feat": 6699, "label": "words and phrases related to conflict, violence, and morality."}
+{"layer": 9, "feat": 6718, "label": "mentions of specific people, diseases, stadiums and show names"}
+{"layer": 9, "feat": 6993, "label": "negative, conspiratorial commentary, especially when related to mathematics or theoretical subjects."}
+{"layer": 9, "feat": 7018, "label": "mentions of sports teams, particularly football and wrestling"}
+{"layer": 9, "feat": 7091, "label": "text related to refugees, migrants, and displacement, especially involving Central American countries."}
+{"layer": 9, "feat": 7362, "label": "terms related to antagonists, especially monsters or evil characters and organizations, in the context of fiction."}
+{"layer": 9, "feat": 8466, "label": "terms related to genealogy and family history research including references to location, relationships and ancestors"}
+{"layer": 9, "feat": 9157, "label": "proper nouns related to organizations, locations, or events, with a particular focus on financial and governmental bodies."}
+{"layer": 9, "feat": 9424, "label": "terms related to imprisonment, war, and punishment."}
+{"layer": 9, "feat": 10243, "label": "words related to crime, violence, and legal proceedings"}
+{"layer": 9, "feat": 10506, "label": "words related to crime, investigations, and legal scenarios."}
+{"layer": 9, "feat": 11537, "label": "markers of narrative progression such as dates, numbers, and transitional words"}
+{"layer": 9, "feat": 12608, "label": "mentions of military service, especially in specific wars"}
+{"layer": 9, "feat": 12842, "label": "references to historical events and associated entities like people, places, and organizations"}
+{"layer": 9, "feat": 13203, "label": "words related to fantasy stories"}
+{"layer": 9, "feat": 13371, "label": "sentences where there's a problem"}
+{"layer": 9, "feat": 13520, "label": "various code snippets"}
+{"layer": 9, "feat": 14184, "label": "words describing sports teams, games, and seasons"}
+{"layer": 9, "feat": 14510, "label": "many snippets of code in differing programming languages with corresponding text"}
+{"layer": 9, "feat": 14607, "label": "words and phrases related to sports, including athlete information"}
+{"layer": 9, "feat": 14759, "label": "capitalized proper nouns, especially last names and country names, often followed by titles and positions in organizations"}
+{"layer": 9, "feat": 15001, "label": "words and phrases related to military command and structure, particularly in historical contexts."}
+{"layer": 9, "feat": 15113, "label": "words and phrases about the COVID-19 pandemic and associated disruptions."}
+{"layer": 9, "feat": 15252, "label": "the names of characters, teams, and associated terminology from the Japanese \"Super Sentai\" and \"Power Rangers\" television series."}
+{"layer": 9, "feat": 15271, "label": "mentions of named people and locations and dates"}
+{"layer": 9, "feat": 15667, "label": "terms and names related to legal proceedings"}
+{"layer": 9, "feat": 16203, "label": "proper nouns of people/places, especially names"}
+{"layer": 10, "feat": 171, "label": "various subjects in research papers in areas such as medicine, computer science, social science and physics"}
+{"layer": 10, "feat": 227, "label": "mentions of the webcomic xkcd and also the phrase \"ANN\", likely for \"artificial neural network\""}
+{"layer": 10, "feat": 1037, "label": "capitalized words or phrases and other words that stand out"}
+{"layer": 10, "feat": 2184, "label": "phrases related to football"}
+{"layer": 10, "feat": 2984, "label": "a mix of terms related to computing, medicine, and dated manufactured goods"}
+{"layer": 10, "feat": 3037, "label": "mentions of people leaving jobs to pursue new opportunities"}
+{"layer": 10, "feat": 3048, "label": "words or phrases having to do with jobs, fighting, and sports"}
+{"layer": 10, "feat": 3837, "label": "content related to scientific publications or medical procedures, possibly extracting patient data from research papers"}
+{"layer": 10, "feat": 3899, "label": "words and phrases related to military service and war"}
+{"layer": 10, "feat": 4005, "label": "words and phrases related to international locations and medical procedures"}
+{"layer": 10, "feat": 4685, "label": "contexts involving legal documents, company information, statistics, or official baseball"}
+{"layer": 10, "feat": 6525, "label": "a mix of location names and also words relating to edges, carts, or other transportation"}
+{"layer": 10, "feat": 8880, "label": "text related to dates, economy, health and money, frequently in close proximity to the words \"the\", \"to\", \"of\", \"and\", and \"in\""}
+{"layer": 10, "feat": 8903, "label": "proper nouns, acronyms, and other capitalized abbreviations"}
+{"layer": 10, "feat": 9031, "label": "words and phrases related to politics, government, and social issues."}
+{"layer": 10, "feat": 9220, "label": "nouns that describe physical objects and people's names from different stories"}
+{"layer": 10, "feat": 9957, "label": "text about fire and burning"}
+{"layer": 10, "feat": 10032, "label": "words related to scientific studies and health risks"}
+{"layer": 10, "feat": 10870, "label": "words related to combat, destruction, and the military"}
+{"layer": 10, "feat": 11215, "label": "terms used when discussing politics, war, and revolution"}
+{"layer": 10, "feat": 11553, "label": "words that are contextually part of a narrative, story, experiment, or process"}
+{"layer": 10, "feat": 12085, "label": "words and phrases concerning economic downturns and financial hardship"}
+{"layer": 10, "feat": 12603, "label": "words or phrases related to politics, elections, and judicial conduct."}
+{"layer": 10, "feat": 13552, "label": "mentions of wars, battles, and military actions"}
+{"layer": 10, "feat": 13955, "label": "mentions of conflicts between a character referred to as \"guys,\" and another character or characters who are getting hurt, tricked, or thwarted."}
+{"layer": 10, "feat": 14174, "label": "left curly brackets"}
+{"layer": 10, "feat": 16203, "label": "words related to people and their families, accomplishments, and personal preferences"}
+{"layer": 10, "feat": 16361, "label": "time-related terms, especially holidays and seasons, along with some words related to conflict."}
+{"layer": 11, "feat": 2206, "label": "mentions of military service and war"}
+{"layer": 11, "feat": 3544, "label": "scientific or technical words and jargon"}
+{"layer": 11, "feat": 3584, "label": "mentors, authorityfigures, and also potentially sources of conflict and drama"}
+{"layer": 11, "feat": 4186, "label": "terminology associated with international conflict"}
+{"layer": 11, "feat": 4967, "label": "references to wars, particularly World War I and II, governments, and militaries"}
+{"layer": 11, "feat": 6597, "label": "words and phrases related to war, military conflicts, and nationalities of people involved."}
+{"layer": 11, "feat": 9877, "label": "terms related to military combat and medical examination resulting from it"}
+{"layer": 11, "feat": 10639, "label": "words, abbreviations, and concepts related to technology and scientific methods"}
+{"layer": 11, "feat": 10933, "label": "the letters \"L\", \"H,\" and \"a\" when they are at the beginning of a text block"}
+{"layer": 11, "feat": 13908, "label": "references to war, memorials, and related concepts"}
+{"layer": 12, "feat": 2064, "label": "words, dates, and phrases associated with 20th-century wars and the military"}
+{"layer": 12, "feat": 2889, "label": "mentions of military service in WWII"}
+{"layer": 12, "feat": 3584, "label": "discussions of scientific evidence, particularly in the context of genomic sequencing (NGS) and gene testing, and their relative strengths."}
+{"layer": 12, "feat": 3763, "label": "words and phrases relating to conflict between people or groups"}
+{"layer": 12, "feat": 4005, "label": "words associated with sci-fi anime"}
+{"layer": 12, "feat": 7007, "label": "legal and military terminology within a historical context."}
+{"layer": 12, "feat": 8460, "label": "words and phrases related to war, military action, and geopolitical conflict"}
+{"layer": 12, "feat": 9640, "label": "terms related to conflicts, prisoners and sides in a war."}
+{"layer": 12, "feat": 12493, "label": "words that end in \"ing\", \"ecti\", \"tial\", or \"ogi\", and also the word \"gauge\""}
+{"layer": 12, "feat": 13232, "label": "words and phrases related to war, conflict, and invasion"}
+{"layer": 12, "feat": 14835, "label": "text expressing concern about interference, specifically attributing actions and intentions to people by name"}
+{"layer": 13, "feat": 233, "label": "nouns followed by a number or other nouns"}
+{"layer": 13, "feat": 9419, "label": "words or phrases indicative of stories, especially those which involve people helping each other and/or historical events."}
+{"layer": 13, "feat": 12304, "label": "many different kinds of code, formulas, and identifiers"}
+{"layer": 13, "feat": 15799, "label": "things going wrong in the music industry, especially when musicians can't get what they want"}
+{"layer": 13, "feat": 15884, "label": "negative opinions or judgments"}
+{"layer": 14, "feat": 15757, "label": "proper nouns and their context in the passage"}
+{"layer": 0, "feat": 127, "label": "proper names, particularly of people and places."}
+{"layer": 0, "feat": 1080, "label": "words and phrases related to medical and scientific terminology"}
+{"layer": 0, "feat": 2247, "label": "single quotes"}
+{"layer": 0, "feat": 4270, "label": "LaTeX or HTML code"}
+{"layer": 0, "feat": 4592, "label": "a word stem \"lle\" or \"ull\" and the word \"Slemish\". That's not the best description, so here are some alternatives: Irish geography terms, words with the ully suffix, certain surnames"}
+{"layer": 0, "feat": 4640, "label": "the word \"fair\""}
+{"layer": 0, "feat": 5297, "label": "code snippets, programming or technical terminology"}
+{"layer": 0, "feat": 7193, "label": "strings of digits, especially years or measurement values, often containing the digit '6', '7', '8', or '9'"}
+{"layer": 0, "feat": 9620, "label": "strings containing numbers"}
+{"layer": 0, "feat": 12318, "label": "mathematical equations and formulas"}
+{"layer": 0, "feat": 14396, "label": "words related to scientific, medical, and technical jargon"}
+{"layer": 1, "feat": 6372, "label": "words related to aircraft and flight"}
+{"layer": 1, "feat": 12604, "label": "words and phrases related to aviation"}
+{"layer": 1, "feat": 14519, "label": "different forms of the verb \"feature\", likely when discussing the presence or showcasing of something or someone."}
+{"layer": 2, "feat": 3262, "label": "terminology related to boats, ships, and naval warfare"}
+{"layer": 2, "feat": 10816, "label": "the character 'e' in hexadecimal code"}
+{"layer": 2, "feat": 12812, "label": "plural nouns and third person present tense verbs"}
+{"layer": 3, "feat": 14549, "label": "in one case, the characters \"en,\" in another, incomplete but repeated unicode characters, and in the third, present perfect continuous verbs."}
+{"layer": 4, "feat": 8951, "label": "references to aircraft models or simulations, often including alphanumeric codes and related terms like \"jet,\" \"transport,\" \"aircraft,\" \"aerodynamic,\" and \"data.\""}
+{"layer": 4, "feat": 9477, "label": "content about World War II airplanes and fighter pilots"}
+{"layer": 5, "feat": 14152, "label": "words related to a variety of coding languages, science, or other languages"}
+{"layer": 5, "feat": 14818, "label": "the names of weapons, vehicles, and military units used in battle"}
+{"layer": 6, "feat": 4344, "label": "instances related to military aviation including planes, missions, and units."}
+{"layer": 6, "feat": 8667, "label": "mentions of different types of transport, vehicles, and driving"}
+{"layer": 6, "feat": 10331, "label": "car models"}
+{"layer": 6, "feat": 12198, "label": "legal citations"}
+{"layer": 6, "feat": 14455, "label": "terms ending in \"ers,\" \"mas,\" \"tas,\" or \"gers,\" often followed by the letter 's'."}
+{"layer": 7, "feat": 2608, "label": "automobile brands and models."}
+{"layer": 7, "feat": 7272, "label": "words and phrases from a news article about the Fukushima nuclear disaster"}
+{"layer": 7, "feat": 9266, "label": "words referring to WWII Japanese fighter planes"}
+{"layer": 7, "feat": 9939, "label": "words relating to aircraft and flying, and locations related to aviation"}
+{"layer": 8, "feat": 2934, "label": "aircraft names and associated words"}
+{"layer": 8, "feat": 6737, "label": "words ending in \"s\" that may be plurals or possessives describing families or products"}
+{"layer": 8, "feat": 10139, "label": "words related to flying, airplanes, and airports"}
+{"layer": 8, "feat": 14983, "label": "transportation manufacturers"}
+{"layer": 9, "feat": 6178, "label": "references to World War II planes from Japan or the USA"}
+{"layer": 10, "feat": 6242, "label": "multiple distinct subjects in different clusters of activations. It appears to activate on environmental issues, questionnaires, flyers distributed to children, studying flies, analysis of species and Plymouth cars"}
+{"layer": 10, "feat": 13050, "label": "sentences describing a car chase and crash"}
+{"layer": 12, "feat": 15052, "label": "WWII aircraft and related combat events"}
+{"layer": 0, "feat": 800, "label": "code-related terms and names of programming languages, especially related to Java and Swift"}
+{"layer": 0, "feat": 1494, "label": "technical terms for laboratory or medical procedures"}
+{"layer": 0, "feat": 1640, "label": "the term \"beta\", often related to software"}
+{"layer": 0, "feat": 2013, "label": "the letters \"ph\""}
+{"layer": 0, "feat": 2158, "label": "the word \"with\""}
+{"layer": 0, "feat": 2444, "label": "mentions of units of measure (size, power, etc.) and superlatives related to size or quantity"}
+{"layer": 0, "feat": 2916, "label": "the word \"allowing\""}
+{"layer": 0, "feat": 3560, "label": "the plus symbol"}
+{"layer": 0, "feat": 3850, "label": "punctuation marks"}
+{"layer": 0, "feat": 5011, "label": "the word \"member\" near terms related to organizations"}
+{"layer": 0, "feat": 5358, "label": "words related to medical devices and procedures, particularly cardiac and chair-related"}
+{"layer": 0, "feat": 5510, "label": "chemical compounds and scientific terminology, especially those related to chemical processes and structures, along with some terms related to antibodies and enzymes."}
+{"layer": 0, "feat": 6912, "label": "the word \"during\" and sometimes finds the word \"speed\""}
+{"layer": 0, "feat": 7011, "label": "terms related to complex physics, chemistry, and biology experiments"}
+{"layer": 0, "feat": 7109, "label": "words describing processes like applying a coating, manufacturing, providing nourishment, or physical change"}
+{"layer": 0, "feat": 7159, "label": "words ending in \"ic\", \"ness\", \"tion\", \"ship\", \"ment\", \"ize\", \"ate\", or \"cy\"."}
+{"layer": 0, "feat": 7312, "label": "mentions of chemical compositions and needs"}
+{"layer": 0, "feat": 7618, "label": "words related to chemical reactions and processes"}
+{"layer": 0, "feat": 8008, "label": "mentions of a female subject"}
+{"layer": 0, "feat": 8240, "label": "words and phrases related to strong emotions or opinions"}
+{"layer": 0, "feat": 8674, "label": "words related to science, especially physics, chemistry, biology, and computer science"}
+{"layer": 0, "feat": 8694, "label": "code snippets, specific scientific or technical terms, and date-related words."}
+{"layer": 0, "feat": 8773, "label": "words and abbreviations related to scientific studies and medical terminology"}
+{"layer": 0, "feat": 9397, "label": "jargon and terminology from technical documents"}
+{"layer": 0, "feat": 9747, "label": "code snippets dealing with user interfaces and visualizers"}
+{"layer": 0, "feat": 9936, "label": "words or names related to biology, disease, and scientific study"}
+{"layer": 0, "feat": 10219, "label": "the indefinite article \"a\""}
+{"layer": 0, "feat": 10324, "label": "some specific formatting tags and words such as \"exceptional\""}
+{"layer": 0, "feat": 10650, "label": "mathematical formulas and theorems"}
+{"layer": 0, "feat": 10850, "label": "words related to manufacturing, physics, and technical specifications of equipment"}
+{"layer": 0, "feat": 11612, "label": "technical or scientific terms, especially in a research context"}
+{"layer": 0, "feat": 11710, "label": "words, abbreviations, and symbols related to scientific measurement and notation"}
+{"layer": 0, "feat": 11835, "label": "terms used in software code such as \"assembly\", \"using\", \"namespace\", and \"license\""}
+{"layer": 0, "feat": 12200, "label": "a variety of specific nouns"}
+{"layer": 0, "feat": 12763, "label": "parentheses, especially those enclosing a number or letter"}
+{"layer": 0, "feat": 13126, "label": "words ending in \"ed\", names ending in \"ed\", and words ending in \"ing\" that also have a word after them starting with the letter \"s\""}
+{"layer": 0, "feat": 13861, "label": "words related to medical terminology, anatomy, and disease processes."}
+{"layer": 0, "feat": 13988, "label": "proper nouns, code syntax, and scientific words related to medicine, botany, or climate science"}
+{"layer": 0, "feat": 14496, "label": "the phrase \"Air Force\""}
+{"layer": 0, "feat": 15370, "label": "content from formal legal documents"}
+{"layer": 0, "feat": 15651, "label": "technical terms from the domains of biology, statistics and finance"}
+{"layer": 0, "feat": 16170, "label": "words related to programming code, math, anatomy, medicine, structure, and anything that can range."}
+{"layer": 0, "feat": 16309, "label": "code snippets and documentation-related syntax"}
+{"layer": 1, "feat": 313, "label": "the word \"member\""}
+{"layer": 1, "feat": 535, "label": "scientific language related to chemical properties, reactions, and materials"}
+{"layer": 1, "feat": 1412, "label": "mathematical or programming code."}
+{"layer": 1, "feat": 1585, "label": "instances of the string \"ph\" in mathematical contexts"}
+{"layer": 1, "feat": 2317, "label": "terms related to the game World of Warcraft, especially those related to professions and trading"}
+{"layer": 1, "feat": 2447, "label": "words and abbreviations used in chemistry and chemical engineering research papers"}
+{"layer": 1, "feat": 2631, "label": "chemical formulas and reaction schemes"}
+{"layer": 1, "feat": 2992, "label": "academic language in the topic of stellar composition and analysis"}
+{"layer": 1, "feat": 2993, "label": "segments of mathematical writing using LaTex"}
+{"layer": 1, "feat": 5203, "label": "chemical formulas, compounds, and reactions"}
+{"layer": 1, "feat": 5564, "label": "terms used in scientific studies, especially those relating to chemical processes, polymers, or organic compounds"}
+{"layer": 1, "feat": 6045, "label": "scientific and technical language related to chemistry, biology, medicine and coding."}
+{"layer": 1, "feat": 6331, "label": "ordinal numbers such as 1st, 2nd, and 3rd"}
+{"layer": 1, "feat": 6335, "label": "technical terminology related to materials science, particularly diamonds and metals"}
+{"layer": 1, "feat": 7504, "label": "job titles that include the word \"President\" or \"Vice President\""}
+{"layer": 1, "feat": 7519, "label": "snippets of scientific papers"}
+{"layer": 1, "feat": 8486, "label": "references to roads and highways, including names, numbers, and associated terminology."}
+{"layer": 1, "feat": 8494, "label": "ordinal numbers"}
+{"layer": 1, "feat": 8751, "label": "mentions of chemical elements and compounds along with experimental / measurement setups and their results"}
+{"layer": 1, "feat": 9310, "label": "the word \"budget\" and sometimes the word \"actual,\" or \"rivals\" preceding it."}
+{"layer": 1, "feat": 9722, "label": "words related to water, liquids, and water treatment"}
+{"layer": 1, "feat": 9773, "label": "words related to chemical reactions and substances"}
+{"layer": 1, "feat": 9779, "label": "words from a chemistry research paper related to lab procedures"}
+{"layer": 1, "feat": 10141, "label": "mentions of the word \"salt\" and the context it shows up in"}
+{"layer": 1, "feat": 10690, "label": "academic writing discussing study design or legal proceedings."}
+{"layer": 1, "feat": 12310, "label": "scientific research terminology"}
+{"layer": 1, "feat": 12773, "label": "terms related to chemical reactions and polymers"}
+{"layer": 1, "feat": 13004, "label": "the word \"six\" followed by a number"}
+{"layer": 1, "feat": 13133, "label": "scientific lab terms and chemical compounds."}
+{"layer": 1, "feat": 13786, "label": "words related to chemistry and molecular compounds."}
+{"layer": 1, "feat": 14471, "label": "source code, file paths, or programming language syntax"}
+{"layer": 1, "feat": 15766, "label": "the keyword \"float\" in code"}
+{"layer": 1, "feat": 15917, "label": "chemical formulas and chemical compounds"}
+{"layer": 2, "feat": 1746, "label": "the pronoun \"it\"."}
+{"layer": 2, "feat": 2333, "label": "words and phrases related to chemical compounds, reactions, and processes, especially those involving phosphorylation and similar modifications"}
+{"layer": 2, "feat": 3389, "label": "uppercase acronyms or abbreviations"}
+{"layer": 2, "feat": 3853, "label": "variations on verb endings"}
+{"layer": 2, "feat": 4624, "label": "equations including variables from physics and advanced mathematics"}
+{"layer": 2, "feat": 4774, "label": "he neuron primarily finds the numeral 8 and other numbers."}
+{"layer": 2, "feat": 5208, "label": "the words \"ice cream\""}
+{"layer": 2, "feat": 5230, "label": "ordinals, such as 1st, 2nd, 3rd, 4th, etc"}
+{"layer": 2, "feat": 5889, "label": "chemical formulas and compounds involving copper and ammonia"}
+{"layer": 2, "feat": 7046, "label": "geographical coordinates"}
+{"layer": 2, "feat": 7449, "label": "ordinal numbers"}
+{"layer": 2, "feat": 8537, "label": "scientific texts describing chemical reactions happening at specific temperatures"}
+{"layer": 2, "feat": 8768, "label": "the action of wearing clothes"}
+{"layer": 2, "feat": 9364, "label": "descriptive words about plants, especially their shape and color"}
+{"layer": 2, "feat": 9484, "label": "scientific texts containing chemical terms, reactions, and synthesis"}
+{"layer": 2, "feat": 10341, "label": "chemical compounds, especially those used in industrial processes"}
+{"layer": 2, "feat": 10522, "label": "words found in scientific papers about super-nova events, especially words pertaining to chemical elements and their concentrations"}
+{"layer": 2, "feat": 10708, "label": "science and biology terminology"}
+{"layer": 2, "feat": 10709, "label": "text related to heavy metal contaminants and remediation"}
+{"layer": 2, "feat": 11054, "label": "chemical names and related terms"}
+{"layer": 2, "feat": 11080, "label": "code snippets and programming terms"}
+{"layer": 2, "feat": 11410, "label": "technical terms related to chemical and biological processes"}
+{"layer": 2, "feat": 13230, "label": "terms related to the Huntingtin gene and its effects."}
+{"layer": 2, "feat": 14388, "label": "math addition operators"}
+{"layer": 2, "feat": 15103, "label": "references to the speaker and possessions in various languages"}
+{"layer": 2, "feat": 15217, "label": "chemical formulas and reagents used in a scientific or medical setting"}
+{"layer": 2, "feat": 15261, "label": "chemical elements and the chemical production processes involving them"}
+{"layer": 2, "feat": 15267, "label": "words related to chemical reactions"}
+{"layer": 3, "feat": 665, "label": "the letter \"a,\" sometimes in conjunction with other letters and sometimes by itself"}
+{"layer": 3, "feat": 2793, "label": "citation markers and code markers"}
+{"layer": 3, "feat": 2998, "label": "chemical formulas and descriptions"}
+{"layer": 3, "feat": 3054, "label": "words and abbreviations related to chemical compounds and biological processes"}
+{"layer": 3, "feat": 3205, "label": "code snippets and documentation references, possibly related to web development"}
+{"layer": 3, "feat": 3987, "label": "chemical formulas"}
+{"layer": 3, "feat": 4619, "label": "mentions of acids, ions, and chemical compounds"}
+{"layer": 3, "feat": 4938, "label": "capitalized 2-4 letter acronyms and short words"}
+{"layer": 3, "feat": 6315, "label": "chemical terms that include \"-yl\" or \"-eth\"."}
+{"layer": 3, "feat": 7052, "label": "technical terms from chemistry or biology"}
+{"layer": 3, "feat": 7270, "label": "technical jargon related to chemistry, medicine, programming, and law"}
+{"layer": 3, "feat": 7913, "label": "chemical formulas and descriptions of chemical reactions"}
+{"layer": 3, "feat": 7999, "label": "misspelled or non-English words"}
+{"layer": 3, "feat": 9198, "label": "prepositions and pronouns, as well as the french words \"du\" and \"des\""}
+{"layer": 3, "feat": 9392, "label": "mathematical and chemical symbols, especially those indicating exponents and ions"}
+{"layer": 3, "feat": 11811, "label": "content related to sports, medical studies, sulfur cycles and TV talent show payment information and any comparison between 2 of them."}
+{"layer": 3, "feat": 12870, "label": "chemical compounds, particularly hydrocarbons"}
+{"layer": 3, "feat": 12879, "label": "the characters \"ph\" in a variety of different contexts"}
+{"layer": 3, "feat": 12954, "label": "mentions of rankings, competition, and categorization, especially with ordinal numbers and organization names."}
+{"layer": 3, "feat": 14071, "label": "the word \"under\"."}
+{"layer": 3, "feat": 15129, "label": "the word \"while\""}
+{"layer": 3, "feat": 15182, "label": "terminology related to measuring and discussing oxygen levels in blood"}
+{"layer": 3, "feat": 15804, "label": "words or phrases that mean to destroy something"}
+{"layer": 4, "feat": 334, "label": "technical chemical structures and related terminology"}
+{"layer": 4, "feat": 489, "label": "numbers and formatting used in math or code."}
+{"layer": 4, "feat": 1140, "label": "chemical and pharmaceutical terms"}
+{"layer": 4, "feat": 1217, "label": "technical/scientific writing about electrons, photons, particles, and ionization"}
+{"layer": 4, "feat": 1566, "label": "words relating to circles, angles, radial symmetry, lattices, boards or areas"}
+{"layer": 4, "feat": 1941, "label": "chemical formulas, especially those containing oxygen, nitrogen, carbon dioxide, or halogens"}
+{"layer": 4, "feat": 2270, "label": "words and phrases related to the video game World of Warcraft, specifically items and skills."}
+{"layer": 4, "feat": 2562, "label": "the word \"the\""}
+{"layer": 4, "feat": 3221, "label": "code and math snippets"}
+{"layer": 4, "feat": 3730, "label": "text relating to lithium-ion batteries"}
+{"layer": 4, "feat": 3855, "label": "chemical elements and compounds"}
+{"layer": 4, "feat": 3970, "label": "chemical formulas"}
+{"layer": 4, "feat": 3984, "label": "words associated with fire"}
+{"layer": 4, "feat": 4518, "label": "words related to complex chemical compounds"}
+{"layer": 4, "feat": 4598, "label": "chemical and biological terms, especially those ending in \"ins\", \"ids\", \"ols\", and \"ines\""}
+{"layer": 4, "feat": 4703, "label": "language related to colloids and particles in a laboratory setting"}
+{"layer": 4, "feat": 4986, "label": "journal references or chemical formulas"}
+{"layer": 4, "feat": 6414, "label": "scientific sounding terminology, especially related to chemistry and minerals"}
+{"layer": 4, "feat": 7153, "label": "code snippets with plus signs"}
+{"layer": 4, "feat": 7178, "label": "words related to classifying data using machine learning"}
+{"layer": 4, "feat": 7268, "label": "addresses"}
+{"layer": 4, "feat": 7347, "label": "addresses or locations"}
+{"layer": 4, "feat": 7502, "label": "terminology related to particle physics, astrophysics, and the standard model"}
+{"layer": 4, "feat": 7767, "label": "biochemical language related to cellular biology and experimental procedure."}
+{"layer": 4, "feat": 8141, "label": "chemical formulas and mentions of chemical elements/compounds"}
+{"layer": 4, "feat": 8330, "label": "words related to cooking and food ingredients"}
+{"layer": 4, "feat": 8555, "label": "words and phrases in cooking recipes related to measurements and food preparation"}
+{"layer": 4, "feat": 9223, "label": "phrases that describe small quantities, touches, or actions, sometimes in a whimsical or figurative manner."}
+{"layer": 4, "feat": 9261, "label": "scientific text describing chemical formulas, acids, and solutions."}
+{"layer": 4, "feat": 9350, "label": "gradual changes"}
+{"layer": 4, "feat": 9353, "label": "chemistry terms like \"alkyl\", \"aryl\", \"ides\", \"carbonyl\", \"esters\""}
+{"layer": 4, "feat": 9427, "label": "numbers and letters in scientific publications from figures and tables, and dates written in short form"}
+{"layer": 4, "feat": 10100, "label": "terms used in chemistry, especially related to catalysts, reactions, and organic compounds"}
+{"layer": 4, "feat": 10704, "label": "list items labeled with letters and maybe numbers"}
+{"layer": 4, "feat": 11595, "label": "technical writing about scientific topics and legal or financial conditions"}
+{"layer": 4, "feat": 11858, "label": "phrases including \"difficult/easier to\" or implying difficulty, ease, or standards"}
+{"layer": 4, "feat": 13328, "label": "regular expression syntax"}
+{"layer": 4, "feat": 13578, "label": "chemical compounds with sulfur"}
+{"layer": 4, "feat": 13749, "label": "mathematical equations"}
+{"layer": 4, "feat": 13907, "label": "words related to chemistry and chemical elements"}
+{"layer": 4, "feat": 14130, "label": "medical and pharmaceutical terminology, especially names of drugs"}
+{"layer": 4, "feat": 14317, "label": "words related to amino acids, peptides, and proteins."}
+{"layer": 4, "feat": 14835, "label": "changes as results of certain stimuli or experimental conditions (\"in response to\", \"upon\", \"change of\")."}
+{"layer": 4, "feat": 15137, "label": "words and phrases related to chemical reactions and dark matter"}
+{"layer": 4, "feat": 15551, "label": "words related to chemistry or chemical compounds"}
+{"layer": 5, "feat": 189, "label": "street addresses and place names"}
+{"layer": 5, "feat": 2074, "label": "XML tags, coding language syntax, and words related to academic research papers"}
+{"layer": 5, "feat": 3560, "label": "words that act as unit of measurement or quantification"}
+{"layer": 5, "feat": 5679, "label": "words related to chemical compounds and processes, especially those used in chemistry papers"}
+{"layer": 5, "feat": 6265, "label": "complex chemical compounds related to scientific studies"}
+{"layer": 5, "feat": 6473, "label": "a mix of computer programming terms, words describing bad health outcomes, and words quantifying degree"}
+{"layer": 5, "feat": 6780, "label": "chemical and molecular formulas and symbols"}
+{"layer": 5, "feat": 7035, "label": "the phrase \"closer inspection\""}
+{"layer": 5, "feat": 11891, "label": "words and abbreviations related to governmental entities, especially courts, and also words in all caps"}
+{"layer": 5, "feat": 11943, "label": "general academic or formal writing"}
+{"layer": 5, "feat": 12061, "label": "terms and short phrases related to biological and chemical processes and structures"}
+{"layer": 5, "feat": 13479, "label": "words related to oxygen and its measurement or manipulation in both medical and chemical contexts"}
+{"layer": 5, "feat": 14144, "label": "terms related to scientific research and technical descriptions."}
+{"layer": 5, "feat": 14313, "label": "code, math problems, questions and answers"}
+{"layer": 5, "feat": 15390, "label": "words related to molecular biology and genetics, particularly those describing laboratory procedures involving nucleic acids and enzymes"}
+{"layer": 6, "feat": 1235, "label": "occurrences of chemical formulas, especially sulfates and phosphates"}
+{"layer": 6, "feat": 1917, "label": "a combination of positive adjectives and present-participle verbs"}
+{"layer": 6, "feat": 2669, "label": "mathematical sums and related symbols"}
+{"layer": 6, "feat": 4302, "label": "mentions of color."}
+{"layer": 6, "feat": 4685, "label": "addresses, trails, and roads"}
+{"layer": 6, "feat": 5089, "label": "specific medication names and scientific terms (often related to biology or chemistry)"}
+{"layer": 6, "feat": 5919, "label": "chemical compounds or formulas"}
+{"layer": 6, "feat": 5984, "label": "words that appear in a technical or scientific context"}
+{"layer": 6, "feat": 6448, "label": "words and phrases related to sugars and carbohydrates"}
+{"layer": 6, "feat": 6939, "label": "phrases that contain the word \"this\" or \"on\""}
+{"layer": 6, "feat": 7494, "label": "tokens \"added\" and \"in\""}
+{"layer": 6, "feat": 8138, "label": "dates, names, and references to legal or official proceedings"}
+{"layer": 6, "feat": 8528, "label": "mathematical/chemical equations"}
+{"layer": 6, "feat": 8675, "label": "mathematical equations and expressions, especially those involving division, exponents, and negative numbers"}
+{"layer": 6, "feat": 9144, "label": "mentions of locations in Kuala Lumpur, especially Bangsar and Brickfields"}
+{"layer": 6, "feat": 9914, "label": "words related to scientific procedures and chemistry"}
+{"layer": 6, "feat": 10153, "label": "code or chemical formulas."}
+{"layer": 6, "feat": 10223, "label": "scientific jargon related to electrical charge and amino acids"}
+{"layer": 6, "feat": 10403, "label": "the word \"while\" along with words describing when something happened"}
+{"layer": 6, "feat": 10442, "label": "mathematical notation for the i-th term"}
+{"layer": 6, "feat": 10503, "label": "words and phrases that indicate detachment or separation"}
+{"layer": 6, "feat": 10586, "label": "chemical names and chemical suffixes"}
+{"layer": 6, "feat": 10862, "label": "technical language related to biology, chemistry, and scientific studies"}
+{"layer": 6, "feat": 11117, "label": "mathematical or scientific equations and formulas"}
+{"layer": 6, "feat": 12235, "label": "mentions of purpose, connections, or religious references."}
+{"layer": 6, "feat": 12311, "label": "chemical names and descriptors with multiple syllables and numbers"}
+{"layer": 6, "feat": 13050, "label": "words associated with scientific papers and procedures, including dates, genetics, and actions taken."}
+{"layer": 6, "feat": 13542, "label": "words related to the environment, atmosphere, and basic elements"}
+{"layer": 6, "feat": 13734, "label": "technical terms or jargon related to programming, botany, or chemistry."}
+{"layer": 6, "feat": 13968, "label": "text about chemical reactions or chemical compounds"}
+{"layer": 6, "feat": 14161, "label": "the word \"add\" or \"adding\" along with words that describe an attachment or addition."}
+{"layer": 7, "feat": 610, "label": "words related to geography and places"}
+{"layer": 7, "feat": 690, "label": "technical terms related to scientific studies"}
+{"layer": 7, "feat": 753, "label": "chemical materials and chemical formulas"}
+{"layer": 7, "feat": 1944, "label": "mathematical equations and code snippets"}
+{"layer": 7, "feat": 1977, "label": "mentions of acids, bases, buffers and chemical titrations, especially those used in biological contexts."}
+{"layer": 7, "feat": 2506, "label": "technical language related to chemical processes and reactions."}
+{"layer": 7, "feat": 3772, "label": "technical and medical vocabulary, especially terms used in scientific research papers."}
+{"layer": 7, "feat": 4183, "label": "the word 'as' followed by the word 'soon'"}
+{"layer": 7, "feat": 4375, "label": "complex chemical and biochemical names"}
+{"layer": 7, "feat": 4741, "label": "words related to government, law, or military actions"}
+{"layer": 7, "feat": 4746, "label": "words and phrases related to chemical compounds and processes, often with specific references to carbon chains and molecular weights."}
+{"layer": 7, "feat": 5695, "label": "conditional clauses, particularly those using \"if\" and \"when\"."}
+{"layer": 7, "feat": 7908, "label": "references to the game World of Warcraft, specifically related to Tailoring and Enchanting."}
+{"layer": 7, "feat": 8601, "label": "ordinals and references to centuries"}
+{"layer": 7, "feat": 8995, "label": "technical language from scientific publications, particularly those related to chemistry and biology"}
+{"layer": 7, "feat": 9139, "label": "words related to water sports with wind or waves, especially surfing, kitesurfing, or windsurfing"}
+{"layer": 7, "feat": 9168, "label": "content from chemistry specifications, research or procedures"}
+{"layer": 7, "feat": 9863, "label": "words associated with chemical reactions and synthesis"}
+{"layer": 7, "feat": 10003, "label": "words and phrases related to digestive and intestinal diseases and their treatment"}
+{"layer": 7, "feat": 11203, "label": "phrases that describe trade-offs or costs of something"}
+{"layer": 7, "feat": 11814, "label": "chemical formulas and physics terminology in scientific publications"}
+{"layer": 7, "feat": 12858, "label": "snippets of code with numbers, particularly those involved in parsing data or relating to \"charge\" and \"state\"."}
+{"layer": 7, "feat": 14338, "label": "concepts related to mathematical graphs, especially triangles and dendrimers."}
+{"layer": 7, "feat": 14667, "label": "mentions of chemical compounds and formulas involving multiple elements"}
+{"layer": 7, "feat": 16230, "label": "words or phrases indicating a sequence of events or passage of time."}
+{"layer": 8, "feat": 766, "label": "words associated with mathematical decay, functions, and data"}
+{"layer": 8, "feat": 1585, "label": "chemical reactions, especially related to oxides, nitrates, and gas generation"}
+{"layer": 8, "feat": 2016, "label": "multi-atom chemical bonds and amides"}
+{"layer": 8, "feat": 2356, "label": "words related to physical properties and scientific measurements"}
+{"layer": 8, "feat": 2602, "label": "technical chemical and biological terms"}
+{"layer": 8, "feat": 2774, "label": "strings of letters and numbers used in scientific analysis."}
+{"layer": 8, "feat": 2965, "label": "citations to academic papers"}
+{"layer": 8, "feat": 3422, "label": "words related to changing states or transformation"}
+{"layer": 8, "feat": 3545, "label": "the word \"on\" and nearby words like \"when\" and \"whereby\", across varying types of documents"}
+{"layer": 8, "feat": 3709, "label": "chemistry-related terms, especially those relating to nitrates, ammonia and metal compounds"}
+{"layer": 8, "feat": 4438, "label": "incidents happening at a particular time"}
+{"layer": 8, "feat": 4593, "label": "words related to chronology in English and French"}
+{"layer": 8, "feat": 4794, "label": "mentions of specific times of year and holidays, particularly as they relate to traditions and food"}
+{"layer": 8, "feat": 5877, "label": "mentions of stress, pressure, strain, and the ability to withstand it"}
+{"layer": 8, "feat": 7135, "label": "words or suffixes related to chemical synthesis or reactions"}
+{"layer": 8, "feat": 7440, "label": "the word \"at\" and sentence-starting conditional words"}
+{"layer": 8, "feat": 8156, "label": "multi-ringed chemical compounds and formulas"}
+{"layer": 8, "feat": 8360, "label": "chemical formulas, components and nomenclature."}
+{"layer": 8, "feat": 8827, "label": "phrases containing \"when\" or \"if\""}
+{"layer": 8, "feat": 8965, "label": "scientific texts containing chemical formulas, pH measurements, the word buffer, and the word Tris."}
+{"layer": 8, "feat": 9122, "label": "words and phrases describing the condition of hiking trails"}
+{"layer": 8, "feat": 10193, "label": "chemical formula-like expressions"}
+{"layer": 8, "feat": 11837, "label": "code and law documents."}
+{"layer": 8, "feat": 13776, "label": "various mathematical expressions, or clauses about measurements or movement."}
+{"layer": 8, "feat": 15650, "label": "words related to circumstances or timing"}
+{"layer": 9, "feat": 260, "label": "chemical formulas and mentions of chemistry processes"}
+{"layer": 9, "feat": 2050, "label": "words related to weather and seasons"}
+{"layer": 9, "feat": 2346, "label": "references to periods of time, especially years and seasons, and also references to decline"}
+{"layer": 9, "feat": 3308, "label": "chemical and molecular structures/processes"}
+{"layer": 9, "feat": 3709, "label": "chemical formulas and chemical-related words"}
+{"layer": 9, "feat": 3871, "label": "words relating to the state or qualities of a situation or process"}
+{"layer": 9, "feat": 4002, "label": "text from online technical instruction and question/answer sources"}
+{"layer": 9, "feat": 4805, "label": "chemical names and formulas"}
+{"layer": 9, "feat": 10846, "label": "places where code, math, sports reports, and fantasy intersect with words like 'null', 'capable', 'standard', 'linear', and 'human'."}
+{"layer": 9, "feat": 13942, "label": "phrases containing \"long as\" or describing protection from something"}
+{"layer": 9, "feat": 16135, "label": "words related to chemistry and chemical elements"}
+{"layer": 10, "feat": 1668, "label": "mathematical symbols and equations"}
+{"layer": 10, "feat": 7417, "label": "code or forum posts regarding coding that mention the names of browsers"}
+{"layer": 10, "feat": 10323, "label": "words related to negative physical sensations and medical conditions"}
+{"layer": 10, "feat": 10639, "label": "chemical and biological terms, especially those relating to organic chemistry and related compounds."}
+{"layer": 10, "feat": 13508, "label": "words indicating location or condition, like \"below\", \"on\", \"near\", \"from\", \"where\", etc"}
+{"layer": 10, "feat": 14268, "label": "chemical compounds and scientific processes"}
+{"layer": 11, "feat": 9374, "label": "words or phrases that occur in technical or scientific writing, including experiments or legal procedures, often involving time or location."}
+{"layer": 11, "feat": 12100, "label": "the word \"when\" in various contexts"}
+{"layer": 11, "feat": 14018, "label": "the word \"in\""}
+{"layer": 11, "feat": 16076, "label": "words that appear at the start of sentences/clauses or words that end in \"ing\", \"ed\", \"s\", \"ly\", or are enclosed in parentheses"}
+{"layer": 12, "feat": 2648, "label": "words and phrases related to chemical reactions and related experimental conditions"}
+{"layer": 12, "feat": 15644, "label": "chemical compounds and processes"}

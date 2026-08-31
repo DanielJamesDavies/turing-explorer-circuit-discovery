@@ -29,3 +29,16 @@ AGENTS.md
 /analysis-restyled
 /analysis-regenerated
 /dev-notes
+# experiments/: code, READMEs and small result files are TRACKED (the
+# evidence behind the paper). Heavy/regenerable artifacts are not.
+/experiments/**/*.pt
+/experiments/**/*.safetensors
+/experiments/**/*.zip
+/experiments/**/*.pickle
+/experiments/**/*.log
+/experiments/**/__pycache__/
+/experiments/**/transcoders_llama_ct/
+/experiments/**/dictionaries_*/
+/experiments/**/*.jsonl.gz
+/experiments/**/*.flag
+/experiments/_archive/

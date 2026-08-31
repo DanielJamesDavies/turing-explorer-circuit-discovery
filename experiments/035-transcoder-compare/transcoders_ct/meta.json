@@ -1,0 +1,11 @@
+{
+ "source_repo": "pchlenski/gpt2-transcoders",
+ "model": "gpt2",
+ "feature_input_hook": "ln2.hook_normalized",
+ "feature_output_hook": "hook_mlp_out",
+ "d_model": 768,
+ "d_sae": 24576,
+ "n_layers": 12,
+ "input_convention": "FULL ln_2 output (weight+bias applied)",
+ "note": "converted from sae_training pickles. Two folds: (1) the source's input pre-bias folded into b_enc, since circuit-tracer's encode does not centre its input; (2) GPT-2's ln_2 affine folded into the encoder, since these transcoders were trained under fold_ln=True (pure normalisation) while circuit-tracer loads fold_ln=False (full ln_2 output). Both folds asserted numerically."
+}

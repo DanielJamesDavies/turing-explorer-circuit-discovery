@@ -1,0 +1,2 @@
+{"tag": "L8", "seed": "25/10628", "arm": "abl-ig_mean_PA__rec2mag", "n_members": 139465, "n_inh": 71714, "frac_neg_grad_natural": 0.4739, "frac_flipped_pos": 0.3782, "frac_flipped_neg": 0.4426, "corr_g": 0.0526}
+{"tag": "L2", "seed": "8/30122", "arm": "abl-ig_mean_PA__rec2mag", "n_members": 15590, "n_inh": 6357, "frac_neg_grad_natural": 0.4411, "frac_flipped_pos": 0.3069, "frac_flipped_neg": 0.1422, "corr_g": 0.6165}

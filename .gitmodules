@@ -1,0 +1,3 @@
+[submodule "external/circuit-tracer"]
+	path = external/circuit-tracer
+	url = https://github.com/decoderesearch/circuit-tracer.git

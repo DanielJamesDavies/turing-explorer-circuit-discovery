@@ -1,0 +1,18 @@
+{
+ "tag": "L11cold",
+ "seed": "35/6599",
+ "layer": 11,
+ "kind": "resid",
+ "objective": "inject",
+ "inject_lambda": 0.003,
+ "warm": false,
+ "n_final": 0,
+ "secs": 44.5,
+ "holdout_loss": 0.1337890625,
+ "loss_final": 1.3554556369781494,
+ "p_both": 38.25,
+ "p_gate_only": 0.7188,
+ "p_inject_only": 37.5,
+ "a_pos_ev": 36.25,
+ "a_pos_tr": 37.0833
+}

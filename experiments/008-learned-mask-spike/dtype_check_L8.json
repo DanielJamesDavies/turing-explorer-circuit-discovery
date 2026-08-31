@@ -1,0 +1,22 @@
+{
+  "tag": "L8",
+  "fp32": {
+    "n": 53955,
+    "free0": 1.0581,
+    "peak_gb": 12.54,
+    "secs": 95.4
+  },
+  "stream": {
+    "n": 55084,
+    "free0": 1.0604,
+    "peak_gb": 11.79,
+    "secs": 86.4
+  },
+  "n_fp32_only": 4339,
+  "n_stream_only": 5468,
+  "n_shared": 49616,
+  "jaccard": 0.8349628931558487,
+  "flipped_margin_median": 0.050465285778045654,
+  "flipped_margin_max": 0.36004137992858887,
+  "max_delta_m_shared": 0.34015941619873047
+}

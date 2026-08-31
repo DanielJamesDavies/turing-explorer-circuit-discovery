@@ -1,0 +1,4 @@
+{"tag": "L8", "lambda": 0.0001, "fork": "raw", "n": 82228, "kept_pct": 100.0, "free0_train": 1.0284, "free0_holdout": 1.0047, "n_mask": 82228, "secs": 1.5}
+{"tag": "L8", "lambda": 0.0001, "fork": "+rec2", "n": 81896, "kept_pct": 99.6, "free0_train": 1.0253, "free0_holdout": 1.0, "n_mask": 82228, "secs": 1.8}
+{"tag": "L8", "lambda": 0.0001, "fork": "+mag", "n": 64408, "kept_pct": 78.33, "free0_train": 0.9842, "free0_holdout": 0.9384, "n_mask": 82228, "secs": 10.5}
+{"tag": "L8", "lambda": 0.0001, "fork": "+rec2+mag", "n": 59350, "kept_pct": 72.18, "free0_train": 0.9731, "free0_holdout": 0.9242, "n_mask": 82228, "secs": 10.9}

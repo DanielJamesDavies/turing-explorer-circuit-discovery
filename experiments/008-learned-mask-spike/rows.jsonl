@@ -1,0 +1,2 @@
+{"seed": "8/30122", "arm": "abl-mask", "n_members": 327680, "free0": 1.0, "a_c": 4.0547, "p_c": 4.0547, "a_pos": 4.0547, "secs_discover": 165.1, "steps": 150, "lr": 0.1, "l1": 0.01}
+{"seed": "8/30122", "arm": "abl-mask", "n_members": 219, "free0": 0.6936, "a_c": 2.8125, "p_c": 2.8125, "a_pos": 4.0547, "secs_discover": 90.3, "steps": 150, "lr": 0.1, "l1": 0.01}

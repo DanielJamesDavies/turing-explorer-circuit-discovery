@@ -1,0 +1,18 @@
+{
+ "tag": "L4mlp",
+ "seed": "13/30053",
+ "layer": 4,
+ "kind": "mlp",
+ "objective": "inject",
+ "inject_lambda": 0.0003,
+ "warm": true,
+ "n_final": 59,
+ "secs": 27.3,
+ "holdout_loss": 0.2236328125,
+ "loss_final": 0.14442811906337738,
+ "p_both": 10.0,
+ "p_gate_only": -0.0493,
+ "p_inject_only": 9.0625,
+ "a_pos_ev": 9.875,
+ "a_pos_tr": 9.3958
+}

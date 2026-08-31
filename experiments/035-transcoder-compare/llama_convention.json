@@ -1,0 +1,8 @@
+{
+ "fvu": 0.16581,
+ "input": "mlp module input (post_attn_ln out)",
+ "subtract_b_dec": true,
+ "use_skip": true,
+ "k": 32,
+ "layer_probed": 4
+}

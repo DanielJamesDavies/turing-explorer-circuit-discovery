@@ -1,0 +1,56 @@
+[
+ {
+  "layer": 2,
+  "latent": 14800,
+  "sites": 9,
+  "mean_live_per_site": 1048.8,
+  "anchor_support_rate": 0.088,
+  "mean_L0_at_anchor": 109.1,
+  "topk_expectation": 0.0031
+ },
+ {
+  "layer": 2,
+  "latent": 1253,
+  "sites": 9,
+  "mean_live_per_site": 430.6,
+  "anchor_support_rate": 0.3682,
+  "mean_L0_at_anchor": 73.1,
+  "topk_expectation": 0.0031
+ },
+ {
+  "layer": 2,
+  "latent": 28259,
+  "sites": 9,
+  "mean_live_per_site": 645.3,
+  "anchor_support_rate": 0.1235,
+  "mean_L0_at_anchor": 72.1,
+  "topk_expectation": 0.0031
+ },
+ {
+  "layer": 4,
+  "latent": 3837,
+  "sites": 15,
+  "mean_live_per_site": 1650.3,
+  "anchor_support_rate": 0.0646,
+  "mean_L0_at_anchor": 113.7,
+  "topk_expectation": 0.0031
+ },
+ {
+  "layer": 4,
+  "latent": 9548,
+  "sites": 15,
+  "mean_live_per_site": 1037.8,
+  "anchor_support_rate": 0.1291,
+  "mean_L0_at_anchor": 143.4,
+  "topk_expectation": 0.0031
+ },
+ {
+  "layer": 4,
+  "latent": 26044,
+  "sites": 15,
+  "mean_live_per_site": 990.9,
+  "anchor_support_rate": 0.2194,
+  "mean_L0_at_anchor": 91.1,
+  "topk_expectation": 0.0031
+ }
+]

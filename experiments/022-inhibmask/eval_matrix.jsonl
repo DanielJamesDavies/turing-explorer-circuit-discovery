@@ -1,0 +1,16 @@
+{"label": "inhib", "n": 13, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0, "sup": -0.058, "raise": 0.1449, "drop_x4": 0.4022, "seed": "2/19766", "layer": 0, "kind": "resid"}
+{"label": "random", "n": 13, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0, "sup": 0.0, "raise": 0.0, "drop_x4": 0.0, "seed": "2/19766", "layer": 0, "kind": "resid"}
+{"label": "inhib", "n": 20, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0, "sup": -0.1493, "raise": 0.194, "drop_x4": 0.7836, "seed": "8/20333", "layer": 2, "kind": "resid"}
+{"label": "random", "n": 20, "free0": 0.0, "freeN_topk": 0.0012, "cf": 0.0, "sup": 0.0, "raise": 0.0, "drop_x4": 0.0, "seed": "8/20333", "layer": 2, "kind": "resid"}
+{"label": "inhib", "n": 38, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0308, "sup": -0.3444, "raise": 0.5238, "drop_x4": 0.627, "seed": "9/38734", "layer": 3, "kind": "attn"}
+{"label": "random", "n": 38, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0001, "sup": 0.0, "raise": 0.0, "drop_x4": 0.0, "seed": "9/38734", "layer": 3, "kind": "attn"}
+{"label": "inhib", "n": 35, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0, "sup": -0.1519, "raise": 0.3101, "drop_x4": 0.8552, "seed": "13/30053", "layer": 4, "kind": "mlp"}
+{"label": "random", "n": 35, "free0": 0.0, "freeN_topk": 0.0, "cf": 0.0, "sup": 0.0, "raise": 0.0, "drop_x4": 0.0, "seed": "13/30053", "layer": 4, "kind": "mlp"}
+{"label": "inhib", "n": 35, "free0": 0.0, "freeN_topk": 0.005, "cf": 0.0, "sup": -0.0897, "raise": 0.4359, "drop_x4": 1.0, "seed": "20/35678", "layer": 6, "kind": "resid"}
+{"label": "random", "n": 35, "free0": 0.0, "freeN_topk": 0.0155, "cf": 0.0, "sup": 0.0, "raise": 0.0043, "drop_x4": -0.0043, "seed": "20/35678", "layer": 6, "kind": "resid"}
+{"label": "inhib", "n": 70, "free0": 0.0, "freeN_topk": 0.2147, "cf": 0.0112, "sup": -0.2225, "raise": 0.3776, "drop_x4": 1.0, "seed": "26/17432", "layer": 8, "kind": "resid"}
+{"label": "random", "n": 70, "free0": 0.0, "freeN_topk": 0.2573, "cf": 0.0001, "sup": 0.0042, "raise": 0.0, "drop_x4": 0.0, "seed": "26/17432", "layer": 8, "kind": "resid"}
+{"label": "inhib", "n": 52, "free0": 0.0, "freeN_topk": 0.1912, "cf": 0.0087, "sup": -0.2882, "raise": 0.3882, "drop_x4": 0.7191, "seed": "27/6859", "layer": 9, "kind": "attn"}
+{"label": "random", "n": 52, "free0": 0.0, "freeN_topk": 0.1772, "cf": 0.0, "sup": 0.0059, "raise": 0.0, "drop_x4": 0.0, "seed": "27/6859", "layer": 9, "kind": "attn"}
+{"label": "inhib", "n": 52, "free0": 0.0, "freeN_topk": 0.0914, "cf": 0.0, "sup": -0.1379, "raise": 0.331, "drop_x4": 1.0, "seed": "35/6599", "layer": 11, "kind": "resid"}
+{"label": "random", "n": 52, "free0": 0.0, "freeN_topk": 0.1082, "cf": 0.0, "sup": 0.0, "raise": 0.0, "drop_x4": 0.0, "seed": "35/6599", "layer": 11, "kind": "resid"}

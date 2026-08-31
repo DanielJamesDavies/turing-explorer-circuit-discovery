@@ -1,0 +1,36 @@
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "structure", "depth": 1, "branch": 8, "expanded": 1, "new_nodes": 8, "cumulative": 8, "sharing_rate": 0.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "structure", "depth": 2, "branch": 8, "expanded": 8, "new_nodes": 19, "cumulative": 27, "sharing_rate": 0.3542}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "structure", "depth": 3, "branch": 8, "expanded": 19, "new_nodes": 9, "cumulative": 36, "sharing_rate": 0.7}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 1, "set": "recursive", "n": 8, "pct_dict": 0.00244, "free0": 0.0, "pin0": 0.0, "alpha": 3.338, "cf_alpha": 1.0647, "cf_raw": 0.1287, "sup": 0.7376}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 1, "set": "random", "n": 8, "pct_dict": 0.00244, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 2, "set": "recursive", "n": 27, "pct_dict": 0.00824, "free0": 0.0687, "pin0": 0.0, "alpha": 3.338, "cf_alpha": 1.0597, "cf_raw": 0.1617, "sup": 0.9375}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 2, "set": "random", "n": 27, "pct_dict": 0.00824, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 3, "set": "recursive", "n": 36, "pct_dict": 0.01099, "free0": 0.0, "pin0": 0.0, "alpha": 3.217, "cf_alpha": 1.0299, "cf_raw": 0.1766, "sup": 1.0}
+{"seed": "8/20333", "layer": 2, "kind": "resid", "task": "eval", "depth": 3, "set": "random", "n": 36, "pct_dict": 0.01099, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "structure", "depth": 1, "branch": 8, "expanded": 1, "new_nodes": 8, "cumulative": 8, "sharing_rate": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "structure", "depth": 2, "branch": 8, "expanded": 8, "new_nodes": 22, "cumulative": 30, "sharing_rate": 0.3571}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "structure", "depth": 3, "branch": 8, "expanded": 22, "new_nodes": 31, "cumulative": 61, "sharing_rate": 0.5921}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 1, "set": "recursive", "n": 8, "pct_dict": 0.00098, "free0": 0.0, "pin0": 0.0, "alpha": 2.006, "cf_alpha": 1.0043, "cf_raw": 0.4081, "sup": 0.7457}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 1, "set": "random", "n": 8, "pct_dict": 0.00098, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 2, "set": "recursive", "n": 30, "pct_dict": 0.00366, "free0": 0.0, "pin0": 0.0, "alpha": 1.764, "cf_alpha": 1.047, "cf_raw": 0.5684, "sup": 0.984}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 2, "set": "random", "n": 30, "pct_dict": 0.00366, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 3, "set": "recursive", "n": 61, "pct_dict": 0.00745, "free0": 0.0, "pin0": 0.0, "alpha": 1.764, "cf_alpha": 1.0726, "cf_raw": 0.5812, "sup": 1.0}
+{"seed": "20/35678", "layer": 6, "kind": "resid", "task": "eval", "depth": 3, "set": "random", "n": 61, "pct_dict": 0.00745, "free0": 0.0, "pin0": 0.0, "alpha": 8.0, "cf_alpha": 0.0, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "structure", "depth": 1, "branch": 8, "expanded": 1, "new_nodes": 8, "cumulative": 8, "sharing_rate": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "structure", "depth": 2, "branch": 8, "expanded": 8, "new_nodes": 31, "cumulative": 39, "sharing_rate": 0.2031}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "structure", "depth": 3, "branch": 8, "expanded": 31, "new_nodes": 58, "cumulative": 97, "sharing_rate": 0.4828}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 1, "set": "recursive", "n": 8, "pct_dict": 0.00075, "free0": 0.0, "pin0": 0.0, "alpha": 2.49, "cf_alpha": 0.9874, "cf_raw": 0.303, "sup": 0.6256}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 1, "set": "random", "n": 8, "pct_dict": 0.00075, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0001, "sup": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 2, "set": "recursive", "n": 39, "pct_dict": 0.00366, "free0": 0.0, "pin0": 0.0, "alpha": 2.127, "cf_alpha": 1.021, "cf_raw": 0.4017, "sup": 0.9091}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 2, "set": "random", "n": 39, "pct_dict": 0.00366, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": -0.0001, "sup": 0.0}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 3, "set": "recursive", "n": 97, "pct_dict": 0.00911, "free0": 0.0, "pin0": 0.0, "alpha": 2.248, "cf_alpha": 1.0084, "cf_raw": 0.3807, "sup": 1.0119}
+{"seed": "26/17432", "layer": 8, "kind": "resid", "task": "eval", "depth": 3, "set": "random", "n": 97, "pct_dict": 0.00911, "free0": 0.0, "pin0": 0.0, "alpha": 8.0, "cf_alpha": -0.0001, "cf_raw": 0.0001, "sup": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "structure", "depth": 1, "branch": 8, "expanded": 1, "new_nodes": 8, "cumulative": 8, "sharing_rate": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "structure", "depth": 2, "branch": 8, "expanded": 8, "new_nodes": 24, "cumulative": 32, "sharing_rate": 0.2656}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "structure", "depth": 3, "branch": 8, "expanded": 24, "new_nodes": 30, "cumulative": 62, "sharing_rate": 0.6141}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 1, "set": "recursive", "n": 8, "pct_dict": 0.00056, "free0": 0.0, "pin0": 0.0, "alpha": 1.4, "cf_alpha": 0.9517, "cf_raw": 0.6552, "sup": 0.9043}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 1, "set": "random", "n": 8, "pct_dict": 0.00056, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 2, "set": "recursive", "n": 32, "pct_dict": 0.00223, "free0": 0.0, "pin0": 0.0, "alpha": 1.279, "cf_alpha": 0.9931, "cf_raw": 0.7517, "sup": 1.0}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 2, "set": "random", "n": 32, "pct_dict": 0.00223, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": -0.0069}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 3, "set": "recursive", "n": 62, "pct_dict": 0.00432, "free0": 0.0, "pin0": 0.0, "alpha": 1.279, "cf_alpha": 1.0069, "cf_raw": 0.7759, "sup": 0.9931}
+{"seed": "35/6599", "layer": 11, "kind": "resid", "task": "eval", "depth": 3, "set": "random", "n": 62, "pct_dict": 0.00432, "free0": 0.0, "pin0": 0.0, "alpha": null, "cf_alpha": null, "cf_raw": 0.0, "sup": 0.0}

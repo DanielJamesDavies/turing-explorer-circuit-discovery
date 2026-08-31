@@ -120,6 +120,25 @@ from sae.dense import sparse_topk_to_dense
 
 Site = Tuple[int, str]
 
+# SIGNED AMPLITUDE (2026-08-30): alpha = psi raw instead of
+# softplus(psi), so the fit can assign NEGATIVE amplitudes --
+# members that push the seed down (brakes discovered inside the
+# standard fit). Per-call flag set by run_learned_mask; the patcher
+# and penalties read it through _amp_of().
+_SIGNED_AMP = [False]
+# FIRING MARGIN (2026-08-30): when set, holds
+# (W_enc_site, b_eff_site, k) and the seed tap reports the seed's
+# MARGIN over the site's k-th largest pre-activation instead of the
+# raw pre-activation.
+_MARGIN = [None]
+
+
+def _amp_of(psi):
+    if _SIGNED_AMP[0]:
+        return psi
+    return torch.nn.functional.softplus(psi)
+
+
 OBJECTIVES = ("pos", "contrast", "negctx", "inject", "raise", "pin", "logit",
               "maximise")
 
@@ -217,7 +236,13 @@ class LearnedMaskPatcher:
                 and kind == self.seed_kind):
             w = self.w_seed.to(device=x.device, dtype=x.dtype)
             b = self.b_seed.to(device=x.device, dtype=x.dtype)
-            self.seed_pre = x @ w + b
+            _pre = x @ w + b
+            if _MARGIN[0] is not None:
+                _We, _be, _k = _MARGIN[0]
+                _full = x.to(_We.dtype) @ _We.T + _be
+                _tau = torch.topk(_full, _k, dim=-1).values[..., -1]
+                _pre = _pre - _tau.to(_pre.dtype)
+            self.seed_pre = _pre
             return x
         theta = self.thetas.get((layer_idx, kind))
         psi = self.deltas.get((layer_idx, kind))
@@ -260,7 +285,7 @@ class LearnedMaskPatcher:
                 # delta = dense*(m*alpha - 1) + (1-m)*floor.
                 # At alpha=1 this reduces exactly to the gate-only forms
                 # below (algebraic identity, both floor branches).
-                alpha = torch.nn.functional.softplus(amp).to(
+                alpha = _amp_of(amp).to(
                     device=dense.device, dtype=dense.dtype)
                 delta_code = dense * (m * alpha - 1.0)
                 if floor is not None:
@@ -449,6 +474,9 @@ def _run_learned_mask_impl(
     seed_layer: int,
     seed_kind: str,
     seed_latent_idx: int,
+    seed_vector: "Optional[Tuple[torch.Tensor, torch.Tensor]]" = None,
+    signed_amplitude: bool = False,
+    margin_topk: "Optional[int]" = None,
     pos_tokens: torch.Tensor,
     pos_argmax: torch.Tensor,
     neg_tokens: Optional[torch.Tensor] = None,
@@ -458,6 +486,9 @@ def _run_learned_mask_impl(
     lr: float = 0.05,
     l1_lambda: float = 1e-3,
     beta: float = 1.0,
+    member_penalty: "Optional[Dict[Site, torch.Tensor]]" = None,
+    member_penalty_weight: float = 0.0,
+    neg_suppress_weight: float = 0.0,
     inject_lambda: Optional[float] = None,
     inject_exclude_sites: int = 0,
     keep_threshold: float = 0.5,
@@ -570,6 +601,13 @@ def _run_learned_mask_impl(
         raise ValueError("objective='raise' requires target_act "
                          "(the seed's natural posctx level; the "
                          "objective targets raise_gamma * it)")
+    _SIGNED_AMP[0] = bool(signed_amplitude)
+    if margin_topk is not None:
+        _sae_m = bank.saes[seed_kind][seed_layer]
+        _MARGIN[0] = (_sae_m.encoder.weight.detach(),
+                      _sae_m._get_bias_eff().detach(), int(margin_topk))
+    else:
+        _MARGIN[0] = None
     if objective == "raise" and float(raise_gamma) <= 1.0:
         raise ValueError("raise_gamma must be > 1: the objective is to push "
                          f"the seed ABOVE natural, got {raise_gamma}")
@@ -709,6 +747,16 @@ def _run_learned_mask_impl(
     sae = bank.saes[seed_kind][seed_layer]
     w_seed = sae.encoder.weight[seed_latent_idx].detach()
     b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
+    # DIFFERENTIAL SEED (2026-08-28): seed_vector=(w, b) overrides
+    # the encoder-row derivation, so a circuit can be fitted against
+    # a VIRTUAL direction -- e.g. w_A - w_B, whose reconstruction
+    # target is the difference signal between two same-site latents.
+    # Topic-shared composition cancels by construction; the circuit
+    # contains the differentia. Everything downstream (patchers,
+    # floors, scoring taps) consumes (w_seed, b_seed) verbatim.
+    if seed_vector is not None:
+        w_seed = seed_vector[0].detach()
+        b_seed = seed_vector[1].detach()
     device = getattr(bank, "device", pos_tokens.device)
 
     # theta_init_mode="active": probe-INACTIVE latents start at theta_lo
@@ -850,7 +898,8 @@ def _run_learned_mask_impl(
     # exactly and step 0 reproduces the gate-only mask bit-for-bit.
     amps: Dict[Site, torch.Tensor] = {}
     if free_amplitude:
-        _psi1 = math.log(math.expm1(1.0))
+        _psi1 = (1.0 if signed_amplitude
+                 else math.log(math.expm1(1.0)))
         amps = {s: torch.full((bank.d_sae,), _psi1, device=device,
                               requires_grad=True) for s in sites}
     params = list(thetas.values()) + list(deltas.values()) + list(amps.values())
@@ -956,7 +1005,8 @@ def _run_learned_mask_impl(
         pos_nat = _natural(inference, bank, pos_tokens, seed_layer, seed_kind,
                            w_seed, b_seed, code_dtype=code_dtype)
         pos_tgt_all = _at(pos_nat, pos_argmax)
-    if objective in ("contrast", "negctx", "inject"):
+    if (objective in ("contrast", "negctx", "inject")
+            or neg_suppress_weight > 0):
         neg_nat = _natural(inference, bank, neg_tokens, seed_layer, seed_kind,
                            w_seed, b_seed, code_dtype=code_dtype)
         # would-be-firing anchor per negctx sequence (pre-act argmax) — the
@@ -986,7 +1036,8 @@ def _run_learned_mask_impl(
         ptgt_ho = lp_nat_all[pt_tr.shape[0]:]
         logit_tok_tr = logit_tok[:pt_tr.shape[0]]
         logit_tok_ho = logit_tok[pt_tr.shape[0]:]
-    if objective in ("contrast", "negctx", "inject"):
+    if (objective in ("contrast", "negctx", "inject")
+            or neg_suppress_weight > 0):
         nt_tr, na_tr, nt_ho, na_ho = split(neg_tokens, neg_anchors)
         ntgt_tr = neg_tgt_all[:nt_tr.shape[0]]
         ntgt_ho = neg_tgt_all[nt_tr.shape[0]:]
@@ -1245,6 +1296,21 @@ def _run_learned_mask_impl(
                         terms.append((pt_tr, pa_tr,
                                       torch.zeros_like(ptgt_tr),
                                       float(suppress_weight) * sn_data, None))
+                # NEG-SUPPRESS (2026-08-28 knowledge-circuit work): the
+                # circuit must also reproduce the seed's natural silence on
+                # hard negatives — contrast's second term, made composable
+                # with the pos objective and the triple floor. Members that
+                # merely restate the seed's surface form fire on the hard
+                # negatives too and are priced out here.
+                if neg_suppress_weight > 0 and objective in ("pos",
+                                                             "maximise"):
+                    # Normalised like the primary pos term (divide by
+                    # dual_norm): the raw-mse version outbids sparsity and
+                    # the optimiser keeps ~18k members to make the negative
+                    # stream near-natural (measured, 40-step smoke).
+                    _dn = dual_norm if objective == "pos" else 1.0
+                    terms.append((nt_tr, na_tr, ntgt_tr,
+                                  float(neg_suppress_weight) / _dn, None))
                 for tokens_t, anchors_t, targets_t, w, pat_t in terms:
                     part = w * data_loss(tokens_t, anchors_t, targets_t, mi,
                                          pat_t) / accum
@@ -1263,6 +1329,19 @@ def _run_learned_mask_impl(
                            + inj_lambda * sn_delta * delta_sum())
             else:
                 penalty = l1_lambda * mask_sum()
+            if member_penalty is not None and member_penalty_weight > 0:
+                # ECHO PENALTY (2026-08-28): per-latent price scaled by a
+                # precomputed vector — in the knowledge-circuit runs this is
+                # corr(a_latent, a_seed)^2 over the probe stream, so members
+                # that are mere copies of the seed's own signal pay extra.
+                # Generic: any {site: [d_sae]} vector prices membership.
+                _mp = [(torch.sigmoid(thetas[s])
+                        * member_penalty[s].to(device=thetas[s].device,
+                                               dtype=thetas[s].dtype)).sum()
+                       for s in thetas if s in member_penalty]
+                if _mp:
+                    penalty = penalty + (float(member_penalty_weight)
+                                         * torch.stack(_mp).sum())
             if amps:
                 # LEAK GUARD (found by test, 2026-08-05): L1 prices the gate
                 # m but the signal is m*alpha, so the optimiser can push m
@@ -1276,13 +1355,13 @@ def _run_learned_mask_impl(
                 # stay free unless amp_l1 > 0.
                 off_member = torch.stack([
                     ((1.0 - torch.sigmoid(thetas[s]))
-                     * (torch.nn.functional.softplus(a) - 1.0).abs()).sum()
+                     * (_amp_of(a) - 1.0).abs()).sum()
                     for s, a in amps.items()]).sum()
                 penalty = penalty + l1_lambda * off_member
                 if amp_l1 > 0:
                     penalty = penalty + amp_l1 * torch.stack([
                         (torch.sigmoid(thetas[s])
-                         * (torch.nn.functional.softplus(a) - 1.0).abs()).sum()
+                         * (_amp_of(a) - 1.0).abs()).sum()
                         for s, a in amps.items()]).sum()
             penalty.backward()
             # step_hook (diagnostics only): called AFTER backward with the
@@ -1374,7 +1453,7 @@ def _run_learned_mask_impl(
                 a_here = amps.get((layer, kind))
                 if a_here is None:
                     continue
-                alpha = torch.nn.functional.softplus(a_here)
+                alpha = _amp_of(a_here)
                 idx = (m > keep_threshold).nonzero(as_tuple=True)[0]
                 vals = alpha[idx].tolist()
                 _amp_kept["%d/%s" % (layer, kind)] = {

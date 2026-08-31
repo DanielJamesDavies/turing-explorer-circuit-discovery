@@ -1,0 +1,2 @@
+{"seed_i": 5, "layer": 5, "kind": "mlp", "sites": 16, "n_zero": 7894, "probes": [{"lam": 1e-05, "n": 9194}, {"lam": 3e-06, "n": 29984}, {"lam": 1e-06, "n": 71703}], "lambda_good": null, "lambda_x_sites": null}
+{"seed_i": 8, "layer": 8, "kind": "mlp", "sites": 25, "n_zero": 54634, "probes": [{"lam": 1e-05, "n": 29493}, {"lam": 3e-06, "n": 65075}, {"lam": 1e-06, "n": 133496}], "lambda_good": 4.27122173705984e-06, "lambda_x_sites": 0.000106780543426496}
