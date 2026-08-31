@@ -13,8 +13,11 @@ from store.circuits import circuit_store
 
 
 def _parse_seed_shard() -> tuple:
-    """config.discovery.seed_shard "i/k" -> (i, k), validated loudly."""
-    raw = str(config.discovery.seed_shard)
+    """Seed shard "i/k" -> (i, k), validated loudly. The SEED_SHARD env
+    var overrides config.discovery.seed_shard so concurrent per-GPU
+    processes can share one config.yaml and differ only in environment
+    (SEED_SHARD=0/2 vs 1/2)."""
+    raw = os.environ.get("SEED_SHARD") or str(config.discovery.seed_shard)
     try:
         i, k = (int(x) for x in raw.split("/"))
     except ValueError:
