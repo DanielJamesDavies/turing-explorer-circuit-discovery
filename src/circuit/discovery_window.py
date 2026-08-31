@@ -318,6 +318,15 @@ class DiscoveryWindow:
         if obs.forward_passes > 0:
             print(f"Average Forward Duration: {obs.total_forward_time / obs.forward_passes * 1000:.1f} ms")
         print("")
+        # Persist per-seed metrics (duration, forward passes, peak CUDA
+        # memory) — collected since May but previously discarded with the
+        # return value. Append-mode so resumes accumulate one file.
+        i, k = _parse_seed_shard()
+        mname = ("task_metrics.jsonl" if k == 1
+                 else "task_metrics.shard%d.jsonl" % i)
+        with open(os.path.join(self.output_dir, mname), "a") as mfh:
+            for tm in task_metrics:
+                mfh.write(json.dumps(tm) + "\n")
         self._print_summary_table()
         self._print_eval_stats_table()
         return task_metrics
