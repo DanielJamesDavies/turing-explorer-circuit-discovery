@@ -47,6 +47,14 @@ fi
 cd /root/turing/src/native && /root/turing/.venv/bin/python setup.py \
   build_ext --inplace > /dev/null 2>&1 || echo "  (native build skipped/failed — PyTorch fallbacks work)"
 
+echo "== 6b/7 pre-build shard index cache serially (concurrent first-use"
+echo "        builds raced before atomic writes; serial pre-build makes it moot)"
+cd /root/turing && PYTHONPATH=src ./.venv/bin/python -c "
+import torch
+from data.loader import DataLoader
+DataLoader(device=torch.device('cpu'), pin_memory=False)
+print('  shard indices ready')"
+
 echo "== 7/7 sanity: import chain + config fields"
 cd /root/turing && PYTHONPATH=src ./.venv/bin/python -c "
 from config import config

@@ -98,9 +98,16 @@ class DataLoader:
             valid  = (ends - starts) > 1
             index  = np.stack([starts[valid], ends[valid]], axis=1).astype(np.int64)
 
-        index_dir = os.path.dirname(self._get_index_path(shard_index))
-        os.makedirs(index_dir, exist_ok=True)
-        np.save(self._get_index_path(shard_index), index)
+        index_path = self._get_index_path(shard_index)
+        os.makedirs(os.path.dirname(index_path), exist_ok=True)
+        # Atomic publish: write to a per-process temp file, then rename.
+        # Concurrent shard processes (one per GPU x co-tenants) all build
+        # these lazily on first use; a plain np.save let readers see a
+        # half-written file (EOFError, 2026-09-01 H100 launch).
+        tmp_path = "%s.tmp-%d" % (index_path, os.getpid())
+        with open(tmp_path, "wb") as fh:
+            np.save(fh, index)
+        os.replace(tmp_path, index_path)
         return index
 
     def _load_or_build_index(self, shard_index: int) -> np.ndarray:
@@ -111,7 +118,12 @@ class DataLoader:
             os.path.exists(index_path)
             and os.path.getmtime(index_path) >= os.path.getmtime(shard_path)
         ):
-            return np.load(index_path)
+            try:
+                return np.load(index_path)
+            except (EOFError, ValueError, OSError):
+                # Truncated/corrupt cache (e.g. left by a pre-atomic-write
+                # race): rebuild rather than die.
+                pass
         return self._build_shard_index(shard_index)
 
     def __len__(self) -> int:
