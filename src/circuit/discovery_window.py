@@ -204,6 +204,47 @@ class DiscoveryWindow:
     def run(self, candidates: List[Dict[str, Any]], save_interval: int = 10):
         """Runs all discovery methods for each seed candidate."""
         shard_i, shard_k = _parse_seed_shard()
+        if str(config.discovery.seed_order) == "shuffled":
+            import random as _random
+            candidates = list(candidates)
+            _random.Random(int(config.discovery.seed_shuffle_seed)).shuffle(candidates)
+            print(f"--- seed_order shuffled (seed {config.discovery.seed_shuffle_seed}) ---")
+        elif str(config.discovery.seed_order) == "interleaved":
+            # Daniel's pairing (2026-09-05): first half in stored order,
+            # second half reversed, zipped -> [c0, c_last, c1, c_last-1, ...]
+            # so shallow and deep seeds alternate deterministically and every
+            # shard's running cost is flat from the first seed. No RNG.
+            c = list(candidates)
+            h = (len(c) + 1) // 2
+            a, b = c[:h], c[h:][::-1]
+            out = []
+            for i in range(h):
+                out.append(a[i])
+                if i < len(b):
+                    out.append(b[i])
+            candidates = out
+            print("--- seed_order interleaved (first half fwd, second half "
+                  "reversed, zipped) ---")
+        elif str(config.discovery.seed_order) != "stored":
+            raise ValueError(f"discovery.seed_order must be 'stored', 'shuffled' "
+                             f"or 'interleaved', got {config.discovery.seed_order!r}")
+        if bool(config.discovery.skip_no_upstream):
+            from eval.ablation_faithfulness import upstream_sites
+            from pipeline.component_index import split_component_idx
+            _nk = len(self.bank.kinds)
+            _has_up = {}
+            _before = len(candidates)
+            _kept = []
+            for _c in candidates:
+                _ci = int(_c["comp_idx"])
+                if _ci not in _has_up:
+                    _l, _ki = split_component_idx(_ci, _nk)
+                    _has_up[_ci] = bool(upstream_sites(self.bank, _l, self.bank.kinds[_ki]))
+                if _has_up[_ci]:
+                    _kept.append(_c)
+            candidates = _kept
+            print(f"--- skip_no_upstream: {_before - len(candidates)} candidates "
+                  f"dropped (no upstream sites), {len(candidates)} remain ---")
         if shard_k > 1:
             candidates = [c for j, c in enumerate(candidates)
                           if j % shard_k == shard_i]

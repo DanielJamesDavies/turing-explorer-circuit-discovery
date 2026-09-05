@@ -1432,6 +1432,18 @@ class DiscoveryConfig(BaseModel):
     # process per GPU with CUDA_VISIBLE_DEVICES pinned. Concatenation is a
     # store merge; every circuit carries seed_comp/seed_latent/method.
     seed_shard: str = "0/1"
+    # Candidate ORDER before sharding (2026-09-05): "stored" = candidates.pt
+    # order (grouped by component -> every shard hits its deep seeds at the
+    # same time, a simultaneous VRAM peak, and early ETAs are meaningless);
+    # "shuffled" = deterministic permutation (seed_shuffle_seed) so each
+    # shard sees a depth mix from the start; "interleaved" = first half in
+    # stored order zipped with the reversed second half (shallow/deep
+    # alternate, no RNG). Same seed set in every case.
+    seed_order: str = "stored"
+    seed_shuffle_seed: int = 0
+    # Drop candidates whose component has no upstream sites (L0 attn): they
+    # can never yield a circuit and only cost startup + a skip row.
+    skip_no_upstream: bool = False
     model_config = ConfigDict(extra='forbid')
     n_seeds: int = 128
     # Sequence COUNT vs batch SIZE are separate ideas (the neg side has had

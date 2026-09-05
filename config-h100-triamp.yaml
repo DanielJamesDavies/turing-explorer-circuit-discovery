@@ -254,6 +254,9 @@ discovery:
     free_amplitude: true
     l1_lambda: 0.001
     deep_site_threshold: 99
+  seed_order: interleaved
+  seed_shuffle_seed: 0
+  skip_no_upstream: true
 persist:
   save_workers: 1
   search_cache_enabled: false
