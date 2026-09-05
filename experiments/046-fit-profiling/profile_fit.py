@@ -67,6 +67,26 @@ method.discover(comp_idx, latent)
 torch.cuda.synchronize()
 print("warm-up discover: %.1f s" % (time.perf_counter() - t0), flush=True)
 
+if os.environ.get("CPU_PROFILE") == "1":
+    # ptrace-free Python-level CPU profile: which of OUR functions (and
+    # which torch entry points) hold the CPU. cProfile overhead inflates
+    # absolute times ~2x; the ranking and proportions are what matter.
+    import cProfile
+    import pstats
+    pr = cProfile.Profile()
+    pr.enable()
+    method.discover(comp_idx, latent)
+    torch.cuda.synchronize()
+    pr.disable()
+    st = pstats.Stats(pr)
+    print()
+    print("=== TOP FUNCTIONS BY OWN TIME (tottime) ===")
+    st.sort_stats("tottime").print_stats(30)
+    print()
+    print("=== TOP PROJECT FUNCTIONS BY INCLUSIVE TIME (cumtime) ===")
+    st.sort_stats("cumtime").print_stats("src", 25)
+    sys.exit(0)
+
 with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
              record_shapes=True, with_stack=False) as prof:
     t0 = time.perf_counter()
