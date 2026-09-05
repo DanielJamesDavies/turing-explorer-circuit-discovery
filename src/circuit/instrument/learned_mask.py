@@ -1230,7 +1230,11 @@ def _run_learned_mask_impl(
                         f"means the zero floor's empty state is far "
                         f"off-manifold, NOT that the term is down-weighted)")
 
-    losses: List[float] = []
+    # Per-step losses stay on the GPU during the loop (a float() per term
+    # was a host sync that serialised CPU issue and GPU execution —
+    # 4 syncs/step, chunk 1 of the 2026-09-05 fit optimisation); they
+    # are materialised once after the loop.
+    losses_t: List[torch.Tensor] = []
     inference.disable_compile()
     try:
         for step in range(int(steps)):
@@ -1260,7 +1264,7 @@ def _run_learned_mask_impl(
             # backwarded on its own (freeing that chunk's graph before the
             # next forward), so peak VRAM is one micro-chunk while the
             # STEP's gradient equals the full effective-batch gradient.
-            step_total = 0.0
+            step_total: Any = None      # detached GPU accumulator
             for j in range(accum):
                 mi = step * accum + j
                 # Every loss term is backwarded SEPARATELY (grad(a+b) =
@@ -1330,7 +1334,8 @@ def _run_learned_mask_impl(
                                              mi, pat_t) / accum
                     with _phase("fit.bwd"):
                         part.backward()
-                    step_total += float(part.detach())
+                    _pd = part.detach()
+                    step_total = _pd if step_total is None else step_total + _pd
             if objective in ("negctx", "raise"):
                 penalty = l1_lambda * edit_sum()
             elif objective == "pin":
@@ -1401,12 +1406,14 @@ def _run_learned_mask_impl(
                 with torch.no_grad():
                     for st, excl in support_excl_masks.items():
                         thetas[st].masked_fill_(excl, SUPPORT_EXCL)
-            losses.append(step_total + float(penalty.detach()))
+            _pen = penalty.detach()
+            losses_t.append((_pen if step_total is None else step_total + _pen))
             if step_hook is not None:
                 step_hook(step, {
                     "thetas": thetas, "deltas": deltas, "grads": grads_now,
-                    "data_loss": step_total,
-                    "penalty": float(penalty.detach()),
+                    "data_loss": (0.0 if step_total is None
+                                  else float(step_total)),
+                    "penalty": float(_pen),
                     "temperature": float(getattr(patcher, "temperature", 1.0)),
                     "lr": float(opt.param_groups[0]["lr"]),
                     "keep_threshold": float(keep_threshold),
@@ -1414,7 +1421,11 @@ def _run_learned_mask_impl(
                 })
             if logger is not None and log_every and step % int(log_every) == 0:
                 logger.note(f"learned_mask[{objective}] step {step} "
-                            f"loss {losses[-1]:.5f} mean_m {float(mask_mean().detach()):.4f}")
+                            f"loss {float(losses_t[-1]):.5f} mean_m {float(mask_mean().detach()):.4f}")
+
+        # one host sync for the whole run's loss curve
+        losses: List[float] = ([float(v) for v in torch.stack(losses_t).cpu()]
+                               if losses_t else [])
 
         # Release the optimisation graph's cached blocks before the eval
         # phase allocates: measured 2.5GB of reserved memory recovered at L10
