@@ -10,6 +10,8 @@ from sae.bank import SAEBank
 from data.loader import DataLoader
 from config import config
 from store.circuits import circuit_store
+from observability.phases import (phase as _phase, reset_phases,
+                                  snapshot_phases)
 
 
 def _parse_seed_shard() -> tuple:
@@ -257,9 +259,10 @@ class DiscoveryWindow:
                     continue
                 m_t0 = time.perf_counter()
                 forwards_before = obs.forward_passes
+                reset_phases()
                 circuit = method.discover(comp_idx, latent_idx)
                 _m_dt = time.perf_counter() - m_t0
-                _log_tm(
+                _tm = (
                     {
                         "task_key": f"{cand.get('candidate_index', '?')}:{method_name}",
                         "candidate_index": cand.get("candidate_index"),
@@ -287,13 +290,22 @@ class DiscoveryWindow:
                     if matched:
                         self._attach_candidate_metadata(circuit, matched)
                     circuit_store.add_circuit(circuit)
-                    run_post_circuit_analyses(circuit, self._analysis_context, self._analyses)
-                    self._run_node_presence_eval(circuit)
-                    self._consolidate_evals(circuit)
+                    with _phase("window.post_analysis"):
+                        run_post_circuit_analyses(circuit, self._analysis_context, self._analyses)
+                    with _phase("window.node_presence"):
+                        self._run_node_presence_eval(circuit)
+                    with _phase("window.consolidate"):
+                        self._consolidate_evals(circuit)
                     pbar.set_postfix({"found": discovered_count})
 
                     if discovered_count % save_interval == 0:
-                        self.save_store()
+                        with _phase("window.save_store"):
+                            self.save_store()
+                # metrics row written AFTER post-processing so the
+                # phase snapshot covers the seed's full cost
+                _tm["total_s"] = time.perf_counter() - m_t0
+                _tm["phases"] = snapshot_phases()
+                _log_tm(_tm)
 
         self.save_store()
 

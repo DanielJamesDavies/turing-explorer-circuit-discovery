@@ -115,6 +115,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 
 from circuit.types.feature_id import FeatureID
+from observability.phases import phase as _phase
 from model.hooks import multi_patch
 from sae.dense import sparse_topk_to_dense
 
@@ -1312,9 +1313,11 @@ def _run_learned_mask_impl(
                     terms.append((nt_tr, na_tr, ntgt_tr,
                                   float(neg_suppress_weight) / _dn, None))
                 for tokens_t, anchors_t, targets_t, w, pat_t in terms:
-                    part = w * data_loss(tokens_t, anchors_t, targets_t, mi,
-                                         pat_t) / accum
-                    part.backward()
+                    with _phase("fit.fwd"):
+                        part = w * data_loss(tokens_t, anchors_t, targets_t,
+                                             mi, pat_t) / accum
+                    with _phase("fit.bwd"):
+                        part.backward()
                     step_total += float(part.detach())
             if objective in ("negctx", "raise"):
                 penalty = l1_lambda * edit_sum()
@@ -1363,7 +1366,8 @@ def _run_learned_mask_impl(
                         (torch.sigmoid(thetas[s])
                          * (_amp_of(a) - 1.0).abs()).sum()
                         for s, a in amps.items()]).sum()
-            penalty.backward()
+            with _phase("fit.penalty_bwd"):
+                penalty.backward()
             # step_hook (diagnostics only): called AFTER backward with the
             # live gradients and BEFORE opt.step() applies them, then again
             # after the step via `post`. Never mutates state; a None hook is
@@ -1376,7 +1380,8 @@ def _run_learned_mask_impl(
                     "psi": {s: (d.grad.detach().clone() if d.grad is not None
                                 else None) for s, d in deltas.items()},
                 }
-            opt.step()
+            with _phase("fit.opt"):
+                opt.step()
             if support_excl_masks:
                 # Re-clamp excluded latents: Adam momentum and AdamW's
                 # decoupled decay both move parameters with zero data

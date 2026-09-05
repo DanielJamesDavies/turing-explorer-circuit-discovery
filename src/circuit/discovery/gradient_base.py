@@ -46,6 +46,7 @@ from eval.recurrence_prune import prune_by_sequence_recurrence
 from observability.circuit_logger import CircuitLogger
 from pipeline.component_index import split_component_idx
 from store.circuits import Circuit, CircuitNode
+from observability.phases import phase as _phase
 from utils.neg_context_selector import NegContextSelector
 
 
@@ -247,7 +248,8 @@ class GradientDiscoveryBase(DiscoveryMethod):
         seed_kind = kinds[seed_kind_idx]
         seed_fid = FeatureID(seed_layer, seed_kind, seed_latent_idx)
 
-        probe_data = self.build_probe_dataset(seed_comp_idx, seed_latent_idx)
+        with _phase("seed.probes"):
+            probe_data = self.build_probe_dataset(seed_comp_idx, seed_latent_idx)
         if probe_data.pos_tokens.shape[0] == 0:
             logger.reject("empty probe dataset (no positive contexts)")
             return None
@@ -298,17 +300,18 @@ class GradientDiscoveryBase(DiscoveryMethod):
         circuit.add_node(seed_node)
         fid_to_uuid: Dict[FeatureID, str] = {seed_fid: seed_node.uuid}
 
-        hop = self._run_attribution_hop(ctx, logger)
-        self._pre_assembly(ctx, hop)
-
-        n_pos = self._assemble(
-            circuit, fid_to_uuid, seed_node.uuid, hop.positives,
-            self.positive_role, lambda fid, s: self._admit_positive(ctx, fid, s),
-        )
-        n_neg = self._assemble(
-            circuit, fid_to_uuid, seed_node.uuid, hop.negatives,
-            self.negative_role, lambda fid, s: self._admit_negative(ctx, fid, s),
-        )
+        with _phase("seed.fit"):
+            hop = self._run_attribution_hop(ctx, logger)
+        with _phase("seed.assemble"):
+            self._pre_assembly(ctx, hop)
+            n_pos = self._assemble(
+                circuit, fid_to_uuid, seed_node.uuid, hop.positives,
+                self.positive_role, lambda fid, s: self._admit_positive(ctx, fid, s),
+            )
+            n_neg = self._assemble(
+                circuit, fid_to_uuid, seed_node.uuid, hop.negatives,
+                self.negative_role, lambda fid, s: self._admit_negative(ctx, fid, s),
+            )
         logger.stage(
             "circuit assembly",
             len(circuit.nodes),
@@ -327,7 +330,8 @@ class GradientDiscoveryBase(DiscoveryMethod):
 
             stamp_restoration_provenance(circuit, self._last_restoration)
 
-        neg_tokens_eval = self._eval_neg_tokens(ctx, logger)
+        with _phase("seed.eval_negs"):
+            neg_tokens_eval = self._eval_neg_tokens(ctx, logger)
         if neg_tokens_eval is None:
             return None
 
@@ -340,7 +344,8 @@ class GradientDiscoveryBase(DiscoveryMethod):
 
         if self.pruning_threshold > 0:
             n_before = len(circuit.nodes)
-            self._call_loo_prune(ctx, circuit, neg_tokens_eval, circuit_layers)
+            with _phase("seed.prune_loo"):
+                self._call_loo_prune(ctx, circuit, neg_tokens_eval, circuit_layers)
             circuit_layers = {
                 node.feature_id.layer
                 for node in circuit.nodes.values()
@@ -358,6 +363,7 @@ class GradientDiscoveryBase(DiscoveryMethod):
         # Runs BEFORE the magnitude prune so that bisection searches a smaller
         # ranked set; needs one forward pass, no sufficiency search.
         if self.recurrence_prune:
+          with _phase("seed.prune_recurrence"):
             prune_by_sequence_recurrence(
                 self.inference, self.sae_bank, circuit,
                 pos_tokens=ctx.pos_tokens_eval,
@@ -375,6 +381,7 @@ class GradientDiscoveryBase(DiscoveryMethod):
         # Global magnitude prune (optional) — scalable free-φ bisection, for the
         # large position-aware allowed sets that LOO minimality cannot touch.
         if self.magnitude_prune:
+          with _phase("seed.prune_magnitude"):
             prune_by_magnitude_bisection(
                 self.inference, self.sae_bank, circuit,
                 pos_tokens=ctx.pos_tokens_eval,
@@ -392,9 +399,10 @@ class GradientDiscoveryBase(DiscoveryMethod):
                 if node.feature_id is not None
             }
 
-        cf_faith, sup_score = self._run_faithfulness_eval(
-            ctx, circuit, neg_tokens_eval, circuit_layers
-        )
+        with _phase("seed.cf_eval"):
+            cf_faith, sup_score = self._run_faithfulness_eval(
+                ctx, circuit, neg_tokens_eval, circuit_layers
+            )
         logger.note(
             f"counterfactual_faithfulness: {cf_faith:.4f} | "
             f"posctx_suppression_score: {sup_score:.4f}"
