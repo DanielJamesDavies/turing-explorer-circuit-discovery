@@ -221,6 +221,18 @@ class LearnedMaskPatcher:
         self.bin_threshold = float(bin_threshold)
         self.temperature = 1.0
         self.seed_pre: Optional[torch.Tensor] = None
+        # constant per-site tensors cast once per (site, device, dtype) —
+        # the per-call .to() copies were ~700 kernel launches per step.
+        self._const_cache: Dict[Any, torch.Tensor] = {}
+
+    def _const(self, tag: str, site: Site, t: torch.Tensor,
+               like: torch.Tensor) -> torch.Tensor:
+        key = (tag, site, like.device, like.dtype)
+        c = self._const_cache.get(key)
+        if c is None:
+            c = t.to(device=like.device, dtype=like.dtype)
+            self._const_cache[key] = c
+        return c
 
     def release(self) -> None:
         """Drop the graph-connected seed capture. Bounded to one forward's
@@ -290,14 +302,14 @@ class LearnedMaskPatcher:
                     device=dense.device, dtype=dense.dtype)
                 delta_code = dense * (m * alpha - 1.0)
                 if floor is not None:
-                    delta_code = delta_code + (1.0 - m) * floor.to(
-                        device=dense.device, dtype=dense.dtype)
+                    delta_code = delta_code + (1.0 - m) * self._const(
+                        "floor", (layer_idx, kind), floor, dense)
             elif pin is not None:
                 # PINNED execution (D3.1): kept -> clean pin value, dropped
                 # -> floor (or 0). code = m*pin + (1-m)*floor, so the delta
                 # against the live dense code is code - dense.
-                p = pin.to(device=dense.device, dtype=dense.dtype)
-                base = (floor.to(device=dense.device, dtype=dense.dtype)
+                p = self._const("pin", (layer_idx, kind), pin, dense)
+                base = (self._const("floor", (layer_idx, kind), floor, dense)
                         if floor is not None else torch.zeros_like(p))
                 delta_code = (m * p + (1.0 - m) * base) - dense
             elif floor is None:
@@ -310,7 +322,7 @@ class LearnedMaskPatcher:
                 # exactly identity (delta_code == 0 there), so the
                 # decode(all)+error invariant is untouched.
                 # code - dense == (floor - dense) * (1 - m)
-                f = floor.to(device=dense.device, dtype=dense.dtype)
+                f = self._const("floor", (layer_idx, kind), floor, dense)
                 delta_code = (f - dense) * (1.0 - m)
         if psi is not None:
             # additive injection, always >= 0; position-uniform (broadcast

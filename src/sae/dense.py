@@ -22,12 +22,15 @@ def sparse_topk_to_dense(
 
     target_dtype = dtype or top_acts.dtype
     dense = torch.zeros(*top_acts.shape[:-1], int(d_sae), device=top_acts.device, dtype=target_dtype)
-    dense.scatter_reduce_(
+    # scatter_add_ instead of scatter_reduce_(amax): for top-k output the
+    # real indices are unique and the values are post-ReLU (>= 0), while any
+    # index-0 padding carries value 0 — so add == amax exactly. The amax
+    # backward (ScatterReduceBackward + an eq mask pass) was 17% of fit
+    # device time (H100 profile 2026-09-05); add's backward is a gather.
+    dense.scatter_add_(
         dim=-1,
         index=top_indices.long(),
         src=top_acts.to(target_dtype),
-        reduce="amax",
-        include_self=True,
     )
     return dense
 
