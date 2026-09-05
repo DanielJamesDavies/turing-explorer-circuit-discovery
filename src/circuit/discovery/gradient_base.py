@@ -540,9 +540,28 @@ class GradientDiscoveryBase(DiscoveryMethod):
     def _assembly_note(self, n_pos: int, n_neg: int) -> str:
         return f"{n_pos} supports, {n_neg} inhibitors after thresholding"
 
+    _MASK_MODES = ("mask", "mask_contrast", "mask_negctx", "mask_inject")
+
     def _eval_neg_tokens(
         self, ctx: DiscoveryContext, logger: CircuitLogger
     ) -> Optional[torch.Tensor]:
+        # Learned-mask modes: the stored per-seed negctx (the KNN store the
+        # floor already read, a free slice) serves the cf/sup eval too.
+        # The selector re-retrieval (exact ranking + preact filter over a
+        # candidate pool) cost 58% of per-seed time (phase profile,
+        # 2026-09-05) to feed an eval whose thresholds mask modes bypass
+        # and whose bare-set numbers are re-done amp-aware post hoc.
+        # Eval is in-sample w.r.t. the floor's negatives, matching the
+        # pipeline's in-sample positive eval.
+        if getattr(self, "attribution_mode", "") in self._MASK_MODES:
+            nt = getattr(ctx.probe_data, "neg_tokens", None)
+            if nt is not None and int(nt.shape[0]) > 0:
+                self._last_neg_selection_metadata = {
+                    "source": "stored_negctx_slice",
+                    "n": int(min(nt.shape[0], self.max_neg_sequences))}
+                return nt[: max(1, int(self.max_neg_sequences))]
+            logger.reject("mask mode: seed has no stored negctx for eval")
+            return None
         return self._get_eval_neg_tokens(
             ctx.seed_comp_idx, ctx.seed_latent_idx, ctx.probe_data.neg_tokens, logger
         )

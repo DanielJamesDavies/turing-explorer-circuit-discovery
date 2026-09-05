@@ -37,6 +37,8 @@ def agg(rows):
     tot = defaultdict(float)
     for r in rows:
         for k, v in r["phases"].items():
+            if k.startswith("_"):
+                continue
             tot[k] += v["s"]
     n = max(len(rows), 1)
     seed_total = sum(r.get("total_s", r.get("duration_s", 0.0)) for r in rows)
@@ -55,8 +57,10 @@ def print_block(title, rows):
                                          100 * means[k] / max(seed_mean, 1e-9)))
     coarse = sum(means.get(k, 0.0) for k in
                  ("seed.probes", "seed.fit", "seed.assemble", "seed.cf_eval",
-                  "window.post_analysis", "window.node_presence",
-                  "window.consolidate", "window.save_store"))
+                  "seed.eval_negs", "seed.prune_loo", "seed.prune_recurrence",
+                  "seed.prune_magnitude", "window.post_analysis",
+                  "window.node_presence", "window.consolidate",
+                  "window.save_store"))
     print("  %-24s %9.2f %6.0f%%   (untimed remainder)"
           % ("other", seed_mean - coarse,
              100 * (seed_mean - coarse) / max(seed_mean, 1e-9)))
@@ -65,8 +69,9 @@ def print_block(title, rows):
     if means.get("seed.fit"):
         print("  fit internals sum %.2f s of seed.fit %.2f s (%s)"
               % (fit_inner, means["seed.fit"],
-                 "exact: PHASE_SYNC run" if os.environ.get("PHASE_SYNC") == "1"
-                 else "launch-time only unless the run used PHASE_SYNC=1"))
+                 "exact: PHASE_SYNC run" if all(
+                     r["phases"].get("_sync", {}).get("s") == 1.0 for r in rows)
+                 else "launch-time only (run without PHASE_SYNC=1)"))
 
 
 def main():

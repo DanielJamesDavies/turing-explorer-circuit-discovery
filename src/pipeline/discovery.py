@@ -27,6 +27,9 @@ def run_discovery(
 ) -> None:
     runtime = get_runtime()
     print("--- Discovery Window: Growing Faithful Circuits ---")
+    # TF32 matmul parity with every validated experiment runner
+    # (029-panel, 043-relativity, ...); no-op for bf16 streams.
+    torch.set_float32_matmul_precision("high")
     prepare_discovery_resources()
 
     if candidates is not None:

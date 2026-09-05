@@ -42,3 +42,9 @@ AGENTS.md
 /experiments/**/*.jsonl.gz
 /experiments/**/*.flag
 /experiments/_archive/
+
+# Root-level scratch from local smokes (never commit)
+/*.log
+/*.flag
+/*.bak
+/*.tgz

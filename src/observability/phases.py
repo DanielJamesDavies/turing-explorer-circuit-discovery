@@ -52,4 +52,6 @@ def reset_phases() -> None:
 
 
 def snapshot_phases() -> Dict[str, Dict[str, float]]:
-    return {k: {"s": round(v[0], 4), "n": v[1]} for k, v in _ACC.items()}
+    out = {k: {"s": round(v[0], 4), "n": v[1]} for k, v in _ACC.items()}
+    out["_sync"] = {"s": 1.0 if _SYNC else 0.0, "n": 0}
+    return out

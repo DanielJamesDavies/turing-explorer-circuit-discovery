@@ -16,6 +16,9 @@ def discover_circuits(candidates_path: str = "outputs/candidates.pt", reselect: 
         n_seeds = cast(int, config.discovery.n_seeds or 128)
 
     devices = detect_devices()
+    # TF32 matmul parity with every validated experiment runner
+    # (029-panel, 043-relativity, ...); no-op for bf16 streams.
+    torch.set_float32_matmul_precision("high")
     device = devices[0]
     fast = is_fast_memory()
     compile = should_compile()
