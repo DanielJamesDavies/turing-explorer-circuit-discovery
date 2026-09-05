@@ -172,20 +172,7 @@ class SAE(nn.Module):
         # so that gradients flow correctly from encoder outputs back to x.
         if torch.is_grad_enabled():
             pre_acts = torch.relu(nn.functional.linear(x, self.encoder.weight, self._get_bias_eff()))
-            # Selection needs no gradient: pick the indices with the fastest
-            # available top-k on a detached view, then gather the values WITH
-            # grad. Identical values/indices to pre_acts.topk (ties resolve
-            # the same way per kernel), but torch.topk's backward is replaced
-            # by gather's, and the Triton radix-select becomes usable under
-            # grad (torch.topk was 28% of fit device time, H100 2026-09-05).
-            with torch.no_grad():
-                det = pre_acts.detach()
-                if (_USE_TRITON_TOPK and _triton_topk_available()
-                        and det.is_cuda and det.dtype == torch.bfloat16):
-                    _, idx = _topk_nonneg_bf16(det, self.k)
-                else:
-                    _, idx = det.topk(self.k, sorted=False, dim=-1)
-            return pre_acts.gather(-1, idx), idx
+            return pre_acts.topk(self.k, sorted=False, dim=-1)
 
         if _ENCODE_BACKEND == "fused_exact_topk":
             return _linear_relu_topk_exact(
