@@ -67,6 +67,26 @@ method.discover(comp_idx, latent)
 torch.cuda.synchronize()
 print("warm-up discover: %.1f s" % (time.perf_counter() - t0), flush=True)
 
+if os.environ.get("BENCH") == "1":
+    # NOISE-CONTROLLED FIT BENCHMARK: the fit phases only (no evals, no
+    # assembly), REPEATS times on the same seed. Compare trees on the
+    # per-repeat seed.fit numbers; the spread across repeats is the noise
+    # floor. ~30 s per repeat at PROF_STEPS=100.
+    from observability.phases import reset_phases, snapshot_phases
+    reps = int(os.environ.get("REPEATS", 2))
+    for r in range(reps):
+        reset_phases()
+        method.discover(comp_idx, latent)
+        torch.cuda.synchronize()
+        ph = snapshot_phases()
+        g = lambda k: ph.get(k, {}).get("s", 0.0)
+        print("BENCH L%d comp %d latent %d rep %d | seed.fit %.2f s | "
+              "fwd %.2f | bwd %.2f | pen_bwd %.2f | opt %.2f | per step %.1f ms"
+              % (comp_idx // n_kinds, comp_idx, latent, r, g("seed.fit"),
+                 g("fit.fwd"), g("fit.bwd"), g("fit.penalty_bwd"),
+                 g("fit.opt"), 1000 * g("seed.fit") / PROF_STEPS), flush=True)
+    sys.exit(0)
+
 if os.environ.get("CPU_PROFILE") == "1":
     # ptrace-free Python-level CPU profile: which of OUR functions (and
     # which torch entry points) hold the CPU. cProfile overhead inflates

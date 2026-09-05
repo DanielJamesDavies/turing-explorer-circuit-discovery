@@ -126,6 +126,56 @@ Site = Tuple[int, str]
 # members that push the seed down (brakes discovered inside the
 # standard fit). Per-call flag set by run_learned_mask; the patcher
 # and penalties read it through _amp_of().
+# FUSED MASK ARITHMETIC (chunk 2, 2026-09-05): the production transform
+# path (anneal/soft gate + free amplitude + floor) as ONE compiled
+# pointwise function -> one kernel forward, one backward, instead of ~8
+# launches and ~8 passes over the (rows x d_sae) dense code per site per
+# pass. MASK_FUSE=0 restores the eager chain (bit-for-bit the old path).
+# Numerics: inductor computes the chain in fp32 and rounds once, the eager
+# chain rounds to the stream dtype between ops -> float-noise-level
+# differences, gated by compare_stores.
+import os as _os
+_FUSE_ENABLED = _os.environ.get("MASK_FUSE", "0") == "1"   # OPT-IN: fails the membership gate (Jaccard ~0.5 vs eager)
+
+
+def _mask_delta_eager(dense: torch.Tensor, theta_s: torch.Tensor,
+                      psi: torch.Tensor, floor: torch.Tensor,
+                      signed: bool) -> torch.Tensor:
+    # Op-for-op the historical eager chain, with an explicit round to the
+    # stream dtype after EVERY op so the compiled kernel reproduces eager
+    # bf16 rounding (inductor otherwise keeps the whole chain in fp32 and
+    # rounds once -> a different fit: Jaccard 0.55 on the reference seed).
+    dt = dense.dtype
+    m = torch.sigmoid(theta_s).to(dt)
+    alpha = (psi if signed else torch.nn.functional.softplus(psi)).to(dt)
+    ma = (m * alpha).to(dt)
+    t1 = (ma - 1.0).to(dt)
+    d1 = (dense * t1).to(dt)
+    om = (1.0 - m).to(dt)
+    f1 = (om * floor).to(dt)
+    return (d1 + f1).to(dt)
+
+
+_mask_delta_fused = None
+if _FUSE_ENABLED:
+    try:
+        _mask_delta_fused = torch.compile(_mask_delta_eager, dynamic=None)
+    except Exception:          # no inductor/triton on this platform
+        _mask_delta_fused = None
+
+
+def _mask_delta(dense, theta_s, psi, floor, signed):
+    global _mask_delta_fused
+    if _mask_delta_fused is not None:
+        try:
+            return _mask_delta_fused(dense, theta_s, psi, floor, signed)
+        except Exception as e:  # compile/runtime failure -> eager forever
+            print(f"[learned_mask] fused mask op failed ({type(e).__name__}: "
+                  f"{e}); falling back to eager", flush=True)
+            _mask_delta_fused = None
+    return _mask_delta_eager(dense, theta_s, psi, floor, signed)
+
+
 _SIGNED_AMP = [False]
 # FIRING MARGIN (2026-08-30): when set, holds
 # (W_enc_site, b_eff_site, k) and the seed tap reports the seed's
@@ -293,11 +343,17 @@ class LearnedMaskPatcher:
             pin = self.pins.get((layer_idx, kind))
             floor = self.floors.get((layer_idx, kind))
             amp = self.amps.get((layer_idx, kind))
-            if amp is not None and pin is None:
-                # code = m*alpha*dense + (1-m)*floor, so
-                # delta = dense*(m*alpha - 1) + (1-m)*floor.
-                # At alpha=1 this reduces exactly to the gate-only forms
-                # below (algebraic identity, both floor branches).
+            if (amp is not None and pin is None and floor is not None
+                    and self.binarize != "ste"):
+                # production tri-amp path -> fused op (m recomputed inside
+                # from the scaled theta so the whole chain is one kernel)
+                theta_s = (theta / max(self.temperature, 1e-4)
+                           if self.binarize == "anneal" else theta)
+                delta_code = _mask_delta(
+                    dense, theta_s, amp,
+                    self._const("floor", (layer_idx, kind), floor, dense),
+                    bool(_SIGNED_AMP[0]))
+            elif amp is not None and pin is None:
                 alpha = _amp_of(amp).to(
                     device=dense.device, dtype=dense.dtype)
                 delta_code = dense * (m * alpha - 1.0)
