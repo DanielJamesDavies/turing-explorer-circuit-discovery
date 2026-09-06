@@ -40,6 +40,9 @@ HERE = Path(__file__).parent
 CLUSTERS = os.environ.get("CLUSTERS", "auto3")
 LAM = float(os.environ.get("LAM", 3e-3))
 N_NULL = int(os.environ.get("N_NULL", 2))
+# CONTRAST=1: contrastive logit objective — reproduce log p(target) -
+# log p(wrong) using data["wrong_tokens"]; the metric follows suit.
+CONTRAST = os.environ.get("CONTRAST") == "1"
 EVAL_BS = 16
 
 load_discovery_artifacts(RUN_ROOT, candidates_path=RUN_ROOT / "candidates.pt")
@@ -82,18 +85,35 @@ def main():
         n_tr = max(8, int(n * 0.75))
         pt = torch.tensor([[max(t, 0) for t in w[:ANCHOR + 1]]
                            for w in wins], dtype=torch.long, device=device)
-        pa = torch.full((n,), ANCHOR, dtype=torch.long)
+        # Per-row anchors (constructed datasets are RIGHT-padded and read
+        # at each prompt's own last token: left-padding with a run of
+        # token 0 was found to corrupt predictions, 2026-09-06). Corpus
+        # clusters have no "anchors" field and keep the fixed ANCHOR.
+        if "anchors" in data:
+            pa = torch.tensor([int(data["anchors"][i]) for i in idx],
+                              dtype=torch.long)
+        else:
+            pa = torch.full((n,), ANCHOR, dtype=torch.long)
         tgt = torch.tensor(tgts, dtype=torch.long)
+        wrong = (torch.tensor([data["wrong_tokens"][i] for i in idx],
+                              dtype=torch.long) if CONTRAST else None)
         other = [data["windows"][i] for i in range(len(assign))
                  if assign[i] != ck][:n]
+        if not other:
+            # single-behaviour datasets: negatives = the behaviour's own
+            # windows in reversed order (the fit needs a neg tensor; the
+            # logit objective's floor is zero-fill so they are inert)
+            other = list(reversed(wins))
         nt = torch.tensor([[max(t, 0) for t in w[:ANCHOR + 1]]
                            for w in other], dtype=torch.long, device=device)
         pt_tr, pa_tr, tgt_tr = pt[:n_tr], pa[:n_tr], tgt[:n_tr]
         pt_ho, pa_ho, tgt_ho = pt[n_tr:], pa[n_tr:], tgt[n_tr:]
+        wr_tr = None if wrong is None else wrong[:n_tr]
+        wr_ho = None if wrong is None else wrong[n_tr:]
         print("\n== cluster %d: %d contexts (%d train / %d held-out)"
               % (ck, n, n_tr, n - n_tr), flush=True)
         # scoring frame = the fit's own: zero-fill, amplitudes applied
-        def metric(keep, tokens, anchors, targets, scales=None):
+        def metric(keep, tokens, anchors, targets, scales=None, wrongs=None):
             tot, m = 0.0, int(tokens.shape[0])
             inference.disable_compile()
             try:
@@ -115,14 +135,16 @@ def main():
                         lp = torch.log_softmax(
                             lg[b, anchors[s:s + EVAL_BS].to(device)].float(),
                             dim=-1)
-                        tot += float(
-                            lp[b, targets[s:s + EVAL_BS].to(device)].sum())
+                        v = lp[b, targets[s:s + EVAL_BS].to(device)]
+                        if wrongs is not None:
+                            v = v - lp[b, wrongs[s:s + EVAL_BS].to(device)]
+                        tot += float(v.sum())
             finally:
                 inference.enable_compile()
             return tot / max(m, 1)
 
-        m_full = metric(None, pt_ho, pa_ho, tgt_ho)
-        m_empty = metric({}, pt_ho, pa_ho, tgt_ho)
+        m_full = metric(None, pt_ho, pa_ho, tgt_ho, wrongs=wr_ho)
+        m_empty = metric({}, pt_ho, pa_ho, tgt_ho, wrongs=wr_ho)
         den = m_full - m_empty
         print("  logp full %.3f | empty %.3f | den %.3f"
               % (m_full, m_empty, den), flush=True)
@@ -133,6 +155,7 @@ def main():
             seed_layer=bank.n_layer - 1, seed_kind="resid",
             seed_latent_idx=0, pos_tokens=pt_tr, pos_argmax=pa_tr,
             neg_tokens=nt[:n_tr], target_tokens=tgt_tr,
+            contrast_tokens=wr_tr,
             mask_floor_source="zero", free_amplitude=True,
             steps=cfg.steps, lr=cfg.lr, l1_lambda=LAM,
             keep_threshold=cfg.keep_threshold,
@@ -160,12 +183,12 @@ def main():
                 v[i] = a
             scales[st] = v
         nmem = sum(len(v) for v in keep.values())
-        m_circ = metric(keep, pt_ho, pa_ho, tgt_ho, scales)
+        m_circ = metric(keep, pt_ho, pa_ho, tgt_ho, scales, wrongs=wr_ho)
         ef = (m_circ - m_empty) / den if abs(den) > 1e-9 else None
         # train EF: the overfit meter (large train-vs-holdout gap = memorised)
-        m_full_tr = metric(None, pt_tr, pa_tr, tgt_tr)
-        m_empty_tr = metric({}, pt_tr, pa_tr, tgt_tr)
-        m_circ_tr = metric(keep, pt_tr, pa_tr, tgt_tr, scales)
+        m_full_tr = metric(None, pt_tr, pa_tr, tgt_tr, wrongs=wr_tr)
+        m_empty_tr = metric({}, pt_tr, pa_tr, tgt_tr, wrongs=wr_tr)
+        m_circ_tr = metric(keep, pt_tr, pa_tr, tgt_tr, scales, wrongs=wr_tr)
         ef_tr = ((m_circ_tr - m_empty_tr) / (m_full_tr - m_empty_tr)
                  if abs(m_full_tr - m_empty_tr) > 1e-9 else None)
         print("  behav%d n=%d EF_ho=%.3f EF_tr=%.3f (logp %.3f) %.0fs"
@@ -185,7 +208,7 @@ def main():
                 for i, a in zip(ids, amps):
                     vv[i] = a
                 ns[s] = vv
-            mn = metric(na, pt_ho, pa_ho, tgt_ho, ns)
+            mn = metric(na, pt_ho, pa_ho, tgt_ho, ns, wrongs=wr_ho)
             nulls.append((mn - m_empty) / den)
             print("    null%d EF=%.3f" % (j, nulls[-1]), flush=True)
 

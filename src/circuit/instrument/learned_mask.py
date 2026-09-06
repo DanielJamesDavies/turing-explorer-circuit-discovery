@@ -392,13 +392,22 @@ def _forward_logits(inference: Any, patcher: LearnedMaskPatcher,
 
 
 def _target_logprob(logits: torch.Tensor, anchors: torch.Tensor,
-                    targets: torch.Tensor) -> torch.Tensor:
-    """log p(target token) at each sequence's anchor position -> [B]."""
+                    targets: torch.Tensor,
+                    contrast: "Optional[torch.Tensor]" = None) -> torch.Tensor:
+    """log p(target token) at each sequence's anchor position -> [B].
+    With `contrast` (2026-09-07): log p(target) - log p(contrast), i.e. the
+    logit DIFFERENCE — the metric of contrastive tasks (IOI, agreement,
+    SFC). Without it the single-token objective can reproduce the target's
+    log-prob while raising the contrast token too (agreement: EF 1.00 on
+    the correct verb but the correct-minus-wrong margin fell 2.9 -> 0.1)."""
     B = min(int(logits.shape[0]), int(anchors.shape[0]), int(targets.shape[0]))
     idx = torch.arange(B, device=logits.device)
     pa = anchors[:B].to(logits.device).clamp(0, logits.shape[1] - 1)
     lp = torch.log_softmax(logits[:B][idx, pa].float(), dim=-1)
-    return lp[idx, targets[:B].to(logits.device).long()]
+    v = lp[idx, targets[:B].to(logits.device).long()]
+    if contrast is not None:
+        v = v - lp[idx, contrast[:B].to(logits.device).long()]
+    return v
 
 
 def _at(pre: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
@@ -414,7 +423,8 @@ def _natural_logprob(inference: Any, bank: Any, tokens: torch.Tensor,
                      seed_layer: int, seed_kind: str,
                      w_seed: torch.Tensor, b_seed: torch.Tensor,
                      code_dtype: str = "stream",
-                     batch: int = 8) -> torch.Tensor:
+                     batch: int = 8,
+                     contrast: "Optional[torch.Tensor]" = None) -> torch.Tensor:
     """Full-model log p(target) at each anchor -> [B]. The logit
     objective's REPRODUCTION target, exactly as _natural is for pos."""
     p = LearnedMaskPatcher(bank, {}, seed_layer, seed_kind, w_seed, b_seed,
@@ -422,8 +432,9 @@ def _natural_logprob(inference: Any, bank: Any, tokens: torch.Tensor,
     out = []
     for s in range(0, int(tokens.shape[0]), batch):
         lg = _forward_logits(inference, p, tokens[s:s + batch], grad=False)
-        out.append(_target_logprob(lg, anchors[s:s + batch],
-                                   targets[s:s + batch]).detach())
+        out.append(_target_logprob(
+            lg, anchors[s:s + batch], targets[s:s + batch],
+            None if contrast is None else contrast[s:s + batch]).detach())
     return torch.cat(out, dim=0) if out else torch.zeros(0)
 
 
@@ -494,6 +505,7 @@ def _run_learned_mask_impl(
     pos_argmax: torch.Tensor,
     neg_tokens: Optional[torch.Tensor] = None,
     target_tokens: Optional[torch.Tensor] = None,
+    contrast_tokens: Optional[torch.Tensor] = None,
     target_act: Optional[float] = None,
     steps: int = 200,
     lr: float = 0.05,
@@ -1038,17 +1050,22 @@ def _run_learned_mask_impl(
             bidx = torch.arange(min(tt.shape[0], pos_argmax.shape[0]))
             tt = tt[bidx, pos_argmax[:tt.shape[0]].clamp(0, tt.shape[1] - 1)]
         logit_tok = tt[:pos_tokens.shape[0]]
+        contrast_tok = (None if contrast_tokens is None
+                        else contrast_tokens[:pos_tokens.shape[0]])
         # target = the FULL model's log-prob, so the mask REPRODUCES the
         # behaviour rather than maximising it — the same "reproduce, don't
         # maximise" contract every other objective follows.
         lp_nat_all = _natural_logprob(inference, bank, pos_tokens, pos_argmax,
                                       logit_tok, seed_layer, seed_kind,
                                       w_seed, b_seed, code_dtype=code_dtype,
-                                      batch=max(1, int(micro_bs)))
+                                      batch=max(1, int(micro_bs)),
+                                      contrast=contrast_tok)
         ptgt_tr = lp_nat_all[:pt_tr.shape[0]]
         ptgt_ho = lp_nat_all[pt_tr.shape[0]:]
         logit_tok_tr = logit_tok[:pt_tr.shape[0]]
         logit_tok_ho = logit_tok[pt_tr.shape[0]:]
+        contrast_tr = None if contrast_tok is None else contrast_tok[:pt_tr.shape[0]]
+        contrast_ho = None if contrast_tok is None else contrast_tok[pt_tr.shape[0]:]
     if (objective in ("contrast", "negctx", "inject")
             or neg_suppress_weight > 0):
         nt_tr, na_tr, nt_ho, na_ho = split(neg_tokens, neg_anchors)
@@ -1158,7 +1175,9 @@ def _run_learned_mask_impl(
             # sites, same positions as `pos` — only the endpoint moves.
             tokid = logit_tok_tr[s:s + tk.shape[0]]
             lg = _forward_logits(inference, pat, tk, grad=True)
-            lp = _target_logprob(lg, an, tokid)
+            lp = _target_logprob(lg, an, tokid,
+                                 None if contrast_tr is None
+                                 else contrast_tr[s:s + tk.shape[0]])
             return ((lp - tg[:lp.shape[0]].to(lp.device, lp.dtype)) ** 2).mean()
         pre = _forward_preact(inference, pat, tk, grad=True)
         vals = _at(pre, an)
@@ -1438,7 +1457,7 @@ def _run_learned_mask_impl(
         with torch.no_grad():
             if objective == "logit" and pt_ho.shape[0]:
                 lg = _forward_logits(inference, patcher, pt_ho, grad=False)
-                lp = _target_logprob(lg, pa_ho, logit_tok_ho)
+                lp = _target_logprob(lg, pa_ho, logit_tok_ho, contrast_ho)
                 ho = float(((lp - ptgt_ho[:lp.shape[0]].to(lp.device, lp.dtype))
                             ** 2).mean())
             elif objective == "maximise" and pt_ho.shape[0]:

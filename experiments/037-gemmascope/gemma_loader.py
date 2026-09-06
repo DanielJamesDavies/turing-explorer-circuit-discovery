@@ -91,7 +91,12 @@ def load_sae(layer, l0, device="cpu"):
     if not local.exists():
         CACHE.mkdir(parents=True, exist_ok=True)
         p = hf_hub_download(SAE_REPO, name)
-        local.write_bytes(Path(p).read_bytes())
+        # atomic publish: an interrupted copy (reboot, 2026-09-07) left a
+        # truncated .npz that passed the exists() check and raised
+        # EOFError at load time
+        tmp = local.with_suffix(".tmp")
+        tmp.write_bytes(Path(p).read_bytes())
+        tmp.replace(local)
     z = np.load(local)
     return {k: torch.tensor(z[k], dtype=torch.float32, device=device)
             for k in z.files}

@@ -209,23 +209,7 @@ class DiscoveryWindow:
             candidates = list(candidates)
             _random.Random(int(config.discovery.seed_shuffle_seed)).shuffle(candidates)
             print(f"--- seed_order shuffled (seed {config.discovery.seed_shuffle_seed}) ---")
-        elif str(config.discovery.seed_order) == "interleaved":
-            # Daniel's pairing (2026-09-05): first half in stored order,
-            # second half reversed, zipped -> [c0, c_last, c1, c_last-1, ...]
-            # so shallow and deep seeds alternate deterministically and every
-            # shard's running cost is flat from the first seed. No RNG.
-            c = list(candidates)
-            h = (len(c) + 1) // 2
-            a, b = c[:h], c[h:][::-1]
-            out = []
-            for i in range(h):
-                out.append(a[i])
-                if i < len(b):
-                    out.append(b[i])
-            candidates = out
-            print("--- seed_order interleaved (first half fwd, second half "
-                  "reversed, zipped) ---")
-        elif str(config.discovery.seed_order) != "stored":
+        elif str(config.discovery.seed_order) not in ("stored", "interleaved"):
             raise ValueError(f"discovery.seed_order must be 'stored', 'shuffled' "
                              f"or 'interleaved', got {config.discovery.seed_order!r}")
         if bool(config.discovery.skip_no_upstream):
@@ -250,6 +234,28 @@ class DiscoveryWindow:
                           if j % shard_k == shard_i]
             print(f"--- seed_shard {shard_i}/{shard_k}: "
                   f"{len(candidates)} candidates this shard ---")
+        if str(config.discovery.seed_order) == "interleaved":
+            # Daniel's pairing (2026-09-05), applied PER SHARD after the
+            # modulo split (a global interleave + even k gave every even
+            # shard the shallow half and every odd shard the deep half):
+            # first half in stored order zipped with the reversed second
+            # half -> shallow/deep alternate. Odd shards are rotated by one
+            # so co-tenant processes on a GPU sit out of phase (two on a
+            # shallow seed while two are on a deep one) instead of all
+            # hitting deep seeds together.
+            c = list(candidates)
+            h = (len(c) + 1) // 2
+            a, b = c[:h], c[h:][::-1]
+            out = []
+            for i in range(h):
+                out.append(a[i])
+                if i < len(b):
+                    out.append(b[i])
+            if shard_i % 2 == 1 and len(out) > 1:
+                out = out[1:] + out[:1]
+            candidates = out
+            print(f"--- seed_order interleaved within shard "
+                  f"(rotated by {shard_i % 2}) ---")
         # Resume: reload this shard's own store and skip
         # (seed, method) pairs already discovered. A seed whose method ran
         # but was REJECTED is not in the store and will re-run — rejects
