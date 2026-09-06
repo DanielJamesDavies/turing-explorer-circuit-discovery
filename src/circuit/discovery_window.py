@@ -773,6 +773,19 @@ class DiscoveryWindow:
                 else "discovered_circuits.shard%d.pt" % i)
         return os.path.join(self.output_dir, name)
 
+    def _shard_file(self, base: str) -> str:
+        """Shard-aware sibling of ``base`` ("summary.json" ->
+        "summary.shard3.json" under k > 1). The summaries were the one
+        un-sharded write left: 16 co-tenant shards racing on one
+        summary.xlsx.tmp.xlsx killed three of them 8 minutes into the
+        2026-09-06 production run (os.replace on a tmp another shard had
+        already renamed away)."""
+        i, k = _parse_seed_shard()
+        if k == 1:
+            return os.path.join(self.output_dir, base)
+        stem, ext = os.path.splitext(base)
+        return os.path.join(self.output_dir, "%s.shard%d%s" % (stem, i, ext))
+
     def save_store(self):
         """Persists the circuit store to disk."""
         path = self._store_path()
@@ -813,7 +826,7 @@ class DiscoveryWindow:
                 },
             })
 
-        path = os.path.join(self.output_dir, "summary.json")
+        path = self._shard_file("summary.json")
         tmp_path = f"{path}.tmp"
         with open(tmp_path, "w") as f:
             json.dump(summary, f, indent=2)
@@ -960,7 +973,7 @@ class DiscoveryWindow:
         # Apply short display names
         df = df.rename(columns=_ALIASES)
 
-        path = os.path.join(self.output_dir, "summary.xlsx")
+        path = self._shard_file("summary.xlsx")
         tmp_path = f"{path}.tmp.xlsx"
         with pd.ExcelWriter(tmp_path, engine="openpyxl") as writer:
             df.to_excel(writer, sheet_name="Circuits", index=False)
