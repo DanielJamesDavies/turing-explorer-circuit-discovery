@@ -1,0 +1,5909 @@
+[
+ {
+  "target": "0.mlp.16000",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.15350",
+  "alpha": 1.6339,
+  "L": {
+   "L_Z": -0.0693320592054012,
+   "L_A": -0.040768548428979486,
+   "L_C": -0.044406128278369254
+  },
+  "F_C": -2.7781803375746557,
+  "G": -1.5388717735653077,
+  "act_anchor": 0.11082839965820312,
+  "act_max": 0.64190673828125,
+  "ctr_max": 0.577239990234375,
+  "peak": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "....... [[.]]",
+   "....... [[.]]",
+   "...... [[.]]"
+  ],
+  "logit_up": [
+   "dist",
+   "rod",
+   "cart",
+   "division"
+  ],
+  "logit_down": [
+   "operators",
+   "min",
+   "HL",
+   "Command"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.6546",
+  "alpha": 1.0284,
+  "L": {
+   "L_Z": 0.01609788626330823,
+   "L_A": -0.023373045962087773,
+   "L_C": -0.015842617501947546
+  },
+  "F_C": 2.4130396468449757,
+  "G": 1.9423825499870164,
+  "act_anchor": 0.17832183837890625,
+  "act_max": 0.6403656005859375,
+  "ctr_max": 0.6426963806152344,
+  "peak": [
+   [
+    "symbols",
+    14
+   ],
+   [
+    "probability",
+    10
+   ],
+   [
+    "events",
+    6
+   ],
+   [
+    "$",
+    4
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ],
+  "logit_up": [
+   "Sold",
+   "arta",
+   "docs",
+   "normal"
+  ],
+  "logit_down": [
+   "em",
+   "scientific",
+   "per",
+   "L"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.10377",
+  "alpha": 1.3266,
+  "L": {
+   "L_Z": -0.011423277070890678,
+   "L_A": -0.008051602181251623,
+   "L_C": -0.010125660867307193
+  },
+  "F_C": -0.7582067203323812,
+  "G": -0.30163726824201503,
+  "act_anchor": 0.077972412109375,
+  "act_max": 0.3169097900390625,
+  "ctr_max": 0.3027915954589844,
+  "peak": [
+   [
+    "efficiency",
+    17
+   ],
+   [
+    "efficient",
+    15
+   ],
+   [
+    "optim",
+    11
+   ],
+   [
+    "optimization",
+    6
+   ]
+  ],
+  "windows": [
+   "speed with write efficiency to maximize system [[efficiency]]",
+   " [[efficient]]",
+   " [[efficient]]"
+  ],
+  "logit_up": [
+   "Jazz",
+   "allocate",
+   "Tower",
+   "optimized"
+  ],
+  "logit_down": [
+   "label",
+   "rating",
+   "par",
+   "labels"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.5663",
+  "alpha": 0.8228,
+  "L": {
+   "L_Z": -0.4339143495196053,
+   "L_A": 0.19397766813814596,
+   "L_C": 0.1477527499350818
+  },
+  "F_C": -39.3542371747598,
+  "G": -40.38281605816671,
+  "act_anchor": 3.4052734375,
+  "act_max": 4.197509765625,
+  "ctr_max": 4.066650390625,
+  "peak": [
+   [
+    "symbols",
+    19
+   ],
+   [
+    "symbol",
+    10
+   ],
+   [
+    "graph",
+    4
+   ],
+   [
+    "represent",
+    3
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ],
+  "logit_up": [
+   "pass",
+   "int",
+   ",",
+   "fl"
+  ],
+  "logit_down": [
+   "master",
+   "ffen",
+   "service",
+   "Scala"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.25728",
+  "alpha": 2.4837,
+  "L": {
+   "L_Z": 0.08880693845754349,
+   "L_A": 0.08076065437548688,
+   "L_C": 0.09296037392884965
+  },
+  "F_C": 0.15559162814853283,
+  "G": 0.9577843469228772,
+  "act_anchor": 0.0716400146484375,
+  "act_max": 0.10479736328125,
+  "ctr_max": 0.0,
+  "peak": [
+   [
+    "pros",
+    64
+   ]
+  ],
+  "windows": [
+   " [[pros]]",
+   " [[pros]]",
+   " [[pros]]"
+  ],
+  "logit_up": [
+   "pros",
+   "small",
+   "ac",
+   "ros"
+  ],
+  "logit_down": [
+   "Mul",
+   "gg",
+   "cano",
+   "entertain"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.23318",
+  "alpha": 0.9469,
+  "L": {
+   "L_Z": 0.048820150610231115,
+   "L_A": 0.0493360062321475,
+   "L_C": 0.05037835367437029
+  },
+  "F_C": 0.7642055362243573,
+  "G": 0.5794654063879512,
+  "act_anchor": 0.063232421875,
+  "act_max": 0.072265625,
+  "ctr_max": 0.0,
+  "peak": [
+   [
+    "exer",
+    64
+   ]
+  ],
+  "windows": [
+   "tests include listening [[exer]]",
+   "tests include listening [[exer]]",
+   " [[exer]]"
+  ],
+  "logit_up": [
+   "Fre",
+   "Uncle",
+   "pond",
+   "icks"
+  ],
+  "logit_down": [
+   "ton",
+   "co",
+   "fix",
+   "acc"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.38658",
+  "alpha": 0.9938,
+  "L": {
+   "L_Z": 0.04777780316800831,
+   "L_A": 0.0397315190859517,
+   "L_C": 0.04777780316800831
+  },
+  "F_C": 1.0570253960010387,
+  "G": 0.9236846948844456,
+  "act_anchor": 0.0687255859375,
+  "act_max": 0.1127777099609375,
+  "ctr_max": 0.000698089599609375,
+  "peak": [
+   [
+    "searching",
+    64
+   ]
+  ],
+  "windows": [
+   " [[searching]]",
+   " [[searching]]",
+   " [[searching]]"
+  ],
+  "logit_up": [
+   "Co",
+   "ear",
+   "Ros",
+   "echo"
+  ],
+  "logit_down": [
+   "cycles",
+   "volumes",
+   "attach",
+   "severe"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.40291",
+  "alpha": 0.8819,
+  "L": {
+   "L_Z": 0.03739155544014541,
+   "L_A": 0.02518651778758764,
+   "L_C": 0.03583335237600623
+  },
+  "F_C": 0.4392324487146196,
+  "G": 0.3157408673071929,
+  "act_anchor": 0.0821533203125,
+  "act_max": 0.11290740966796875,
+  "ctr_max": 0.03619384765625,
+  "peak": [
+   [
+    "exer",
+    54
+   ],
+   [
+    "cis",
+    10
+   ]
+  ],
+  "windows": [
+   "speaking exercises), reading exer [[cis]]",
+   "speaking exercises), reading exer [[cis]]",
+   " [[exer]]"
+  ],
+  "logit_up": [
+   "gress",
+   "dou",
+   "vers",
+   "Graf"
+  ],
+  "logit_down": [
+   "flows",
+   "transport",
+   "annel",
+   "cloth"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.24589",
+  "alpha": 1.1597,
+  "L": {
+   "L_Z": 0.030121713840560893,
+   "L_A": 0.02259128538042067,
+   "L_C": 0.030382300701116593
+  },
+  "F_C": 0.5806034796156843,
+  "G": 0.483707712282524,
+  "act_anchor": 0.0363006591796875,
+  "act_max": 0.11194610595703125,
+  "ctr_max": 0.0,
+  "peak": [
+   [
+    "searches",
+    64
+   ]
+  ],
+  "windows": [
+   " [[searches]]",
+   " [[searches]]",
+   " [[searches]]"
+  ],
+  "logit_up": [
+   "searches",
+   "rot",
+   "SQL",
+   "Di"
+  ],
+  "logit_down": [
+   "OR",
+   "pi",
+   "pit",
+   "pid"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "G and L_C disagree",
+  "node": "0.attn.712",
+  "alpha": 0.8847,
+  "L": {
+   "L_Z": 0.004414022331861854,
+   "L_A": 0.003376992988834069,
+   "L_C": 0.011683863931446378
+  },
+  "F_C": -4.892385354453389,
+  "G": -5.11441067774604,
+  "act_anchor": 1.2001953125,
+  "act_max": 2.5577392578125,
+  "ctr_max": 2.61962890625,
+  "peak": [
+   [
+    "like",
+    12
+   ],
+   [
+    "1",
+    10
+   ],
+   [
+    "(",
+    9
+   ],
+   [
+    "0",
+    5
+   ]
+  ],
+  "windows": [
+   " [[1]]",
+   " [[1]]",
+   " [[1]]"
+  ],
+  "logit_up": [
+   "aw",
+   "n",
+   "ch",
+   "credit"
+  ],
+  "logit_down": [
+   "onn\u00e9es",
+   "%.",
+   "\u00b2.",
+   "\\)."
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "G and L_C disagree",
+  "node": "0.attn.6125",
+  "alpha": 2.0764,
+  "L": {
+   "L_Z": -0.008567457803168008,
+   "L_A": -0.0025952324071669697,
+   "L_C": 0.0036375798493897687
+  },
+  "F_C": -1.2363517008569205,
+  "G": -0.5138400623214749,
+  "act_anchor": 0.12458038330078125,
+  "act_max": 0.3935508728027344,
+  "ctr_max": 0.4443092346191406,
+  "peak": [
+   [
+    "was",
+    34
+   ],
+   [
+    "began",
+    9
+   ],
+   [
+    "had",
+    8
+   ],
+   [
+    "marked",
+    6
+   ]
+  ],
+  "windows": [
+   " [[was]]",
+   " [[was]]",
+   " [[was]]"
+  ],
+  "logit_up": [
+   "Russian",
+   "Ford",
+   "prote",
+   "timer"
+  ],
+  "logit_down": [
+   "sun",
+   "akh",
+   "occup",
+   "oku"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "G and L_C disagree",
+  "node": "0.attn.36957",
+  "alpha": 1.0277,
+  "L": {
+   "L_Z": 0.0,
+   "L_A": -0.0005211737211113996,
+   "L_C": 0.0
+  },
+  "F_C": -0.0608443728901584,
+  "G": -0.060578467930407685,
+  "act_anchor": 0.005340576171875,
+  "act_max": 0.011260986328125,
+  "ctr_max": 0.0,
+  "peak": [
+   [
+    "ly",
+    17
+   ],
+   [
+    "transformations",
+    13
+   ],
+   [
+    "maps",
+    12
+   ],
+   [
+    "function",
+    8
+   ]
+  ],
+  "windows": [
+   "of the central aspects of linear [[maps]]",
+   "also known as a linear transformation or linear [[function]]",
+   "also known as a linear transformation or linear [[function]]"
+  ],
+  "logit_up": [
+   "Ant",
+   "Stop",
+   "ann",
+   "pin"
+  ],
+  "logit_down": [
+   "heid",
+   "ople",
+   "ibles",
+   "Martin"
+  ]
+ },
+ {
+  "target": "0.mlp.16000",
+  "group": "G and L_C disagree",
+  "node": "0.attn.32818",
+  "alpha": 1.01,
+  "L": {
+   "L_Z": 0.0,
+   "L_A": -0.0005211737211113996,
+   "L_C": 0.0
+  },
+  "F_C": -0.15211890937418854,
+  "G": -0.1478963386133472,
+  "act_anchor": 0.00982666015625,
+  "act_max": 0.03867340087890625,
+  "ctr_max": 0.000827789306640625,
+  "peak": [
+   [
+    "ob",
+    64
+   ]
+  ],
+  "windows": [
+   "actual [[ob]]",
+   "actual [[ob]]",
+   " [[ob]]"
+  ],
+  "logit_up": [
+   "Dem",
+   "ob",
+   "automat",
+   "Gray"
+  ],
+  "logit_down": [
+   "Mississippi",
+   "thy",
+   "Night",
+   "shorter"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.resid.6299",
+  "alpha": 1.15,
+  "L": {
+   "L_Z": 0.005573349845201238,
+   "L_A": -0.026008965944272447,
+   "L_C": -0.03839207430340557
+  },
+  "F_C": -6.385879578947368,
+  "G": -2.0726077027863776,
+  "act_anchor": 5.0869140625,
+  "act_max": 7.55078125,
+  "ctr_max": 8.97021484375,
+  "peak": [
+   [
+    "inter",
+    10
+   ],
+   [
+    "new",
+    6
+   ],
+   [
+    "strateg",
+    4
+   ],
+   [
+    "innov",
+    4
+   ]
+  ],
+  "windows": [
+   "research must incorporate [[inter]]",
+   "research must incorporate [[inter]]",
+   "important factor is [[integrated]]"
+  ],
+  "logit_up": [
+   "benef",
+   "vital",
+   "capac",
+   "relevant"
+  ],
+  "logit_down": [
+   "ini",
+   "old",
+   "Lad",
+   "Sc"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.712",
+  "alpha": 1.0064,
+  "L": {
+   "L_Z": 0.5475261424148606,
+   "L_A": -0.024455529411764706,
+   "L_C": -0.030028879256965943
+  },
+  "F_C": -3.128253424148607,
+  "G": -6.4079383777089785,
+  "act_anchor": 1.6591796875,
+  "act_max": 2.435546875,
+  "ctr_max": 2.563720703125,
+  "peak": [
+   [
+    "like",
+    12
+   ],
+   [
+    "1",
+    10
+   ],
+   [
+    "(",
+    9
+   ],
+   [
+    "0",
+    5
+   ]
+  ],
+  "windows": [
+   " [[1]]",
+   " [[1]]",
+   " [[1]]"
+  ],
+  "logit_up": [
+   "aw",
+   "n",
+   "ch",
+   "credit"
+  ],
+  "logit_down": [
+   "onn\u00e9es",
+   "%.",
+   "\u00b2.",
+   "\\)."
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.26380",
+  "alpha": 1.528,
+  "L": {
+   "L_Z": 0.17801748606811146,
+   "L_A": 0.007431133126934985,
+   "L_C": -0.029103157894736845
+  },
+  "F_C": -1.2328072321981425,
+  "G": -1.0088587492260062,
+  "act_anchor": 2.97607421875,
+  "act_max": 4.5443115234375,
+  "ctr_max": 4.1019287109375,
+  "peak": [
+   [
+    "adjacent",
+    6
+   ],
+   [
+    "color",
+    5
+   ],
+   [
+    "problem",
+    5
+   ],
+   [
+    "reduces",
+    4
+   ]
+  ],
+  "windows": [
+   "that no two adjacent vertices are the same [[color]]",
+   "set. resulting from this interaction, Bell [[numerical]]",
+   "set. resulting from this interaction, Bell [[numerical]]"
+  ],
+  "logit_up": [
+   "probability",
+   "efficiently",
+   "necessary",
+   "feas"
+  ],
+  "logit_down": [
+   "Ha",
+   "Inst",
+   "sh",
+   "Pe"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.39852",
+  "alpha": 0.9908,
+  "L": {
+   "L_Z": -0.07090011145510836,
+   "L_A": -0.02105065015479876,
+   "L_C": -0.021982712074303405
+  },
+  "F_C": -1.4392684582043345,
+  "G": -1.7469439999999998,
+  "act_anchor": 1.330841064453125,
+  "act_max": 2.355224609375,
+  "ctr_max": 2.082611083984375,
+  "peak": [
+   [
+    "Unit",
+    13
+   ],
+   [
+    "JavaScript",
+    6
+   ],
+   [
+    "Cloud",
+    6
+   ],
+   [
+    "server",
+    4
+   ]
+  ],
+  "windows": [
+   "interactions, while Java and C++ provide [[static]]",
+   "C/B2 library/C++ [[libraries]]",
+   "C/B2 library/C++ [[libraries]]"
+  ],
+  "logit_up": [
+   "software",
+   "developers",
+   "IBM",
+   "functionality"
+  ],
+  "logit_down": [
+   "Fer",
+   "sympathy",
+   "ights",
+   "Wal"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.20249",
+  "alpha": 1.0,
+  "L": {
+   "L_Z": -0.01052532507739938,
+   "L_A": -0.01888852012383901,
+   "L_C": -0.016720049535603715
+  },
+  "F_C": 0.6012370030959752,
+  "G": 0.16783455108359133,
+  "act_anchor": 0.0,
+  "act_max": 6.05419921875,
+  "ctr_max": 7.33251953125,
+  "peak": [
+   [
+    "uz",
+    25
+   ],
+   [
+    "Jay",
+    20
+   ],
+   [
+    "Matt",
+    6
+   ],
+   [
+    "Salt",
+    3
+   ]
+  ],
+  "windows": [
+   " [[selection]]",
+   " [[selection]]",
+   " [[first]]"
+  ],
+  "logit_up": [
+   "foot",
+   "reflect",
+   "wn",
+   "ut"
+  ],
+  "logit_down": [
+   "secre",
+   "diplom",
+   "Sus",
+   "private"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.15350",
+  "alpha": 1.6026,
+  "L": {
+   "L_Z": -0.028792470588235294,
+   "L_A": 0.008356854489164086,
+   "L_C": -0.01578798761609907
+  },
+  "F_C": -1.5247011269349844,
+  "G": -0.579970773993808,
+  "act_anchor": 0.08635711669921875,
+  "act_max": 0.86920166015625,
+  "ctr_max": 0.5684089660644531,
+  "peak": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "....... [[.]]",
+   "....... [[.]]",
+   "...... [[.]]"
+  ],
+  "logit_up": [
+   "dist",
+   "rod",
+   "cart",
+   "division"
+  ],
+  "logit_down": [
+   "operators",
+   "min",
+   "HL",
+   "Command"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.18179",
+  "alpha": 2.5366,
+  "L": {
+   "L_Z": 0.061921882352941174,
+   "L_A": 0.19566325696594425,
+   "L_C": 0.22290863157894736
+  },
+  "F_C": -1.4340057956656347,
+  "G": 0.729018253869969,
+  "act_anchor": 0.013103485107421875,
+  "act_max": 3.98876953125,
+  "ctr_max": 3.9814453125,
+  "peak": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ],
+   [
+    "odot",
+    4
+   ]
+  ],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ],
+  "logit_up": [
+   "Point",
+   "snapshot",
+   "GP",
+   "DNS"
+  ],
+  "logit_down": [
+   "mar",
+   "S",
+   "accord",
+   "slow"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.39987",
+  "alpha": 1.1856,
+  "L": {
+   "L_Z": 0.36872876780185754,
+   "L_A": 0.16749216099071207,
+   "L_C": 0.16594506501547987
+  },
+  "F_C": 7.176737287925697,
+  "G": 6.715607578947368,
+  "act_anchor": 3.09527587890625,
+  "act_max": 3.3291015625,
+  "ctr_max": 0.30206298828125,
+  "peak": [
+   [
+    "multiple",
+    64
+   ]
+  ],
+  "windows": [
+   "have been taken into account for these multiple [[multiple]]",
+   "have been taken into account for these multiple [[multiple]]",
+   "'s shove various multiple [[multiple]]"
+  ],
+  "logit_up": [
+   "gener",
+   "neighbor",
+   "sin",
+   "immediate"
+  ],
+  "logit_down": [
+   "ants",
+   "Argument",
+   "avor",
+   "ent"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.20000",
+  "alpha": 0.8413,
+  "L": {
+   "L_Z": 0.18390152321981426,
+   "L_A": 0.151704173374613,
+   "L_C": 0.15665614860681115
+  },
+  "F_C": 7.526380978328174,
+  "G": 9.752531616099072,
+  "act_anchor": 2.7420501708984375,
+  "act_max": 3.0555419921875,
+  "ctr_max": 0.248779296875,
+  "peak": [
+   [
+    "multiple",
+    64
+   ]
+  ],
+  "windows": [
+   "availability by introducing redundant data across [[multiple]]",
+   "resources fail, by creating redundant information across [[multiple]]",
+   "resources fail, by creating redundant information across [[multiple]]"
+  ],
+  "logit_up": [
+   "spatial",
+   "arbitr",
+   "scientific",
+   "contin"
+  ],
+  "logit_down": [
+   "of",
+   "s",
+   "and",
+   "&"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.32179",
+  "alpha": 1.0544,
+  "L": {
+   "L_Z": 0.3281745634674923,
+   "L_A": 0.16501300309597522,
+   "L_C": 0.1473672321981424
+  },
+  "F_C": 2.4685374613003095,
+  "G": 3.2090448049535603,
+  "act_anchor": 4.973388671875,
+  "act_max": 6.047119140625,
+  "ctr_max": 4.5086669921875,
+  "peak": [
+   [
+    "range",
+    13
+   ],
+   [
+    "types",
+    8
+   ],
+   [
+    "categories",
+    7
+   ],
+   [
+    "idae",
+    7
+   ]
+  ],
+  "windows": [
+   "listic options available allows for a wide [[variety]]",
+   "listic options available allows for a wide [[variety]]",
+   "The Felidae family comprises a broad [[spectrum]]"
+  ],
+  "logit_up": [
+   "types",
+   "categories",
+   "ranges",
+   "subsets"
+  ],
+  "logit_down": [
+   "integrity",
+   "Arm",
+   "Bre",
+   "assured"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.6830",
+  "alpha": 1.0298,
+  "L": {
+   "L_Z": 0.09721342414860681,
+   "L_A": 0.08606672445820433,
+   "L_C": 0.1343627492260062
+  },
+  "F_C": 4.611461944272446,
+  "G": 3.654944495356037,
+  "act_anchor": 0.8803558349609375,
+  "act_max": 0.95513916015625,
+  "ctr_max": 0.048095703125,
+  "peak": [
+   [
+    "multiple",
+    64
+   ]
+  ],
+  "windows": [
+   "'s shove various multiple [[multiple]]",
+   " [[multiple]]",
+   "using [[multiple]]"
+  ],
+  "logit_up": [
+   "multiple",
+   "fib",
+   "mes",
+   "Marcus"
+  ],
+  "logit_down": [
+   "village",
+   "rian",
+   "biz",
+   "villages"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.32179",
+  "alpha": 1.1941,
+  "L": {
+   "L_Z": 0.3616083219814241,
+   "L_A": 0.09257213622291022,
+   "L_C": 0.12012185758513932
+  },
+  "F_C": 1.9356960495356037,
+  "G": 2.6833999256965946,
+  "act_anchor": 4.498046875,
+  "act_max": 5.645751953125,
+  "ctr_max": 4.017578125,
+  "peak": [
+   [
+    "idae",
+    13
+   ],
+   [
+    "range",
+    12
+   ],
+   [
+    "main",
+    12
+   ],
+   [
+    "different",
+    10
+   ]
+  ],
+  "windows": [
+   "Indo-European with its diverse [[range]]",
+   "Indo-European with its diverse [[range]]",
+   "listic options available allows for a wide [[variety]]"
+  ],
+  "logit_up": [
+   "types",
+   "ranges",
+   "categories",
+   "range"
+  ],
+  "logit_down": [
+   "Fail",
+   "insert",
+   "mach",
+   "aus"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "G and L_C disagree",
+  "node": "0.attn.5663",
+  "alpha": 0.7332,
+  "L": {
+   "L_Z": 0.6712050526315789,
+   "L_A": 0.09535564086687306,
+   "L_C": 0.09040366563467493
+  },
+  "F_C": -20.847397250773994,
+  "G": -32.3165079380805,
+  "act_anchor": 3.8720703125,
+  "act_max": 4.309326171875,
+  "ctr_max": 4.1904296875,
+  "peak": [
+   [
+    "symbols",
+    19
+   ],
+   [
+    "symbol",
+    10
+   ],
+   [
+    "graph",
+    4
+   ],
+   [
+    "represent",
+    3
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ],
+  "logit_up": [
+   "pass",
+   "int",
+   ",",
+   "fl"
+  ],
+  "logit_down": [
+   "master",
+   "ffen",
+   "service",
+   "Scala"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "G and L_C disagree",
+  "node": "0.attn.27971",
+  "alpha": 0.9568,
+  "L": {
+   "L_Z": -0.01083601238390093,
+   "L_A": 0.017645770897832817,
+   "L_C": 0.038081386996904026
+  },
+  "F_C": -0.297112173374613,
+  "G": -0.1665854613003096,
+  "act_anchor": 0.06330108642578125,
+  "act_max": 0.305511474609375,
+  "ctr_max": 1.02740478515625,
+  "peak": [
+   [
+    "financial",
+    19
+   ],
+   [
+    "invest",
+    15
+   ],
+   [
+    "vest",
+    8
+   ],
+   [
+    "assets",
+    7
+   ]
+  ],
+  "windows": [
+   " [[financial]]",
+   " [[financial]]",
+   " [[financial]]"
+  ],
+  "logit_up": [
+   "ollar",
+   "funds",
+   "crash",
+   "prot"
+  ],
+  "logit_down": [
+   "profil",
+   "Ly",
+   "erg",
+   "Wi"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.1349",
+  "alpha": 1.5268,
+  "L": {
+   "L_Z": 0.7143969287925698,
+   "L_A": 0.05603784520123839,
+   "L_C": 0.038081386996904026
+  },
+  "F_C": 1.1183918761609908,
+  "G": -1.1834903777089785,
+  "act_anchor": 5.256103515625,
+  "act_max": 9.9345703125,
+  "ctr_max": 7.36865234375,
+  "peak": [
+   [
+    "Bi",
+    10
+   ],
+   [
+    "Marie",
+    6
+   ],
+   [
+    "Computer",
+    3
+   ],
+   [
+    "Business",
+    3
+   ]
+  ],
+  "windows": [
+   "<s> [[Civil]]",
+   "<s> [[Chem]]",
+   "<s> [[Mechan]]"
+  ],
+  "logit_up": [
+   "repository",
+   "vital",
+   "necessity",
+   "mighty"
+  ],
+  "logit_down": [
+   "or",
+   "with",
+   "Ras",
+   "others"
+  ]
+ },
+ {
+  "target": "1.mlp.8495",
+  "group": "G and L_C disagree",
+  "node": "0.resid.12868",
+  "alpha": 0.9976,
+  "L": {
+   "L_Z": 0.0024791578947368424,
+   "L_A": 0.007120445820433437,
+   "L_C": 0.03498719504643963
+  },
+  "F_C": 0.018229102167182664,
+  "G": -0.01003076160990712,
+  "act_anchor": 0.075042724609375,
+  "act_max": 1.9647216796875,
+  "ctr_max": 4.177490234375,
+  "peak": [
+   [
+    "economy",
+    13
+   ],
+   [
+    "economic",
+    12
+   ],
+   [
+    "aggregate",
+    7
+   ],
+   [
+    "iture",
+    6
+   ]
+  ],
+  "windows": [
+   "policies, such as increased government expend [[iture]]",
+   "policies, such as increased government expend [[iture]]",
+   "ation levels to influence aggregate demand within the [[economy]]"
+  ],
+  "logit_up": [
+   "policy",
+   "economic",
+   "conom",
+   "dollars"
+  ],
+  "logit_down": [
+   "Martin",
+   "person",
+   "oo",
+   "God"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.5646",
+  "alpha": 1.1744,
+  "L": {
+   "L_Z": 0.09486149745197962,
+   "L_A": -0.08192802822422579,
+   "L_C": -0.07840363778910231
+  },
+  "F_C": -4.452685974127793,
+  "G": -4.325920313602509,
+  "act_anchor": 2.443756103515625,
+  "act_max": 4.710205078125,
+  "ctr_max": 4.0277099609375,
+  "peak": [
+   [
+    "Lock",
+    20
+   ],
+   [
+    "temperature",
+    7
+   ],
+   [
+    "Bol",
+    6
+   ],
+   [
+    "n",
+    5
+   ]
+  ],
+  "windows": [
+   "ers, [[scient]]",
+   "ers and scientists, including John [[Lock]]",
+   "ers and scientists, including John [[Lock]]"
+  ],
+  "logit_up": [
+   "&",
+   "lean",
+   "Wright",
+   "ower"
+  ],
+  "logit_down": [
+   "site",
+   "roy",
+   "non",
+   "large"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.712",
+  "alpha": 1.1576,
+  "L": {
+   "L_Z": 0.8409484594276755,
+   "L_A": -0.019990278322226575,
+   "L_C": -0.05527432379459035
+  },
+  "F_C": -12.56071074872599,
+  "G": -13.985792802822424,
+  "act_anchor": 1.9765625,
+  "act_max": 2.78955078125,
+  "ctr_max": 2.61962890625,
+  "peak": [
+   [
+    "like",
+    12
+   ],
+   [
+    "1",
+    10
+   ],
+   [
+    "(",
+    9
+   ],
+   [
+    "0",
+    5
+   ]
+  ],
+  "windows": [
+   " [[1]]",
+   " [[1]]",
+   " [[1]]"
+  ],
+  "logit_up": [
+   "aw",
+   "n",
+   "ch",
+   "credit"
+  ],
+  "logit_down": [
+   "onn\u00e9es",
+   "%.",
+   "\u00b2.",
+   "\\)."
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.1982",
+  "alpha": 1.1333,
+  "L": {
+   "L_Z": -0.012154731477851823,
+   "L_A": -0.04900428067424539,
+   "L_C": -0.05331543708349667
+  },
+  "F_C": -2.4887254253234024,
+  "G": -0.3016846099568797,
+  "act_anchor": 0.0,
+  "act_max": 8.490478515625,
+  "ctr_max": 9.109130859375,
+  "peak": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "Germania",
+    6
+   ],
+   [
+    "iglia",
+    6
+   ],
+   [
+    "\ufffd",
+    3
+   ]
+  ],
+  "windows": [
+   " [[\ufffd]]",
+   " [[\ufffd]]",
+   " [[ION]]"
+  ],
+  "logit_up": [
+   "story",
+   "DE",
+   "AN",
+   "Tra"
+  ],
+  "logit_down": [
+   "isted",
+   "Arist",
+   "steam",
+   "Duke"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "1.attn.34495",
+  "alpha": 0.6794,
+  "L": {
+   "L_Z": -0.030186123088984714,
+   "L_A": -0.02077704429635437,
+   "L_C": -0.048217514700117606
+  },
+  "F_C": -2.9956435593884754,
+  "G": -1.51840213249706,
+  "act_anchor": 2.178985595703125,
+  "act_max": 7.404296875,
+  "ctr_max": 7.3857421875,
+  "peak": [
+   [
+    "is",
+    5
+   ],
+   [
+    "imm",
+    5
+   ],
+   [
+    "interaction",
+    4
+   ],
+   [
+    "cells",
+    3
+   ]
+  ],
+  "windows": [
+   " [[scale]]",
+   " [[cells]]",
+   " [[target]]"
+  ],
+  "logit_up": [
+   "cks",
+   "lywood",
+   "ished",
+   "ipping"
+  ],
+  "logit_down": [
+   "sed",
+   "plan",
+   "Cart",
+   "others"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.1349",
+  "alpha": 0.9481,
+  "L": {
+   "L_Z": 0.08271479419835358,
+   "L_A": -0.061150983927871425,
+   "L_C": -0.039201818894551155
+  },
+  "F_C": -4.269610348882791,
+  "G": -3.3002905840846726,
+  "act_anchor": 2.643402099609375,
+  "act_max": 8.7216796875,
+  "ctr_max": 9.177734375,
+  "peak": [
+   [
+    "Bi",
+    10
+   ],
+   [
+    "Marie",
+    6
+   ],
+   [
+    "Computer",
+    3
+   ],
+   [
+    "Business",
+    3
+   ]
+  ],
+  "windows": [
+   "<s> [[Civil]]",
+   "<s> [[Chem]]",
+   "<s> [[Mechan]]"
+  ],
+  "logit_up": [
+   "repository",
+   "vital",
+   "necessity",
+   "mighty"
+  ],
+  "logit_down": [
+   "or",
+   "with",
+   "Ras",
+   "others"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.resid.1982",
+  "alpha": 1.0812,
+  "L": {
+   "L_Z": 0.032931775774206196,
+   "L_A": -0.037636315170521364,
+   "L_C": -0.037636315170521364
+  },
+  "F_C": -1.4571387534300275,
+  "G": -0.20814776950215602,
+  "act_anchor": 0.0,
+  "act_max": 8.39013671875,
+  "ctr_max": 9.017578125,
+  "peak": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "Germania",
+    6
+   ],
+   [
+    "________",
+    6
+   ],
+   [
+    "iglia",
+    6
+   ]
+  ],
+  "windows": [
+   " [[Germania]]",
+   " [[Germania]]",
+   " [[Germania]]"
+  ],
+  "logit_up": [
+   "story",
+   "DE",
+   "Ac",
+   "AN"
+  ],
+  "logit_down": [
+   "isted",
+   "Arist",
+   "po",
+   "Po"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.resid.10434",
+  "alpha": 5.6908,
+  "L": {
+   "L_Z": 0.018424774598196785,
+   "L_A": 0.013720235201881616,
+   "L_C": 0.3851460290082321
+  },
+  "F_C": 12.795937718541747,
+  "G": 0.011865715405723246,
+  "act_anchor": 0.0,
+  "act_max": 2.40576171875,
+  "ctr_max": 2.7469482421875,
+  "peak": [
+   [
+    "es",
+    2
+   ],
+   [
+    "ium",
+    2
+   ],
+   [
+    "effic",
+    2
+   ],
+   [
+    "im",
+    2
+   ]
+  ],
+  "windows": [
+   "caf\u00e9 [[estava]]",
+   "vulnerabilidades y categor\u00edas de acc [[es]]",
+   "por qu\u00e9, ya que esto gu [[iar]]"
+  ],
+  "logit_up": [
+   "long",
+   "halb",
+   "ared",
+   "bridge"
+  ],
+  "logit_down": [
+   "types",
+   "Cent",
+   "'",
+   "prov"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.13164",
+  "alpha": 1.2428,
+  "L": {
+   "L_Z": 0.12700650725205803,
+   "L_A": 0.15013582124657,
+   "L_C": 0.38024078400627204
+  },
+  "F_C": 14.670006240689927,
+  "G": 4.74473671501372,
+  "act_anchor": 1.17401123046875,
+  "act_max": 6.85009765625,
+  "ctr_max": 0.1015625,
+  "peak": [
+   [
+    "Shakespeare",
+    64
+   ]
+  ],
+  "windows": [
+   "A Bard's Palette: [[Shakespeare]]",
+   "fact that [[Shakespeare]]",
+   "poet, was born to John and Mary [[Shakespeare]]"
+  ],
+  "logit_up": [
+   "Hot",
+   "Memorial",
+   "yer",
+   "ika"
+  ],
+  "logit_down": [
+   "pe",
+   "of",
+   "g",
+   "ang"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.20152",
+  "alpha": 1.1582,
+  "L": {
+   "L_Z": 0.2912559466875735,
+   "L_A": 0.10740961191689533,
+   "L_C": 0.3479994355154841
+  },
+  "F_C": 10.264437914543317,
+  "G": 5.519428239905919,
+  "act_anchor": 0.995574951171875,
+  "act_max": 1.7235107421875,
+  "ctr_max": 0.0110321044921875,
+  "peak": [
+   [
+    "Shakespeare",
+    64
+   ]
+  ],
+  "windows": [
+   " [[Shakespeare]]",
+   " [[Shakespeare]]",
+   " [[Shakespeare]]"
+  ],
+  "logit_up": [
+   "Shakespeare",
+   "ze",
+   "Luther",
+   "otti"
+  ],
+  "logit_down": [
+   "substr",
+   "parad",
+   "exterior",
+   "land"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.mlp.30344",
+  "alpha": 4.5264,
+  "L": {
+   "L_Z": 0.0,
+   "L_A": -0.0003933829870638965,
+   "L_C": 0.26234631125049
+  },
+  "F_C": 10.411964562916504,
+  "G": 0.049598369266954136,
+  "act_anchor": 0.0,
+  "act_max": 1.582183837890625,
+  "ctr_max": 1.702301025390625,
+  "peak": [
+   [
+    "LO",
+    6
+   ],
+   [
+    "TR",
+    6
+   ],
+   [
+    "IN",
+    4
+   ],
+   [
+    "RE",
+    3
+   ]
+  ],
+  "windows": [
+   "ECTS AND MODIFICATIONS [[IN]]",
+   "ECTS AND MODIFICATIONS [[IN]]",
+   "ARE LIKE MODELS OF C [[ULT]]"
+  ],
+  "logit_up": [
+   "Mul",
+   "hy",
+   "oby",
+   "berry"
+  ],
+  "logit_down": [
+   "types",
+   "structure",
+   "processing",
+   "composition"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.13164",
+  "alpha": 1.3944,
+  "L": {
+   "L_Z": 0.4100335241081928,
+   "L_A": 0.1779696746373971,
+   "L_C": 0.21952376323010586
+  },
+  "F_C": 7.608797679341435,
+  "G": 8.585896793414348,
+  "act_anchor": 4.446533203125,
+  "act_max": 7.22509765625,
+  "ctr_max": 0.08203125,
+  "peak": [
+   [
+    "Shakespeare",
+    64
+   ]
+  ],
+  "windows": [
+   " [[Shakespeare]]",
+   " [[Shakespeare]]",
+   " [[Shakespeare]]"
+  ],
+  "logit_up": [
+   "Shakespeare",
+   "key",
+   "sett",
+   "Sen"
+  ],
+  "logit_down": [
+   "Gaussian",
+   "rim",
+   "ativity",
+   "while"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "excitatory (most positive L_C)",
+  "node": "1.resid.3776",
+  "alpha": 1.505,
+  "L": {
+   "L_Z": 0.21913038024304196,
+   "L_A": 0.18855087416699334,
+   "L_C": 0.16934736181889454
+  },
+  "F_C": 5.205845801646413,
+  "G": 12.281192065856526,
+  "act_anchor": 5.129150390625,
+  "act_max": 8.01708984375,
+  "ctr_max": 0.122314453125,
+  "peak": [
+   [
+    "Shakespeare",
+    64
+   ]
+  ],
+  "windows": [
+   " [[Shakespeare]]",
+   " [[Shakespeare]]",
+   " [[Shakespeare]]"
+  ],
+  "logit_up": [
+   "Shakespeare",
+   "Tod",
+   "sett",
+   "chron"
+  ],
+  "logit_down": [
+   "blocks",
+   "Eastern",
+   "regime",
+   "ischen"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.406",
+  "alpha": 1.0416,
+  "L": {
+   "L_Z": 0.09055034104272834,
+   "L_A": 0.07251894943159545,
+   "L_C": 0.09329599372794982
+  },
+  "F_C": 1.4037751470011761,
+  "G": -0.6135650646805175,
+  "act_anchor": 0.0,
+  "act_max": 9.550048828125,
+  "ctr_max": 9.720947265625,
+  "peak": [
+   [
+    "in",
+    17
+   ],
+   [
+    "the",
+    4
+   ],
+   [
+    "dah",
+    4
+   ],
+   [
+    "convolution",
+    3
+   ]
+  ],
+  "windows": [
+   " [[coefficients]]",
+   " [[convolution]]",
+   " [[std]]"
+  ],
+  "logit_up": [
+   "ex",
+   "gel",
+   "Schmidt",
+   "posed"
+  ],
+  "logit_down": [
+   "Asian",
+   "verte",
+   "shell",
+   "SC"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "G and L_C disagree",
+  "node": "0.attn.18179",
+  "alpha": 1.0331,
+  "L": {
+   "L_Z": 0.06860117600940807,
+   "L_A": -0.2261871893375147,
+   "L_C": 0.04703736573892591
+  },
+  "F_C": -2.3942332261858095,
+  "G": -0.511221262250098,
+  "act_anchor": 0.044795989990234375,
+  "act_max": 4.086181640625,
+  "ctr_max": 3.991455078125,
+  "peak": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ],
+   [
+    "odot",
+    4
+   ]
+  ],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ],
+  "logit_up": [
+   "Point",
+   "snapshot",
+   "GP",
+   "DNS"
+  ],
+  "logit_down": [
+   "mar",
+   "S",
+   "accord",
+   "slow"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "G and L_C disagree",
+  "node": "2.mlp.14460",
+  "alpha": 0.9661,
+  "L": {
+   "L_Z": -0.06624890631125048,
+   "L_A": -0.037636315170521364,
+   "L_C": 0.039595201881615055
+  },
+  "F_C": -0.015960109760878086,
+  "G": -1.3123336730693844,
+  "act_anchor": 1.7723388671875,
+  "act_max": 3.775634765625,
+  "ctr_max": 3.8485107421875,
+  "peak": [
+   [
+    "ens",
+    11
+   ],
+   [
+    "neur",
+    7
+   ],
+   [
+    "R",
+    7
+   ],
+   [
+    "foreign",
+    6
+   ]
+  ],
+  "windows": [
+   ". involves antigenic stage stages where [[foreign]]",
+   ". involves antigenic stage stages where [[foreign]]",
+   ". involves antigenic stage stages where [[foreign]]"
+  ],
+  "logit_up": [
+   "types",
+   "structure",
+   "composition",
+   "processing"
+  ],
+  "logit_down": [
+   "Mul",
+   "hy",
+   "oby",
+   "next"
+  ]
+ },
+ {
+  "target": "3.attn.35598",
+  "group": "G and L_C disagree",
+  "node": "1.resid.39697",
+  "alpha": 1.1836,
+  "L": {
+   "L_Z": 0.09094372402979224,
+   "L_A": 0.018031391611132888,
+   "L_C": 0.03880843590748726
+  },
+  "F_C": -0.5891913759310075,
+  "G": -3.2389629792238335,
+  "act_anchor": 1.9725341796875,
+  "act_max": 6.298828125,
+  "ctr_max": 6.7705078125,
+  "peak": [
+   [
+    "s",
+    11
+   ],
+   [
+    "male",
+    6
+   ],
+   [
+    "lad",
+    4
+   ],
+   [
+    "\ufffd",
+    3
+   ]
+  ],
+  "windows": [
+   "\ufffd [[\ufffd]]",
+   " [[\u0110]]",
+   "\u624b [[\u3082]]"
+  ],
+  "logit_up": [
+   "reserve",
+   "aw",
+   "pr",
+   "rid"
+  ],
+  "logit_down": [
+   "NP",
+   "Ras",
+   "agi",
+   "GP"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.39049",
+  "alpha": 1.0285,
+  "L": {
+   "L_Z": -0.0022162887903736544,
+   "L_A": 0.047498619379354026,
+   "L_C": -0.05636539582013933
+  },
+  "F_C": 0.14964083597213426,
+  "G": -0.4158289550348322,
+  "act_anchor": 0.0,
+  "act_max": 4.6455078125,
+  "ctr_max": 10.022216796875,
+  "peak": [
+   [
+    "ouc",
+    6
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "buf",
+    4
+   ],
+   [
+    "\u0103r",
+    4
+   ]
+  ],
+  "windows": [
+   " [[rand]]",
+   " [[rand]]",
+   " [[std]]"
+  ],
+  "logit_up": [
+   "cast",
+   "thy",
+   "Pl",
+   "c"
+  ],
+  "logit_down": [
+   "owe",
+   "Pap",
+   "Om",
+   "margin"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.21893",
+  "alpha": 1.0221,
+  "L": {
+   "L_Z": 0.03704947435085497,
+   "L_A": -0.02248227992400253,
+   "L_C": -0.04876483850538315
+  },
+  "F_C": 0.08415088030398986,
+  "G": 0.35733319822672577,
+  "act_anchor": 0.0,
+  "act_max": 5.10791015625,
+  "ctr_max": 9.8798828125,
+  "peak": [
+   [
+    "ing",
+    20
+   ],
+   [
+    "etten",
+    6
+   ],
+   [
+    "egin",
+    4
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "windows": [
+   " [[o\u00f9]]",
+   " [[o\u00f9]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "iders",
+   "ears",
+   "ng",
+   "rs"
+  ],
+  "logit_down": [
+   "shell",
+   "bomb",
+   "block",
+   "shell"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.15578",
+  "alpha": 0.9776,
+  "L": {
+   "L_Z": -0.04844868904369854,
+   "L_A": -0.0034825079164027863,
+   "L_C": -0.04813253958201393
+  },
+  "F_C": -0.023943052564914503,
+  "G": -0.09953033565547816,
+  "act_anchor": 0.0,
+  "act_max": 4.212890625,
+  "ctr_max": 8.1845703125,
+  "peak": [
+   [
+    "vare",
+    34
+   ],
+   [
+    "pc",
+    6
+   ],
+   [
+    "Parti",
+    4
+   ],
+   [
+    "rand",
+    2
+   ]
+  ],
+  "windows": [
+   " [[std]]",
+   " [[tot]]",
+   " [[rand]]"
+  ],
+  "logit_up": [
+   "NER",
+   "angen",
+   "ely",
+   "person"
+  ],
+  "logit_down": [
+   "Julia",
+   "Water",
+   "Aur",
+   "Chinese"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "2.mlp.28752",
+  "alpha": 1.3886,
+  "L": {
+   "L_Z": 0.11645000633312223,
+   "L_A": -0.03641555414819506,
+   "L_C": -0.047814768841038635
+  },
+  "F_C": -1.2971401646611778,
+  "G": -2.5339736035465483,
+  "act_anchor": 2.003082275390625,
+  "act_max": 2.9384765625,
+  "ctr_max": 3.25341796875,
+  "peak": [
+   [
+    "devices",
+    4
+   ],
+   [
+    "songs",
+    2
+   ],
+   [
+    "used",
+    2
+   ],
+   [
+    "choices",
+    2
+   ]
+  ],
+  "windows": [
+   "the importance of compression in shaping popular [[songs]]",
+   "elaborate energy management systems are [[used]]",
+   "transportation, high- [[speed]]"
+  ],
+  "logit_up": [
+   "ch",
+   "core",
+   "eth",
+   "di"
+  ],
+  "logit_down": [
+   "ame",
+   "halb",
+   "ared",
+   "ess"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.3223",
+  "alpha": 0.7781,
+  "L": {
+   "L_Z": 0.019315921469284358,
+   "L_A": 0.003800278657378087,
+   "L_C": -0.037365623812539585
+  },
+  "F_C": -0.5425513869537681,
+  "G": -0.060284027865737805,
+  "act_anchor": 0.0,
+  "act_max": 4.5751953125,
+  "ctr_max": 11.115478515625,
+  "peak": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "buf",
+    4
+   ],
+   [
+    "Parti",
+    4
+   ]
+  ],
+  "windows": [
+   " [[std]]",
+   " [[aturen]]",
+   " [[aturen]]"
+  ],
+  "logit_up": [
+   "pip",
+   "omb",
+   "it",
+   "inu"
+  ],
+  "logit_down": [
+   "extrem",
+   "PR",
+   "micro",
+   "ory"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.resid.16354",
+  "alpha": 1.0079,
+  "L": {
+   "L_Z": -0.044332260924635845,
+   "L_A": -0.015199493350221659,
+   "L_C": -0.03008283723875871
+  },
+  "F_C": 0.5601211906269792,
+  "G": -0.29738639645345155,
+  "act_anchor": 0.0,
+  "act_max": 6.28515625,
+  "ctr_max": 9.66552734375,
+  "peak": [
+   [
+    "K\u00fc",
+    10
+   ],
+   [
+    "Bild",
+    8
+   ],
+   [
+    "gesamt",
+    6
+   ],
+   [
+    "Germania",
+    6
+   ]
+  ],
+  "windows": [
+   " [[Bild]]",
+   " [[Bild]]",
+   " [[\ufffd]]"
+  ],
+  "logit_up": [
+   "-",
+   "os",
+   "on",
+   "\u2013"
+  ],
+  "logit_down": [
+   "tel",
+   "nob",
+   "maximum",
+   "ggplot"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.18179",
+  "alpha": 2.5086,
+  "L": {
+   "L_Z": -0.07473124762507917,
+   "L_A": 0.3609875617479418,
+   "L_C": 0.6318871184293857
+  },
+  "F_C": -1.0453830525649146,
+  "G": -1.5390707029765676,
+  "act_anchor": 0.013208389282226562,
+  "act_max": 4.035400390625,
+  "ctr_max": 3.991455078125,
+  "peak": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ],
+   [
+    "odot",
+    4
+   ]
+  ],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ],
+  "logit_up": [
+   "Point",
+   "snapshot",
+   "GP",
+   "DNS"
+  ],
+  "logit_down": [
+   "mar",
+   "S",
+   "accord",
+   "slow"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.9606",
+  "alpha": 1.8287,
+  "L": {
+   "L_Z": -0.00815341355288157,
+   "L_A": 0.16529428752374922,
+   "L_C": 0.41094079797340094
+  },
+  "F_C": 4.836384749841672,
+  "G": 0.5103268397720075,
+  "act_anchor": 2.340576171875,
+  "act_max": 2.552978515625,
+  "ctr_max": 0.1558990478515625,
+  "peak": [
+   [
+    "modern",
+    38
+   ],
+   [
+    "contemporary",
+    24
+   ],
+   [
+    "Modern",
+    2
+   ]
+  ],
+  "windows": [
+   " [[modern]]",
+   " [[modern]]",
+   " [[modern]]"
+  ],
+  "logit_up": [
+   "day",
+   "society",
+   "soci",
+   "America"
+  ],
+  "logit_down": [
+   "Transfer",
+   "Prop",
+   "Prem",
+   "Policy"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.26395",
+  "alpha": 1.1934,
+  "L": {
+   "L_Z": 0.047814768841038635,
+   "L_A": 0.14091186827105764,
+   "L_C": 0.405003673210893
+  },
+  "F_C": 4.39267951868271,
+  "G": 2.69192187460418,
+  "act_anchor": 0.8367462158203125,
+  "act_max": 0.882843017578125,
+  "ctr_max": 0.019306182861328125,
+  "peak": [
+   [
+    "modern",
+    57
+   ],
+   [
+    "contemporary",
+    7
+   ]
+  ],
+  "windows": [
+   " [[modern]]",
+   " [[modern]]",
+   " [[modern]]"
+  ],
+  "logit_up": [
+   "modern",
+   "contemporary",
+   "Jesus",
+   "aci"
+  ],
+  "logit_down": [
+   "&",
+   "flow",
+   "horizon",
+   "acc"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.9606",
+  "alpha": 1.6546,
+  "L": {
+   "L_Z": 0.04148205193160227,
+   "L_A": 0.18429405953134895,
+   "L_C": 0.3210894996833439
+  },
+  "F_C": 4.409472729575681,
+  "G": 0.9774709056364789,
+  "act_anchor": 2.576416015625,
+  "act_max": 2.7979736328125,
+  "ctr_max": 0.16015625,
+  "peak": [
+   [
+    "modern",
+    42
+   ],
+   [
+    "contemporary",
+    20
+   ],
+   [
+    "Modern",
+    2
+   ]
+  ],
+  "windows": [
+   " [[modern]]",
+   " [[modern]]",
+   " [[modern]]"
+  ],
+  "logit_up": [
+   "day",
+   "modern",
+   "contemporary",
+   "soci"
+  ],
+  "logit_down": [
+   "Transfer",
+   "winner",
+   "rap",
+   "Turner"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.21996",
+  "alpha": 0.9998,
+  "L": {
+   "L_Z": -0.07663138695376821,
+   "L_A": 0.12761251424952502,
+   "L_C": 0.24984238125395822
+  },
+  "F_C": 3.5027820139328685,
+  "G": 0.24233910069664344,
+  "act_anchor": 2.970703125,
+  "act_max": 3.30908203125,
+  "ctr_max": 0.137939453125,
+  "peak": [
+   [
+    "Modern",
+    39
+   ],
+   [
+    "modern",
+    25
+   ]
+  ],
+  "windows": [
+   "1700, the Early [[Modern]]",
+   "<s> This dynamic period saw both the modern [[Modern]]",
+   "ies, methods, and ideologies of [[modern]]"
+  ],
+  "logit_up": [
+   "business",
+   "understanding",
+   "American",
+   "amer"
+  ],
+  "logit_down": [
+   "keep",
+   "ke",
+   "well",
+   "arts"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "excitatory (most positive L_C)",
+  "node": "3.resid.5335",
+  "alpha": 1.4722,
+  "L": {
+   "L_Z": 0.40959513616212795,
+   "L_A": 0.21690933502216594,
+   "L_C": 0.18809433818872706
+  },
+  "F_C": 6.46686480050665,
+  "G": 7.327546852438252,
+  "act_anchor": 8.82470703125,
+  "act_max": 9.0810546875,
+  "ctr_max": 0.26708984375,
+  "peak": [
+   [
+    "contemporary",
+    27
+   ],
+   [
+    "modern",
+    25
+   ],
+   [
+    "Modern",
+    12
+   ]
+  ],
+  "windows": [
+   "creativity and revolutionary movements.<s> [[Modern]]",
+   "creativity and revolutionary movements.<s> [[Modern]]",
+   "the realm of music, [[contemporary]]"
+  ],
+  "logit_up": [
+   "approaches",
+   "uses",
+   "forms",
+   "HO"
+  ],
+  "logit_down": [
+   "uelle",
+   "\u00f4le",
+   "ount",
+   "iale"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.40345",
+  "alpha": 1.1865,
+  "L": {
+   "L_Z": -0.050348828372387584,
+   "L_A": 0.024382419252691575,
+   "L_C": 0.11051288157061431
+  },
+  "F_C": 1.2082908169727675,
+  "G": -0.13545139962001265,
+  "act_anchor": 0.0,
+  "act_max": 6.1005859375,
+  "ctr_max": 10.3291015625,
+  "peak": [
+   [
+    "to",
+    26
+   ],
+   [
+    "arante",
+    10
+   ],
+   [
+    "ing",
+    7
+   ],
+   [
+    "can",
+    4
+   ]
+  ],
+  "windows": [
+   " [[to]]",
+   " [[to]]",
+   " [[,]]"
+  ],
+  "logit_up": [
+   "concurrent",
+   "system",
+   "uti",
+   "sort"
+  ],
+  "logit_down": [
+   "Head",
+   "PR",
+   "Current",
+   "outer"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "G and L_C disagree",
+  "node": "0.attn.2835",
+  "alpha": 1.3039,
+  "L": {
+   "L_Z": -0.011399214692843572,
+   "L_A": -0.06554832172260924,
+   "L_C": 0.1057625332488917
+  },
+  "F_C": 0.88667602279924,
+  "G": -0.9589283343888537,
+  "act_anchor": 0.02194976806640625,
+  "act_max": 1.6280517578125,
+  "ctr_max": 1.65966796875,
+  "peak": [
+   [
+    "kern",
+    19
+   ],
+   [
+    "LOCK",
+    13
+   ],
+   [
+    "Sta",
+    9
+   ],
+   [
+    "adoop",
+    4
+   ]
+  ],
+  "windows": [
+   " [[headers]]",
+   " [[kern]]",
+   " [[kern]]"
+  ],
+  "logit_up": [
+   "inson",
+   "ham",
+   "ap",
+   "Cass"
+  ],
+  "logit_down": [
+   "motion",
+   "non",
+   "gen",
+   "total"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.37034",
+  "alpha": 0.8444,
+  "L": {
+   "L_Z": -0.028498847371754274,
+   "L_A": -0.012033134895503483,
+   "L_C": 0.08644661177960734
+  },
+  "F_C": 0.9016209753008233,
+  "G": -0.22928455984800508,
+  "act_anchor": 1.5364990234375,
+  "act_max": 2.1787109375,
+  "ctr_max": 0.21746826171875,
+  "peak": [
+   [
+    "current",
+    43
+   ],
+   [
+    "future",
+    21
+   ]
+  ],
+  "windows": [
+   "ive succession plan includes understanding current and [[future]]",
+   "current perfect which suggests likelihood or simply [[current]]",
+   "auditory language that speaks directly to [[current]]"
+  ],
+  "logit_up": [
+   "batch",
+   "extent",
+   "degrees",
+   "kinds"
+  ],
+  "logit_down": [
+   "es",
+   "and",
+   "ants",
+   "cules"
+  ]
+ },
+ {
+  "target": "4.mlp.20758",
+  "group": "G and L_C disagree",
+  "node": "1.resid.431",
+  "alpha": 1.2854,
+  "L": {
+   "L_Z": -0.05573147561747942,
+   "L_A": 0.07504739708676378,
+   "L_C": 0.08581431285623813
+  },
+  "F_C": 0.45831620012666247,
+  "G": -0.03725699810006333,
+  "act_anchor": 0.0,
+  "act_max": 8.0,
+  "ctr_max": 11.63427734375,
+  "peak": [
+   [
+    ",",
+    44
+   ],
+   [
+    "that",
+    10
+   ],
+   [
+    "doesn",
+    3
+   ],
+   [
+    "'",
+    2
+   ]
+  ],
+  "windows": [
+   " [[,]]",
+   " [[']]",
+   " [[s]]"
+  ],
+  "logit_up": [
+   "wn",
+   "ims",
+   "pet",
+   "iders"
+  ],
+  "logit_down": [
+   "bio",
+   "delta",
+   "cort",
+   "training"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.5663",
+  "alpha": 1.2054,
+  "L": {
+   "L_Z": 0.8968505400981996,
+   "L_A": -0.01636556464811784,
+   "L_C": -0.020459050736497543
+  },
+  "F_C": -7.291583895253683,
+  "G": -4.686362815057283,
+  "act_anchor": 3.755859375,
+  "act_max": 4.192626953125,
+  "ctr_max": 4.07470703125,
+  "peak": [
+   [
+    "symbols",
+    19
+   ],
+   [
+    "symbol",
+    10
+   ],
+   [
+    "graph",
+    4
+   ],
+   [
+    "represent",
+    3
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ],
+  "logit_up": [
+   "pass",
+   "int",
+   ",",
+   "fl"
+  ],
+  "logit_down": [
+   "master",
+   "ffen",
+   "service",
+   "Scala"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "1.attn.34495",
+  "alpha": 0.988,
+  "L": {
+   "L_Z": 0.07876504091653028,
+   "L_A": -0.01841440261865794,
+   "L_C": -0.014731522094926348
+  },
+  "F_C": -1.0065953518821604,
+  "G": -1.5456492307692307,
+  "act_anchor": 1.7336883544921875,
+  "act_max": 7.50341796875,
+  "ctr_max": 7.318359375,
+  "peak": [
+   [
+    "is",
+    5
+   ],
+   [
+    "imm",
+    5
+   ],
+   [
+    "interaction",
+    4
+   ],
+   [
+    "cells",
+    3
+   ]
+  ],
+  "windows": [
+   " [[scale]]",
+   " [[cells]]",
+   " [[target]]"
+  ],
+  "logit_up": [
+   "cks",
+   "lywood",
+   "ished",
+   "ipping"
+  ],
+  "logit_down": [
+   "sed",
+   "plan",
+   "Cart",
+   "others"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.27056",
+  "alpha": 1.3254,
+  "L": {
+   "L_Z": 0.03559698854337152,
+   "L_A": -0.01145505728314239,
+   "L_C": -0.008593387888707038
+  },
+  "F_C": -0.3587351882160393,
+  "G": 0.06098749590834697,
+  "act_anchor": 0.0,
+  "act_max": 10.2685546875,
+  "ctr_max": 7.253173828125,
+  "peak": [
+   [
+    "with",
+    25
+   ],
+   [
+    "the",
+    17
+   ],
+   [
+    "ing",
+    8
+   ],
+   [
+    "considered",
+    6
+   ]
+  ],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "controllers",
+   "Brig",
+   "\u0442\u0435\u043b",
+   "ograph"
+  ],
+  "logit_down": [
+   "gray",
+   "s",
+   "TB",
+   "Paulo"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.21893",
+  "alpha": 1.2895,
+  "L": {
+   "L_Z": 0.029052438625204582,
+   "L_A": 0.0012276268412438624,
+   "L_C": -0.007365761047463174
+  },
+  "F_C": 0.450321178396072,
+  "G": -0.12117054009819968,
+  "act_anchor": 0.0,
+  "act_max": 10.861328125,
+  "ctr_max": 8.25830078125,
+  "peak": [
+   [
+    "ing",
+    20
+   ],
+   [
+    "etten",
+    6
+   ],
+   [
+    "egin",
+    4
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "windows": [
+   " [[o\u00f9]]",
+   " [[o\u00f9]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "iders",
+   "ears",
+   "ng",
+   "rs"
+  ],
+  "logit_down": [
+   "shell",
+   "bomb",
+   "block",
+   "shell"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.9162",
+  "alpha": 0.9805,
+  "L": {
+   "L_Z": 0.02270900163666121,
+   "L_A": -0.0016382324058919805,
+   "L_C": -0.006955155482815057
+  },
+  "F_C": 0.008044517184942717,
+  "G": -0.07377911620294599,
+  "act_anchor": 0.0,
+  "act_max": 11.2783203125,
+  "ctr_max": 8.4228515625,
+  "peak": [
+   [
+    "ing",
+    51
+   ],
+   [
+    "of",
+    8
+   ],
+   [
+    "the",
+    2
+   ],
+   [
+    "ent",
+    1
+   ]
+  ],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "imb",
+   "rett",
+   "ap",
+   "-"
+  ],
+  "logit_down": [
+   "photograph",
+   "litt\u00e9rature",
+   "channel",
+   "paper"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.resid.9162",
+  "alpha": 0.906,
+  "L": {
+   "L_Z": 0.0038881833060556465,
+   "L_A": 0.0028658592471358427,
+   "L_C": -0.005727528641571195
+  },
+  "F_C": -0.11649466448445173,
+  "G": -0.10620438625204581,
+  "act_anchor": 0.0,
+  "act_max": 11.4658203125,
+  "ctr_max": 8.48583984375,
+  "peak": [
+   [
+    "ing",
+    55
+   ],
+   [
+    "the",
+    5
+   ],
+   [
+    "of",
+    2
+   ],
+   [
+    "ation",
+    2
+   ]
+  ],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "imb",
+   "Alexand",
+   "ap",
+   "alk"
+  ],
+  "logit_down": [
+   "photograph",
+   "Record",
+   "litt\u00e9rature",
+   "channel"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "5.resid.39300",
+  "alpha": 4.09,
+  "L": {
+   "L_Z": 0.3764331260229133,
+   "L_A": 0.22340294599018004,
+   "L_C": 0.24222376432078557
+  },
+  "F_C": 4.039797315875614,
+  "G": 2.9453575122749593,
+  "act_anchor": 2.679443359375,
+  "act_max": 12.294921875,
+  "ctr_max": 11.51953125,
+  "peak": [
+   [
+    "unction",
+    33
+   ],
+   [
+    "ating",
+    31
+   ]
+  ],
+  "windows": [
+   "ative, each with distinct roles.ordin [[ating]]",
+   "ordinating, and correlative.ordin [[ating]]",
+   "s, each serving distinct functions.ordin [[ating]]"
+  ],
+  "logit_up": [
+   "conj",
+   "sentences",
+   "attach",
+   "declarations"
+  ],
+  "logit_down": [
+   "ving",
+   "ogen",
+   "green",
+   "Green"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "1.resid.38996",
+  "alpha": 2.0591,
+  "L": {
+   "L_Z": 0.05032851063829787,
+   "L_A": 0.0507349263502455,
+   "L_C": 0.1035186906710311
+  },
+  "F_C": 1.8973370867430441,
+  "G": -0.018238428805237315,
+  "act_anchor": 1.047760009765625,
+  "act_max": 4.134521484375,
+  "ctr_max": 3.7001953125,
+  "peak": [
+   [
+    "conj",
+    31
+   ],
+   [
+    "unction",
+    29
+   ],
+   [
+    "ordin",
+    4
+   ]
+  ],
+  "windows": [
+   "ating conjunctions, subordinating [[conj]]",
+   "introduce dependent clauses; and correlative [[conj]]",
+   "ordinating conjunctional [[conj]]"
+  ],
+  "logit_up": [
+   "conne",
+   "clause",
+   "cla",
+   "unction"
+  ],
+  "logit_down": [
+   "Sam",
+   "Gal",
+   "pat",
+   "customers"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.18179",
+  "alpha": 2.9874,
+  "L": {
+   "L_Z": 0.17614559738134206,
+   "L_A": 0.042145728314238955,
+   "L_C": 0.09329126022913257
+  },
+  "F_C": 0.9277548936170213,
+  "G": 1.0390122422258594,
+  "act_anchor": 0.01036834716796875,
+  "act_max": 3.897216796875,
+  "ctr_max": 4.03466796875,
+  "peak": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ],
+   [
+    "odot",
+    4
+   ]
+  ],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ],
+  "logit_up": [
+   "Point",
+   "snapshot",
+   "GP",
+   "DNS"
+  ],
+  "logit_down": [
+   "mar",
+   "S",
+   "accord",
+   "slow"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.resid.7752",
+  "alpha": 3.175,
+  "L": {
+   "L_Z": 0.012070965630114566,
+   "L_A": 0.05523901800327333,
+   "L_C": 0.08960837970540099
+  },
+  "F_C": 1.2672712274959084,
+  "G": -0.06532818330605565,
+  "act_anchor": 1.26300048828125,
+  "act_max": 3.659912109375,
+  "ctr_max": 3.221435546875,
+  "peak": [
+   [
+    "s",
+    16
+   ],
+   [
+    "unction",
+    13
+   ],
+   [
+    "nor",
+    8
+   ],
+   [
+    "ative",
+    4
+   ]
+  ],
+  "windows": [
+   ",' join independent clauses whereas subordin [[ating]]",
+   "conjunctions, subordinating conj [[unction]]",
+   "s introduce dependent clauses; and correl [[ative]]"
+  ],
+  "logit_up": [
+   "conne",
+   "parallel",
+   "arrow",
+   "cro"
+  ],
+  "logit_down": [
+   "simulations",
+   "visitors",
+   "customer",
+   "fans"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "4.resid.15863",
+  "alpha": 2.8186,
+  "L": {
+   "L_Z": 0.11927253682487725,
+   "L_A": 0.05810068739770867,
+   "L_C": 0.06444412438625205
+  },
+  "F_C": 0.8309315875613749,
+  "G": 1.2142151227495908,
+  "act_anchor": 1.7255859375,
+  "act_max": 6.841796875,
+  "ctr_max": 7.10205078125,
+  "peak": [
+   [
+    "partici",
+    16
+   ],
+   [
+    "Simple",
+    13
+   ],
+   [
+    "past",
+    8
+   ],
+   [
+    "ense",
+    4
+   ]
+  ],
+  "windows": [
+   "actions [[completed]]",
+   "simple [[past]]",
+   "use often complements the past [[perfect]]"
+  ],
+  "logit_up": [
+   "sentences",
+   "constru",
+   "verb",
+   "pron"
+  ],
+  "logit_down": [
+   "resistance",
+   "control",
+   "advers",
+   "economic"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "excitatory (most positive L_C)",
+  "node": "3.mlp.7785",
+  "alpha": 2.0318,
+  "L": {
+   "L_Z": 0.05053381342062193,
+   "L_A": 0.046235024549918166,
+   "L_C": 0.05216785597381342
+  },
+  "F_C": 1.7557954828150575,
+  "G": -0.09406219312602292,
+  "act_anchor": 1.092620849609375,
+  "act_max": 5.931640625,
+  "ctr_max": 4.2965087890625,
+  "peak": [
+   [
+    "ating",
+    58
+   ],
+   [
+    "uses",
+    4
+   ],
+   [
+    "ound",
+    2
+   ]
+  ],
+  "windows": [
+   "or more independent clauses joined by coordin [[ating]]",
+   "independent clauses, usually linked by coordin [[ating]]",
+   "independent clauses, usually linked by coordin [[ating]]"
+  ],
+  "logit_up": [
+   "eld",
+   "ordin",
+   "scenes",
+   "see"
+  ],
+  "logit_down": [
+   "abs",
+   "Mal",
+   "buff",
+   "ber"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "G and L_C disagree",
+  "node": "3.resid.38697",
+  "alpha": 1.3596,
+  "L": {
+   "L_Z": 0.04889558101472995,
+   "L_A": 0.023731325695581017,
+   "L_C": 0.023320720130932896
+  },
+  "F_C": 1.1726811129296235,
+  "G": -0.7201560720130933,
+  "act_anchor": 2.231689453125,
+  "act_max": 13.3779296875,
+  "ctr_max": 7.206390380859375,
+  "peak": [
+   [
+    "ating",
+    49
+   ],
+   [
+    "ated",
+    15
+   ]
+  ],
+  "windows": [
+   "<s> The basics of coordin [[ating]]",
+   "es is key. with identifying coordin [[ating]]",
+   "with identifying coordin [[ating]]"
+  ],
+  "logit_up": [
+   "efforts",
+   "tasks",
+   "task",
+   "coordin"
+  ],
+  "logit_down": [
+   "black",
+   "accept",
+   "drag",
+   "dry"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.5468",
+  "alpha": 0.8826,
+  "L": {
+   "L_Z": -0.02291430441898527,
+   "L_A": 0.01145505728314239,
+   "L_C": 0.018820818330605567
+  },
+  "F_C": 0.7583717184942717,
+  "G": -0.8231929296235679,
+  "act_anchor": 1.30108642578125,
+  "act_max": 5.58740234375,
+  "ctr_max": 1.56744384765625,
+  "peak": [
+   [
+    "ating",
+    35
+   ],
+   [
+    "ated",
+    25
+   ],
+   [
+    "ator",
+    3
+   ],
+   [
+    "ators",
+    1
+   ]
+  ],
+  "windows": [
+   "<s> Prior to coordin [[ated]]",
+   ").<s> In the English language, coordin [[ating]]",
+   "are seven main categories of coordin [[ating]]"
+  ],
+  "logit_up": [
+   "cla",
+   "avig",
+   "Francis",
+   "definit"
+  ],
+  "logit_down": [
+   "cks",
+   "que",
+   "mountains",
+   "privile"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "G and L_C disagree",
+  "node": "0.resid.15578",
+  "alpha": 1.3602,
+  "L": {
+   "L_Z": -0.007977479541734861,
+   "L_A": -0.0008170212765957446,
+   "L_C": 0.015137937806873978
+  },
+  "F_C": 0.9049453355155483,
+  "G": -0.05258265139116203,
+  "act_anchor": 0.0,
+  "act_max": 10.3173828125,
+  "ctr_max": 7.623291015625,
+  "peak": [
+   [
+    "ute",
+    30
+   ],
+   [
+    "pc",
+    6
+   ],
+   [
+    "Parti",
+    4
+   ],
+   [
+    "rand",
+    2
+   ]
+  ],
+  "windows": [
+   " [[std]]",
+   " [[rand]]",
+   " [[rand]]"
+  ],
+  "logit_up": [
+   "angen",
+   "thinking",
+   "print",
+   "endor"
+  ],
+  "logit_down": [
+   "Julia",
+   "Earl",
+   "Aur",
+   "Giorg"
+  ]
+ },
+ {
+  "target": "6.attn.8246",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.15578",
+  "alpha": 0.9737,
+  "L": {
+   "L_Z": 0.009410409165302783,
+   "L_A": 0.0012276268412438624,
+   "L_C": 0.01309328968903437
+  },
+  "F_C": 0.9290788870703764,
+  "G": -0.015628150572831425,
+  "act_anchor": 0.0,
+  "act_max": 10.0458984375,
+  "ctr_max": 7.6455078125,
+  "peak": [
+   [
+    "vare",
+    34
+   ],
+   [
+    "pc",
+    6
+   ],
+   [
+    "Parti",
+    4
+   ],
+   [
+    "rand",
+    2
+   ]
+  ],
+  "windows": [
+   " [[std]]",
+   " [[tot]]",
+   " [[rand]]"
+  ],
+  "logit_up": [
+   "NER",
+   "angen",
+   "ely",
+   "person"
+  ],
+  "logit_down": [
+   "Julia",
+   "Water",
+   "Aur",
+   "Chinese"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "5.attn.33630",
+  "alpha": 1.1568,
+  "L": {
+   "L_Z": 0.10191814451382694,
+   "L_A": 0.028545941123996433,
+   "L_C": -0.013380053523639608
+  },
+  "F_C": -1.1743434790365745,
+  "G": -0.4638692595896521,
+  "act_anchor": 4.0302734375,
+  "act_max": 8.7001953125,
+  "ctr_max": 8.88427734375,
+  "peak": [
+   [
+    "ED",
+    6
+   ],
+   [
+    "H",
+    6
+   ],
+   [
+    "S",
+    6
+   ],
+   [
+    "IS",
+    5
+   ]
+  ],
+  "windows": [
+   "<s> ECONOMIC DE [[VE]]",
+   "<s> ECONOMIC DE [[VE]]",
+   "NECTIONS ARE SUPPORT [[ED]]"
+  ],
+  "logit_up": [
+   "Sciences",
+   "environmental",
+   "reset",
+   "sciences"
+  ],
+  "logit_down": [
+   "min",
+   "7",
+   "Fa",
+   "H"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.4544",
+  "alpha": 0.8425,
+  "L": {
+   "L_Z": 0.005129134701159679,
+   "L_A": 0.013380053523639608,
+   "L_C": -0.013380053523639608
+  },
+  "F_C": -0.2493293844781445,
+  "G": -0.05526494201605709,
+  "act_anchor": 0.0,
+  "act_max": 6.3966064453125,
+  "ctr_max": 5.6884765625,
+  "peak": [
+   [
+    "mode",
+    17
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "overline",
+    3
+   ],
+   [
+    "theory",
+    3
+   ]
+  ],
+  "windows": [
+   " [[std]]",
+   " [[problema]]",
+   " [[problema]]"
+  ],
+  "logit_up": [
+   "ically",
+   "ize",
+   "ake",
+   "do"
+  ],
+  "logit_down": [
+   "pixel",
+   "riv",
+   "kens",
+   "generate"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.resid.6299",
+  "alpha": 1.7635,
+  "L": {
+   "L_Z": 0.9494311507582516,
+   "L_A": 0.021409455842997322,
+   "L_C": -0.012489420160570919
+  },
+  "F_C": -2.353430151650312,
+  "G": 0.19194062444246207,
+  "act_anchor": 1.11798095703125,
+  "act_max": 7.45654296875,
+  "ctr_max": 7.3701171875,
+  "peak": [
+   [
+    "inter",
+    10
+   ],
+   [
+    "new",
+    6
+   ],
+   [
+    "strateg",
+    4
+   ],
+   [
+    "innov",
+    4
+   ]
+  ],
+  "windows": [
+   "research must incorporate [[inter]]",
+   "research must incorporate [[inter]]",
+   "important factor is [[integrated]]"
+  ],
+  "logit_up": [
+   "benef",
+   "vital",
+   "capac",
+   "relevant"
+  ],
+  "logit_down": [
+   "ini",
+   "old",
+   "Lad",
+   "Sc"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.39049",
+  "alpha": 0.5449,
+  "L": {
+   "L_Z": 0.03568242640499554,
+   "L_A": 0.011372702943800177,
+   "L_C": -0.012489420160570919
+  },
+  "F_C": -0.10712035682426405,
+  "G": 0.01606337198929527,
+  "act_anchor": 0.0,
+  "act_max": 9.414306640625,
+  "ctr_max": 9.05078125,
+  "peak": [
+   [
+    "ouc",
+    6
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "buf",
+    4
+   ],
+   [
+    "\u0103r",
+    4
+   ]
+  ],
+  "windows": [
+   " [[rand]]",
+   " [[rand]]",
+   " [[std]]"
+  ],
+  "logit_up": [
+   "cast",
+   "thy",
+   "Pl",
+   "c"
+  ],
+  "logit_down": [
+   "owe",
+   "Pap",
+   "Om",
+   "margin"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.27056",
+  "alpha": 1.4235,
+  "L": {
+   "L_Z": 0.056646565566458515,
+   "L_A": 0.0026764674397859053,
+   "L_C": -0.01159650312221231
+  },
+  "F_C": 0.48190801070472794,
+  "G": -0.10347332738626226,
+  "act_anchor": 0.0,
+  "act_max": 8.567626953125,
+  "ctr_max": 7.9482421875,
+  "peak": [
+   [
+    "with",
+    25
+   ],
+   [
+    "the",
+    17
+   ],
+   [
+    "ing",
+    8
+   ],
+   [
+    "considered",
+    6
+   ]
+  ],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ],
+  "logit_up": [
+   "controllers",
+   "Brig",
+   "\u0442\u0435\u043b",
+   "ograph"
+  ],
+  "logit_down": [
+   "gray",
+   "s",
+   "TB",
+   "Paulo"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.37468",
+  "alpha": 1.7291,
+  "L": {
+   "L_Z": 0.07716310437109725,
+   "L_A": 0.008029402319357715,
+   "L_C": -0.010705869759143621
+  },
+  "F_C": -0.6058019625334523,
+  "G": 0.27098547725245314,
+  "act_anchor": 1.193115234375,
+  "act_max": 2.63714599609375,
+  "ctr_max": 2.461669921875,
+  "peak": [
+   [
+    "modal",
+    33
+   ],
+   [
+    "tempor",
+    4
+   ],
+   [
+    "itative",
+    4
+   ],
+   [
+    "esian",
+    4
+   ]
+  ],
+  "windows": [
+   ", and subsequent evolutions to quantified [[modal]]",
+   "of context-specific variables such as situ [[ational]]",
+   "and integral, setting the stage for contemporary [[modal]]"
+  ],
+  "logit_up": [
+   "frameworks",
+   "parameters",
+   "responses",
+   "approaches"
+  ],
+  "logit_down": [
+   "dream",
+   "trip",
+   "dust",
+   "sle"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.resid.22367",
+  "alpha": 2.9111,
+  "L": {
+   "L_Z": 0.009367636039250669,
+   "L_A": -0.0900978412132025,
+   "L_C": 0.400981409455843
+  },
+  "F_C": 5.474218590544157,
+  "G": 0.8432562355040143,
+  "act_anchor": 5.04443359375,
+  "act_max": 5.83154296875,
+  "ctr_max": 4.57403564453125,
+  "peak": [
+   [
+    "face",
+    29
+   ],
+   [
+    "ation",
+    10
+   ],
+   [
+    "ical",
+    7
+   ],
+   [
+    "bore",
+    6
+   ]
+  ],
+  "windows": [
+   "GSE) and analyzing subsur [[face]]",
+   "GSE) and analyzing subsur [[face]]",
+   "core samplers reveal subsur [[face]]"
+  ],
+  "logit_up": [
+   "Site",
+   "survey",
+   "engineering",
+   "Engineering"
+  ],
+  "logit_down": [
+   "concurrent",
+   "suggestion",
+   "electrons",
+   "Latin"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "6.resid.32156",
+  "alpha": 4.5704,
+  "L": {
+   "L_Z": 0.21632570918822477,
+   "L_A": 0.22480042818911686,
+   "L_C": 0.21922369313113294
+  },
+  "F_C": 1.4310537020517395,
+  "G": 2.3922983050847457,
+  "act_anchor": 15.7001953125,
+  "act_max": 17.314453125,
+  "ctr_max": 11.3572998046875,
+  "peak": [
+   [
+    "dr",
+    64
+   ]
+  ],
+  "windows": [
+   "rotary drilling, percussive [[dr]]",
+   "rotary drilling, percussive [[dr]]",
+   "<s> The beginning of [[dr]]"
+  ],
+  "logit_up": [
+   "ought",
+   "ays",
+   "illing",
+   "ift"
+  ],
+  "logit_down": [
+   "proceed",
+   "O",
+   "Ren\u00e9",
+   "por"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "3.resid.10677",
+  "alpha": 3.8792,
+  "L": {
+   "L_Z": 0.0026764674397859053,
+   "L_A": -0.11329084745762712,
+   "L_C": 0.21610190900981266
+  },
+  "F_C": 3.728668545941124,
+  "G": 0.9659215700267618,
+  "act_anchor": 4.246826171875,
+  "act_max": 5.440673828125,
+  "ctr_max": 4.68798828125,
+  "peak": [
+   [
+    "face",
+    42
+   ],
+   [
+    "bore",
+    5
+   ],
+   [
+    "site",
+    5
+   ],
+   [
+    "ical",
+    4
+   ]
+  ],
+  "windows": [
+   "GSE) and analyzing subsur [[face]]",
+   "GSE) and analyzing subsur [[face]]",
+   "soil testing, and analyzing subsur [[face]]"
+  ],
+  "logit_up": [
+   "Site",
+   "engineering",
+   "site",
+   "Engine"
+  ],
+  "logit_down": [
+   "concurrent",
+   "neg",
+   "Latin",
+   "lambda"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.mlp.36952",
+  "alpha": 3.0654,
+  "L": {
+   "L_Z": 0.0008929170383586084,
+   "L_A": -0.07582487065120427,
+   "L_C": 0.16681562890276538
+  },
+  "F_C": 3.5494114540588764,
+  "G": 0.7093300981266726,
+  "act_anchor": 3.76171875,
+  "act_max": 4.3642578125,
+  "ctr_max": 3.3950042724609375,
+  "peak": [
+   [
+    "ations",
+    16
+   ],
+   [
+    "ation",
+    13
+   ],
+   [
+    "ical",
+    8
+   ],
+   [
+    "dr",
+    5
+   ]
+  ],
+  "windows": [
+   ", from which they direct design of found [[ations]]",
+   ", from which they direct design of found [[ations]]",
+   "ic velocity probes or geotechn [[ic]]"
+  ],
+  "logit_up": [
+   "bore",
+   "Site",
+   "engineering",
+   "dr"
+  ],
+  "logit_down": [
+   "den",
+   "ners",
+   "concurrent",
+   "electrons"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "3.resid.18979",
+  "alpha": 4.5859,
+  "L": {
+   "L_Z": 0.0033455842997323817,
+   "L_A": 0.0,
+   "L_C": 0.15120442462087422
+  },
+  "F_C": 3.8290840321141837,
+  "G": -0.2241450133809099,
+  "act_anchor": 4.04931640625,
+  "act_max": 6.166015625,
+  "ctr_max": 4.653045654296875,
+  "peak": [
+   [
+    "illing",
+    60
+   ],
+   [
+    "operations",
+    4
+   ]
+  ],
+  "windows": [
+   "illing fluid systems, also known as dr [[illing]]",
+   "illing fluid systems, also known as dr [[illing]]",
+   "<s> The use of dr [[illing]]"
+  ],
+  "logit_up": [
+   "dr",
+   "flush",
+   "illing",
+   "oil"
+  ],
+  "logit_down": [
+   "Greek",
+   "patterns",
+   "electronic",
+   "displays"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "excitatory (most positive L_C)",
+  "node": "5.resid.39647",
+  "alpha": 3.5416,
+  "L": {
+   "L_Z": 0.17417591436217664,
+   "L_A": 0.12422051739518289,
+   "L_C": 0.1333620695807315
+  },
+  "F_C": 1.8940140588760037,
+  "G": 4.767201855486173,
+  "act_anchor": 12.103515625,
+  "act_max": 13.1513671875,
+  "ctr_max": 10.2506103515625,
+  "peak": [
+   [
+    "dr",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> The beginning of [[dr]]",
+   "to the surface, ensuring that the [[dr]]",
+   "drought control.<s> The beginning of [[dr]]"
+  ],
+  "logit_up": [
+   "uw",
+   "chn",
+   "min",
+   "ift"
+  ],
+  "logit_down": [
+   "directions",
+   "only",
+   "ach",
+   "dem"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "G and L_C disagree",
+  "node": "4.resid.18706",
+  "alpha": 2.5659,
+  "L": {
+   "L_Z": 0.0042362176628010706,
+   "L_A": -0.003567100802854594,
+   "L_C": 0.11953669937555754
+  },
+  "F_C": 4.3558502765388045,
+  "G": -1.7131058697591435,
+  "act_anchor": 9.37890625,
+  "act_max": 10.849609375,
+  "ctr_max": 8.05126953125,
+  "peak": [
+   [
+    "oge",
+    19
+   ],
+   [
+    "iness",
+    4
+   ],
+   [
+    "ell",
+    4
+   ],
+   [
+    "Communic",
+    4
+   ]
+  ],
+  "windows": [
+   "ogeographic Biomes.<s> Bi [[oge]]",
+   "ogeographic Biomes.<s> Bi [[oge]]",
+   "Biogeographic Conservation.<s> Bi [[oge]]"
+  ],
+  "logit_up": [
+   "is",
+   "'",
+   "can",
+   "itself"
+  ],
+  "logit_down": [
+   "ou",
+   "slow",
+   "driv",
+   "ternoon"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "G and L_C disagree",
+  "node": "0.mlp.28050",
+  "alpha": 1.4647,
+  "L": {
+   "L_Z": 0.06289013380909902,
+   "L_A": -0.02943885816235504,
+   "L_C": 0.07270308652988403
+  },
+  "F_C": 2.4263593220338984,
+  "G": -0.4547185727029438,
+  "act_anchor": 2.25048828125,
+  "act_max": 3.795654296875,
+  "ctr_max": 2.6698150634765625,
+  "peak": [
+   [
+    "oil",
+    34
+   ],
+   [
+    "illing",
+    24
+   ],
+   [
+    "recovery",
+    2
+   ],
+   [
+    "bon",
+    2
+   ]
+  ],
+  "windows": [
+   "oil extraction process involves dr [[illing]]",
+   "oil extraction process involves dr [[illing]]",
+   "oil extraction process involves dr [[illing]]"
+  ],
+  "logit_up": [
+   "sector",
+   "industry",
+   "illing",
+   "role"
+  ],
+  "logit_down": [
+   "PR",
+   "Greg",
+   "guard",
+   "hist"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "G and L_C disagree",
+  "node": "5.resid.28753",
+  "alpha": 2.7466,
+  "L": {
+   "L_Z": 0.0015620338983050846,
+   "L_A": -0.02230237288135593,
+   "L_C": 0.07025041926851026
+  },
+  "F_C": 1.264270044603033,
+  "G": -0.576422479928635,
+  "act_anchor": 13.716796875,
+  "act_max": 14.9765625,
+  "ctr_max": 10.94873046875,
+  "peak": [
+   [
+    "dr",
+    64
+   ]
+  ],
+  "windows": [
+   "different soil conditions, along with percussion [[dr]]",
+   "different soil conditions, along with percussion [[dr]]",
+   "utilities before drilling so that appropriate [[dr]]"
+  ],
+  "logit_up": [
+   "ki",
+   "Hart",
+   "machine",
+   "screens"
+  ],
+  "logit_down": [
+   "ester",
+   "prov",
+   "onen",
+   "We"
+  ]
+ },
+ {
+  "target": "7.mlp.15696",
+  "group": "G and L_C disagree",
+  "node": "2.resid.7488",
+  "alpha": 1.9068,
+  "L": {
+   "L_Z": 0.018287671721677074,
+   "L_A": -0.012489420160570919,
+   "L_C": 0.059323033006244426
+  },
+  "F_C": 2.7011585370205173,
+  "G": -0.25022686886708295,
+  "act_anchor": 2.265869140625,
+  "act_max": 3.404541015625,
+  "ctr_max": 2.826873779296875,
+  "peak": [
+   [
+    "recovery",
+    31
+   ],
+   [
+    "voir",
+    20
+   ],
+   [
+    "erves",
+    4
+   ],
+   [
+    "illing",
+    4
+   ]
+  ],
+  "windows": [
+   "optimal recovery from subsurface reser [[voir]]",
+   "involves complex techniques that aim to maximize [[recovery]]",
+   "involves complex techniques that aim to maximize [[recovery]]"
+  ],
+  "logit_up": [
+   "oil",
+   "voir",
+   "mine",
+   "extra"
+  ],
+  "logit_down": [
+   "odes",
+   "yet",
+   "ors",
+   "diffusion"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "4.resid.3989",
+  "alpha": 3.3506,
+  "L": {
+   "L_Z": -0.00903954802259887,
+   "L_A": 0.00169509604519774,
+   "L_C": -0.2627109604519774
+  },
+  "F_C": -18.92237161581921,
+  "G": 0.18490431638418078,
+  "act_anchor": 0.31005859375,
+  "act_max": 2.1116943359375,
+  "ctr_max": 2.9061279296875,
+  "peak": [
+   [
+    "language",
+    6
+   ],
+   [
+    "prevent",
+    4
+   ],
+   [
+    "measurement",
+    4
+   ],
+   [
+    "writing",
+    4
+   ]
+  ],
+  "windows": [
+   "tombs utilized simple yet efficient [[light]]",
+   "tombs utilized simple yet efficient [[light]]",
+   "to document and record the relationship between physical [[activity]]"
+  ],
+  "logit_up": [
+   "enemy",
+   "lung",
+   "blood",
+   "screen"
+  ],
+  "logit_down": [
+   "exempl",
+   "include",
+   "includes",
+   "sees"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.712",
+  "alpha": 1.0277,
+  "L": {
+   "L_Z": 0.6841795254237288,
+   "L_A": 0.01468890395480226,
+   "L_C": -0.25536650847457626
+  },
+  "F_C": -19.638940203389833,
+  "G": -4.6205512316384185,
+  "act_anchor": 1.51171875,
+  "act_max": 2.5498046875,
+  "ctr_max": 2.61962890625,
+  "peak": [
+   [
+    "like",
+    12
+   ],
+   [
+    "1",
+    10
+   ],
+   [
+    "(",
+    9
+   ],
+   [
+    "0",
+    5
+   ]
+  ],
+  "windows": [
+   " [[1]]",
+   " [[1]]",
+   " [[1]]"
+  ],
+  "logit_up": [
+   "aw",
+   "n",
+   "ch",
+   "credit"
+  ],
+  "logit_down": [
+   "onn\u00e9es",
+   "%.",
+   "\u00b2.",
+   "\\)."
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "1.resid.31417",
+  "alpha": 2.6401,
+  "L": {
+   "L_Z": -0.0031067118644067795,
+   "L_A": 0.0248594802259887,
+   "L_C": -0.22005586440677966
+  },
+  "F_C": -4.850624361581921,
+  "G": -0.3056813559322034,
+  "act_anchor": 0.5438995361328125,
+  "act_max": 2.275634765625,
+  "ctr_max": 1.4739990234375,
+  "peak": [
+   [
+    "LE",
+    7
+   ],
+   [
+    "RE",
+    6
+   ],
+   [
+    "P",
+    5
+   ],
+   [
+    "ME",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> ENERGY [[ME]]",
+   "<s> ENERGY [[ME]]",
+   "ise Clauses: Saying WHEN THE [[ME]]"
+  ],
+  "logit_up": [
+   "simultane",
+   "ug",
+   "Lock",
+   "N"
+  ],
+  "logit_down": [
+   "manifold",
+   "trouble",
+   "considerable",
+   "destination"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "4.attn.30415",
+  "alpha": 4.5867,
+  "L": {
+   "L_Z": -0.00508528813559322,
+   "L_A": 0.011865672316384182,
+   "L_C": -0.19096153672316382
+  },
+  "F_C": -17.90108781920904,
+  "G": -0.006560542372881356,
+  "act_anchor": 0.16510009765625,
+  "act_max": 1.3309326171875,
+  "ctr_max": 1.343414306640625,
+  "peak": [
+   [
+    "the",
+    7
+   ],
+   [
+    "ing",
+    4
+   ],
+   [
+    "ancient",
+    4
+   ],
+   [
+    "around",
+    4
+   ]
+  ],
+  "windows": [
+   "algorithms have evolved remarkably since the [[dawn]]",
+   "processes until modern times are recognized by whisper [[ing]]",
+   "start of memory access.uneiform script [[writing]]"
+  ],
+  "logit_up": [
+   "icles",
+   "which",
+   "endpoint",
+   "secret"
+  ],
+  "logit_down": [
+   "fav",
+   "remains",
+   "wider",
+   "Stanley"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.12366",
+  "alpha": 1.0525,
+  "L": {
+   "L_Z": 0.02146928813559322,
+   "L_A": -0.0084754802259887,
+   "L_C": -0.17627263276836158
+  },
+  "F_C": -1.499662463276836,
+  "G": -0.22944831638418078,
+  "act_anchor": 0.843780517578125,
+  "act_max": 3.09375,
+  "ctr_max": 2.99151611328125,
+  "peak": [
+   [
+    "Gem",
+    7
+   ],
+   [
+    "cul",
+    7
+   ],
+   [
+    "lob",
+    6
+   ],
+   [
+    "oul",
+    6
+   ]
+  ],
+  "windows": [
+   "uss.<s> Glen Cook.<s> David [[Gem]]",
+   ".ra Lee.<s> Prof. San [[chez]]",
+   ".<s> [[Salvador]]"
+  ],
+  "logit_up": [
+   "Description",
+   "crete",
+   "Qual",
+   "persons"
+  ],
+  "logit_down": [
+   "faster",
+   "rapid",
+   "expon",
+   "que"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.mlp.11297",
+  "alpha": 1.1536,
+  "L": {
+   "L_Z": 0.011298711864406778,
+   "L_A": 0.032768,
+   "L_C": -0.17203489265536723
+  },
+  "F_C": -17.706782372881356,
+  "G": -1.572103231638418,
+  "act_anchor": 0.24615478515625,
+  "act_max": 3.885009765625,
+  "ctr_max": 3.977783203125,
+  "peak": [
+   [
+    "variables",
+    6
+   ],
+   [
+    "modules",
+    5
+   ],
+   [
+    "patterns",
+    5
+   ],
+   [
+    "objects",
+    5
+   ]
+  ],
+  "windows": [
+   "states; substitute words for qualities like [[attributes]]",
+   "states; substitute words for qualities like [[attributes]]",
+   "natural features such as rivers, mountains, [[hills]]"
+  ],
+  "logit_up": [
+   "like",
+   "such",
+   "cape",
+   "pace"
+  ],
+  "logit_down": [
+   "s",
+   "descri",
+   "lives",
+   "su"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "3.resid.21398",
+  "alpha": 3.6964,
+  "L": {
+   "L_Z": -0.0084754802259887,
+   "L_A": -0.0011310282485875707,
+   "L_C": 0.9457623502824859
+  },
+  "F_C": -100.04087177401131,
+  "G": -0.03919837288135593,
+  "act_anchor": 0.098175048828125,
+  "act_max": 3.192138671875,
+  "ctr_max": 3.1700439453125,
+  "peak": [
+   [
+    "electric",
+    2
+   ],
+   [
+    "effort",
+    2
+   ],
+   [
+    "orph",
+    2
+   ],
+   [
+    "termin",
+    2
+   ]
+  ],
+  "windows": [
+   "inputs. equations often capture the dynamics of [[electric]]",
+   "represented by i/t = H, [[effort]]",
+   "restructuring, and cultural metam [[orph]]"
+  ],
+  "logit_up": [
+   "coffee",
+   "oby",
+   "zo",
+   "bridge"
+  ],
+  "logit_down": [
+   "types",
+   "itself",
+   "mi",
+   "'"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.resid.10434",
+  "alpha": 4.0933,
+  "L": {
+   "L_Z": -0.00875606779661017,
+   "L_A": -0.003954259887005649,
+   "L_C": 0.9457623502824859
+  },
+  "F_C": -116.7769860338983,
+  "G": -0.13461550282485876,
+  "act_anchor": 0.314788818359375,
+  "act_max": 2.591064453125,
+  "ctr_max": 2.7469482421875,
+  "peak": [
+   [
+    "es",
+    2
+   ],
+   [
+    "ium",
+    2
+   ],
+   [
+    "effic",
+    2
+   ],
+   [
+    "im",
+    2
+   ]
+  ],
+  "windows": [
+   "caf\u00e9 [[estava]]",
+   "vulnerabilidades y categor\u00edas de acc [[es]]",
+   "por qu\u00e9, ya que esto gu [[iar]]"
+  ],
+  "logit_up": [
+   "long",
+   "halb",
+   "ared",
+   "bridge"
+  ],
+  "logit_down": [
+   "types",
+   "Cent",
+   "'",
+   "prov"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "8.resid.5991",
+  "alpha": 2.8308,
+  "L": {
+   "L_Z": 0.7334732655367231,
+   "L_A": 0.6759875254237289,
+   "L_C": 0.9370062824858757
+  },
+  "F_C": 32.114387163841805,
+  "G": 9.428216768361581,
+  "act_anchor": 3.36669921875,
+  "act_max": 26.36328125,
+  "ctr_max": 0.06298828125,
+  "peak": [
+   [
+    "zones",
+    60
+   ],
+   [
+    "zone",
+    2
+   ],
+   [
+    "Zone",
+    2
+   ]
+  ],
+  "windows": [
+   "areas.<s> Governments often use economic [[zones]]",
+   "<s> Economic [[zones]]",
+   "<s> Generally, Economic [[zones]]"
+  ],
+  "logit_up": [
+   "zones",
+   "zone",
+   "fires",
+   "Islands"
+  ],
+  "logit_down": [
+   "Anal",
+   "phr",
+   "conjug",
+   "Cr"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "7.resid.21603",
+  "alpha": 2.786,
+  "L": {
+   "L_Z": 0.5449155254237288,
+   "L_A": 0.694633581920904,
+   "L_C": 0.913558418079096
+  },
+  "F_C": 37.24740411299435,
+  "G": 9.519086644067798,
+  "act_anchor": 1.887939453125,
+  "act_max": 22.173828125,
+  "ctr_max": 0.041748046875,
+  "peak": [
+   [
+    "zones",
+    50
+   ],
+   [
+    "zone",
+    14
+   ]
+  ],
+  "windows": [
+   "ical zones [[zone]]",
+   "the cold polar [[zones]]",
+   "be.<s> The comprehension of climate [[zones]]"
+  ],
+  "logit_up": [
+   "zones",
+   "zone",
+   "fires",
+   "Capital"
+  ],
+  "logit_down": [
+   "quantity",
+   "Hor",
+   "Anal",
+   "Cr"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "1.resid.277",
+  "alpha": 0.9364,
+  "L": {
+   "L_Z": -0.03474657627118644,
+   "L_A": 0.0028261242937853105,
+   "L_C": 0.8580512542372881
+  },
+  "F_C": -58.7106957740113,
+  "G": -0.27979787570621467,
+  "act_anchor": 0.597625732421875,
+  "act_max": 2.0850830078125,
+  "ctr_max": 2.00653076171875,
+  "peak": [
+   [
+    "\ufffd",
+    5
+   ],
+   [
+    "on",
+    4
+   ],
+   [
+    "es",
+    3
+   ],
+   [
+    "-",
+    2
+   ]
+  ],
+  "windows": [
+   "\u041e [[\u043d]]",
+   "\u0642 [[\u064e]]",
+   "\"\u0915\u091f\u0915\u091f\" (ka [[ate]]"
+  ],
+  "logit_up": [
+   "iale",
+   "halb",
+   "long",
+   "ign"
+  ],
+  "logit_down": [
+   "Char",
+   "Cent",
+   "k",
+   "g"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.27810",
+  "alpha": 1.1682,
+  "L": {
+   "L_Z": -0.022597423728813557,
+   "L_A": 0.48615701694915253,
+   "L_C": 0.8050838418079096
+  },
+  "F_C": 51.490558553672315,
+  "G": 0.7735857175141243,
+  "act_anchor": 1.180908203125,
+  "act_max": 5.076171875,
+  "ctr_max": 0.0,
+  "peak": [
+   [
+    "zones",
+    60
+   ],
+   [
+    "zone",
+    4
+   ]
+  ],
+  "windows": [
+   "to the warm tropical zones, each climate [[zone]]",
+   "ical zones [[zone]]",
+   ", zone [[zones]]"
+  ],
+  "logit_up": [
+   "zones",
+   "zone",
+   "curl",
+   "radiation"
+  ],
+  "logit_down": [
+   "Regin",
+   "lis",
+   "fi",
+   "surve"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "G and L_C disagree",
+  "node": "0.attn.18179",
+  "alpha": 0.8921,
+  "L": {
+   "L_Z": 0.7802272542372881,
+   "L_A": 0.12740122033898305,
+   "L_C": 0.6922326779661017
+  },
+  "F_C": -37.95003588700565,
+  "G": -4.355800949152543,
+  "act_anchor": 0.011997222900390625,
+  "act_max": 4.03125,
+  "ctr_max": 3.991455078125,
+  "peak": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ],
+   [
+    "odot",
+    4
+   ]
+  ],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ],
+  "logit_up": [
+   "Point",
+   "snapshot",
+   "GP",
+   "DNS"
+  ],
+  "logit_down": [
+   "mar",
+   "S",
+   "accord",
+   "slow"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "G and L_C disagree",
+  "node": "1.mlp.17688",
+  "alpha": 3.2431,
+  "L": {
+   "L_Z": 0.0,
+   "L_A": -0.00339019209039548,
+   "L_C": 0.21271141242937852
+  },
+  "F_C": -24.786810937853105,
+  "G": -0.08141667796610169,
+  "act_anchor": 0.230560302734375,
+  "act_max": 1.13262939453125,
+  "ctr_max": 1.0673370361328125,
+  "peak": [
+   [
+    "ON",
+    9
+   ],
+   [
+    "-",
+    5
+   ],
+   [
+    "IC",
+    5
+   ],
+   [
+    "av",
+    4
+   ]
+  ],
+  "windows": [
+   "CDegoTAXDEBRANEN [[ON]]",
+   "CDegoTAXDEBRANEN [[ON]]",
+   "<s> Beaver, D., & M [[av]]"
+  ],
+  "logit_up": [
+   "just",
+   "vet",
+   "und",
+   "bird"
+  ],
+  "logit_down": [
+   "Cent",
+   ",",
+   "er",
+   "pro"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "G and L_C disagree",
+  "node": "0.resid.35895",
+  "alpha": 1.245,
+  "L": {
+   "L_Z": 0.02005767231638418,
+   "L_A": 0.0011310282485875707,
+   "L_C": 0.19039457627118644
+  },
+  "F_C": 7.377153446327684,
+  "G": -0.0897012429378531,
+  "act_anchor": 1.0753173828125,
+  "act_max": 3.067138671875,
+  "ctr_max": 2.61474609375,
+  "peak": [
+   [
+    "habitat",
+    11
+   ],
+   [
+    "water",
+    9
+   ],
+   [
+    "habit",
+    6
+   ],
+   [
+    "desert",
+    6
+   ]
+  ],
+  "windows": [
+   "catch in fisheries, pollution from [[ocean]]",
+   "catch in fisheries, pollution from [[ocean]]",
+   "itation of natural resources, pollution, [[habitat]]"
+  ],
+  "logit_up": [
+   "weather",
+   "aqu",
+   "habitat",
+   "tropical"
+  ],
+  "logit_down": [
+   "execution",
+   "letter",
+   "performance",
+   "Gu"
+  ]
+ },
+ {
+  "target": "9.attn.21759",
+  "group": "G and L_C disagree",
+  "node": "2.mlp.14460",
+  "alpha": 1.9086,
+  "L": {
+   "L_Z": 0.005932836158192091,
+   "L_A": -0.09378567231638418,
+   "L_C": -0.17118734463276836
+  },
+  "F_C": 4.800613242937853,
+  "G": 0.5915798418079097,
+  "act_anchor": 0.650238037109375,
+  "act_max": 3.984619140625,
+  "ctr_max": 3.8485107421875,
+  "peak": [
+   [
+    "ens",
+    11
+   ],
+   [
+    "neur",
+    7
+   ],
+   [
+    "R",
+    7
+   ],
+   [
+    "foreign",
+    6
+   ]
+  ],
+  "windows": [
+   ". involves antigenic stage stages where [[foreign]]",
+   ". involves antigenic stage stages where [[foreign]]",
+   ". involves antigenic stage stages where [[foreign]]"
+  ],
+  "logit_up": [
+   "types",
+   "structure",
+   "composition",
+   "processing"
+  ],
+  "logit_down": [
+   "Mul",
+   "hy",
+   "oby",
+   "next"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "8.resid.20013",
+  "alpha": 2.6597,
+  "L": {
+   "L_Z": 0.4968283467230444,
+   "L_A": -0.07568723890063424,
+   "L_C": -0.028329945031712475
+  },
+  "F_C": -1.6424916701902748,
+  "G": 2.9077876363636364,
+  "act_anchor": 25.11328125,
+  "act_max": 27.5234375,
+  "ctr_max": 9.27880859375,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   ", when faced with such circumstances [[such]]",
+   ", when faced with such circumstances [[such]]",
+   "iture., when faced with such circumstances [[such]]"
+  ],
+  "logit_up": [
+   "applications",
+   "as",
+   "that",
+   "scenarios"
+  ],
+  "logit_down": [
+   "endo",
+   "Mol",
+   "skip",
+   "Bowl"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.5663",
+  "alpha": 0.9987,
+  "L": {
+   "L_Z": 1.1145882790697674,
+   "L_A": -0.0025372684989429174,
+   "L_C": -0.012685260042283299
+  },
+  "F_C": -68.53827274418605,
+  "G": -0.1170380042283298,
+  "act_anchor": 3.907958984375,
+  "act_max": 4.293701171875,
+  "ctr_max": 4.368408203125,
+  "peak": [
+   [
+    "symbols",
+    19
+   ],
+   [
+    "symbol",
+    10
+   ],
+   [
+    "graph",
+    4
+   ],
+   [
+    "represent",
+    3
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ],
+  "logit_up": [
+   "pass",
+   "int",
+   ",",
+   "fl"
+  ],
+  "logit_down": [
+   "master",
+   "ffen",
+   "service",
+   "Scala"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "8.resid.30800",
+  "alpha": 2.1118,
+  "L": {
+   "L_Z": 0.0951378266384778,
+   "L_A": -0.019450587737843552,
+   "L_C": -0.011839864693446089
+  },
+  "F_C": -1.5421050317124736,
+  "G": -0.7515651247357295,
+  "act_anchor": 4.82958984375,
+  "act_max": 9.822021484375,
+  "ctr_max": 2.539306640625,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "rams led to the development of such devices [[such]]",
+   "also witnessed significant growth in online services [[such]]",
+   "also witnessed significant growth in online services [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "figures",
+   "events",
+   "gi"
+  ],
+  "logit_down": [
+   "hen",
+   "bounded",
+   "multi",
+   "Cl"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "9.resid.7581",
+  "alpha": 0.5441,
+  "L": {
+   "L_Z": -0.02198677378435518,
+   "L_A": -0.008879357293868923,
+   "L_C": -0.009724752642706131
+  },
+  "F_C": -0.39685953488372094,
+  "G": -1.9556375813953488,
+  "act_anchor": 5.8963623046875,
+  "act_max": 8.595703125,
+  "ctr_max": 1.5675048828125,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "method. tricks are employed also, [[such]]",
+   "method. tricks are employed also, [[such]]",
+   ". strategies often involve multiple tactics [[such]]"
+  ],
+  "logit_up": [
+   "reverse",
+   "where",
+   "cool",
+   "tack"
+  ],
+  "logit_down": [
+   "icons",
+   "metrics",
+   "goals",
+   "Cultural"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "9.resid.21452",
+  "alpha": 0.8369,
+  "L": {
+   "L_Z": -0.014376050739957718,
+   "L_A": -0.007610723044397463,
+   "L_C": -0.009302596194503172
+  },
+  "F_C": -0.5630051585623679,
+  "G": -1.5104064947145877,
+  "act_anchor": 8.31640625,
+  "act_max": 10.2880859375,
+  "ctr_max": 2.633056640625,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "aminants [[such]]",
+   "aminants [[such]]",
+   ", with influential literary events such works [[such]]"
+  ],
+  "logit_up": [
+   "previous",
+   "past",
+   "pop",
+   "pain"
+  ],
+  "logit_down": [
+   "equilibrium",
+   "stable",
+   "ordering",
+   "ove"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "inhibitory (most negative L_C)",
+  "node": "0.attn.15350",
+  "alpha": 1.0446,
+  "L": {
+   "L_Z": -0.01057123044397463,
+   "L_A": -0.003805902748414376,
+   "L_C": -0.007610723044397463
+  },
+  "F_C": -1.4231294376321353,
+  "G": -0.4021462325581395,
+  "act_anchor": 0.26165008544921875,
+  "act_max": 0.607818603515625,
+  "ctr_max": 0.619171142578125,
+  "peak": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "....... [[.]]",
+   "....... [[.]]",
+   "...... [[.]]"
+  ],
+  "logit_up": [
+   "dist",
+   "rod",
+   "cart",
+   "division"
+  ],
+  "logit_down": [
+   "operators",
+   "min",
+   "HL",
+   "Command"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.7055",
+  "alpha": 1.3825,
+  "L": {
+   "L_Z": 0.005496693446088795,
+   "L_A": 0.9610997716701902,
+   "L_C": 1.039323196617336
+  },
+  "F_C": 14.469192524312895,
+  "G": 0.2523683720930232,
+  "act_anchor": 3.293212890625,
+  "act_max": 3.76708984375,
+  "ctr_max": 1.4259033203125,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "with such circumstances such emergencies, [[such]]",
+   "with such circumstances such emergencies, [[such]]",
+   " [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "AS",
+   "wiel",
+   "que"
+  ],
+  "logit_down": [
+   "ult",
+   "come",
+   "ownership",
+   "welcome"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.resid.14756",
+  "alpha": 1.6865,
+  "L": {
+   "L_Z": 0.03847793657505286,
+   "L_A": 0.8267446934460888,
+   "L_C": 1.039323196617336
+  },
+  "F_C": 12.97856135306554,
+  "G": 0.26369515433403806,
+  "act_anchor": 3.7216796875,
+  "act_max": 4.04833984375,
+  "ctr_max": 1.486724853515625,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "gencies, such as such at times [[such]]",
+   "gencies, such as such at times [[such]]",
+   "square methods will allow precision alignment in applications [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "Asp",
+   "j",
+   "Ash"
+  ],
+  "logit_down": [
+   "ols",
+   "OT",
+   "ogn",
+   "our"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "2.resid.19422",
+  "alpha": 2.3657,
+  "L": {
+   "L_Z": 0.5670188921775898,
+   "L_A": 1.090063154334038,
+   "L_C": 1.039323196617336
+  },
+  "F_C": 17.61321241437632,
+  "G": 2.9768708329809725,
+  "act_anchor": 5.95263671875,
+  "act_max": 6.42919921875,
+  "ctr_max": 2.324188232421875,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   ", when faced with such circumstances [[such]]",
+   ", when faced with such circumstances [[such]]",
+   "aminants [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "rule",
+   "thing",
+   "arrangement"
+  ],
+  "logit_down": [
+   "Hor",
+   "ult",
+   "Reserve",
+   "onic"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "1.resid.29733",
+  "alpha": 2.0715,
+  "L": {
+   "L_Z": 0.060464710359408036,
+   "L_A": 1.0612049725158563,
+   "L_C": 1.039323196617336
+  },
+  "F_C": 14.602981479915433,
+  "G": 1.4135410739957717,
+  "act_anchor": 3.601806640625,
+  "act_max": 3.931640625,
+  "ctr_max": 1.5413818359375,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "gencies, such as such at times [[such]]",
+   "gencies, such as such at times [[such]]",
+   " [[such]]"
+  ],
+  "logit_up": [
+   "wiel",
+   "as",
+   "associations",
+   "dy"
+  ],
+  "logit_down": [
+   "to",
+   "we",
+   "w",
+   "Mus"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.mlp.7055",
+  "alpha": 1.6747,
+  "L": {
+   "L_Z": 0.03551742917547569,
+   "L_A": 1.090063154334038,
+   "L_C": 1.039323196617336
+  },
+  "F_C": 21.79871715856237,
+  "G": 1.0612785792811839,
+  "act_anchor": 4.32470703125,
+  "act_max": 4.933837890625,
+  "ctr_max": 1.821075439453125,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "with such circumstances such emergencies, [[such]]",
+   "with such circumstances such emergencies, [[such]]",
+   "medical treatment methods such effective interventions [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "AS",
+   "conven",
+   "occasions"
+  ],
+  "logit_down": [
+   "ult",
+   "ov",
+   "old",
+   "("
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "excitatory (most positive L_C)",
+  "node": "0.attn.4743",
+  "alpha": 1.2096,
+  "L": {
+   "L_Z": -0.0025372684989429174,
+   "L_A": 0.4882661479915434,
+   "L_C": 0.852431289640592
+  },
+  "F_C": 10.72426756871036,
+  "G": 0.28596336575052855,
+  "act_anchor": 0.33160400390625,
+  "act_max": 0.3877716064453125,
+  "ctr_max": 0.128143310546875,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "gencies, such as such at times [[such]]",
+   "gencies, such as such at times [[such]]",
+   "such sober metals such de elements [[such]]"
+  ],
+  "logit_up": [
+   "such",
+   "Bet",
+   "rollo",
+   "elf"
+  ],
+  "logit_down": [
+   "Mon",
+   "cons",
+   "miss",
+   "Sig"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "G and L_C disagree",
+  "node": "1.resid.23777",
+  "alpha": 1.7688,
+  "L": {
+   "L_Z": 0.038901175475687104,
+   "L_A": 0.06638464270613108,
+   "L_C": 0.21141594926004229
+  },
+  "F_C": 6.05505488372093,
+  "G": -0.22375265961945032,
+  "act_anchor": 4.37548828125,
+  "act_max": 4.7041015625,
+  "ctr_max": 1.609161376953125,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "compressed technology such ASCIi designs [[such]]",
+   "compressed technology such ASCIi designs [[such]]",
+   "ill-defined models such at large scales [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "Joseph",
+   "rapid",
+   "wie"
+  ],
+  "logit_down": [
+   "ourse",
+   "rew",
+   "Classic",
+   "teen"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "G and L_C disagree",
+  "node": "2.attn.4806",
+  "alpha": 3.218,
+  "L": {
+   "L_Z": -0.013953894291754757,
+   "L_A": 0.03467203382663848,
+   "L_C": 0.1604649133192389
+  },
+  "F_C": 7.314997040169134,
+  "G": -0.02526876955602537,
+  "act_anchor": 0.1804046630859375,
+  "act_max": 2.22796630859375,
+  "ctr_max": 2.9072265625,
+  "peak": [
+   [
+    "istic",
+    2
+   ],
+   [
+    "co",
+    2
+   ],
+   [
+    "culture",
+    2
+   ],
+   [
+    "full",
+    2
+   ]
+  ],
+  "windows": [
+   "purpose, including creating expressive futur [[istic]]",
+   "purpose, including creating expressive futur [[istic]]",
+   "preservation within a rapidly expanding e [[co]]"
+  ],
+  "logit_up": [
+   ".",
+   "\".",
+   ".\\",
+   ".\""
+  ],
+  "logit_down": [
+   "yz",
+   "ize",
+   "arily",
+   "develop"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "G and L_C disagree",
+  "node": "8.resid.28363",
+  "alpha": 2.5194,
+  "L": {
+   "L_Z": 0.5416494545454545,
+   "L_A": 0.05665989006342495,
+   "L_C": 0.06849867230443975
+  },
+  "F_C": 1.2485147061310782,
+  "G": -4.920940245243129,
+  "act_anchor": 36.703125,
+  "act_max": 39.51171875,
+  "ctr_max": 13.027099609375,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "when developing an effective methods such meditations [[such]]",
+   "when developing an effective methods such meditations [[such]]",
+   ", advanced technologies [[such]]"
+  ],
+  "logit_up": [
+   "as",
+   "As",
+   "Associ",
+   "wie"
+  ],
+  "logit_down": [
+   "launch",
+   "",
+   "",
+   "tabular"
+  ]
+ },
+ {
+  "target": "10.mlp.21748",
+  "group": "G and L_C disagree",
+  "node": "1.resid.2159",
+  "alpha": 1.3095,
+  "L": {
+   "L_Z": 0.017758714587737846,
+   "L_A": 0.023255408033826638,
+   "L_C": 0.06300197885835096
+  },
+  "F_C": 3.5015972262156447,
+  "G": -0.3545150782241015,
+  "act_anchor": 3.4462890625,
+  "act_max": 3.652587890625,
+  "ctr_max": 1.2227783203125,
+  "peak": [
+   [
+    "such",
+    64
+   ]
+  ],
+  "windows": [
+   "gencies, such as such at times [[such]]",
+   "gencies, such as such at times [[such]]",
+   "such sober metals such de elements [[such]]"
+  ],
+  "logit_up": [
+   "clos",
+   "as",
+   "gradient",
+   "pine"
+  ],
+  "logit_down": [
+   "policy",
+   "Policy",
+   "cli",
+   "ownership"
+  ]
+ }
+]

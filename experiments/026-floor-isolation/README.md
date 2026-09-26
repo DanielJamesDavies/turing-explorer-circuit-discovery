@@ -1067,3 +1067,38 @@ Findings:
 Verdict: zero + negctx (+ posctx) all pull their weight; triple stands
 as the production floor. "pn" stays in the engine as the documented
 ablation control.
+
+## R22 — single-floor amp arms: posctx-only and zero-only vs tri-amp
+## (amp_singlefloor.py, amp_singlefloor_c8/c29.jsonl, 2026-09-13)
+
+Question (Daniel): "if amplitudes work as intended, do we even need a
+zero or negctx floor? Compare tri floor to just pos floor." R21 kept
+negctx; this removes everything but one floor. Same seeds and cells as
+the triple joint400 rows; every arm scored on all three fills (ampF0
+zero, ampFMd posctx-mean, ampFMn negctx-mean — the last is new) plus
+held-out cf_amp. Empty-circuit posctx leak: 0% on 5/6 seeds, 4% on 2766.
+
+  seed     triple n/F0/FMd/cf      posctx n/F0/FMd/FMn/cf          zero n/F0/FMd/FMn/cf
+  L2 386   217/0.99/1.04/1.25      532/0.55/1.00/0.70/1.40         641/1.08/0.42/0.25/1.32
+  L2 2927  142/1.02/1.10/0.90      1085/0.39/1.02/0.77/1.14        837/1.00/0.38/0.05/1.06
+  L2 7019  225/0.99/1.11/1.17      723/0.45/0.98/0.32/1.17         799/1.00/0.45/0.01/1.15
+  L9 1283  242/0.90/0.79/0.25      12770/85.1/0.96/0.64/1.09       10540/1.09/0.00/0.00/1.17
+  L9 2062  623/0.96/0.97/1.50      26507/0.67/0.97/0.41/0.91       12908/1.07/0.00/0.00/1.10
+  L9 2766  653/1.04/1.26/1.38      18133/1.53/1.00/0.13/0.86       11354/0.94/0.03/0.00/0.93
+
+1. **Each single floor wins only its own frame.** posctx-only under
+   zero fill 0.39-0.55 (L2), 85/0.67/1.53 (L9); zero-only under mean
+   fill 0.4 (L2), 0.00 (L9). Amplitudes cannot substitute: alpha exists
+   for members, the floor defines non-members.
+2. **The multi-floor circuits are 3-5x (L2) and 20-40x (L9) SMALLER**
+   than either single-floor arm at the same lambda — the prediction
+   that posctx-only would be small-by-leaning-on-the-floor was WRONG
+   (the leak is ~0). Interpretation: a mean-fill drop is a gentle
+   intervention (weak per-gate gradient), a zero-fill drop at depth
+   removes drive and top-k competition together (R3); two floors with
+   different failure modes give sharper credit assignment than either.
+   The floors do the compression, not only the faithfulness.
+3. **cf_amp does not discriminate (0.86-1.40 everywhere)** — a 12k-
+   member circuit drives the seed; only ablation-frame faithfulness
+   separates the arms.
+Verdict: triple stays; "pos + amplitudes" is the worst arm on the table.

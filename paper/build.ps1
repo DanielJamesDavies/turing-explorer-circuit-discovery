@@ -2,7 +2,10 @@ param(
     [switch]$Open
 )
 
-$ErrorActionPreference = "Stop"
+# "Continue", not "Stop": under Windows PowerShell 5.1 any stderr line from a
+# native tool (e.g. MiKTeX's "you have not checked for updates" notice) becomes
+# a terminating error under "Stop". Real failures are caught by the PDF check.
+$ErrorActionPreference = "Continue"
 
 $PaperDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BuildDir = Join-Path $PaperDir "build"
@@ -46,6 +49,14 @@ finally {
 
 if (Test-Path $PdfPath) {
     Write-Host "Built PDF: $PdfPath"
+    # Page-budget guardrail (DAN-24): the main body must end on page 12 or earlier.
+    $AuxPath = Join-Path $BuildDir "main.aux"
+    $EndLine = Select-String -Path $AuxPath -Pattern '\\newlabel\{end-of-main\}\{\{[^}]*\}\{(\d+)\}' | Select-Object -First 1
+    if ($EndLine) {
+        $EndPage = [int]$EndLine.Matches[0].Groups[1].Value
+        $Colour = if ($EndPage -le 12) { "Green" } else { "Yellow" }
+        Write-Host "Main body ends on page $EndPage (budget: 12)" -ForegroundColor $Colour
+    }
     if ($Open) {
         Start-Process $PdfPath
     }

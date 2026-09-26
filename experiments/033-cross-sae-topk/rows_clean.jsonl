@@ -1,0 +1,120 @@
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "triamp400_clean", "n": 24, "ampF0": 1.2201, "ampFM": 0.8462, "sup": 1.0, "cf_amp": 1.7383, "a_pos_ho": 2.84, "secs": 47.5}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "anchor_support", "n": 43017, "anchor_support_rate": 0.00219}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "null0_clean", "n": 24, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0002, "cf_amp": 0.0, "a_pos_ho": 2.84, "secs": 44.0}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "null1_clean", "n": 24, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 2.84, "secs": 45.2}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "triamp400_clean", "n": 15, "ampF0": 1.0954, "ampFM": 0.9157, "sup": 1.0, "cf_amp": 1.1964, "a_pos_ho": 8.593, "secs": 44.0}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "anchor_support", "n": 43103, "anchor_support_rate": 0.0022}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "null0_clean", "n": 15, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 8.593, "secs": 45.1}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "null1_clean", "n": 15, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 8.593, "secs": 43.5}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "triamp400_clean", "n": 28, "ampF0": 0.8125, "ampFM": 0.7794, "sup": 0.9646, "cf_amp": 2.6387, "a_pos_ho": 1.083, "secs": 34.0}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "anchor_support", "n": 29497, "anchor_support_rate": 0.00248}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "null0_clean", "n": 28, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 1.083, "secs": 33.8}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "null1_clean", "n": 28, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0001, "a_pos_ho": 1.083, "secs": 33.6}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "triamp400_clean", "n": 18, "ampF0": 0.9051, "ampFM": 0.8212, "sup": 0.9943, "cf_amp": 1.7047, "a_pos_ho": 1.676, "secs": 33.8}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "anchor_support", "n": 28417, "anchor_support_rate": 0.00259}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "null0_clean", "n": 18, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 1.676, "secs": 34.7}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "null1_clean", "n": 18, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": -0.0005, "a_pos_ho": 1.676, "secs": 34.8}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "triamp400_clean", "n": 43, "ampF0": 0.9574, "ampFM": 0.7998, "sup": 0.9936, "cf_amp": 0.1419, "a_pos_ho": 2.847, "secs": 30.5}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "anchor_support", "n": 24994, "anchor_support_rate": 0.00227}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "null0_clean", "n": 43, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0009, "cf_amp": -0.0006, "a_pos_ho": 2.847, "secs": 31.5}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "null1_clean", "n": 43, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0006, "cf_amp": 0.0002, "a_pos_ho": 2.847, "secs": 31.7}
+{"layer": 1, "kind": "attn", "latent": 31694, "arm": "triamp400_clean", "n": 14, "ampF0": 0.9994, "ampFM": 0.9641, "sup": 0.9988, "cf_amp": -0.0109, "a_pos_ho": 4.158, "secs": 30.7}
+{"layer": 1, "kind": "attn", "latent": 31694, "arm": "anchor_support", "n": 25015, "anchor_support_rate": 0.00227}
+{"layer": 1, "kind": "attn", "latent": 31694, "arm": "null0_clean", "n": 14, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": -0.0001, "a_pos_ho": 4.158, "secs": 30.4}
+{"layer": 1, "kind": "attn", "latent": 31694, "arm": "null1_clean", "n": 14, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0, "cf_amp": 0.0, "a_pos_ho": 4.158, "secs": 30.2}
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "triamp400_clean", "n": 43, "ampF0": 1.0642, "ampFM": 1.0928, "sup": 1.0, "cf_amp": 1.2401, "a_pos_ho": 8.341, "secs": 70.8}
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "anchor_support", "n": 67742, "anchor_support_rate": 0.00211}
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "null0_clean", "n": 43, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0576, "cf_amp": -0.0008, "a_pos_ho": 8.341, "secs": 69.7}
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "null1_clean", "n": 43, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0011, "cf_amp": -0.0006, "a_pos_ho": 8.341, "secs": 67.9}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "triamp400_clean", "n": 36, "ampF0": 1.0165, "ampFM": 0.6193, "sup": 0.3627, "cf_amp": 2.9682, "a_pos_ho": 2.206, "secs": 70.9}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "anchor_support", "n": 69156, "anchor_support_rate": 0.00208}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "null0_clean", "n": 36, "ampF0": 0.0007, "ampFM": 0.0001, "sup": -0.0007, "cf_amp": 0.0, "a_pos_ho": 2.206, "secs": 70.0}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "null1_clean", "n": 36, "ampF0": 0.0, "ampFM": 0.0035, "sup": -0.001, "cf_amp": 0.0003, "a_pos_ho": 2.206, "secs": 69.7}
+{"layer": 2, "kind": "mlp", "latent": 12294, "arm": "triamp400_clean", "n": 68, "ampF0": 0.2131, "ampFM": 0.0542, "sup": 0.1921, "cf_amp": 4.5857, "a_pos_ho": 0.519, "secs": 61.1}
+{"layer": 2, "kind": "mlp", "latent": 12294, "arm": "anchor_support", "n": 56284, "anchor_support_rate": 0.00223}
+{"layer": 2, "kind": "mlp", "latent": 12294, "arm": "null0_clean", "n": 68, "ampF0": 0.0, "ampFM": -0.0002, "sup": 0.0017, "cf_amp": 0.0001, "a_pos_ho": 0.519, "secs": 60.8}
+{"layer": 2, "kind": "mlp", "latent": 12294, "arm": "null1_clean", "n": 68, "ampF0": 0.0, "ampFM": -0.0, "sup": 0.0172, "cf_amp": -0.0021, "a_pos_ho": 0.519, "secs": 58.2}
+{"layer": 2, "kind": "mlp", "latent": 20702, "arm": "triamp400_clean", "n": 104, "ampF0": 1.0898, "ampFM": 0.9364, "sup": 0.9983, "cf_amp": 2.44, "a_pos_ho": 1.247, "secs": 59.0}
+{"layer": 2, "kind": "mlp", "latent": 20702, "arm": "anchor_support", "n": 57966, "anchor_support_rate": 0.00217}
+{"layer": 2, "kind": "mlp", "latent": 20702, "arm": "null0_clean", "n": 104, "ampF0": 0.0, "ampFM": -0.0, "sup": -0.0062, "cf_amp": 0.0001, "a_pos_ho": 1.247, "secs": 58.4}
+{"layer": 2, "kind": "mlp", "latent": 20702, "arm": "null1_clean", "n": 104, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0003, "cf_amp": -0.0009, "a_pos_ho": 1.247, "secs": 58.7}
+{"layer": 2, "kind": "attn", "latent": 5200, "arm": "triamp400_clean", "n": 30, "ampF0": 1.081, "ampFM": 1.0348, "sup": 1.0, "cf_amp": 0.0048, "a_pos_ho": 4.343, "secs": 54.2}
+{"layer": 2, "kind": "attn", "latent": 5200, "arm": "anchor_support", "n": 53311, "anchor_support_rate": 0.00208}
+{"layer": 2, "kind": "attn", "latent": 5200, "arm": "null0_clean", "n": 30, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0007, "cf_amp": 0.0, "a_pos_ho": 4.343, "secs": 53.3}
+{"layer": 2, "kind": "attn", "latent": 5200, "arm": "null1_clean", "n": 30, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0006, "cf_amp": 0.0, "a_pos_ho": 4.343, "secs": 55.3}
+{"layer": 2, "kind": "attn", "latent": 2845, "arm": "triamp400_clean", "n": 18, "ampF0": 0.9599, "ampFM": 0.9048, "sup": 1.0, "cf_amp": 0.0085, "a_pos_ho": 4.37, "secs": 56.1}
+{"layer": 2, "kind": "attn", "latent": 2845, "arm": "anchor_support", "n": 46707, "anchor_support_rate": 0.00237}
+{"layer": 2, "kind": "attn", "latent": 2845, "arm": "null0_clean", "n": 18, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0001, "cf_amp": 0.0001, "a_pos_ho": 4.37, "secs": 53.3}
+{"layer": 2, "kind": "attn", "latent": 2845, "arm": "null1_clean", "n": 18, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0001, "a_pos_ho": 4.37, "secs": 53.8}
+{"layer": 3, "kind": "resid", "latent": 26543, "arm": "triamp400_clean", "n": 42, "ampF0": 1.1737, "ampFM": 1.084, "sup": 1.0, "cf_amp": 0.8091, "a_pos_ho": 7.906, "secs": 95.0}
+{"layer": 3, "kind": "resid", "latent": 26543, "arm": "anchor_support", "n": 92198, "anchor_support_rate": 0.00216}
+{"layer": 3, "kind": "resid", "latent": 26543, "arm": "null0_clean", "n": 42, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0, "cf_amp": 0.0, "a_pos_ho": 7.906, "secs": 93.0}
+{"layer": 3, "kind": "resid", "latent": 26543, "arm": "null1_clean", "n": 42, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0014, "cf_amp": 0.0, "a_pos_ho": 7.906, "secs": 93.1}
+{"layer": 3, "kind": "resid", "latent": 30504, "arm": "triamp400_clean", "n": 46, "ampF0": 1.1037, "ampFM": 1.0706, "sup": 1.0, "cf_amp": 0.631, "a_pos_ho": 7.979, "secs": 95.2}
+{"layer": 3, "kind": "resid", "latent": 30504, "arm": "anchor_support", "n": 97356, "anchor_support_rate": 0.00204}
+{"layer": 3, "kind": "resid", "latent": 30504, "arm": "null0_clean", "n": 46, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0009, "cf_amp": 0.0, "a_pos_ho": 7.979, "secs": 93.5}
+{"layer": 3, "kind": "resid", "latent": 30504, "arm": "null1_clean", "n": 46, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0001, "a_pos_ho": 7.979, "secs": 93.7}
+{"layer": 3, "kind": "mlp", "latent": 19926, "arm": "triamp400_clean", "n": 67, "ampF0": 1.0479, "ampFM": 1.0374, "sup": 1.0, "cf_amp": 0.7426, "a_pos_ho": 6.282, "secs": 83.5}
+{"layer": 3, "kind": "mlp", "latent": 19926, "arm": "anchor_support", "n": 85137, "anchor_support_rate": 0.00211}
+{"layer": 3, "kind": "mlp", "latent": 19926, "arm": "null0_clean", "n": 67, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0006, "cf_amp": -0.0, "a_pos_ho": 6.282, "secs": 82.2}
+{"layer": 3, "kind": "mlp", "latent": 19926, "arm": "null1_clean", "n": 67, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0007, "cf_amp": -0.0003, "a_pos_ho": 6.282, "secs": 80.5}
+{"layer": 3, "kind": "mlp", "latent": 18704, "arm": "triamp400_clean", "n": 109, "ampF0": 1.8126, "ampFM": 1.7462, "sup": 1.0, "cf_amp": 1.326, "a_pos_ho": 1.717, "secs": 81.9}
+{"layer": 3, "kind": "mlp", "latent": 18704, "arm": "anchor_support", "n": 76896, "anchor_support_rate": 0.00234}
+{"layer": 3, "kind": "mlp", "latent": 18704, "arm": "null0_clean", "n": 109, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0429, "cf_amp": -0.0001, "a_pos_ho": 1.717, "secs": 82.4}
+{"layer": 3, "kind": "mlp", "latent": 18704, "arm": "null1_clean", "n": 109, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0161, "cf_amp": -0.0001, "a_pos_ho": 1.717, "secs": 80.4}
+{"layer": 3, "kind": "attn", "latent": 2354, "arm": "triamp400_clean", "n": 386, "ampF0": 0.9119, "ampFM": 0.7102, "sup": 0.9983, "cf_amp": -0.0026, "a_pos_ho": 2.94, "secs": 77.1}
+{"layer": 3, "kind": "attn", "latent": 2354, "arm": "anchor_support", "n": 70836, "anchor_support_rate": 0.00225}
+{"layer": 3, "kind": "attn", "latent": 2354, "arm": "null0_clean", "n": 386, "ampF0": 0.0, "ampFM": 0.0003, "sup": 0.4416, "cf_amp": 0.0002, "a_pos_ho": 2.94, "secs": 77.5}
+{"layer": 3, "kind": "attn", "latent": 2354, "arm": "null1_clean", "n": 386, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.2696, "cf_amp": -0.0008, "a_pos_ho": 2.94, "secs": 75.7}
+{"layer": 3, "kind": "attn", "latent": 31657, "arm": "triamp400_clean", "n": 412, "ampF0": 0.4827, "ampFM": 0.3518, "sup": 0.6446, "cf_amp": -0.0398, "a_pos_ho": 1.418, "secs": 77.1}
+{"layer": 3, "kind": "attn", "latent": 31657, "arm": "anchor_support", "n": 69093, "anchor_support_rate": 0.00231}
+{"layer": 3, "kind": "attn", "latent": 31657, "arm": "null0_clean", "n": 412, "ampF0": 0.0, "ampFM": -0.0029, "sup": 0.2445, "cf_amp": -0.0367, "a_pos_ho": 1.418, "secs": 77.9}
+{"layer": 3, "kind": "attn", "latent": 31657, "arm": "null1_clean", "n": 412, "ampF0": 0.0, "ampFM": 0.0001, "sup": 0.2931, "cf_amp": -0.0041, "a_pos_ho": 1.418, "secs": 75.5}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "triamp400_clean", "n": 65, "ampF0": 1.1737, "ampFM": 1.0761, "sup": 0.9829, "cf_amp": 1.2194, "a_pos_ho": 10.169, "secs": 117.7}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "anchor_support", "n": 118537, "anchor_support_rate": 0.00207}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "null0_clean", "n": 65, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0254, "cf_amp": 0.0, "a_pos_ho": 10.169, "secs": 114.4}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "null1_clean", "n": 65, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0006, "cf_amp": 0.0, "a_pos_ho": 10.169, "secs": 117.1}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "triamp400_clean", "n": 66, "ampF0": 1.0834, "ampFM": 0.9919, "sup": 1.0, "cf_amp": 0.8602, "a_pos_ho": 10.295, "secs": 117.1}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "anchor_support", "n": 112880, "anchor_support_rate": 0.00218}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "null0_clean", "n": 66, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0018, "cf_amp": 0.0, "a_pos_ho": 10.295, "secs": 114.9}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "null1_clean", "n": 66, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0003, "cf_amp": 0.0, "a_pos_ho": 10.295, "secs": 116.0}
+{"layer": 4, "kind": "mlp", "latent": 31062, "arm": "triamp400_clean", "n": 66, "ampF0": 0.9417, "ampFM": 0.9185, "sup": 0.9756, "cf_amp": 0.5922, "a_pos_ho": 5.149, "secs": 105.6}
+{"layer": 4, "kind": "mlp", "latent": 31062, "arm": "anchor_support", "n": 104248, "anchor_support_rate": 0.0022}
+{"layer": 4, "kind": "mlp", "latent": 31062, "arm": "null0_clean", "n": 66, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0079, "cf_amp": -0.0, "a_pos_ho": 5.149, "secs": 105.4}
+{"layer": 4, "kind": "mlp", "latent": 31062, "arm": "null1_clean", "n": 66, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0285, "cf_amp": -0.0, "a_pos_ho": 5.149, "secs": 103.6}
+{"layer": 4, "kind": "mlp", "latent": 1832, "arm": "triamp400_clean", "n": 44, "ampF0": 1.0835, "ampFM": 1.1033, "sup": 1.0, "cf_amp": 0.3458, "a_pos_ho": 7.369, "secs": 107.8}
+{"layer": 4, "kind": "mlp", "latent": 1832, "arm": "anchor_support", "n": 101216, "anchor_support_rate": 0.00228}
+{"layer": 4, "kind": "mlp", "latent": 1832, "arm": "null0_clean", "n": 44, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0009, "cf_amp": 0.0, "a_pos_ho": 7.369, "secs": 103.7}
+{"layer": 4, "kind": "mlp", "latent": 1832, "arm": "null1_clean", "n": 44, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0146, "cf_amp": -0.0016, "a_pos_ho": 7.369, "secs": 105.7}
+{"layer": 4, "kind": "attn", "latent": 15562, "arm": "triamp400_clean", "n": 243, "ampF0": 0.7196, "ampFM": 0.9314, "sup": 0.7584, "cf_amp": 0.4021, "a_pos_ho": 3.169, "secs": 100.7}
+{"layer": 4, "kind": "attn", "latent": 15562, "arm": "anchor_support", "n": 98620, "anchor_support_rate": 0.00214}
+{"layer": 4, "kind": "attn", "latent": 15562, "arm": "null0_clean", "n": 243, "ampF0": 0.0024, "ampFM": 0.0036, "sup": 0.0631, "cf_amp": -0.0036, "a_pos_ho": 3.169, "secs": 101.0}
+{"layer": 4, "kind": "attn", "latent": 15562, "arm": "null1_clean", "n": 243, "ampF0": 0.0037, "ampFM": -0.0004, "sup": 0.0099, "cf_amp": -0.0032, "a_pos_ho": 3.169, "secs": 98.9}
+{"layer": 4, "kind": "attn", "latent": 2654, "arm": "triamp400_clean", "n": 914, "ampF0": 0.7787, "ampFM": 1.2533, "sup": 0.9147, "cf_amp": 0.3501, "a_pos_ho": 0.74, "secs": 96.0}
+{"layer": 4, "kind": "attn", "latent": 2654, "arm": "anchor_support", "n": 103588, "anchor_support_rate": 0.00206}
+{"layer": 4, "kind": "attn", "latent": 2654, "arm": "null0_clean", "n": 914, "ampF0": 0.0005, "ampFM": -0.0015, "sup": 0.4498, "cf_amp": 0.008, "a_pos_ho": 0.74, "secs": 53.6}
+{"layer": 4, "kind": "attn", "latent": 2654, "arm": "null1_clean", "n": 914, "ampF0": -0.0, "ampFM": -0.0018, "sup": 0.1208, "cf_amp": 0.0229, "a_pos_ho": 0.74, "secs": 72.4}
+{"layer": 5, "kind": "resid", "latent": 10642, "arm": "triamp400_clean", "n": 77, "ampF0": 1.0573, "ampFM": 1.0288, "sup": 1.0, "cf_amp": 1.0068, "a_pos_ho": 12.935, "secs": 135.1}
+{"layer": 5, "kind": "resid", "latent": 10642, "arm": "anchor_support", "n": 154983, "anchor_support_rate": 0.0019}
+{"layer": 5, "kind": "resid", "latent": 10642, "arm": "null0_clean", "n": 77, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0076, "cf_amp": 0.0012, "a_pos_ho": 12.935, "secs": 134.8}
+{"layer": 5, "kind": "resid", "latent": 10642, "arm": "null1_clean", "n": 77, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0046, "cf_amp": 0.0021, "a_pos_ho": 12.935, "secs": 133.0}
+{"layer": 5, "kind": "resid", "latent": 14086, "arm": "triamp400_clean", "n": 140, "ampF0": 0.2832, "ampFM": 0.1924, "sup": 1.0, "cf_amp": 1.4868, "a_pos_ho": 10.578, "secs": 141.0}
+{"layer": 5, "kind": "resid", "latent": 14086, "arm": "anchor_support", "n": 147349, "anchor_support_rate": 0.00199}
+{"layer": 5, "kind": "resid", "latent": 14086, "arm": "null0_clean", "n": 140, "ampF0": 0.0, "ampFM": -0.0001, "sup": 0.0302, "cf_amp": -0.0014, "a_pos_ho": 10.578, "secs": 136.4}
+{"layer": 5, "kind": "resid", "latent": 14086, "arm": "null1_clean", "n": 140, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0264, "cf_amp": -0.0001, "a_pos_ho": 10.578, "secs": 136.0}
+{"layer": 5, "kind": "mlp", "latent": 7608, "arm": "triamp400_clean", "n": 138, "ampF0": 0.6069, "ampFM": 0.4953, "sup": 0.9988, "cf_amp": 1.1337, "a_pos_ho": 9.605, "secs": 129.1}
+{"layer": 5, "kind": "mlp", "latent": 7608, "arm": "anchor_support", "n": 138753, "anchor_support_rate": 0.002}
+{"layer": 5, "kind": "mlp", "latent": 7608, "arm": "null0_clean", "n": 138, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0089, "cf_amp": 0.0, "a_pos_ho": 9.605, "secs": 127.0}
+{"layer": 5, "kind": "mlp", "latent": 7608, "arm": "null1_clean", "n": 138, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0176, "cf_amp": 0.0, "a_pos_ho": 9.605, "secs": 127.0}
+{"layer": 5, "kind": "mlp", "latent": 20691, "arm": "triamp400_clean", "n": 57, "ampF0": 1.0841, "ampFM": 1.1206, "sup": 1.0, "cf_amp": 0.5068, "a_pos_ho": 10.262, "secs": 129.5}
+{"layer": 5, "kind": "mlp", "latent": 20691, "arm": "anchor_support", "n": 143962, "anchor_support_rate": 0.00193}
+{"layer": 5, "kind": "mlp", "latent": 20691, "arm": "null0_clean", "n": 57, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0019, "cf_amp": -0.0001, "a_pos_ho": 10.262, "secs": 127.5}
+{"layer": 5, "kind": "mlp", "latent": 20691, "arm": "null1_clean", "n": 57, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0133, "cf_amp": 0.0, "a_pos_ho": 10.262, "secs": 127.2}
+{"layer": 5, "kind": "attn", "latent": 28752, "arm": "triamp400_clean", "n": 245, "ampF0": 1.1353, "ampFM": 1.3011, "sup": 1.0, "cf_amp": 0.5809, "a_pos_ho": 2.662, "secs": 122.4}
+{"layer": 5, "kind": "attn", "latent": 28752, "arm": "anchor_support", "n": 128984, "anchor_support_rate": 0.00204}
+{"layer": 5, "kind": "attn", "latent": 28752, "arm": "null0_clean", "n": 245, "ampF0": 0.0, "ampFM": -0.0001, "sup": 0.0374, "cf_amp": -0.0016, "a_pos_ho": 2.662, "secs": 122.4}
+{"layer": 5, "kind": "attn", "latent": 28752, "arm": "null1_clean", "n": 245, "ampF0": 0.0, "ampFM": -0.0, "sup": 0.0433, "cf_amp": -0.0059, "a_pos_ho": 2.662, "secs": 122.4}
+{"layer": 5, "kind": "attn", "latent": 14981, "arm": "triamp400_clean", "n": 206, "ampF0": 1.1098, "ampFM": 1.0929, "sup": 1.0, "cf_amp": 0.7127, "a_pos_ho": 2.969, "secs": 125.2}
+{"layer": 5, "kind": "attn", "latent": 14981, "arm": "anchor_support", "n": 127605, "anchor_support_rate": 0.00207}
+{"layer": 5, "kind": "attn", "latent": 14981, "arm": "null0_clean", "n": 206, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0195, "cf_amp": 0.0037, "a_pos_ho": 2.969, "secs": 123.4}
+{"layer": 5, "kind": "attn", "latent": 14981, "arm": "null1_clean", "n": 206, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0017, "cf_amp": 0.0032, "a_pos_ho": 2.969, "secs": 123.2}

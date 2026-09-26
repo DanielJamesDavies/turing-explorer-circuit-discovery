@@ -1,0 +1,866 @@
+[
+ {
+  "prompt": "Travellers landing in Helsinki have arrived in",
+  "target": 35441,
+  "contrast": 19066,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki"
+  }
+ },
+ {
+  "prompt": "Moscow is the capital city of",
+  "target": 11124,
+  "contrast": 26684,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow"
+  }
+ },
+ {
+  "prompt": "Athens is the capital city of",
+  "target": 25553,
+  "contrast": 5928,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens"
+  }
+ },
+ {
+  "prompt": "Tehran is the capital city of",
+  "target": 16826,
+  "contrast": 11124,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran"
+  }
+ },
+ {
+  "prompt": "The city of Berlin is the capital of",
+  "target": 9066,
+  "contrast": 25510,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Tokyo have arrived in",
+  "target": 5928,
+  "contrast": 5339,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Madrid have arrived in",
+  "target": 14034,
+  "contrast": 5892,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Hanoi is the capital city of",
+  "target": 22878,
+  "contrast": 28273,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "The city of Havana is the capital of",
+  "target": 25510,
+  "contrast": 11474,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana"
+  }
+ },
+ {
+  "prompt": "Baghdad is the capital city of",
+  "target": 29076,
+  "contrast": 52237,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad"
+  }
+ },
+ {
+  "prompt": "The city of Hanoi is the capital of",
+  "target": 22878,
+  "contrast": 52237,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "Rome is the capital city of",
+  "target": 11474,
+  "contrast": 25674,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Moscow have arrived in",
+  "target": 11124,
+  "contrast": 21355,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Cairo have arrived in",
+  "target": 20461,
+  "contrast": 26684,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo"
+  }
+ },
+ {
+  "prompt": "The city of Delhi is the capital of",
+  "target": 5339,
+  "contrast": 28273,
+  "meta": {
+   "country": "India",
+   "city": "Delhi"
+  }
+ },
+ {
+  "prompt": "Warsaw is the capital city of",
+  "target": 25674,
+  "contrast": 35441,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "The city of Rabat is the capital of",
+  "target": 52237,
+  "contrast": 31130,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat"
+  }
+ },
+ {
+  "prompt": "The city of Stockholm is the capital of",
+  "target": 24318,
+  "contrast": 11474,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "The city of Lima is the capital of",
+  "target": 30160,
+  "contrast": 28076,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima"
+  }
+ },
+ {
+  "prompt": "The city of Kyiv is the capital of",
+  "target": 19066,
+  "contrast": 16826,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "The city of Budapest is the capital of",
+  "target": 42680,
+  "contrast": 5928,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest"
+  }
+ },
+ {
+  "prompt": "Oslo is the capital city of",
+  "target": 31130,
+  "contrast": 25553,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo"
+  }
+ },
+ {
+  "prompt": "The city of Athens is the capital of",
+  "target": 25553,
+  "contrast": 14083,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens"
+  }
+ },
+ {
+  "prompt": "The city of Santiago is the capital of",
+  "target": 22587,
+  "contrast": 21539,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Hanoi have arrived in",
+  "target": 22878,
+  "contrast": 5928,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "Accra is the capital city of",
+  "target": 28076,
+  "contrast": 5928,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra"
+  }
+ },
+ {
+  "prompt": "The city of Bangkok is the capital of",
+  "target": 28141,
+  "contrast": 22587,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Warsaw have arrived in",
+  "target": 25674,
+  "contrast": 11474,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "The city of Ankara is the capital of",
+  "target": 21355,
+  "contrast": 5892,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Baghdad have arrived in",
+  "target": 29076,
+  "contrast": 16826,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad"
+  }
+ },
+ {
+  "prompt": "The city of Cairo is the capital of",
+  "target": 20461,
+  "contrast": 14034,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo"
+  }
+ },
+ {
+  "prompt": "Delhi is the capital city of",
+  "target": 5339,
+  "contrast": 26684,
+  "meta": {
+   "country": "India",
+   "city": "Delhi"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Oslo have arrived in",
+  "target": 31130,
+  "contrast": 29076,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Vienna have arrived in",
+  "target": 26684,
+  "contrast": 28141,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Vienna is the capital city of",
+  "target": 26684,
+  "contrast": 25510,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Beijing have arrived in",
+  "target": 5892,
+  "contrast": 22587,
+  "meta": {
+   "country": "China",
+   "city": "Beijing"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Havana have arrived in",
+  "target": 25510,
+  "contrast": 22878,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana"
+  }
+ },
+ {
+  "prompt": "The city of Moscow is the capital of",
+  "target": 11124,
+  "contrast": 9066,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow"
+  }
+ },
+ {
+  "prompt": "The city of Beijing is the capital of",
+  "target": 5892,
+  "contrast": 24318,
+  "meta": {
+   "country": "China",
+   "city": "Beijing"
+  }
+ },
+ {
+  "prompt": "Lisbon is the capital city of",
+  "target": 21539,
+  "contrast": 9066,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Helsinki is the capital city of",
+  "target": 35441,
+  "contrast": 5339,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Nairobi have arrived in",
+  "target": 28273,
+  "contrast": 11474,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "The city of Warsaw is the capital of",
+  "target": 25674,
+  "contrast": 30160,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "Havana is the capital city of",
+  "target": 25510,
+  "contrast": 22878,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana"
+  }
+ },
+ {
+  "prompt": "The city of Tokyo is the capital of",
+  "target": 5928,
+  "contrast": 5892,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo"
+  }
+ },
+ {
+  "prompt": "The city of Copenhagen is the capital of",
+  "target": 32923,
+  "contrast": 14034,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Tehran have arrived in",
+  "target": 16826,
+  "contrast": 28273,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Rabat have arrived in",
+  "target": 52237,
+  "contrast": 28141,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Berlin have arrived in",
+  "target": 9066,
+  "contrast": 21355,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Lisbon have arrived in",
+  "target": 21539,
+  "contrast": 30160,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Berlin is the capital city of",
+  "target": 9066,
+  "contrast": 28141,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin"
+  }
+ },
+ {
+  "prompt": "Tokyo is the capital city of",
+  "target": 5928,
+  "contrast": 29076,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Copenhagen is the capital city of",
+  "target": 32923,
+  "contrast": 42680,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Stockholm have arrived in",
+  "target": 24318,
+  "contrast": 31130,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Rome have arrived in",
+  "target": 11474,
+  "contrast": 21355,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome"
+  }
+ },
+ {
+  "prompt": "Bangkok is the capital city of",
+  "target": 28141,
+  "contrast": 22587,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "Brussels is the capital city of",
+  "target": 30674,
+  "contrast": 5928,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Bangkok have arrived in",
+  "target": 28141,
+  "contrast": 26684,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "The city of Brussels is the capital of",
+  "target": 30674,
+  "contrast": 14083,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels"
+  }
+ },
+ {
+  "prompt": "The city of Tehran is the capital of",
+  "target": 16826,
+  "contrast": 52237,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Lima have arrived in",
+  "target": 30160,
+  "contrast": 52237,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Paris have arrived in",
+  "target": 6081,
+  "contrast": 20461,
+  "meta": {
+   "country": "France",
+   "city": "Paris"
+  }
+ },
+ {
+  "prompt": "Rabat is the capital city of",
+  "target": 52237,
+  "contrast": 11124,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat"
+  }
+ },
+ {
+  "prompt": "The city of Oslo is the capital of",
+  "target": 31130,
+  "contrast": 11474,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo"
+  }
+ },
+ {
+  "prompt": "The city of Accra is the capital of",
+  "target": 28076,
+  "contrast": 14034,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra"
+  }
+ },
+ {
+  "prompt": "Dublin is the capital city of",
+  "target": 14083,
+  "contrast": 24318,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin"
+  }
+ },
+ {
+  "prompt": "Cairo is the capital city of",
+  "target": 20461,
+  "contrast": 19066,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Athens have arrived in",
+  "target": 25553,
+  "contrast": 5928,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens"
+  }
+ },
+ {
+  "prompt": "Santiago is the capital city of",
+  "target": 22587,
+  "contrast": 14034,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago"
+  }
+ },
+ {
+  "prompt": "Budapest is the capital city of",
+  "target": 42680,
+  "contrast": 14083,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest"
+  }
+ },
+ {
+  "prompt": "Stockholm is the capital city of",
+  "target": 24318,
+  "contrast": 21355,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "Beijing is the capital city of",
+  "target": 5892,
+  "contrast": 24318,
+  "meta": {
+   "country": "China",
+   "city": "Beijing"
+  }
+ },
+ {
+  "prompt": "The city of Madrid is the capital of",
+  "target": 14034,
+  "contrast": 20461,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Kyiv is the capital city of",
+  "target": 19066,
+  "contrast": 22878,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "The city of Lisbon is the capital of",
+  "target": 21539,
+  "contrast": 25510,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "The city of Paris is the capital of",
+  "target": 6081,
+  "contrast": 21355,
+  "meta": {
+   "country": "France",
+   "city": "Paris"
+  }
+ },
+ {
+  "prompt": "The city of Vienna is the capital of",
+  "target": 26684,
+  "contrast": 11474,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna"
+  }
+ },
+ {
+  "prompt": "The city of Rome is the capital of",
+  "target": 11474,
+  "contrast": 26684,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome"
+  }
+ },
+ {
+  "prompt": "The city of Helsinki is the capital of",
+  "target": 35441,
+  "contrast": 29076,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki"
+  }
+ },
+ {
+  "prompt": "Lima is the capital city of",
+  "target": 30160,
+  "contrast": 11124,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima"
+  }
+ },
+ {
+  "prompt": "The city of Baghdad is the capital of",
+  "target": 29076,
+  "contrast": 42680,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad"
+  }
+ },
+ {
+  "prompt": "Madrid is the capital city of",
+  "target": 14034,
+  "contrast": 25510,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Paris is the capital city of",
+  "target": 6081,
+  "contrast": 29076,
+  "meta": {
+   "country": "France",
+   "city": "Paris"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Copenhagen have arrived in",
+  "target": 32923,
+  "contrast": 16826,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Kyiv have arrived in",
+  "target": 19066,
+  "contrast": 16826,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "The city of Nairobi is the capital of",
+  "target": 28273,
+  "contrast": 5892,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "The city of Dublin is the capital of",
+  "target": 14083,
+  "contrast": 11474,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Ankara have arrived in",
+  "target": 21355,
+  "contrast": 19066,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara"
+  }
+ },
+ {
+  "prompt": "Nairobi is the capital city of",
+  "target": 28273,
+  "contrast": 30160,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Dublin have arrived in",
+  "target": 14083,
+  "contrast": 14034,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Santiago have arrived in",
+  "target": 22587,
+  "contrast": 25674,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Delhi have arrived in",
+  "target": 5339,
+  "contrast": 31130,
+  "meta": {
+   "country": "India",
+   "city": "Delhi"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Accra have arrived in",
+  "target": 28076,
+  "contrast": 22878,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Budapest have arrived in",
+  "target": 42680,
+  "contrast": 21355,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest"
+  }
+ },
+ {
+  "prompt": "Travellers landing in Brussels have arrived in",
+  "target": 30674,
+  "contrast": 11124,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Ankara is the capital city of",
+  "target": 21355,
+  "contrast": 19066,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara"
+  }
+ }
+]

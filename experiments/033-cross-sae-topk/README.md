@@ -59,6 +59,63 @@ intervention). Verified on GPU: exactly 16 nonzeros per position.
    seeds reconstruct (1.05/1.05) but barely drive (cf 0.07), the same
    asymmetry the 22-seed home panel found.
 
+## Re-run with the SAE error held clean (2026-09-19, for the 052 Gemma port)
+
+`ERROR_MODE=clean` (see crosssae_topk.py header): each edited site becomes
+c_hat W_dec + b_dec + err_CLEAN instead of + err(edited stream). Needed on
+uncapped JumpReLU SAEs, where the recomputed error feeds itself and diverges
+(052/res_explosion_diag.py). This re-run asks whether it changes TopK results.
+triamp400 only + 2 fitted nulls per seed; `rows_clean.jsonl`,
+`run_clean.log`, `compare_clean.py` / `compare_clean.log`. 28 paired seeds
+(held-out a_pos >= 1.0).
+
+  median           original   clean
+  band pass        21/28      18/28   (23/28 verdicts agree: 4 lost, 1 gained)
+  ampF0            1.056      1.061
+  ampFM            1.063      0.950   (lower on 23/28 seeds)
+  sup              1.000      1.000
+  cf_amp           0.895      0.776
+  members n        51         61      (+-22% per seed, both directions)
+  fitted nulls     0/140      0/56 pass (max ampF0 0.004)
+  by kind: resid 9/10 -> 8/10, mlp 7/9 -> 6/9, attn 5/9 -> 4/9
+
+**Verdict: the central claims replicate under either form (null dead,
+necessity intact, zero-fill faithfulness unchanged), but the clean form is a
+DIFFERENT counterfactual, not a drop-in: -3 passes of 28, mean-fill ~0.11
+lower, and the losses concentrate at the deepest layer (mlp L5 #7608 F0
+0.98 -> 0.61; resid L5 #14086 F0 0.90 -> 0.28, FM 1.10 -> 0.19). On TopK the
+recomputed error is well-behaved, so the original form stays the reference
+there.** An earlier intermediate form (subtract the clean CODE) was wrong
+(leaks x - x_clean through non-members) and is archived as
+rows_clean_deltaform.jsonl / run_clean_deltaform.log — do not quote.
+
+## phi_pin CONTROL for the Gemma port (2026-09-20, `rows_pin_panel.jsonl`, `run_pin_panel.log`)
+
+On Gemma 3 270M + Gemma Scope 2 every latent circuit reads free0 0.67-1.13 but
+**phi_pin 0.00-0.37**: clamping the SAME members to alpha x their CLEAN values
+does not reproduce the seed, though letting them be re-encoded from the edited
+stream does. This asks whether that gap is ours or the substrate's. `pin0` /
+`pinM` added to this harness (members clamped to alpha x clean position-wise
+values, non-members at the zero / posctx-mean floor); triamp400 only, no nulls,
+28 seeds with held-out a_pos >= 1.0:
+
+  metric          median
+  ampF0           1.050
+  ampFM           1.061
+  sup             1.000
+  pin0            0.789      pin0 >= 0.5: 24/28 | pin0 < 0.2: 1/28
+  pinM            0.891
+  by kind  resid 0.931 (min 0.497) | mlp 0.865 (0.359) | attn 0.737 (0.196)
+  by layer L1 0.971 | L2 0.793 | L3 1.014 | L4 0.711 | L5 0.750
+
+**On genuine Top-K dictionaries free and pinned AGREE, at every layer and kind
+(no depth decay). The Gemma collapse is therefore a property of the uncapped
+JumpReLU substrate, not of the method.** Top-K bounds what a re-encode of a
+degraded stream can produce; 052's cap+clamp restores STABILITY but not the
+IDENTITY of the member values (on Gemma the median member is SILENT in the free
+counterfactual, 052 `val_ratio_median` 0.00, while <5% are inflated). Quote
+phi_pin next to every free score from now on.
+
 ## Reporting rules
 
 Quote as: the method, compact weighted circuits, necessity, the

@@ -1,0 +1,1055 @@
+[
+ {
+  "prompt": "Not blunt, but the very opposite:",
+  "target": 15280,
+  "contrast": 56902,
+  "meta": {
+   "word": "blunt",
+   "opposite": "sharp"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of heavy?\nA: The opposite of heavy is",
+  "target": 2611,
+  "contrast": 8090,
+  "meta": {
+   "word": "heavy",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "Not sad, but the very opposite:",
+  "target": 4915,
+  "contrast": 9270,
+  "meta": {
+   "word": "sad",
+   "opposite": "happy"
+  }
+ },
+ {
+  "prompt": "The opposite of heavy is",
+  "target": 2611,
+  "contrast": 8090,
+  "meta": {
+   "word": "heavy",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of early?\nA: The opposite of early is",
+  "target": 5245,
+  "contrast": 4061,
+  "meta": {
+   "word": "early",
+   "opposite": "late"
+  }
+ },
+ {
+  "prompt": "The opposite of small is",
+  "target": 2824,
+  "contrast": 2301,
+  "meta": {
+   "word": "small",
+   "opposite": "big"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of light?\nA: The opposite of light is",
+  "target": 4868,
+  "contrast": 2611,
+  "meta": {
+   "word": "light",
+   "opposite": "dark"
+  }
+ },
+ {
+  "prompt": "Not hard, but the very opposite:",
+  "target": 4072,
+  "contrast": 2811,
+  "meta": {
+   "word": "hard",
+   "opposite": "soft"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of low?\nA: The opposite of low is",
+  "target": 1536,
+  "contrast": 3178,
+  "meta": {
+   "word": "low",
+   "opposite": "high"
+  }
+ },
+ {
+  "prompt": "Not old, but the very opposite:",
+  "target": 3486,
+  "contrast": 2187,
+  "meta": {
+   "word": "old",
+   "opposite": "young"
+  }
+ },
+ {
+  "prompt": "The opposite of soft is",
+  "target": 2811,
+  "contrast": 4072,
+  "meta": {
+   "word": "soft",
+   "opposite": "hard"
+  }
+ },
+ {
+  "prompt": "The opposite of hard is",
+  "target": 4072,
+  "contrast": 2811,
+  "meta": {
+   "word": "hard",
+   "opposite": "soft"
+  }
+ },
+ {
+  "prompt": "The opposite of hot is",
+  "target": 7033,
+  "contrast": 5342,
+  "meta": {
+   "word": "hot",
+   "opposite": "cold"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of smooth?\nA: The opposite of smooth is",
+  "target": 12001,
+  "contrast": 9910,
+  "meta": {
+   "word": "smooth",
+   "opposite": "rough"
+  }
+ },
+ {
+  "prompt": "The opposite of sad is",
+  "target": 4915,
+  "contrast": 9270,
+  "meta": {
+   "word": "sad",
+   "opposite": "happy"
+  }
+ },
+ {
+  "prompt": "Not early, but the very opposite:",
+  "target": 5245,
+  "contrast": 4061,
+  "meta": {
+   "word": "early",
+   "opposite": "late"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of slow?\nA: The opposite of slow is",
+  "target": 4847,
+  "contrast": 6080,
+  "meta": {
+   "word": "slow",
+   "opposite": "fast"
+  }
+ },
+ {
+  "prompt": "The opposite of rough is",
+  "target": 9910,
+  "contrast": 12001,
+  "meta": {
+   "word": "rough",
+   "opposite": "smooth"
+  }
+ },
+ {
+  "prompt": "Not hot, but the very opposite:",
+  "target": 7033,
+  "contrast": 5342,
+  "meta": {
+   "word": "hot",
+   "opposite": "cold"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of far?\nA: The opposite of far is",
+  "target": 3018,
+  "contrast": 2166,
+  "meta": {
+   "word": "far",
+   "opposite": "near"
+  }
+ },
+ {
+  "prompt": "Not strong, but the very opposite:",
+  "target": 8742,
+  "contrast": 3779,
+  "meta": {
+   "word": "strong",
+   "opposite": "weak"
+  }
+ },
+ {
+  "prompt": "The opposite of quiet is",
+  "target": 16129,
+  "contrast": 11067,
+  "meta": {
+   "word": "quiet",
+   "opposite": "loud"
+  }
+ },
+ {
+  "prompt": "The opposite of cold is",
+  "target": 5342,
+  "contrast": 7033,
+  "meta": {
+   "word": "cold",
+   "opposite": "hot"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of strong?\nA: The opposite of strong is",
+  "target": 8742,
+  "contrast": 3779,
+  "meta": {
+   "word": "strong",
+   "opposite": "weak"
+  }
+ },
+ {
+  "prompt": "The opposite of rich is",
+  "target": 6528,
+  "contrast": 7277,
+  "meta": {
+   "word": "rich",
+   "opposite": "poor"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of near?\nA: The opposite of near is",
+  "target": 2166,
+  "contrast": 3018,
+  "meta": {
+   "word": "near",
+   "opposite": "far"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of full?\nA: The opposite of full is",
+  "target": 8144,
+  "contrast": 2247,
+  "meta": {
+   "word": "full",
+   "opposite": "empty"
+  }
+ },
+ {
+  "prompt": "The opposite of high is",
+  "target": 3178,
+  "contrast": 1536,
+  "meta": {
+   "word": "high",
+   "opposite": "low"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of loud?\nA: The opposite of loud is",
+  "target": 11067,
+  "contrast": 16129,
+  "meta": {
+   "word": "loud",
+   "opposite": "quiet"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of quiet?\nA: The opposite of quiet is",
+  "target": 16129,
+  "contrast": 11067,
+  "meta": {
+   "word": "quiet",
+   "opposite": "loud"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of closed?\nA: The opposite of closed is",
+  "target": 2174,
+  "contrast": 7337,
+  "meta": {
+   "word": "closed",
+   "opposite": "open"
+  }
+ },
+ {
+  "prompt": "Not slow, but the very opposite:",
+  "target": 4847,
+  "contrast": 6080,
+  "meta": {
+   "word": "slow",
+   "opposite": "fast"
+  }
+ },
+ {
+  "prompt": "The opposite of dark is",
+  "target": 2611,
+  "contrast": 4868,
+  "meta": {
+   "word": "dark",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of old?\nA: The opposite of old is",
+  "target": 3486,
+  "contrast": 2187,
+  "meta": {
+   "word": "old",
+   "opposite": "young"
+  }
+ },
+ {
+  "prompt": "The opposite of open is",
+  "target": 7337,
+  "contrast": 2174,
+  "meta": {
+   "word": "open",
+   "opposite": "closed"
+  }
+ },
+ {
+  "prompt": "The opposite of near is",
+  "target": 2166,
+  "contrast": 3018,
+  "meta": {
+   "word": "near",
+   "opposite": "far"
+  }
+ },
+ {
+  "prompt": "Not low, but the very opposite:",
+  "target": 1536,
+  "contrast": 3178,
+  "meta": {
+   "word": "low",
+   "opposite": "high"
+  }
+ },
+ {
+  "prompt": "The opposite of big is",
+  "target": 2301,
+  "contrast": 2824,
+  "meta": {
+   "word": "big",
+   "opposite": "small"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of open?\nA: The opposite of open is",
+  "target": 7337,
+  "contrast": 2174,
+  "meta": {
+   "word": "open",
+   "opposite": "closed"
+  }
+ },
+ {
+  "prompt": "Not sharp, but the very opposite:",
+  "target": 56902,
+  "contrast": 15280,
+  "meta": {
+   "word": "sharp",
+   "opposite": "blunt"
+  }
+ },
+ {
+  "prompt": "The opposite of early is",
+  "target": 5245,
+  "contrast": 4061,
+  "meta": {
+   "word": "early",
+   "opposite": "late"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of hard?\nA: The opposite of hard is",
+  "target": 4072,
+  "contrast": 2811,
+  "meta": {
+   "word": "hard",
+   "opposite": "soft"
+  }
+ },
+ {
+  "prompt": "The opposite of closed is",
+  "target": 2174,
+  "contrast": 7337,
+  "meta": {
+   "word": "closed",
+   "opposite": "open"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of empty?\nA: The opposite of empty is",
+  "target": 2247,
+  "contrast": 8144,
+  "meta": {
+   "word": "empty",
+   "opposite": "full"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of blunt?\nA: The opposite of blunt is",
+  "target": 15280,
+  "contrast": 56902,
+  "meta": {
+   "word": "blunt",
+   "opposite": "sharp"
+  }
+ },
+ {
+  "prompt": "Not near, but the very opposite:",
+  "target": 2166,
+  "contrast": 3018,
+  "meta": {
+   "word": "near",
+   "opposite": "far"
+  }
+ },
+ {
+  "prompt": "Not heavy, but the very opposite:",
+  "target": 2611,
+  "contrast": 8090,
+  "meta": {
+   "word": "heavy",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of sad?\nA: The opposite of sad is",
+  "target": 4915,
+  "contrast": 9270,
+  "meta": {
+   "word": "sad",
+   "opposite": "happy"
+  }
+ },
+ {
+  "prompt": "The opposite of loud is",
+  "target": 11067,
+  "contrast": 16129,
+  "meta": {
+   "word": "loud",
+   "opposite": "quiet"
+  }
+ },
+ {
+  "prompt": "Not light, but the very opposite:",
+  "target": 4868,
+  "contrast": 2611,
+  "meta": {
+   "word": "light",
+   "opposite": "dark"
+  }
+ },
+ {
+  "prompt": "Not open, but the very opposite:",
+  "target": 7337,
+  "contrast": 2174,
+  "meta": {
+   "word": "open",
+   "opposite": "closed"
+  }
+ },
+ {
+  "prompt": "The opposite of fast is",
+  "target": 6080,
+  "contrast": 4847,
+  "meta": {
+   "word": "fast",
+   "opposite": "slow"
+  }
+ },
+ {
+  "prompt": "Not rough, but the very opposite:",
+  "target": 9910,
+  "contrast": 12001,
+  "meta": {
+   "word": "rough",
+   "opposite": "smooth"
+  }
+ },
+ {
+  "prompt": "Not high, but the very opposite:",
+  "target": 3178,
+  "contrast": 1536,
+  "meta": {
+   "word": "high",
+   "opposite": "low"
+  }
+ },
+ {
+  "prompt": "Not dark, but the very opposite:",
+  "target": 2611,
+  "contrast": 4868,
+  "meta": {
+   "word": "dark",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of cold?\nA: The opposite of cold is",
+  "target": 5342,
+  "contrast": 7033,
+  "meta": {
+   "word": "cold",
+   "opposite": "hot"
+  }
+ },
+ {
+  "prompt": "Not closed, but the very opposite:",
+  "target": 2174,
+  "contrast": 7337,
+  "meta": {
+   "word": "closed",
+   "opposite": "open"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of rough?\nA: The opposite of rough is",
+  "target": 9910,
+  "contrast": 12001,
+  "meta": {
+   "word": "rough",
+   "opposite": "smooth"
+  }
+ },
+ {
+  "prompt": "The opposite of smooth is",
+  "target": 12001,
+  "contrast": 9910,
+  "meta": {
+   "word": "smooth",
+   "opposite": "rough"
+  }
+ },
+ {
+  "prompt": "Not empty, but the very opposite:",
+  "target": 2247,
+  "contrast": 8144,
+  "meta": {
+   "word": "empty",
+   "opposite": "full"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of dry?\nA: The opposite of dry is",
+  "target": 10256,
+  "contrast": 6050,
+  "meta": {
+   "word": "dry",
+   "opposite": "wet"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of small?\nA: The opposite of small is",
+  "target": 2824,
+  "contrast": 2301,
+  "meta": {
+   "word": "small",
+   "opposite": "big"
+  }
+ },
+ {
+  "prompt": "Not happy, but the very opposite:",
+  "target": 9270,
+  "contrast": 4915,
+  "meta": {
+   "word": "happy",
+   "opposite": "sad"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of big?\nA: The opposite of big is",
+  "target": 2301,
+  "contrast": 2824,
+  "meta": {
+   "word": "big",
+   "opposite": "small"
+  }
+ },
+ {
+  "prompt": "The opposite of wet is",
+  "target": 6050,
+  "contrast": 10256,
+  "meta": {
+   "word": "wet",
+   "opposite": "dry"
+  }
+ },
+ {
+  "prompt": "The opposite of blunt is",
+  "target": 15280,
+  "contrast": 56902,
+  "meta": {
+   "word": "blunt",
+   "opposite": "sharp"
+  }
+ },
+ {
+  "prompt": "Not far, but the very opposite:",
+  "target": 3018,
+  "contrast": 2166,
+  "meta": {
+   "word": "far",
+   "opposite": "near"
+  }
+ },
+ {
+  "prompt": "Not late, but the very opposite:",
+  "target": 4061,
+  "contrast": 5245,
+  "meta": {
+   "word": "late",
+   "opposite": "early"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of dark?\nA: The opposite of dark is",
+  "target": 2611,
+  "contrast": 4868,
+  "meta": {
+   "word": "dark",
+   "opposite": "light"
+  }
+ },
+ {
+  "prompt": "The opposite of poor is",
+  "target": 7277,
+  "contrast": 6528,
+  "meta": {
+   "word": "poor",
+   "opposite": "rich"
+  }
+ },
+ {
+  "prompt": "The opposite of old is",
+  "target": 3486,
+  "contrast": 2187,
+  "meta": {
+   "word": "old",
+   "opposite": "young"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of sharp?\nA: The opposite of sharp is",
+  "target": 56902,
+  "contrast": 15280,
+  "meta": {
+   "word": "sharp",
+   "opposite": "blunt"
+  }
+ },
+ {
+  "prompt": "The opposite of weak is",
+  "target": 3779,
+  "contrast": 8742,
+  "meta": {
+   "word": "weak",
+   "opposite": "strong"
+  }
+ },
+ {
+  "prompt": "Not fast, but the very opposite:",
+  "target": 6080,
+  "contrast": 4847,
+  "meta": {
+   "word": "fast",
+   "opposite": "slow"
+  }
+ },
+ {
+  "prompt": "The opposite of empty is",
+  "target": 2247,
+  "contrast": 8144,
+  "meta": {
+   "word": "empty",
+   "opposite": "full"
+  }
+ },
+ {
+  "prompt": "Not rich, but the very opposite:",
+  "target": 6528,
+  "contrast": 7277,
+  "meta": {
+   "word": "rich",
+   "opposite": "poor"
+  }
+ },
+ {
+  "prompt": "Not quiet, but the very opposite:",
+  "target": 16129,
+  "contrast": 11067,
+  "meta": {
+   "word": "quiet",
+   "opposite": "loud"
+  }
+ },
+ {
+  "prompt": "The opposite of light is",
+  "target": 4868,
+  "contrast": 2611,
+  "meta": {
+   "word": "light",
+   "opposite": "dark"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of young?\nA: The opposite of young is",
+  "target": 2187,
+  "contrast": 3486,
+  "meta": {
+   "word": "young",
+   "opposite": "old"
+  }
+ },
+ {
+  "prompt": "The opposite of dry is",
+  "target": 10256,
+  "contrast": 6050,
+  "meta": {
+   "word": "dry",
+   "opposite": "wet"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of soft?\nA: The opposite of soft is",
+  "target": 2811,
+  "contrast": 4072,
+  "meta": {
+   "word": "soft",
+   "opposite": "hard"
+  }
+ },
+ {
+  "prompt": "Not full, but the very opposite:",
+  "target": 8144,
+  "contrast": 2247,
+  "meta": {
+   "word": "full",
+   "opposite": "empty"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of high?\nA: The opposite of high is",
+  "target": 3178,
+  "contrast": 1536,
+  "meta": {
+   "word": "high",
+   "opposite": "low"
+  }
+ },
+ {
+  "prompt": "The opposite of slow is",
+  "target": 4847,
+  "contrast": 6080,
+  "meta": {
+   "word": "slow",
+   "opposite": "fast"
+  }
+ },
+ {
+  "prompt": "The opposite of far is",
+  "target": 3018,
+  "contrast": 2166,
+  "meta": {
+   "word": "far",
+   "opposite": "near"
+  }
+ },
+ {
+  "prompt": "Not young, but the very opposite:",
+  "target": 2187,
+  "contrast": 3486,
+  "meta": {
+   "word": "young",
+   "opposite": "old"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of dirty?\nA: The opposite of dirty is",
+  "target": 3903,
+  "contrast": 23048,
+  "meta": {
+   "word": "dirty",
+   "opposite": "clean"
+  }
+ },
+ {
+  "prompt": "Not dry, but the very opposite:",
+  "target": 10256,
+  "contrast": 6050,
+  "meta": {
+   "word": "dry",
+   "opposite": "wet"
+  }
+ },
+ {
+  "prompt": "Not weak, but the very opposite:",
+  "target": 3779,
+  "contrast": 8742,
+  "meta": {
+   "word": "weak",
+   "opposite": "strong"
+  }
+ },
+ {
+  "prompt": "The opposite of sharp is",
+  "target": 56902,
+  "contrast": 15280,
+  "meta": {
+   "word": "sharp",
+   "opposite": "blunt"
+  }
+ },
+ {
+  "prompt": "The opposite of dirty is",
+  "target": 3903,
+  "contrast": 23048,
+  "meta": {
+   "word": "dirty",
+   "opposite": "clean"
+  }
+ },
+ {
+  "prompt": "Not clean, but the very opposite:",
+  "target": 23048,
+  "contrast": 3903,
+  "meta": {
+   "word": "clean",
+   "opposite": "dirty"
+  }
+ },
+ {
+  "prompt": "Not poor, but the very opposite:",
+  "target": 7277,
+  "contrast": 6528,
+  "meta": {
+   "word": "poor",
+   "opposite": "rich"
+  }
+ },
+ {
+  "prompt": "Not cold, but the very opposite:",
+  "target": 5342,
+  "contrast": 7033,
+  "meta": {
+   "word": "cold",
+   "opposite": "hot"
+  }
+ },
+ {
+  "prompt": "The opposite of happy is",
+  "target": 9270,
+  "contrast": 4915,
+  "meta": {
+   "word": "happy",
+   "opposite": "sad"
+  }
+ },
+ {
+  "prompt": "Not loud, but the very opposite:",
+  "target": 11067,
+  "contrast": 16129,
+  "meta": {
+   "word": "loud",
+   "opposite": "quiet"
+  }
+ },
+ {
+  "prompt": "Not soft, but the very opposite:",
+  "target": 2811,
+  "contrast": 4072,
+  "meta": {
+   "word": "soft",
+   "opposite": "hard"
+  }
+ },
+ {
+  "prompt": "Not wet, but the very opposite:",
+  "target": 6050,
+  "contrast": 10256,
+  "meta": {
+   "word": "wet",
+   "opposite": "dry"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of wet?\nA: The opposite of wet is",
+  "target": 6050,
+  "contrast": 10256,
+  "meta": {
+   "word": "wet",
+   "opposite": "dry"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of weak?\nA: The opposite of weak is",
+  "target": 3779,
+  "contrast": 8742,
+  "meta": {
+   "word": "weak",
+   "opposite": "strong"
+  }
+ },
+ {
+  "prompt": "The opposite of full is",
+  "target": 8144,
+  "contrast": 2247,
+  "meta": {
+   "word": "full",
+   "opposite": "empty"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of poor?\nA: The opposite of poor is",
+  "target": 7277,
+  "contrast": 6528,
+  "meta": {
+   "word": "poor",
+   "opposite": "rich"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of late?\nA: The opposite of late is",
+  "target": 4061,
+  "contrast": 5245,
+  "meta": {
+   "word": "late",
+   "opposite": "early"
+  }
+ },
+ {
+  "prompt": "The opposite of young is",
+  "target": 2187,
+  "contrast": 3486,
+  "meta": {
+   "word": "young",
+   "opposite": "old"
+  }
+ },
+ {
+  "prompt": "The opposite of late is",
+  "target": 4061,
+  "contrast": 5245,
+  "meta": {
+   "word": "late",
+   "opposite": "early"
+  }
+ },
+ {
+  "prompt": "Not dirty, but the very opposite:",
+  "target": 3903,
+  "contrast": 23048,
+  "meta": {
+   "word": "dirty",
+   "opposite": "clean"
+  }
+ },
+ {
+  "prompt": "Not smooth, but the very opposite:",
+  "target": 12001,
+  "contrast": 9910,
+  "meta": {
+   "word": "smooth",
+   "opposite": "rough"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of clean?\nA: The opposite of clean is",
+  "target": 23048,
+  "contrast": 3903,
+  "meta": {
+   "word": "clean",
+   "opposite": "dirty"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of happy?\nA: The opposite of happy is",
+  "target": 9270,
+  "contrast": 4915,
+  "meta": {
+   "word": "happy",
+   "opposite": "sad"
+  }
+ },
+ {
+  "prompt": "Not big, but the very opposite:",
+  "target": 2301,
+  "contrast": 2824,
+  "meta": {
+   "word": "big",
+   "opposite": "small"
+  }
+ },
+ {
+  "prompt": "The opposite of clean is",
+  "target": 23048,
+  "contrast": 3903,
+  "meta": {
+   "word": "clean",
+   "opposite": "dirty"
+  }
+ },
+ {
+  "prompt": "The opposite of strong is",
+  "target": 8742,
+  "contrast": 3779,
+  "meta": {
+   "word": "strong",
+   "opposite": "weak"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of rich?\nA: The opposite of rich is",
+  "target": 6528,
+  "contrast": 7277,
+  "meta": {
+   "word": "rich",
+   "opposite": "poor"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of hot?\nA: The opposite of hot is",
+  "target": 7033,
+  "contrast": 5342,
+  "meta": {
+   "word": "hot",
+   "opposite": "cold"
+  }
+ },
+ {
+  "prompt": "The opposite of low is",
+  "target": 1536,
+  "contrast": 3178,
+  "meta": {
+   "word": "low",
+   "opposite": "high"
+  }
+ },
+ {
+  "prompt": "Not small, but the very opposite:",
+  "target": 2824,
+  "contrast": 2301,
+  "meta": {
+   "word": "small",
+   "opposite": "big"
+  }
+ },
+ {
+  "prompt": "Q: What is the opposite of fast?\nA: The opposite of fast is",
+  "target": 6080,
+  "contrast": 4847,
+  "meta": {
+   "word": "fast",
+   "opposite": "slow"
+  }
+ }
+]

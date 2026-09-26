@@ -1,0 +1,40 @@
+{
+ "fanout": {
+  "median": 2.0,
+  "p90": 7.0,
+  "p99": 45.0,
+  "p999": 2028.9520000000484,
+  "max": 14966,
+  "frac_singletons": 0.4165628723900316,
+  "n_ge100": 3131,
+  "top1pct_share": 0.7139278650283813
+ },
+ "fanin": {
+  "median": 321.0,
+  "p10": 101.0,
+  "p90": 593.0
+ },
+ "seed_graph": {
+  "n_edges": 46465,
+  "longest_chain": 10,
+  "cyclic": false,
+  "outdeg_max": 4531,
+  "indeg_max": 27
+ },
+ "overlap": {
+  "n_sharing_pairs": 113170880,
+  "jaccard_median": 0.09951456636190414,
+  "lift_median": 1.0573176145553589,
+  "n_strong": 1452161,
+  "n_near_dup": 155
+ },
+ "families": {
+  "n_big": 3,
+  "covered": 12610,
+  "sizes_top": [
+   8445,
+   2185,
+   1980
+  ]
+ }
+}

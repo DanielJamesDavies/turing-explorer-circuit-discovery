@@ -1,0 +1,2609 @@
+[
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Dallas?\nA: The capital is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Dallas is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Dallas is located is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Houston?\nA: The capital is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Houston",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Houston is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Houston",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Houston is located is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Houston",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of San Antonio?\nA: The capital is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Antonio",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains San Antonio is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Antonio",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where San Antonio is located is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Antonio",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Miami?\nA: The capital is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Miami is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Miami is located is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Orlando?\nA: The capital is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Orlando",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Orlando is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Orlando",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Orlando is located is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Orlando",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Tampa?\nA: The capital is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Tampa",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Tampa is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Tampa",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Tampa is located is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Tampa",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Chicago?\nA: The capital is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Chicago is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Chicago is located is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Detroit?\nA: The capital is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Detroit is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Detroit is located is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Seattle?\nA: The capital is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Seattle is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Seattle is located is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Portland?\nA: The capital is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Portland is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Portland is located is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Los Angeles?\nA: The capital is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Los Angeles is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Los Angeles is located is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of San Diego?\nA: The capital is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Diego",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains San Diego is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Diego",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where San Diego is located is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Diego",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of San Francisco?\nA: The capital is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Francisco",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains San Francisco is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Francisco",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where San Francisco is located is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "San Francisco",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Buffalo?\nA: The capital is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Buffalo is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Buffalo is located is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Rochester?\nA: The capital is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Rochester",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Rochester is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Rochester",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Rochester is located is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Rochester",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Philadelphia?\nA: The capital is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Philadelphia is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Philadelphia is located is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Pittsburgh?\nA: The capital is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Pittsburgh",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Pittsburgh is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Pittsburgh",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Pittsburgh is located is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Pittsburgh",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Cleveland?\nA: The capital is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Cleveland is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Cleveland is located is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Cincinnati?\nA: The capital is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cincinnati",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Cincinnati is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cincinnati",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Cincinnati is located is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cincinnati",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of Memphis?\nA: The capital is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains Memphis is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where Memphis is located is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state containing the city of New Orleans?\nA: The capital is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state that contains New Orleans is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the state where New Orleans is located is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Munich?\nA: The capital is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Munich is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Munich is located is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Hamburg?\nA: The capital is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Hamburg is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Hamburg is located is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Frankfurt?\nA: The capital is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Frankfurt is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Frankfurt is located is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Cologne?\nA: The capital is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Cologne is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Cologne is located is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Milan?\nA: The capital is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Milan is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Milan is located is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Naples?\nA: The capital is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Naples is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Naples is located is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Turin?\nA: The capital is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Turin is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Turin is located is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Venice?\nA: The capital is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Venice is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Venice is located is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Barcelona?\nA: The capital is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Barcelona is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Barcelona is located is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Seville?\nA: The capital is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Seville is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Seville is located is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Valencia?\nA: The capital is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Valencia is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Valencia is located is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Lyon?\nA: The capital is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Lyon is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Lyon is located is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Marseille?\nA: The capital is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Marseille is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Marseille is located is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Nice?\nA: The capital is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Nice is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Nice is located is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Bordeaux?\nA: The capital is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Bordeaux is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Bordeaux is located is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Osaka?\nA: The capital is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Osaka is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Osaka is located is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Kyoto?\nA: The capital is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Kyoto is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Kyoto is located is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Nagoya?\nA: The capital is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Nagoya is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Nagoya is located is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Shanghai?\nA: The capital is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Shanghai is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Shanghai is located is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Shenzhen?\nA: The capital is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Shenzhen is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Shenzhen is located is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Mumbai?\nA: The capital is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Mumbai is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Mumbai is located is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Bangalore?\nA: The capital is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Bangalore is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Bangalore is located is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Rio de Janeiro?\nA: The capital is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Rio de Janeiro is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Rio de Janeiro is located is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Toronto?\nA: The capital is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Toronto is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Toronto is located is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Montreal?\nA: The capital is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Montreal is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Montreal is located is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Vancouver?\nA: The capital is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Vancouver is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Vancouver is located is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Istanbul?\nA: The capital is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Istanbul is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Istanbul is located is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Sydney?\nA: The capital is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Sydney is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Sydney is located is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the country containing the city of Melbourne?\nA: The capital is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "The capital city of the country that contains Melbourne is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of the country where Melbourne is located is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Munich?\nA: The language is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Munich is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Munich is located is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Hamburg?\nA: The language is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Hamburg is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Hamburg is located is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Hamburg",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Frankfurt?\nA: The language is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Frankfurt is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Frankfurt is located is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Frankfurt",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Cologne?\nA: The language is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Cologne is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Cologne is located is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Cologne",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Milan?\nA: The language is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Milan is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Milan is located is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Naples?\nA: The language is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Naples is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Naples is located is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Naples",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Turin?\nA: The language is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Turin is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Turin is located is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Turin",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Venice?\nA: The language is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Venice is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Venice is located is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Venice",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Barcelona?\nA: The language is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Barcelona is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Barcelona is located is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Seville?\nA: The language is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Seville is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Seville is located is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Seville",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Valencia?\nA: The language is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Valencia is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Valencia is located is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Valencia",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Lyon?\nA: The language is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Lyon is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Lyon is located is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Marseille?\nA: The language is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Marseille is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Marseille is located is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Marseille",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Nice?\nA: The language is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Nice is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Nice is located is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nice",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Bordeaux?\nA: The language is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Bordeaux is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Bordeaux is located is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bordeaux",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Osaka?\nA: The language is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Osaka is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Osaka is located is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Kyoto?\nA: The language is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Kyoto is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Kyoto is located is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Kyoto",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Nagoya?\nA: The language is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Nagoya is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Nagoya is located is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Nagoya",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Shanghai?\nA: The language is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Shanghai is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Shanghai is located is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Shenzhen?\nA: The language is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Shenzhen is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Shenzhen is located is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shenzhen",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Mumbai?\nA: The language is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Mumbai is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Mumbai is located is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Bangalore?\nA: The language is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Bangalore is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Bangalore is located is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Bangalore",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Rio de Janeiro?\nA: The language is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Rio de Janeiro is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Rio de Janeiro is located is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Toronto?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Toronto is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Toronto is located is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Montreal?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Montreal is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Montreal is located is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Montreal",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Vancouver?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Vancouver is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Vancouver is located is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Vancouver",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Istanbul?\nA: The language is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Istanbul is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Istanbul is located is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Sydney?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Sydney is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Sydney is located is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of the country containing the city of Melbourne?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of the country that contains Melbourne is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in the country where Melbourne is located is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Melbourne",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ }
+]

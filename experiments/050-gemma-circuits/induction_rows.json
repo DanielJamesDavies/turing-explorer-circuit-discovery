@@ -1,0 +1,3602 @@
+[
+ {
+  "prompt": "hammer engine saddle letter window table hammer engine saddle",
+  "target": 6139,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "hammer",
+    "engine",
+    "saddle",
+    "letter",
+    "window",
+    "table"
+   ],
+   "k": 3,
+   "answer": "letter",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "hammer mirror ladder candle forest jacket hammer mirror ladder",
+  "target": 28162,
+  "contrast": 9205,
+  "meta": {
+   "seq": [
+    "hammer",
+    "mirror",
+    "ladder",
+    "candle",
+    "forest",
+    "jacket"
+   ],
+   "k": 3,
+   "answer": "candle",
+   "prev": "ladder"
+  }
+ },
+ {
+  "prompt": "island chair napkin bridge window jacket island chair napkin",
+  "target": 12261,
+  "contrast": 4800,
+  "meta": {
+   "seq": [
+    "island",
+    "chair",
+    "napkin",
+    "bridge",
+    "window",
+    "jacket"
+   ],
+   "k": 3,
+   "answer": "bridge",
+   "prev": "napkin"
+  }
+ },
+ {
+  "prompt": "castle forest lantern palace garden meadow castle forest lantern palace",
+  "target": 8717,
+  "contrast": 30358,
+  "meta": {
+   "seq": [
+    "castle",
+    "forest",
+    "lantern",
+    "palace",
+    "garden",
+    "meadow"
+   ],
+   "k": 4,
+   "answer": "garden",
+   "prev": "palace"
+  }
+ },
+ {
+  "prompt": "picture garden needle castle orchard island picture garden needle castle",
+  "target": 70480,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "picture",
+    "garden",
+    "needle",
+    "castle",
+    "orchard",
+    "island"
+   ],
+   "k": 4,
+   "answer": "orchard",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "river needle orchard table picture island river needle",
+  "target": 70480,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "river",
+    "needle",
+    "orchard",
+    "table",
+    "picture",
+    "island"
+   ],
+   "k": 2,
+   "answer": "orchard",
+   "prev": "needle"
+  }
+ },
+ {
+  "prompt": "book napkin meadow mirror basket needle book napkin",
+  "target": 53556,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "book",
+    "napkin",
+    "meadow",
+    "mirror",
+    "basket",
+    "needle"
+   ],
+   "k": 2,
+   "answer": "meadow",
+   "prev": "napkin"
+  }
+ },
+ {
+  "prompt": "helmet needle table chair mirror valley helmet needle table chair",
+  "target": 15978,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "helmet",
+    "needle",
+    "table",
+    "chair",
+    "mirror",
+    "valley"
+   ],
+   "k": 4,
+   "answer": "mirror",
+   "prev": "chair"
+  }
+ },
+ {
+  "prompt": "ticket farmer jacket chair ladder book ticket farmer jacket chair",
+  "target": 38088,
+  "contrast": 4844,
+  "meta": {
+   "seq": [
+    "ticket",
+    "farmer",
+    "jacket",
+    "chair",
+    "ladder",
+    "book"
+   ],
+   "k": 4,
+   "answer": "ladder",
+   "prev": "chair"
+  }
+ },
+ {
+  "prompt": "office island garden farmer bottle bridge office island",
+  "target": 8717,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "office",
+    "island",
+    "garden",
+    "farmer",
+    "bottle",
+    "bridge"
+   ],
+   "k": 2,
+   "answer": "garden",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "island rabbit basket bottle needle valley island rabbit basket",
+  "target": 12989,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "island",
+    "rabbit",
+    "basket",
+    "bottle",
+    "needle",
+    "valley"
+   ],
+   "k": 3,
+   "answer": "bottle",
+   "prev": "basket"
+  }
+ },
+ {
+  "prompt": "table ticket carpet mirror meadow rabbit table ticket carpet",
+  "target": 15978,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "table",
+    "ticket",
+    "carpet",
+    "mirror",
+    "meadow",
+    "rabbit"
+   ],
+   "k": 3,
+   "answer": "mirror",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "valley needle bottle picture market river valley needle bottle picture",
+  "target": 3952,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "valley",
+    "needle",
+    "bottle",
+    "picture",
+    "market",
+    "river"
+   ],
+   "k": 4,
+   "answer": "market",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "lantern island bottle office doctor orchard lantern island bottle",
+  "target": 4844,
+  "contrast": 12220,
+  "meta": {
+   "seq": [
+    "lantern",
+    "island",
+    "bottle",
+    "office",
+    "doctor",
+    "orchard"
+   ],
+   "k": 3,
+   "answer": "office",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "kitchen market engine mirror monkey pencil kitchen market",
+  "target": 4800,
+  "contrast": 20309,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "market",
+    "engine",
+    "mirror",
+    "monkey",
+    "pencil"
+   ],
+   "k": 2,
+   "answer": "engine",
+   "prev": "market"
+  }
+ },
+ {
+  "prompt": "castle bridge table valley doctor farmer castle bridge table valley",
+  "target": 9353,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "castle",
+    "bridge",
+    "table",
+    "valley",
+    "doctor",
+    "farmer"
+   ],
+   "k": 4,
+   "answer": "doctor",
+   "prev": "valley"
+  }
+ },
+ {
+  "prompt": "river candle window table hammer napkin river candle window",
+  "target": 3037,
+  "contrast": 9205,
+  "meta": {
+   "seq": [
+    "river",
+    "candle",
+    "window",
+    "table",
+    "hammer",
+    "napkin"
+   ],
+   "k": 3,
+   "answer": "table",
+   "prev": "window"
+  }
+ },
+ {
+  "prompt": "office garden doctor farmer needle candle office garden doctor",
+  "target": 26354,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "office",
+    "garden",
+    "doctor",
+    "farmer",
+    "needle",
+    "candle"
+   ],
+   "k": 3,
+   "answer": "farmer",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "bottle rabbit meadow castle book ticket bottle rabbit meadow castle",
+  "target": 2870,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "bottle",
+    "rabbit",
+    "meadow",
+    "castle",
+    "book",
+    "ticket"
+   ],
+   "k": 4,
+   "answer": "book",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "helmet saddle candle ladder basket river helmet saddle candle",
+  "target": 38088,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "helmet",
+    "saddle",
+    "candle",
+    "ladder",
+    "basket",
+    "river"
+   ],
+   "k": 3,
+   "answer": "ladder",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "candle farmer saddle meadow island garden candle farmer",
+  "target": 47993,
+  "contrast": 5912,
+  "meta": {
+   "seq": [
+    "candle",
+    "farmer",
+    "saddle",
+    "meadow",
+    "island",
+    "garden"
+   ],
+   "k": 2,
+   "answer": "saddle",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "castle napkin palace ticket valley forest castle napkin palace ticket",
+  "target": 20309,
+  "contrast": 27075,
+  "meta": {
+   "seq": [
+    "castle",
+    "napkin",
+    "palace",
+    "ticket",
+    "valley",
+    "forest"
+   ],
+   "k": 4,
+   "answer": "valley",
+   "prev": "ticket"
+  }
+ },
+ {
+  "prompt": "valley napkin meadow farmer hammer market valley napkin meadow farmer",
+  "target": 28507,
+  "contrast": 27075,
+  "meta": {
+   "seq": [
+    "valley",
+    "napkin",
+    "meadow",
+    "farmer",
+    "hammer",
+    "market"
+   ],
+   "k": 4,
+   "answer": "hammer",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "engine ticket basket saddle meadow mirror engine ticket basket saddle",
+  "target": 53556,
+  "contrast": 30358,
+  "meta": {
+   "seq": [
+    "engine",
+    "ticket",
+    "basket",
+    "saddle",
+    "meadow",
+    "mirror"
+   ],
+   "k": 4,
+   "answer": "meadow",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "saddle hammer guitar bridge ladder candle saddle hammer",
+  "target": 14673,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "saddle",
+    "hammer",
+    "guitar",
+    "bridge",
+    "ladder",
+    "candle"
+   ],
+   "k": 2,
+   "answer": "guitar",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "mirror office table bridge kitchen castle mirror office table bridge",
+  "target": 8926,
+  "contrast": 12350,
+  "meta": {
+   "seq": [
+    "mirror",
+    "office",
+    "table",
+    "bridge",
+    "kitchen",
+    "castle"
+   ],
+   "k": 4,
+   "answer": "kitchen",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "orchard window rabbit needle candle book orchard window rabbit",
+  "target": 28767,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "orchard",
+    "window",
+    "rabbit",
+    "needle",
+    "candle",
+    "book"
+   ],
+   "k": 3,
+   "answer": "needle",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "engine river castle rabbit ladder monkey engine river",
+  "target": 24868,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "engine",
+    "river",
+    "castle",
+    "rabbit",
+    "ladder",
+    "monkey"
+   ],
+   "k": 2,
+   "answer": "castle",
+   "prev": "river"
+  }
+ },
+ {
+  "prompt": "orchard bottle palace hammer letter book orchard bottle palace hammer",
+  "target": 6139,
+  "contrast": 20309,
+  "meta": {
+   "seq": [
+    "orchard",
+    "bottle",
+    "palace",
+    "hammer",
+    "letter",
+    "book"
+   ],
+   "k": 4,
+   "answer": "letter",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "meadow window palace pencil basket office meadow window palace",
+  "target": 27207,
+  "contrast": 12989,
+  "meta": {
+   "seq": [
+    "meadow",
+    "window",
+    "palace",
+    "pencil",
+    "basket",
+    "office"
+   ],
+   "k": 3,
+   "answer": "pencil",
+   "prev": "palace"
+  }
+ },
+ {
+  "prompt": "needle picture chair castle ticket office needle picture chair castle",
+  "target": 15457,
+  "contrast": 26354,
+  "meta": {
+   "seq": [
+    "needle",
+    "picture",
+    "chair",
+    "castle",
+    "ticket",
+    "office"
+   ],
+   "k": 4,
+   "answer": "ticket",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "monkey engine hammer book meadow chair monkey engine",
+  "target": 28507,
+  "contrast": 9353,
+  "meta": {
+   "seq": [
+    "monkey",
+    "engine",
+    "hammer",
+    "book",
+    "meadow",
+    "chair"
+   ],
+   "k": 2,
+   "answer": "hammer",
+   "prev": "engine"
+  }
+ },
+ {
+  "prompt": "window palace candle monkey hammer forest window palace candle monkey",
+  "target": 28507,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "window",
+    "palace",
+    "candle",
+    "monkey",
+    "hammer",
+    "forest"
+   ],
+   "k": 4,
+   "answer": "hammer",
+   "prev": "monkey"
+  }
+ },
+ {
+  "prompt": "garden farmer saddle monkey castle carpet garden farmer",
+  "target": 47993,
+  "contrast": 15457,
+  "meta": {
+   "seq": [
+    "garden",
+    "farmer",
+    "saddle",
+    "monkey",
+    "castle",
+    "carpet"
+   ],
+   "k": 2,
+   "answer": "saddle",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "basket lantern monkey ladder rabbit ticket basket lantern monkey ladder",
+  "target": 30358,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "basket",
+    "lantern",
+    "monkey",
+    "ladder",
+    "rabbit",
+    "ticket"
+   ],
+   "k": 4,
+   "answer": "rabbit",
+   "prev": "ladder"
+  }
+ },
+ {
+  "prompt": "picture lantern island mirror carpet saddle picture lantern island mirror",
+  "target": 27075,
+  "contrast": 5912,
+  "meta": {
+   "seq": [
+    "picture",
+    "lantern",
+    "island",
+    "mirror",
+    "carpet",
+    "saddle"
+   ],
+   "k": 4,
+   "answer": "carpet",
+   "prev": "mirror"
+  }
+ },
+ {
+  "prompt": "jacket carpet book market kitchen mirror jacket carpet book",
+  "target": 3952,
+  "contrast": 9205,
+  "meta": {
+   "seq": [
+    "jacket",
+    "carpet",
+    "book",
+    "market",
+    "kitchen",
+    "mirror"
+   ],
+   "k": 3,
+   "answer": "market",
+   "prev": "book"
+  }
+ },
+ {
+  "prompt": "island bridge table book castle chair island bridge",
+  "target": 3037,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "island",
+    "bridge",
+    "table",
+    "book",
+    "castle",
+    "chair"
+   ],
+   "k": 2,
+   "answer": "table",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "ticket table forest saddle guitar window ticket table",
+  "target": 9309,
+  "contrast": 20309,
+  "meta": {
+   "seq": [
+    "ticket",
+    "table",
+    "forest",
+    "saddle",
+    "guitar",
+    "window"
+   ],
+   "k": 2,
+   "answer": "forest",
+   "prev": "table"
+  }
+ },
+ {
+  "prompt": "chair river island garden ticket helmet chair river island",
+  "target": 8717,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "chair",
+    "river",
+    "island",
+    "garden",
+    "ticket",
+    "helmet"
+   ],
+   "k": 3,
+   "answer": "garden",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "window rabbit saddle doctor valley forest window rabbit saddle doctor",
+  "target": 20309,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "window",
+    "rabbit",
+    "saddle",
+    "doctor",
+    "valley",
+    "forest"
+   ],
+   "k": 4,
+   "answer": "valley",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "office farmer carpet bridge saddle window office farmer",
+  "target": 27075,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "office",
+    "farmer",
+    "carpet",
+    "bridge",
+    "saddle",
+    "window"
+   ],
+   "k": 2,
+   "answer": "carpet",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "engine office farmer mirror forest pencil engine office farmer mirror",
+  "target": 9309,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "engine",
+    "office",
+    "farmer",
+    "mirror",
+    "forest",
+    "pencil"
+   ],
+   "k": 4,
+   "answer": "forest",
+   "prev": "mirror"
+  }
+ },
+ {
+  "prompt": "candle table mirror orchard chair castle candle table mirror",
+  "target": 70480,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "candle",
+    "table",
+    "mirror",
+    "orchard",
+    "chair",
+    "castle"
+   ],
+   "k": 3,
+   "answer": "orchard",
+   "prev": "mirror"
+  }
+ },
+ {
+  "prompt": "basket doctor jacket palace table candle basket doctor jacket palace",
+  "target": 3037,
+  "contrast": 70480,
+  "meta": {
+   "seq": [
+    "basket",
+    "doctor",
+    "jacket",
+    "palace",
+    "table",
+    "candle"
+   ],
+   "k": 4,
+   "answer": "table",
+   "prev": "palace"
+  }
+ },
+ {
+  "prompt": "hammer needle guitar napkin ladder mirror hammer needle guitar",
+  "target": 112475,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "hammer",
+    "needle",
+    "guitar",
+    "napkin",
+    "ladder",
+    "mirror"
+   ],
+   "k": 3,
+   "answer": "napkin",
+   "prev": "guitar"
+  }
+ },
+ {
+  "prompt": "garden palace basket forest meadow hammer garden palace basket",
+  "target": 9309,
+  "contrast": 28767,
+  "meta": {
+   "seq": [
+    "garden",
+    "palace",
+    "basket",
+    "forest",
+    "meadow",
+    "hammer"
+   ],
+   "k": 3,
+   "answer": "forest",
+   "prev": "basket"
+  }
+ },
+ {
+  "prompt": "carpet book jacket kitchen letter forest carpet book jacket kitchen",
+  "target": 6139,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "carpet",
+    "book",
+    "jacket",
+    "kitchen",
+    "letter",
+    "forest"
+   ],
+   "k": 4,
+   "answer": "letter",
+   "prev": "kitchen"
+  }
+ },
+ {
+  "prompt": "doctor bridge saddle carpet jacket picture doctor bridge saddle carpet",
+  "target": 12350,
+  "contrast": 28507,
+  "meta": {
+   "seq": [
+    "doctor",
+    "bridge",
+    "saddle",
+    "carpet",
+    "jacket",
+    "picture"
+   ],
+   "k": 4,
+   "answer": "jacket",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "forest guitar helmet letter window palace forest guitar helmet",
+  "target": 6139,
+  "contrast": 3037,
+  "meta": {
+   "seq": [
+    "forest",
+    "guitar",
+    "helmet",
+    "letter",
+    "window",
+    "palace"
+   ],
+   "k": 3,
+   "answer": "letter",
+   "prev": "helmet"
+  }
+ },
+ {
+  "prompt": "meadow window basket jacket pencil napkin meadow window basket",
+  "target": 12350,
+  "contrast": 4844,
+  "meta": {
+   "seq": [
+    "meadow",
+    "window",
+    "basket",
+    "jacket",
+    "pencil",
+    "napkin"
+   ],
+   "k": 3,
+   "answer": "jacket",
+   "prev": "basket"
+  }
+ },
+ {
+  "prompt": "saddle bridge river kitchen meadow garden saddle bridge",
+  "target": 8540,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "saddle",
+    "bridge",
+    "river",
+    "kitchen",
+    "meadow",
+    "garden"
+   ],
+   "k": 2,
+   "answer": "river",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "helmet book bridge kitchen pencil river helmet book bridge kitchen",
+  "target": 27207,
+  "contrast": 27075,
+  "meta": {
+   "seq": [
+    "helmet",
+    "book",
+    "bridge",
+    "kitchen",
+    "pencil",
+    "river"
+   ],
+   "k": 4,
+   "answer": "pencil",
+   "prev": "kitchen"
+  }
+ },
+ {
+  "prompt": "farmer river carpet basket saddle valley farmer river carpet",
+  "target": 12220,
+  "contrast": 53556,
+  "meta": {
+   "seq": [
+    "farmer",
+    "river",
+    "carpet",
+    "basket",
+    "saddle",
+    "valley"
+   ],
+   "k": 3,
+   "answer": "basket",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "pencil engine kitchen needle monkey mirror pencil engine",
+  "target": 8926,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "pencil",
+    "engine",
+    "kitchen",
+    "needle",
+    "monkey",
+    "mirror"
+   ],
+   "k": 2,
+   "answer": "kitchen",
+   "prev": "engine"
+  }
+ },
+ {
+  "prompt": "book basket ticket pencil kitchen engine book basket",
+  "target": 15457,
+  "contrast": 5912,
+  "meta": {
+   "seq": [
+    "book",
+    "basket",
+    "ticket",
+    "pencil",
+    "kitchen",
+    "engine"
+   ],
+   "k": 2,
+   "answer": "ticket",
+   "prev": "basket"
+  }
+ },
+ {
+  "prompt": "kitchen carpet orchard basket farmer candle kitchen carpet",
+  "target": 70480,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "carpet",
+    "orchard",
+    "basket",
+    "farmer",
+    "candle"
+   ],
+   "k": 2,
+   "answer": "orchard",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "market meadow table window ladder monkey market meadow table window",
+  "target": 38088,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "market",
+    "meadow",
+    "table",
+    "window",
+    "ladder",
+    "monkey"
+   ],
+   "k": 4,
+   "answer": "ladder",
+   "prev": "window"
+  }
+ },
+ {
+  "prompt": "needle candle valley forest bridge rabbit needle candle",
+  "target": 20309,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "needle",
+    "candle",
+    "valley",
+    "forest",
+    "bridge",
+    "rabbit"
+   ],
+   "k": 2,
+   "answer": "valley",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "bottle saddle letter table mirror garden bottle saddle letter table",
+  "target": 15978,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "bottle",
+    "saddle",
+    "letter",
+    "table",
+    "mirror",
+    "garden"
+   ],
+   "k": 4,
+   "answer": "mirror",
+   "prev": "table"
+  }
+ },
+ {
+  "prompt": "orchard rabbit basket palace mirror bottle orchard rabbit",
+  "target": 12220,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "orchard",
+    "rabbit",
+    "basket",
+    "palace",
+    "mirror",
+    "bottle"
+   ],
+   "k": 2,
+   "answer": "basket",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "jacket bottle carpet window island book jacket bottle carpet window",
+  "target": 10534,
+  "contrast": 30358,
+  "meta": {
+   "seq": [
+    "jacket",
+    "bottle",
+    "carpet",
+    "window",
+    "island",
+    "book"
+   ],
+   "k": 4,
+   "answer": "island",
+   "prev": "window"
+  }
+ },
+ {
+  "prompt": "valley letter bridge palace saddle forest valley letter",
+  "target": 12261,
+  "contrast": 9205,
+  "meta": {
+   "seq": [
+    "valley",
+    "letter",
+    "bridge",
+    "palace",
+    "saddle",
+    "forest"
+   ],
+   "k": 2,
+   "answer": "bridge",
+   "prev": "letter"
+  }
+ },
+ {
+  "prompt": "castle picture helmet island napkin book castle picture helmet island",
+  "target": 112475,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "castle",
+    "picture",
+    "helmet",
+    "island",
+    "napkin",
+    "book"
+   ],
+   "k": 4,
+   "answer": "napkin",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "jacket hammer bridge palace mirror doctor jacket hammer bridge palace",
+  "target": 15978,
+  "contrast": 3037,
+  "meta": {
+   "seq": [
+    "jacket",
+    "hammer",
+    "bridge",
+    "palace",
+    "mirror",
+    "doctor"
+   ],
+   "k": 4,
+   "answer": "mirror",
+   "prev": "palace"
+  }
+ },
+ {
+  "prompt": "ticket office valley palace pencil lantern ticket office valley palace",
+  "target": 27207,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "ticket",
+    "office",
+    "valley",
+    "palace",
+    "pencil",
+    "lantern"
+   ],
+   "k": 4,
+   "answer": "pencil",
+   "prev": "palace"
+  }
+ },
+ {
+  "prompt": "orchard picture napkin ladder doctor candle orchard picture napkin",
+  "target": 38088,
+  "contrast": 8926,
+  "meta": {
+   "seq": [
+    "orchard",
+    "picture",
+    "napkin",
+    "ladder",
+    "doctor",
+    "candle"
+   ],
+   "k": 3,
+   "answer": "ladder",
+   "prev": "napkin"
+  }
+ },
+ {
+  "prompt": "castle bridge rabbit monkey picture orchard castle bridge rabbit",
+  "target": 35918,
+  "contrast": 9205,
+  "meta": {
+   "seq": [
+    "castle",
+    "bridge",
+    "rabbit",
+    "monkey",
+    "picture",
+    "orchard"
+   ],
+   "k": 3,
+   "answer": "monkey",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "palace garden monkey napkin basket lantern palace garden monkey napkin",
+  "target": 12220,
+  "contrast": 15457,
+  "meta": {
+   "seq": [
+    "palace",
+    "garden",
+    "monkey",
+    "napkin",
+    "basket",
+    "lantern"
+   ],
+   "k": 4,
+   "answer": "basket",
+   "prev": "napkin"
+  }
+ },
+ {
+  "prompt": "meadow picture jacket lantern market napkin meadow picture jacket lantern",
+  "target": 3952,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "meadow",
+    "picture",
+    "jacket",
+    "lantern",
+    "market",
+    "napkin"
+   ],
+   "k": 4,
+   "answer": "market",
+   "prev": "lantern"
+  }
+ },
+ {
+  "prompt": "market ticket castle river saddle bottle market ticket castle",
+  "target": 8540,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "market",
+    "ticket",
+    "castle",
+    "river",
+    "saddle",
+    "bottle"
+   ],
+   "k": 3,
+   "answer": "river",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "forest kitchen saddle book engine doctor forest kitchen saddle",
+  "target": 2870,
+  "contrast": 35918,
+  "meta": {
+   "seq": [
+    "forest",
+    "kitchen",
+    "saddle",
+    "book",
+    "engine",
+    "doctor"
+   ],
+   "k": 3,
+   "answer": "book",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "picture guitar candle garden napkin ticket picture guitar candle",
+  "target": 8717,
+  "contrast": 12261,
+  "meta": {
+   "seq": [
+    "picture",
+    "guitar",
+    "candle",
+    "garden",
+    "napkin",
+    "ticket"
+   ],
+   "k": 3,
+   "answer": "garden",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "bottle office jacket book rabbit orchard bottle office jacket book",
+  "target": 30358,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "bottle",
+    "office",
+    "jacket",
+    "book",
+    "rabbit",
+    "orchard"
+   ],
+   "k": 4,
+   "answer": "rabbit",
+   "prev": "book"
+  }
+ },
+ {
+  "prompt": "saddle picture river doctor forest lantern saddle picture",
+  "target": 8540,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "saddle",
+    "picture",
+    "river",
+    "doctor",
+    "forest",
+    "lantern"
+   ],
+   "k": 2,
+   "answer": "river",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "letter hammer meadow pencil jacket picture letter hammer",
+  "target": 53556,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "letter",
+    "hammer",
+    "meadow",
+    "pencil",
+    "jacket",
+    "picture"
+   ],
+   "k": 2,
+   "answer": "meadow",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "market table island carpet bridge chair market table",
+  "target": 10534,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "market",
+    "table",
+    "island",
+    "carpet",
+    "bridge",
+    "chair"
+   ],
+   "k": 2,
+   "answer": "island",
+   "prev": "table"
+  }
+ },
+ {
+  "prompt": "engine orchard window helmet river chair engine orchard window helmet",
+  "target": 8540,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "engine",
+    "orchard",
+    "window",
+    "helmet",
+    "river",
+    "chair"
+   ],
+   "k": 4,
+   "answer": "river",
+   "prev": "helmet"
+  }
+ },
+ {
+  "prompt": "orchard lantern chair valley basket garden orchard lantern chair",
+  "target": 20309,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "orchard",
+    "lantern",
+    "chair",
+    "valley",
+    "basket",
+    "garden"
+   ],
+   "k": 3,
+   "answer": "valley",
+   "prev": "chair"
+  }
+ },
+ {
+  "prompt": "napkin doctor picture castle pencil chair napkin doctor picture castle",
+  "target": 27207,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "napkin",
+    "doctor",
+    "picture",
+    "castle",
+    "pencil",
+    "chair"
+   ],
+   "k": 4,
+   "answer": "pencil",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "bottle book market orchard table engine bottle book market orchard",
+  "target": 3037,
+  "contrast": 53556,
+  "meta": {
+   "seq": [
+    "bottle",
+    "book",
+    "market",
+    "orchard",
+    "table",
+    "engine"
+   ],
+   "k": 4,
+   "answer": "table",
+   "prev": "orchard"
+  }
+ },
+ {
+  "prompt": "doctor saddle castle meadow helmet jacket doctor saddle castle meadow",
+  "target": 30574,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "doctor",
+    "saddle",
+    "castle",
+    "meadow",
+    "helmet",
+    "jacket"
+   ],
+   "k": 4,
+   "answer": "helmet",
+   "prev": "meadow"
+  }
+ },
+ {
+  "prompt": "bottle river helmet orchard window hammer bottle river helmet",
+  "target": 70480,
+  "contrast": 28767,
+  "meta": {
+   "seq": [
+    "bottle",
+    "river",
+    "helmet",
+    "orchard",
+    "window",
+    "hammer"
+   ],
+   "k": 3,
+   "answer": "orchard",
+   "prev": "helmet"
+  }
+ },
+ {
+  "prompt": "picture palace river market kitchen orchard picture palace river market",
+  "target": 8926,
+  "contrast": 26354,
+  "meta": {
+   "seq": [
+    "picture",
+    "palace",
+    "river",
+    "market",
+    "kitchen",
+    "orchard"
+   ],
+   "k": 4,
+   "answer": "kitchen",
+   "prev": "market"
+  }
+ },
+ {
+  "prompt": "hammer palace bridge needle saddle valley hammer palace bridge",
+  "target": 28767,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "hammer",
+    "palace",
+    "bridge",
+    "needle",
+    "saddle",
+    "valley"
+   ],
+   "k": 3,
+   "answer": "needle",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "jacket kitchen garden pencil ticket chair jacket kitchen garden pencil",
+  "target": 15457,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "jacket",
+    "kitchen",
+    "garden",
+    "pencil",
+    "ticket",
+    "chair"
+   ],
+   "k": 4,
+   "answer": "ticket",
+   "prev": "pencil"
+  }
+ },
+ {
+  "prompt": "orchard hammer meadow doctor monkey carpet orchard hammer meadow doctor",
+  "target": 35918,
+  "contrast": 26354,
+  "meta": {
+   "seq": [
+    "orchard",
+    "hammer",
+    "meadow",
+    "doctor",
+    "monkey",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "monkey",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "forest chair bottle book castle mirror forest chair bottle",
+  "target": 2870,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "forest",
+    "chair",
+    "bottle",
+    "book",
+    "castle",
+    "mirror"
+   ],
+   "k": 3,
+   "answer": "book",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "window hammer orchard ladder ticket needle window hammer",
+  "target": 70480,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "window",
+    "hammer",
+    "orchard",
+    "ladder",
+    "ticket",
+    "needle"
+   ],
+   "k": 2,
+   "answer": "orchard",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "kitchen river candle picture jacket chair kitchen river candle picture",
+  "target": 12350,
+  "contrast": 28507,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "river",
+    "candle",
+    "picture",
+    "jacket",
+    "chair"
+   ],
+   "k": 4,
+   "answer": "jacket",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "valley table napkin ladder doctor carpet valley table napkin ladder",
+  "target": 9353,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "valley",
+    "table",
+    "napkin",
+    "ladder",
+    "doctor",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "doctor",
+   "prev": "ladder"
+  }
+ },
+ {
+  "prompt": "rabbit forest window orchard valley carpet rabbit forest window orchard",
+  "target": 20309,
+  "contrast": 10534,
+  "meta": {
+   "seq": [
+    "rabbit",
+    "forest",
+    "window",
+    "orchard",
+    "valley",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "valley",
+   "prev": "orchard"
+  }
+ },
+ {
+  "prompt": "engine monkey pencil valley chair ticket engine monkey pencil",
+  "target": 20309,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "engine",
+    "monkey",
+    "pencil",
+    "valley",
+    "chair",
+    "ticket"
+   ],
+   "k": 3,
+   "answer": "valley",
+   "prev": "pencil"
+  }
+ },
+ {
+  "prompt": "lantern ladder garden picture table office lantern ladder garden",
+  "target": 5642,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "lantern",
+    "ladder",
+    "garden",
+    "picture",
+    "table",
+    "office"
+   ],
+   "k": 3,
+   "answer": "picture",
+   "prev": "garden"
+  }
+ },
+ {
+  "prompt": "ticket valley carpet window office bottle ticket valley carpet window",
+  "target": 4844,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "ticket",
+    "valley",
+    "carpet",
+    "window",
+    "office",
+    "bottle"
+   ],
+   "k": 4,
+   "answer": "office",
+   "prev": "window"
+  }
+ },
+ {
+  "prompt": "doctor farmer window candle office needle doctor farmer window candle",
+  "target": 4844,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "doctor",
+    "farmer",
+    "window",
+    "candle",
+    "office",
+    "needle"
+   ],
+   "k": 4,
+   "answer": "office",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "picture needle bottle book kitchen lantern picture needle bottle",
+  "target": 2870,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "picture",
+    "needle",
+    "bottle",
+    "book",
+    "kitchen",
+    "lantern"
+   ],
+   "k": 3,
+   "answer": "book",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "needle rabbit farmer kitchen saddle forest needle rabbit farmer kitchen",
+  "target": 47993,
+  "contrast": 35918,
+  "meta": {
+   "seq": [
+    "needle",
+    "rabbit",
+    "farmer",
+    "kitchen",
+    "saddle",
+    "forest"
+   ],
+   "k": 4,
+   "answer": "saddle",
+   "prev": "kitchen"
+  }
+ },
+ {
+  "prompt": "picture market mirror carpet napkin bridge picture market mirror carpet",
+  "target": 112475,
+  "contrast": 3037,
+  "meta": {
+   "seq": [
+    "picture",
+    "market",
+    "mirror",
+    "carpet",
+    "napkin",
+    "bridge"
+   ],
+   "k": 4,
+   "answer": "napkin",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "mirror farmer jacket engine river island mirror farmer jacket engine",
+  "target": 8540,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "mirror",
+    "farmer",
+    "jacket",
+    "engine",
+    "river",
+    "island"
+   ],
+   "k": 4,
+   "answer": "river",
+   "prev": "engine"
+  }
+ },
+ {
+  "prompt": "ladder candle book helmet window orchard ladder candle book helmet",
+  "target": 5912,
+  "contrast": 12261,
+  "meta": {
+   "seq": [
+    "ladder",
+    "candle",
+    "book",
+    "helmet",
+    "window",
+    "orchard"
+   ],
+   "k": 4,
+   "answer": "window",
+   "prev": "helmet"
+  }
+ },
+ {
+  "prompt": "palace saddle doctor river kitchen market palace saddle doctor river",
+  "target": 8926,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "palace",
+    "saddle",
+    "doctor",
+    "river",
+    "kitchen",
+    "market"
+   ],
+   "k": 4,
+   "answer": "kitchen",
+   "prev": "river"
+  }
+ },
+ {
+  "prompt": "monkey mirror kitchen bridge forest office monkey mirror kitchen",
+  "target": 12261,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "monkey",
+    "mirror",
+    "kitchen",
+    "bridge",
+    "forest",
+    "office"
+   ],
+   "k": 3,
+   "answer": "bridge",
+   "prev": "kitchen"
+  }
+ },
+ {
+  "prompt": "letter river helmet saddle farmer carpet letter river helmet saddle",
+  "target": 26354,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "letter",
+    "river",
+    "helmet",
+    "saddle",
+    "farmer",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "farmer",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "engine valley bridge picture palace basket engine valley bridge picture",
+  "target": 27627,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "engine",
+    "valley",
+    "bridge",
+    "picture",
+    "palace",
+    "basket"
+   ],
+   "k": 4,
+   "answer": "palace",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "chair office doctor ladder meadow lantern chair office",
+  "target": 9353,
+  "contrast": 20309,
+  "meta": {
+   "seq": [
+    "chair",
+    "office",
+    "doctor",
+    "ladder",
+    "meadow",
+    "lantern"
+   ],
+   "k": 2,
+   "answer": "doctor",
+   "prev": "office"
+  }
+ },
+ {
+  "prompt": "kitchen forest island ladder picture palace kitchen forest island ladder",
+  "target": 5642,
+  "contrast": 70480,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "forest",
+    "island",
+    "ladder",
+    "picture",
+    "palace"
+   ],
+   "k": 4,
+   "answer": "picture",
+   "prev": "ladder"
+  }
+ },
+ {
+  "prompt": "saddle guitar farmer lantern candle garden saddle guitar farmer lantern",
+  "target": 28162,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "saddle",
+    "guitar",
+    "farmer",
+    "lantern",
+    "candle",
+    "garden"
+   ],
+   "k": 4,
+   "answer": "candle",
+   "prev": "lantern"
+  }
+ },
+ {
+  "prompt": "bottle ladder chair forest rabbit garden bottle ladder chair forest",
+  "target": 30358,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "bottle",
+    "ladder",
+    "chair",
+    "forest",
+    "rabbit",
+    "garden"
+   ],
+   "k": 4,
+   "answer": "rabbit",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "carpet ladder candle saddle hammer chair carpet ladder candle",
+  "target": 47993,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "carpet",
+    "ladder",
+    "candle",
+    "saddle",
+    "hammer",
+    "chair"
+   ],
+   "k": 3,
+   "answer": "saddle",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "doctor island picture mirror valley river doctor island picture",
+  "target": 15978,
+  "contrast": 12989,
+  "meta": {
+   "seq": [
+    "doctor",
+    "island",
+    "picture",
+    "mirror",
+    "valley",
+    "river"
+   ],
+   "k": 3,
+   "answer": "mirror",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "carpet picture castle chair bridge meadow carpet picture",
+  "target": 24868,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "carpet",
+    "picture",
+    "castle",
+    "chair",
+    "bridge",
+    "meadow"
+   ],
+   "k": 2,
+   "answer": "castle",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "helmet castle saddle garden meadow letter helmet castle saddle",
+  "target": 8717,
+  "contrast": 3037,
+  "meta": {
+   "seq": [
+    "helmet",
+    "castle",
+    "saddle",
+    "garden",
+    "meadow",
+    "letter"
+   ],
+   "k": 3,
+   "answer": "garden",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "lantern meadow jacket bottle river table lantern meadow jacket bottle",
+  "target": 8540,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "lantern",
+    "meadow",
+    "jacket",
+    "bottle",
+    "river",
+    "table"
+   ],
+   "k": 4,
+   "answer": "river",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "farmer ticket valley needle napkin ladder farmer ticket valley needle",
+  "target": 112475,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "farmer",
+    "ticket",
+    "valley",
+    "needle",
+    "napkin",
+    "ladder"
+   ],
+   "k": 4,
+   "answer": "napkin",
+   "prev": "needle"
+  }
+ },
+ {
+  "prompt": "island ticket pencil office guitar basket island ticket",
+  "target": 27207,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "island",
+    "ticket",
+    "pencil",
+    "office",
+    "guitar",
+    "basket"
+   ],
+   "k": 2,
+   "answer": "pencil",
+   "prev": "ticket"
+  }
+ },
+ {
+  "prompt": "bridge candle carpet meadow doctor island bridge candle",
+  "target": 27075,
+  "contrast": 5912,
+  "meta": {
+   "seq": [
+    "bridge",
+    "candle",
+    "carpet",
+    "meadow",
+    "doctor",
+    "island"
+   ],
+   "k": 2,
+   "answer": "carpet",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "picture mirror garden needle orchard basket picture mirror garden needle",
+  "target": 70480,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "picture",
+    "mirror",
+    "garden",
+    "needle",
+    "orchard",
+    "basket"
+   ],
+   "k": 4,
+   "answer": "orchard",
+   "prev": "needle"
+  }
+ },
+ {
+  "prompt": "basket palace ladder farmer bottle river basket palace ladder farmer",
+  "target": 12989,
+  "contrast": 12261,
+  "meta": {
+   "seq": [
+    "basket",
+    "palace",
+    "ladder",
+    "farmer",
+    "bottle",
+    "river"
+   ],
+   "k": 4,
+   "answer": "bottle",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "monkey bottle rabbit valley office garden monkey bottle rabbit valley",
+  "target": 4844,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "monkey",
+    "bottle",
+    "rabbit",
+    "valley",
+    "office",
+    "garden"
+   ],
+   "k": 4,
+   "answer": "office",
+   "prev": "valley"
+  }
+ },
+ {
+  "prompt": "mirror bottle picture candle needle orchard mirror bottle",
+  "target": 5642,
+  "contrast": 10534,
+  "meta": {
+   "seq": [
+    "mirror",
+    "bottle",
+    "picture",
+    "candle",
+    "needle",
+    "orchard"
+   ],
+   "k": 2,
+   "answer": "picture",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "island bridge picture palace farmer jacket island bridge",
+  "target": 5642,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "island",
+    "bridge",
+    "picture",
+    "palace",
+    "farmer",
+    "jacket"
+   ],
+   "k": 2,
+   "answer": "picture",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "island window guitar monkey kitchen letter island window guitar",
+  "target": 35918,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "island",
+    "window",
+    "guitar",
+    "monkey",
+    "kitchen",
+    "letter"
+   ],
+   "k": 3,
+   "answer": "monkey",
+   "prev": "guitar"
+  }
+ },
+ {
+  "prompt": "river picture monkey ticket basket meadow river picture monkey",
+  "target": 15457,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "river",
+    "picture",
+    "monkey",
+    "ticket",
+    "basket",
+    "meadow"
+   ],
+   "k": 3,
+   "answer": "ticket",
+   "prev": "monkey"
+  }
+ },
+ {
+  "prompt": "kitchen river garden doctor rabbit castle kitchen river",
+  "target": 8717,
+  "contrast": 12220,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "river",
+    "garden",
+    "doctor",
+    "rabbit",
+    "castle"
+   ],
+   "k": 2,
+   "answer": "garden",
+   "prev": "river"
+  }
+ },
+ {
+  "prompt": "ladder jacket doctor kitchen lantern basket ladder jacket doctor",
+  "target": 8926,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "ladder",
+    "jacket",
+    "doctor",
+    "kitchen",
+    "lantern",
+    "basket"
+   ],
+   "k": 3,
+   "answer": "kitchen",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "island monkey guitar window palace carpet island monkey guitar window",
+  "target": 27627,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "island",
+    "monkey",
+    "guitar",
+    "window",
+    "palace",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "palace",
+   "prev": "window"
+  }
+ },
+ {
+  "prompt": "basket monkey bottle pencil farmer letter basket monkey bottle pencil",
+  "target": 26354,
+  "contrast": 10534,
+  "meta": {
+   "seq": [
+    "basket",
+    "monkey",
+    "bottle",
+    "pencil",
+    "farmer",
+    "letter"
+   ],
+   "k": 4,
+   "answer": "farmer",
+   "prev": "pencil"
+  }
+ },
+ {
+  "prompt": "doctor bottle island rabbit table office doctor bottle island rabbit",
+  "target": 3037,
+  "contrast": 35918,
+  "meta": {
+   "seq": [
+    "doctor",
+    "bottle",
+    "island",
+    "rabbit",
+    "table",
+    "office"
+   ],
+   "k": 4,
+   "answer": "table",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "hammer palace jacket lantern rabbit meadow hammer palace jacket lantern",
+  "target": 30358,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "hammer",
+    "palace",
+    "jacket",
+    "lantern",
+    "rabbit",
+    "meadow"
+   ],
+   "k": 4,
+   "answer": "rabbit",
+   "prev": "lantern"
+  }
+ },
+ {
+  "prompt": "letter napkin bridge monkey engine market letter napkin bridge monkey",
+  "target": 4800,
+  "contrast": 47993,
+  "meta": {
+   "seq": [
+    "letter",
+    "napkin",
+    "bridge",
+    "monkey",
+    "engine",
+    "market"
+   ],
+   "k": 4,
+   "answer": "engine",
+   "prev": "monkey"
+  }
+ },
+ {
+  "prompt": "mirror rabbit meadow market forest island mirror rabbit",
+  "target": 53556,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "mirror",
+    "rabbit",
+    "meadow",
+    "market",
+    "forest",
+    "island"
+   ],
+   "k": 2,
+   "answer": "meadow",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "monkey orchard island office letter ticket monkey orchard island",
+  "target": 4844,
+  "contrast": 24868,
+  "meta": {
+   "seq": [
+    "monkey",
+    "orchard",
+    "island",
+    "office",
+    "letter",
+    "ticket"
+   ],
+   "k": 3,
+   "answer": "office",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "napkin river island garden jacket book napkin river",
+  "target": 10534,
+  "contrast": 53556,
+  "meta": {
+   "seq": [
+    "napkin",
+    "river",
+    "island",
+    "garden",
+    "jacket",
+    "book"
+   ],
+   "k": 2,
+   "answer": "island",
+   "prev": "river"
+  }
+ },
+ {
+  "prompt": "saddle napkin letter forest river farmer saddle napkin letter forest",
+  "target": 8540,
+  "contrast": 27627,
+  "meta": {
+   "seq": [
+    "saddle",
+    "napkin",
+    "letter",
+    "forest",
+    "river",
+    "farmer"
+   ],
+   "k": 4,
+   "answer": "river",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "island rabbit monkey window ladder basket island rabbit monkey",
+  "target": 5912,
+  "contrast": 28507,
+  "meta": {
+   "seq": [
+    "island",
+    "rabbit",
+    "monkey",
+    "window",
+    "ladder",
+    "basket"
+   ],
+   "k": 3,
+   "answer": "window",
+   "prev": "monkey"
+  }
+ },
+ {
+  "prompt": "farmer bottle book pencil engine mirror farmer bottle",
+  "target": 2870,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "farmer",
+    "bottle",
+    "book",
+    "pencil",
+    "engine",
+    "mirror"
+   ],
+   "k": 2,
+   "answer": "book",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "book rabbit lantern candle bottle palace book rabbit lantern",
+  "target": 28162,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "book",
+    "rabbit",
+    "lantern",
+    "candle",
+    "bottle",
+    "palace"
+   ],
+   "k": 3,
+   "answer": "candle",
+   "prev": "lantern"
+  }
+ },
+ {
+  "prompt": "bridge meadow carpet saddle needle guitar bridge meadow carpet",
+  "target": 47993,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "bridge",
+    "meadow",
+    "carpet",
+    "saddle",
+    "needle",
+    "guitar"
+   ],
+   "k": 3,
+   "answer": "saddle",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "river forest garden valley letter lantern river forest",
+  "target": 8717,
+  "contrast": 53556,
+  "meta": {
+   "seq": [
+    "river",
+    "forest",
+    "garden",
+    "valley",
+    "letter",
+    "lantern"
+   ],
+   "k": 2,
+   "answer": "garden",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "bottle garden book castle ticket candle bottle garden",
+  "target": 2870,
+  "contrast": 70480,
+  "meta": {
+   "seq": [
+    "bottle",
+    "garden",
+    "book",
+    "castle",
+    "ticket",
+    "candle"
+   ],
+   "k": 2,
+   "answer": "book",
+   "prev": "garden"
+  }
+ },
+ {
+  "prompt": "saddle meadow carpet ticket lantern pencil saddle meadow",
+  "target": 27075,
+  "contrast": 28507,
+  "meta": {
+   "seq": [
+    "saddle",
+    "meadow",
+    "carpet",
+    "ticket",
+    "lantern",
+    "pencil"
+   ],
+   "k": 2,
+   "answer": "carpet",
+   "prev": "meadow"
+  }
+ },
+ {
+  "prompt": "palace window garden carpet picture monkey palace window garden carpet",
+  "target": 5642,
+  "contrast": 70480,
+  "meta": {
+   "seq": [
+    "palace",
+    "window",
+    "garden",
+    "carpet",
+    "picture",
+    "monkey"
+   ],
+   "k": 4,
+   "answer": "picture",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "ticket letter island napkin ladder rabbit ticket letter island",
+  "target": 112475,
+  "contrast": 58921,
+  "meta": {
+   "seq": [
+    "ticket",
+    "letter",
+    "island",
+    "napkin",
+    "ladder",
+    "rabbit"
+   ],
+   "k": 3,
+   "answer": "napkin",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "castle helmet picture farmer mirror jacket castle helmet",
+  "target": 5642,
+  "contrast": 9353,
+  "meta": {
+   "seq": [
+    "castle",
+    "helmet",
+    "picture",
+    "farmer",
+    "mirror",
+    "jacket"
+   ],
+   "k": 2,
+   "answer": "picture",
+   "prev": "helmet"
+  }
+ },
+ {
+  "prompt": "rabbit orchard chair bottle garden engine rabbit orchard chair",
+  "target": 12989,
+  "contrast": 27075,
+  "meta": {
+   "seq": [
+    "rabbit",
+    "orchard",
+    "chair",
+    "bottle",
+    "garden",
+    "engine"
+   ],
+   "k": 3,
+   "answer": "bottle",
+   "prev": "chair"
+  }
+ },
+ {
+  "prompt": "carpet pencil river jacket valley candle carpet pencil",
+  "target": 8540,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "carpet",
+    "pencil",
+    "river",
+    "jacket",
+    "valley",
+    "candle"
+   ],
+   "k": 2,
+   "answer": "river",
+   "prev": "pencil"
+  }
+ },
+ {
+  "prompt": "mirror meadow valley helmet island castle mirror meadow valley",
+  "target": 30574,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "mirror",
+    "meadow",
+    "valley",
+    "helmet",
+    "island",
+    "castle"
+   ],
+   "k": 3,
+   "answer": "helmet",
+   "prev": "valley"
+  }
+ },
+ {
+  "prompt": "carpet rabbit guitar island jacket castle carpet rabbit guitar island",
+  "target": 12350,
+  "contrast": 30574,
+  "meta": {
+   "seq": [
+    "carpet",
+    "rabbit",
+    "guitar",
+    "island",
+    "jacket",
+    "castle"
+   ],
+   "k": 4,
+   "answer": "jacket",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "meadow monkey doctor carpet helmet market meadow monkey doctor",
+  "target": 27075,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "meadow",
+    "monkey",
+    "doctor",
+    "carpet",
+    "helmet",
+    "market"
+   ],
+   "k": 3,
+   "answer": "carpet",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "valley ladder chair meadow needle river valley ladder chair",
+  "target": 53556,
+  "contrast": 10534,
+  "meta": {
+   "seq": [
+    "valley",
+    "ladder",
+    "chair",
+    "meadow",
+    "needle",
+    "river"
+   ],
+   "k": 3,
+   "answer": "meadow",
+   "prev": "chair"
+  }
+ },
+ {
+  "prompt": "island doctor book picture palace table island doctor book",
+  "target": 5642,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "island",
+    "doctor",
+    "book",
+    "picture",
+    "palace",
+    "table"
+   ],
+   "k": 3,
+   "answer": "picture",
+   "prev": "book"
+  }
+ },
+ {
+  "prompt": "lantern book river forest orchard helmet lantern book river forest",
+  "target": 70480,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "lantern",
+    "book",
+    "river",
+    "forest",
+    "orchard",
+    "helmet"
+   ],
+   "k": 4,
+   "answer": "orchard",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "river window picture ladder carpet ticket river window picture",
+  "target": 38088,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "river",
+    "window",
+    "picture",
+    "ladder",
+    "carpet",
+    "ticket"
+   ],
+   "k": 3,
+   "answer": "ladder",
+   "prev": "picture"
+  }
+ },
+ {
+  "prompt": "table bottle window jacket forest palace table bottle",
+  "target": 5912,
+  "contrast": 28767,
+  "meta": {
+   "seq": [
+    "table",
+    "bottle",
+    "window",
+    "jacket",
+    "forest",
+    "palace"
+   ],
+   "k": 2,
+   "answer": "window",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "island meadow garden helmet napkin valley island meadow garden",
+  "target": 30574,
+  "contrast": 12261,
+  "meta": {
+   "seq": [
+    "island",
+    "meadow",
+    "garden",
+    "helmet",
+    "napkin",
+    "valley"
+   ],
+   "k": 3,
+   "answer": "helmet",
+   "prev": "garden"
+  }
+ },
+ {
+  "prompt": "monkey jacket candle letter office river monkey jacket",
+  "target": 28162,
+  "contrast": 4800,
+  "meta": {
+   "seq": [
+    "monkey",
+    "jacket",
+    "candle",
+    "letter",
+    "office",
+    "river"
+   ],
+   "k": 2,
+   "answer": "candle",
+   "prev": "jacket"
+  }
+ },
+ {
+  "prompt": "ladder helmet monkey doctor palace lantern ladder helmet monkey doctor",
+  "target": 27627,
+  "contrast": 15457,
+  "meta": {
+   "seq": [
+    "ladder",
+    "helmet",
+    "monkey",
+    "doctor",
+    "palace",
+    "lantern"
+   ],
+   "k": 4,
+   "answer": "palace",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "rabbit island ticket pencil lantern palace rabbit island",
+  "target": 15457,
+  "contrast": 24868,
+  "meta": {
+   "seq": [
+    "rabbit",
+    "island",
+    "ticket",
+    "pencil",
+    "lantern",
+    "palace"
+   ],
+   "k": 2,
+   "answer": "ticket",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "office monkey doctor book saddle palace office monkey doctor book",
+  "target": 47993,
+  "contrast": 8717,
+  "meta": {
+   "seq": [
+    "office",
+    "monkey",
+    "doctor",
+    "book",
+    "saddle",
+    "palace"
+   ],
+   "k": 4,
+   "answer": "saddle",
+   "prev": "book"
+  }
+ },
+ {
+  "prompt": "hammer palace orchard guitar mirror table hammer palace orchard guitar",
+  "target": 15978,
+  "contrast": 12350,
+  "meta": {
+   "seq": [
+    "hammer",
+    "palace",
+    "orchard",
+    "guitar",
+    "mirror",
+    "table"
+   ],
+   "k": 4,
+   "answer": "mirror",
+   "prev": "guitar"
+  }
+ },
+ {
+  "prompt": "table monkey jacket valley lantern engine table monkey",
+  "target": 12350,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "table",
+    "monkey",
+    "jacket",
+    "valley",
+    "lantern",
+    "engine"
+   ],
+   "k": 2,
+   "answer": "jacket",
+   "prev": "monkey"
+  }
+ },
+ {
+  "prompt": "ladder rabbit island book candle needle ladder rabbit island",
+  "target": 2870,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "ladder",
+    "rabbit",
+    "island",
+    "book",
+    "candle",
+    "needle"
+   ],
+   "k": 3,
+   "answer": "book",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "office forest bridge helmet meadow garden office forest",
+  "target": 12261,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "office",
+    "forest",
+    "bridge",
+    "helmet",
+    "meadow",
+    "garden"
+   ],
+   "k": 2,
+   "answer": "bridge",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "rabbit palace hammer kitchen forest picture rabbit palace hammer",
+  "target": 8926,
+  "contrast": 5912,
+  "meta": {
+   "seq": [
+    "rabbit",
+    "palace",
+    "hammer",
+    "kitchen",
+    "forest",
+    "picture"
+   ],
+   "k": 3,
+   "answer": "kitchen",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "needle doctor market book bottle saddle needle doctor market",
+  "target": 2870,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "needle",
+    "doctor",
+    "market",
+    "book",
+    "bottle",
+    "saddle"
+   ],
+   "k": 3,
+   "answer": "book",
+   "prev": "market"
+  }
+ },
+ {
+  "prompt": "engine orchard candle castle farmer picture engine orchard",
+  "target": 28162,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "engine",
+    "orchard",
+    "candle",
+    "castle",
+    "farmer",
+    "picture"
+   ],
+   "k": 2,
+   "answer": "candle",
+   "prev": "orchard"
+  }
+ },
+ {
+  "prompt": "window island doctor guitar hammer kitchen window island doctor guitar",
+  "target": 28507,
+  "contrast": 12220,
+  "meta": {
+   "seq": [
+    "window",
+    "island",
+    "doctor",
+    "guitar",
+    "hammer",
+    "kitchen"
+   ],
+   "k": 4,
+   "answer": "hammer",
+   "prev": "guitar"
+  }
+ },
+ {
+  "prompt": "farmer island hammer basket valley ticket farmer island",
+  "target": 28507,
+  "contrast": 8926,
+  "meta": {
+   "seq": [
+    "farmer",
+    "island",
+    "hammer",
+    "basket",
+    "valley",
+    "ticket"
+   ],
+   "k": 2,
+   "answer": "hammer",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "meadow forest guitar river kitchen market meadow forest",
+  "target": 14673,
+  "contrast": 27207,
+  "meta": {
+   "seq": [
+    "meadow",
+    "forest",
+    "guitar",
+    "river",
+    "kitchen",
+    "market"
+   ],
+   "k": 2,
+   "answer": "guitar",
+   "prev": "forest"
+  }
+ },
+ {
+  "prompt": "table ticket bridge guitar chair forest table ticket",
+  "target": 12261,
+  "contrast": 4844,
+  "meta": {
+   "seq": [
+    "table",
+    "ticket",
+    "bridge",
+    "guitar",
+    "chair",
+    "forest"
+   ],
+   "k": 2,
+   "answer": "bridge",
+   "prev": "ticket"
+  }
+ },
+ {
+  "prompt": "castle market garden hammer bottle rabbit castle market garden",
+  "target": 28507,
+  "contrast": 12220,
+  "meta": {
+   "seq": [
+    "castle",
+    "market",
+    "garden",
+    "hammer",
+    "bottle",
+    "rabbit"
+   ],
+   "k": 3,
+   "answer": "hammer",
+   "prev": "garden"
+  }
+ },
+ {
+  "prompt": "guitar lantern saddle river hammer orchard guitar lantern saddle river",
+  "target": 28507,
+  "contrast": 26354,
+  "meta": {
+   "seq": [
+    "guitar",
+    "lantern",
+    "saddle",
+    "river",
+    "hammer",
+    "orchard"
+   ],
+   "k": 4,
+   "answer": "hammer",
+   "prev": "river"
+  }
+ },
+ {
+  "prompt": "monkey ticket letter table guitar needle monkey ticket letter table",
+  "target": 14673,
+  "contrast": 24868,
+  "meta": {
+   "seq": [
+    "monkey",
+    "ticket",
+    "letter",
+    "table",
+    "guitar",
+    "needle"
+   ],
+   "k": 4,
+   "answer": "guitar",
+   "prev": "table"
+  }
+ },
+ {
+  "prompt": "candle engine letter basket market kitchen candle engine letter",
+  "target": 12220,
+  "contrast": 35918,
+  "meta": {
+   "seq": [
+    "candle",
+    "engine",
+    "letter",
+    "basket",
+    "market",
+    "kitchen"
+   ],
+   "k": 3,
+   "answer": "basket",
+   "prev": "letter"
+  }
+ },
+ {
+  "prompt": "kitchen monkey meadow engine office needle kitchen monkey meadow",
+  "target": 4800,
+  "contrast": 70480,
+  "meta": {
+   "seq": [
+    "kitchen",
+    "monkey",
+    "meadow",
+    "engine",
+    "office",
+    "needle"
+   ],
+   "k": 3,
+   "answer": "engine",
+   "prev": "meadow"
+  }
+ },
+ {
+  "prompt": "window castle mirror helmet ticket hammer window castle",
+  "target": 15978,
+  "contrast": 12220,
+  "meta": {
+   "seq": [
+    "window",
+    "castle",
+    "mirror",
+    "helmet",
+    "ticket",
+    "hammer"
+   ],
+   "k": 2,
+   "answer": "mirror",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "island mirror castle jacket engine doctor island mirror castle jacket",
+  "target": 4800,
+  "contrast": 15457,
+  "meta": {
+   "seq": [
+    "island",
+    "mirror",
+    "castle",
+    "jacket",
+    "engine",
+    "doctor"
+   ],
+   "k": 4,
+   "answer": "engine",
+   "prev": "jacket"
+  }
+ },
+ {
+  "prompt": "saddle valley river forest ticket ladder saddle valley",
+  "target": 8540,
+  "contrast": 24868,
+  "meta": {
+   "seq": [
+    "saddle",
+    "valley",
+    "river",
+    "forest",
+    "ticket",
+    "ladder"
+   ],
+   "k": 2,
+   "answer": "river",
+   "prev": "valley"
+  }
+ },
+ {
+  "prompt": "letter pencil table doctor valley ladder letter pencil table doctor",
+  "target": 20309,
+  "contrast": 8926,
+  "meta": {
+   "seq": [
+    "letter",
+    "pencil",
+    "table",
+    "doctor",
+    "valley",
+    "ladder"
+   ],
+   "k": 4,
+   "answer": "valley",
+   "prev": "doctor"
+  }
+ },
+ {
+  "prompt": "window office table island doctor bridge window office table island",
+  "target": 9353,
+  "contrast": 6139,
+  "meta": {
+   "seq": [
+    "window",
+    "office",
+    "table",
+    "island",
+    "doctor",
+    "bridge"
+   ],
+   "k": 4,
+   "answer": "doctor",
+   "prev": "island"
+  }
+ },
+ {
+  "prompt": "needle farmer carpet picture orchard garden needle farmer",
+  "target": 27075,
+  "contrast": 8926,
+  "meta": {
+   "seq": [
+    "needle",
+    "farmer",
+    "carpet",
+    "picture",
+    "orchard",
+    "garden"
+   ],
+   "k": 2,
+   "answer": "carpet",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "ladder lantern island ticket picture castle ladder lantern island ticket",
+  "target": 5642,
+  "contrast": 8540,
+  "meta": {
+   "seq": [
+    "ladder",
+    "lantern",
+    "island",
+    "ticket",
+    "picture",
+    "castle"
+   ],
+   "k": 4,
+   "answer": "picture",
+   "prev": "ticket"
+  }
+ },
+ {
+  "prompt": "ladder farmer monkey bridge carpet doctor ladder farmer",
+  "target": 35918,
+  "contrast": 12350,
+  "meta": {
+   "seq": [
+    "ladder",
+    "farmer",
+    "monkey",
+    "bridge",
+    "carpet",
+    "doctor"
+   ],
+   "k": 2,
+   "answer": "monkey",
+   "prev": "farmer"
+  }
+ },
+ {
+  "prompt": "carpet doctor lantern napkin farmer needle carpet doctor lantern",
+  "target": 112475,
+  "contrast": 14673,
+  "meta": {
+   "seq": [
+    "carpet",
+    "doctor",
+    "lantern",
+    "napkin",
+    "farmer",
+    "needle"
+   ],
+   "k": 3,
+   "answer": "napkin",
+   "prev": "lantern"
+  }
+ },
+ {
+  "prompt": "mirror jacket rabbit orchard island napkin mirror jacket",
+  "target": 30358,
+  "contrast": 8926,
+  "meta": {
+   "seq": [
+    "mirror",
+    "jacket",
+    "rabbit",
+    "orchard",
+    "island",
+    "napkin"
+   ],
+   "k": 2,
+   "answer": "rabbit",
+   "prev": "jacket"
+  }
+ },
+ {
+  "prompt": "garden candle carpet river forest saddle garden candle",
+  "target": 27075,
+  "contrast": 38088,
+  "meta": {
+   "seq": [
+    "garden",
+    "candle",
+    "carpet",
+    "river",
+    "forest",
+    "saddle"
+   ],
+   "k": 2,
+   "answer": "carpet",
+   "prev": "candle"
+  }
+ },
+ {
+  "prompt": "basket office island farmer meadow picture basket office",
+  "target": 10534,
+  "contrast": 112475,
+  "meta": {
+   "seq": [
+    "basket",
+    "office",
+    "island",
+    "farmer",
+    "meadow",
+    "picture"
+   ],
+   "k": 2,
+   "answer": "island",
+   "prev": "office"
+  }
+ },
+ {
+  "prompt": "market ticket bottle mirror basket candle market ticket bottle mirror",
+  "target": 12220,
+  "contrast": 2870,
+  "meta": {
+   "seq": [
+    "market",
+    "ticket",
+    "bottle",
+    "mirror",
+    "basket",
+    "candle"
+   ],
+   "k": 4,
+   "answer": "basket",
+   "prev": "mirror"
+  }
+ },
+ {
+  "prompt": "river candle farmer carpet island bottle river candle farmer carpet",
+  "target": 10534,
+  "contrast": 9309,
+  "meta": {
+   "seq": [
+    "river",
+    "candle",
+    "farmer",
+    "carpet",
+    "island",
+    "bottle"
+   ],
+   "k": 4,
+   "answer": "island",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "guitar orchard candle ticket bridge carpet guitar orchard candle ticket",
+  "target": 12261,
+  "contrast": 24868,
+  "meta": {
+   "seq": [
+    "guitar",
+    "orchard",
+    "candle",
+    "ticket",
+    "bridge",
+    "carpet"
+   ],
+   "k": 4,
+   "answer": "bridge",
+   "prev": "ticket"
+  }
+ },
+ {
+  "prompt": "bridge monkey castle pencil doctor jacket bridge monkey castle",
+  "target": 27207,
+  "contrast": 15457,
+  "meta": {
+   "seq": [
+    "bridge",
+    "monkey",
+    "castle",
+    "pencil",
+    "doctor",
+    "jacket"
+   ],
+   "k": 3,
+   "answer": "pencil",
+   "prev": "castle"
+  }
+ },
+ {
+  "prompt": "palace candle napkin monkey bottle rabbit palace candle napkin",
+  "target": 35918,
+  "contrast": 28767,
+  "meta": {
+   "seq": [
+    "palace",
+    "candle",
+    "napkin",
+    "monkey",
+    "bottle",
+    "rabbit"
+   ],
+   "k": 3,
+   "answer": "monkey",
+   "prev": "napkin"
+  }
+ },
+ {
+  "prompt": "ticket napkin saddle bridge river bottle ticket napkin saddle",
+  "target": 12261,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "ticket",
+    "napkin",
+    "saddle",
+    "bridge",
+    "river",
+    "bottle"
+   ],
+   "k": 3,
+   "answer": "bridge",
+   "prev": "saddle"
+  }
+ },
+ {
+  "prompt": "needle garden farmer hammer palace kitchen needle garden farmer hammer",
+  "target": 27627,
+  "contrast": 12261,
+  "meta": {
+   "seq": [
+    "needle",
+    "garden",
+    "farmer",
+    "hammer",
+    "palace",
+    "kitchen"
+   ],
+   "k": 4,
+   "answer": "palace",
+   "prev": "hammer"
+  }
+ },
+ {
+  "prompt": "orchard forest saddle rabbit helmet lantern orchard forest saddle rabbit",
+  "target": 30574,
+  "contrast": 3952,
+  "meta": {
+   "seq": [
+    "orchard",
+    "forest",
+    "saddle",
+    "rabbit",
+    "helmet",
+    "lantern"
+   ],
+   "k": 4,
+   "answer": "helmet",
+   "prev": "rabbit"
+  }
+ },
+ {
+  "prompt": "chair napkin carpet castle needle pencil chair napkin carpet",
+  "target": 24868,
+  "contrast": 12989,
+  "meta": {
+   "seq": [
+    "chair",
+    "napkin",
+    "carpet",
+    "castle",
+    "needle",
+    "pencil"
+   ],
+   "k": 3,
+   "answer": "castle",
+   "prev": "carpet"
+  }
+ },
+ {
+  "prompt": "pencil bridge office bottle ladder ticket pencil bridge",
+  "target": 4844,
+  "contrast": 5642,
+  "meta": {
+   "seq": [
+    "pencil",
+    "bridge",
+    "office",
+    "bottle",
+    "ladder",
+    "ticket"
+   ],
+   "k": 2,
+   "answer": "office",
+   "prev": "bridge"
+  }
+ },
+ {
+  "prompt": "guitar pencil bottle chair hammer castle guitar pencil bottle",
+  "target": 9205,
+  "contrast": 26354,
+  "meta": {
+   "seq": [
+    "guitar",
+    "pencil",
+    "bottle",
+    "chair",
+    "hammer",
+    "castle"
+   ],
+   "k": 3,
+   "answer": "chair",
+   "prev": "bottle"
+  }
+ },
+ {
+  "prompt": "picture needle bridge office meadow ticket picture needle bridge",
+  "target": 4844,
+  "contrast": 15978,
+  "meta": {
+   "seq": [
+    "picture",
+    "needle",
+    "bridge",
+    "office",
+    "meadow",
+    "ticket"
+   ],
+   "k": 3,
+   "answer": "office",
+   "prev": "bridge"
+  }
+ }
+]

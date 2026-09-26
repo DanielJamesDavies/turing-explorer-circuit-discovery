@@ -1,0 +1,867 @@
+{
+ "real": [
+  {
+   "name": "Dual Language Immersion",
+   "want": "D",
+   "top": "D",
+   "lp": -0.013568203896284103,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Central Processing Unit",
+   "want": "C",
+   "top": "CP",
+   "lp": -3.9244229793548584,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Digital Signal Processing",
+   "want": "D",
+   "top": "D",
+   "lp": -0.010341038927435875,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "General Data Protection",
+   "want": "G",
+   "top": "G",
+   "lp": -0.34522581100463867,
+   "ok": true,
+   "want2": "D",
+   "top2": "D",
+   "lp2": -0.011176127009093761,
+   "ok2": true
+  },
+  {
+   "name": "Random Access Memory",
+   "want": "R",
+   "top": "RAM",
+   "lp": -4.313640117645264,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "National Health Service",
+   "want": "N",
+   "top": "N",
+   "lp": -0.01663598231971264,
+   "ok": true,
+   "want2": "H",
+   "top2": "HS",
+   "lp2": -8.070355415344238,
+   "ok2": false
+  },
+  {
+   "name": "Global Positioning System",
+   "want": "G",
+   "top": "G",
+   "lp": -0.003302954602986574,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Human Resource Management",
+   "want": "H",
+   "top": "HR",
+   "lp": -3.9313347339630127,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Public Health England",
+   "want": "P",
+   "top": "1",
+   "lp": -2.5229992866516113,
+   "ok": false,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Machine Learning Research",
+   "want": "M",
+   "top": "ML",
+   "lp": -2.7979793548583984,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Applied Behaviour Analysis",
+   "want": "A",
+   "top": "AB",
+   "lp": -4.86008882522583,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Early Warning System",
+   "want": "E",
+   "top": "C",
+   "lp": -4.662228584289551,
+   "ok": false,
+   "want2": "W",
+   "top2": "SS",
+   "lp2": -6.516594886779785,
+   "ok2": false
+  },
+  {
+   "name": "Modern Language Association",
+   "want": "M",
+   "top": "1",
+   "lp": -7.278475761413574,
+   "ok": false,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Quality Assurance Team",
+   "want": "Q",
+   "top": "Q",
+   "lp": -0.01780455932021141,
+   "ok": true,
+   "want2": "A",
+   "top2": "A",
+   "lp2": -0.04409715160727501,
+   "ok2": true
+  },
+  {
+   "name": "Federal Reserve Bank",
+   "want": "F",
+   "top": "F",
+   "lp": -0.6712900996208191,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  },
+  {
+   "name": "Advanced Placement Program",
+   "want": "A",
+   "top": "A",
+   "lp": -1.0235183238983154,
+   "ok": true,
+   "want2": null,
+   "top2": null,
+   "lp2": null,
+   "ok2": false
+  }
+ ],
+ "shuffled": [
+  {
+   "name": "Quality Behaviour England",
+   "want": "Q",
+   "top": "Q",
+   "lp": -0.20587727427482605,
+   "ok": true
+  },
+  {
+   "name": "Random Access Immersion",
+   "want": "R",
+   "top": "S",
+   "lp": -2.7096023559570312,
+   "ok": false
+  },
+  {
+   "name": "Central Language Processing",
+   "want": "C",
+   "top": "D",
+   "lp": -1.7878317832946777,
+   "ok": false
+  },
+  {
+   "name": "Public Reserve Memory",
+   "want": "P",
+   "top": "P",
+   "lp": -0.09531529247760773,
+   "ok": true
+  },
+  {
+   "name": "Quality Behaviour Immersion",
+   "want": "Q",
+   "top": "Q",
+   "lp": -0.013280858285725117,
+   "ok": true
+  },
+  {
+   "name": "Global Assurance England",
+   "want": "G",
+   "top": "AC",
+   "lp": -2.2518649101257324,
+   "ok": false
+  },
+  {
+   "name": "Dual Language System",
+   "want": "D",
+   "top": "D",
+   "lp": -0.010724527761340141,
+   "ok": true
+  },
+  {
+   "name": "Quality Signal Unit",
+   "want": "Q",
+   "top": "Q",
+   "lp": -0.06924759596586227,
+   "ok": true
+  },
+  {
+   "name": "Quality Language England",
+   "want": "Q",
+   "top": "Q",
+   "lp": -0.06039448082447052,
+   "ok": true
+  },
+  {
+   "name": "Central Access Management",
+   "want": "C",
+   "top": "D",
+   "lp": -1.6900956630706787,
+   "ok": false
+  },
+  {
+   "name": "Global Positioning Immersion",
+   "want": "G",
+   "top": "G",
+   "lp": -0.21158051490783691,
+   "ok": true
+  },
+  {
+   "name": "Dual Processing Immersion",
+   "want": "D",
+   "top": "D",
+   "lp": -0.032135117799043655,
+   "ok": true
+  }
+ ],
+ "sweeps": [
+  {
+   "tail": "Language Immersion",
+   "n": 16,
+   "ok": 6,
+   "rows": [
+    [
+     "Dual",
+     "D",
+     "D",
+     -0.01,
+     true
+    ],
+    [
+     "Central",
+     "C",
+     "D",
+     -2.49,
+     false
+    ],
+    [
+     "Random",
+     "R",
+     "S",
+     -2.49,
+     false
+    ],
+    [
+     "Quality",
+     "Q",
+     "Q",
+     -0.04,
+     true
+    ],
+    [
+     "Federal",
+     "F",
+     "F",
+     -1.12,
+     true
+    ],
+    [
+     "Modern",
+     "M",
+     "ML",
+     -5.7,
+     true
+    ],
+    [
+     "Applied",
+     "A",
+     "C",
+     -4.54,
+     false
+    ],
+    [
+     "Global",
+     "G",
+     "ID",
+     -3.22,
+     false
+    ],
+    [
+     "Public",
+     "P",
+     "P",
+     -1.14,
+     true
+    ],
+    [
+     "Hybrid",
+     "H",
+     "C",
+     -4.49,
+     false
+    ],
+    [
+     "Vertical",
+     "V",
+     "CC",
+     -2.68,
+     false
+    ],
+    [
+     "Eastern",
+     "E",
+     "Z",
+     -4.48,
+     false
+    ],
+    [
+     "Joint",
+     "J",
+     "J",
+     -0.0,
+     true
+    ],
+    [
+     "Basic",
+     "B",
+     "ML",
+     -5.22,
+     false
+    ],
+    [
+     "Legal",
+     "L",
+     "C",
+     -5.61,
+     false
+    ],
+    [
+     "Native",
+     "N",
+     "1",
+     -3.91,
+     false
+    ]
+   ]
+  },
+  {
+   "tail": "Processing Unit",
+   "n": 16,
+   "ok": 6,
+   "rows": [
+    [
+     "Dual",
+     "D",
+     "D",
+     -0.96,
+     true
+    ],
+    [
+     "Central",
+     "C",
+     "CP",
+     -3.92,
+     true
+    ],
+    [
+     "Random",
+     "R",
+     "S",
+     -4.47,
+     false
+    ],
+    [
+     "Quality",
+     "Q",
+     "Q",
+     -0.02,
+     true
+    ],
+    [
+     "Federal",
+     "F",
+     "C",
+     -3.89,
+     false
+    ],
+    [
+     "Modern",
+     "M",
+     "C",
+     -1.65,
+     false
+    ],
+    [
+     "Applied",
+     "A",
+     "G",
+     -4.58,
+     false
+    ],
+    [
+     "Global",
+     "G",
+     "G",
+     -0.02,
+     true
+    ],
+    [
+     "Public",
+     "P",
+     "PK",
+     -1.81,
+     true
+    ],
+    [
+     "Hybrid",
+     "H",
+     "S",
+     -4.87,
+     false
+    ],
+    [
+     "Vertical",
+     "V",
+     "G",
+     -7.69,
+     false
+    ],
+    [
+     "Eastern",
+     "E",
+     "G",
+     -3.62,
+     false
+    ],
+    [
+     "Joint",
+     "J",
+     "J",
+     -0.16,
+     true
+    ],
+    [
+     "Basic",
+     "B",
+     "CP",
+     -3.39,
+     false
+    ],
+    [
+     "Legal",
+     "L",
+     "B",
+     -6.21,
+     false
+    ],
+    [
+     "Native",
+     "N",
+     "LS",
+     -5.14,
+     false
+    ]
+   ]
+  },
+  {
+   "tail": "Access Memory",
+   "n": 16,
+   "ok": 7,
+   "rows": [
+    [
+     "Dual",
+     "D",
+     "D",
+     -0.02,
+     true
+    ],
+    [
+     "Central",
+     "C",
+     "C",
+     -0.2,
+     true
+    ],
+    [
+     "Random",
+     "R",
+     "RAM",
+     -4.31,
+     true
+    ],
+    [
+     "Quality",
+     "Q",
+     "Q",
+     -0.01,
+     true
+    ],
+    [
+     "Federal",
+     "F",
+     "F",
+     -1.32,
+     true
+    ],
+    [
+     "Modern",
+     "M",
+     "N",
+     -4.87,
+     false
+    ],
+    [
+     "Applied",
+     "A",
+     "MA",
+     -6.85,
+     false
+    ],
+    [
+     "Global",
+     "G",
+     "N",
+     -2.87,
+     false
+    ],
+    [
+     "Public",
+     "P",
+     "PK",
+     -2.77,
+     true
+    ],
+    [
+     "Hybrid",
+     "H",
+     "N",
+     -3.55,
+     false
+    ],
+    [
+     "Vertical",
+     "V",
+     "C",
+     -3.25,
+     false
+    ],
+    [
+     "Eastern",
+     "E",
+     "H",
+     -2.95,
+     false
+    ],
+    [
+     "Joint",
+     "J",
+     "J",
+     -0.02,
+     true
+    ],
+    [
+     "Basic",
+     "B",
+     "RAM",
+     -7.33,
+     false
+    ],
+    [
+     "Legal",
+     "L",
+     "M",
+     -7.2,
+     false
+    ],
+    [
+     "Native",
+     "N",
+     "L",
+     -2.71,
+     false
+    ]
+   ]
+  },
+  {
+   "tail": "Signal Analysis",
+   "n": 16,
+   "ok": 5,
+   "rows": [
+    [
+     "Dual",
+     "D",
+     "D",
+     -0.13,
+     true
+    ],
+    [
+     "Central",
+     "C",
+     "Q",
+     -4.03,
+     false
+    ],
+    [
+     "Random",
+     "R",
+     "S",
+     -4.37,
+     false
+    ],
+    [
+     "Quality",
+     "Q",
+     "Q",
+     -0.0,
+     true
+    ],
+    [
+     "Federal",
+     "F",
+     "G",
+     -3.21,
+     false
+    ],
+    [
+     "Modern",
+     "M",
+     "A",
+     -5.32,
+     false
+    ],
+    [
+     "Applied",
+     "A",
+     "E",
+     -1.04,
+     false
+    ],
+    [
+     "Global",
+     "G",
+     "G",
+     -0.06,
+     true
+    ],
+    [
+     "Public",
+     "P",
+     "P",
+     -1.44,
+     true
+    ],
+    [
+     "Hybrid",
+     "H",
+     "S",
+     -7.94,
+     false
+    ],
+    [
+     "Vertical",
+     "V",
+     "D",
+     -3.65,
+     false
+    ],
+    [
+     "Eastern",
+     "E",
+     "2",
+     -4.48,
+     false
+    ],
+    [
+     "Joint",
+     "J",
+     "J",
+     -0.24,
+     true
+    ],
+    [
+     "Basic",
+     "B",
+     "A",
+     -5.17,
+     false
+    ],
+    [
+     "Legal",
+     "L",
+     "P",
+     -4.54,
+     false
+    ],
+    [
+     "Native",
+     "N",
+     "AE",
+     -6.17,
+     false
+    ]
+   ]
+  },
+  {
+   "tail": "Health Service",
+   "n": 16,
+   "ok": 7,
+   "rows": [
+    [
+     "Dual",
+     "D",
+     "D",
+     -0.01,
+     true
+    ],
+    [
+     "Central",
+     "C",
+     "C",
+     -0.42,
+     true
+    ],
+    [
+     "Random",
+     "R",
+     "S",
+     -4.01,
+     false
+    ],
+    [
+     "Quality",
+     "Q",
+     "Q",
+     -0.0,
+     true
+    ],
+    [
+     "Federal",
+     "F",
+     "N",
+     -2.57,
+     false
+    ],
+    [
+     "Modern",
+     "M",
+     "N",
+     -5.06,
+     false
+    ],
+    [
+     "Applied",
+     "A",
+     "P",
+     -5.49,
+     false
+    ],
+    [
+     "Global",
+     "G",
+     "G",
+     -0.51,
+     true
+    ],
+    [
+     "Public",
+     "P",
+     "P",
+     -0.76,
+     true
+    ],
+    [
+     "Hybrid",
+     "H",
+     "N",
+     -5.53,
+     false
+    ],
+    [
+     "Vertical",
+     "V",
+     "D",
+     -7.69,
+     false
+    ],
+    [
+     "Eastern",
+     "E",
+     "S",
+     -4.21,
+     false
+    ],
+    [
+     "Joint",
+     "J",
+     "J",
+     -0.02,
+     true
+    ],
+    [
+     "Basic",
+     "B",
+     "1",
+     -6.44,
+     false
+    ],
+    [
+     "Legal",
+     "L",
+     "P",
+     -4.7,
+     false
+    ],
+    [
+     "Native",
+     "N",
+     "N",
+     -0.93,
+     true
+    ]
+   ]
+  }
+ ],
+ "acc_first": 0.8125,
+ "acc_second": 0.5,
+ "acc_shuffled": 0.5,
+ "acc_sweep": 0.3875
+}

@@ -1,4 +1,4 @@
-\begin{thebibliography}{51}
+\begin{thebibliography}{60}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -58,6 +58,13 @@ Trenton Bricken, Adly Templeton, Joshua Batson, Brian Chen, Adam Jermyn, Tom
 \newblock
   \url{https://transformer-circuits.pub/2023/monosemantic-features/index.html}.
 
+\bibitem[Caples et~al.(2025)Caples, Nainani, McDougall, and
+  {rrenaud}]{caples2025scaling}
+Diego Caples, Jatin Nainani, Callum McDougall, and {rrenaud}.
+\newblock Scaling sparse feature circuit finding to {Gemma 9B}.
+\newblock LessWrong, \url{https://www.lesswrong.com/posts/PkeB4TLxgaNnSmddg},
+  2025.
+
 \bibitem[Conmy et~al.(2023)Conmy, Mavor-Parker, Lynch, Heimersheim, and
   Garriga-Alonso]{conmy2023towards}
 Arthur Conmy, Augustine~N. Mavor-Parker, Aengus Lynch, Stefan Heimersheim, and
@@ -82,6 +89,13 @@ Ruixuan Deng, Xiaoyang Hu, Miles Gilberti, Shane Storks, Aman Taxali, Mike
   language models.
 \newblock In \emph{Proceedings of the Association for Computational Linguistics
   (ACL)}, 2026.
+
+\bibitem[Droste et~al.(2026)Droste, Adriano, Korte, and
+  Giese]{droste2026decoder}
+Hendrik Droste, Christian~Medeiros Adriano, Kathrin Korte, and Holger Giese.
+\newblock Where decoder cosine similarity fails for {SAE} feature flow
+  discovery.
+\newblock \emph{arXiv preprint arXiv:2609.12591}, 2026.
 
 \bibitem[Dunefsky et~al.(2024)Dunefsky, Chlenski, and
   Nanda]{dunefsky2024transcoders}
@@ -121,6 +135,13 @@ Leo Gao, Tom~Dupr{\'e} la~Tour, Henk Tillman, Gabriel Goh, Rajan Troll, Alec
 \newblock Scaling and evaluating sparse autoencoders.
 \newblock \emph{arXiv preprint arXiv:2406.04093}, 2024.
 
+\bibitem[Gao et~al.(2025)Gao, Rajaram, Coxon, Govande, Baker, and
+  Mossing]{gao2025weightsparse}
+Leo Gao, Achyuta Rajaram, Jacob Coxon, Soham~V. Govande, Bowen Baker, and Dan
+  Mossing.
+\newblock Weight-sparse transformers have interpretable circuits.
+\newblock \emph{arXiv preprint arXiv:2511.13653}, 2025.
+
 \bibitem[Ge et~al.(2024)Ge, Zhu, Shu, Wang, He, and Qiu]{ge2024automatically}
 Xuyang Ge, Fukang Zhu, Wentao Shu, Junxuan Wang, Zhengfu He, and Xipeng Qiu.
 \newblock Automatically identifying local and global circuits with linear
@@ -145,6 +166,24 @@ Wes Gurnee.
 Tal Haklay, Hadas Orgad, David Bau, Aaron Mueller, and Yonatan Belinkov.
 \newblock Position-aware automatic circuit discovery.
 \newblock \emph{arXiv preprint arXiv:2502.04577}, 2025.
+
+\bibitem[Hanna et~al.(2024)Hanna, Pezzelle, and Belinkov]{hanna2024faith}
+Michael Hanna, Sandro Pezzelle, and Yonatan Belinkov.
+\newblock Have faith in faithfulness: Going beyond circuit overlap when finding
+  model mechanisms.
+\newblock In \emph{Conference on Language Modeling (COLM)}, 2024.
+
+\bibitem[He et~al.(2024)He, Ge, Tang, Sun, Cheng, and Qiu]{he2024dictionary}
+Zhengfu He, Xuyang Ge, Qiong Tang, Tianxiang Sun, Qinyuan Cheng, and Xipeng
+  Qiu.
+\newblock Dictionary learning improves patch-free circuit discovery in
+  mechanistic interpretability: A case study on {Othello-GPT}.
+\newblock \emph{arXiv preprint arXiv:2402.12201}, 2024.
+
+\bibitem[Heimersheim and Nanda(2024)]{heimersheim2024patching}
+Stefan Heimersheim and Neel Nanda.
+\newblock How to use and interpret activation patching.
+\newblock \emph{arXiv preprint arXiv:2404.15255}, 2024.
 
 \bibitem[Hinton et~al.(2015)Hinton, Vinyals, and Dean]{hinton2015distilling}
 Geoffrey Hinton, Oriol Vinyals, and Jeff Dean.
@@ -184,6 +223,12 @@ Patrick Leask, Bart Bussmann, Michael Pearce, Joseph Bloom, Curt Tigges,
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}, 2025.
 
+\bibitem[Lepori et~al.(2023)Lepori, Serre, and Pavlick]{lepori2023uncovering}
+Michael~A. Lepori, Thomas Serre, and Ellie Pavlick.
+\newblock Uncovering intermediate variables in transformers using circuit
+  probing.
+\newblock \emph{arXiv preprint arXiv:2311.04354}, 2023.
+
 \bibitem[Li and Janson(2024)]{li2024optimal}
 Maximilian Li and Lucas Janson.
 \newblock Optimal ablation for interpretability.
@@ -211,6 +256,12 @@ Christos Louizos, Max Welling, and Diederik~P. Kingma.
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}, 2018.
 
+\bibitem[Makou et~al.(2026)Makou, Niu, Dutta, and Gurevych]{makou2026many}
+Alireza~Bayat Makou, Jingcheng Niu, Subhabrata Dutta, and Iryna Gurevych.
+\newblock Many circuits, one mechanism: Input variation and evaluation
+  granularity in circuit discovery.
+\newblock \emph{Transactions on Machine Learning Research}, 2026.
+
 \bibitem[Marks et~al.(2025)Marks, Rager, Michaud, Belinkov, Bau, and
   Mueller]{marks2025sparse}
 Samuel Marks, Can Rager, Eric~J. Michaud, Yonatan Belinkov, David Bau, and
@@ -232,6 +283,18 @@ Aaron Mueller.
   for interpreting neural networks.
 \newblock \emph{arXiv preprint arXiv:2407.04690}, 2024.
 
+\bibitem[Mueller et~al.(2025)Mueller, Geiger, Wiegreffe, Arad, Arcuschin,
+  Belfki, Chan, Fiotto-Kaufman, Haklay, Hanna, Huang, Gupta, Nikankin, Orgad,
+  Prakash, Reusch, Sankaranarayanan, Shao, Stolfo, Tutek, Zur, Bau, and
+  Belinkov]{mueller2025mib}
+Aaron Mueller, Atticus Geiger, Sarah Wiegreffe, Dana Arad, Iv{\'a}n Arcuschin,
+  Adam Belfki, Yik~Siu Chan, Jaden Fiotto-Kaufman, Tal Haklay, Michael Hanna,
+  Jing Huang, Rohan Gupta, Yaniv Nikankin, Hadas Orgad, Nikhil Prakash, Anja
+  Reusch, Aruna Sankaranarayanan, Shun Shao, Alessandro Stolfo, Martin Tutek,
+  Amir Zur, David Bau, and Yonatan Belinkov.
+\newblock {MIB}: A mechanistic interpretability benchmark.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2025.
+
 \bibitem[Nanda(2023)]{nanda2023attribution}
 Neel Nanda.
 \newblock Attribution patching: Activation patching at industrial scale.
@@ -247,20 +310,20 @@ Chris Olah, Nick Cammarata, Ludwig Schubert, Gabriel Goh, Michael Petrov, and
 \newblock \emph{Distill}, 2020.
 \newblock \url{https://distill.pub/2020/circuits/zoom-in}.
 
-\bibitem[Olmo et~al.(2025)Olmo, Wilson, Forsey, Hepner, Howe, and
-  Wingate]{olmo2025features}
-Jeffrey Olmo, Jared Wilson, Max Forsey, Bryce Hepner, Thomas~Vin Howe, and
-  David Wingate.
-\newblock Features that make a difference: Leveraging gradients for improved
-  dictionary learning.
-\newblock In \emph{Proceedings of the 2025 Conference of the North American
-  Chapter of the Association for Computational Linguistics (NAACL)}, 2025.
-
 \bibitem[O'Neill and Bui(2024)]{oneill2024sparse}
 Charles O'Neill and Thang Bui.
 \newblock Sparse autoencoders enable scalable and reliable circuit
   identification in language models.
 \newblock \emph{arXiv preprint arXiv:2405.12522}, 2024.
+
+\bibitem[Palit et~al.(2026)Palit, Draye, Zhang, Sch{\"o}lkopf, and
+  Jin]{palit2026probes}
+Vedant Palit, Florent Draye, Terry~Jingchen Zhang, Bernhard Sch{\"o}lkopf, and
+  Zhijing Jin.
+\newblock How do linear probes emerge? a circuit-tracing framework with
+  concept-targeted attribution.
+\newblock In \emph{Proceedings of the Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}, 2026.
 
 \bibitem[Paulo and Belrose(2025)]{paulo2025evaluating}
 Gon{\c{c}}alo Paulo and Nora Belrose.
@@ -307,12 +370,12 @@ Noam Shazeer.
 \newblock {GLU} variants improve transformer.
 \newblock \emph{arXiv preprint arXiv:2002.05202}, 2020.
 
-\bibitem[Shu et~al.(2025)Shu, Wu, Zhao, Du, and Liu]{shu2025beyond}
-Dong Shu, Xuansheng Wu, Haiyan Zhao, Mengnan Du, and Ninghao Liu.
-\newblock Beyond input activations: Identifying influential latents by gradient
-  sparse autoencoders.
-\newblock In \emph{Proceedings of the 2025 Conference on Empirical Methods in
-  Natural Language Processing (EMNLP)}, 2025.
+\bibitem[Shi et~al.(2024)Shi, Beltran-Velez, Nazaret, Zheng, Garriga-Alonso,
+  Jesson, Makar, and Blei]{shi2024hypothesis}
+Claudia Shi, Nicolas Beltran-Velez, Achille Nazaret, Carolina Zheng, Adri{\`a}
+  Garriga-Alonso, Andrew Jesson, Maggie Makar, and David~M. Blei.
+\newblock Hypothesis testing the circuit hypothesis in {LLMs}.
+\newblock \emph{arXiv preprint arXiv:2410.13032}, 2024.
 
 \bibitem[Smith et~al.(2025)Smith, Rajamanoharan, Conmy, McDougall, Kram{\'a}r,
   Lieberum, Shah, and Nanda]{smith2025negative}

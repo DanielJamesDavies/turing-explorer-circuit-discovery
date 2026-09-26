@@ -1,0 +1,1282 @@
+[
+ {
+  "prompt": "When people visit the capital of Hungary, they arrive in",
+  "target": 48015,
+  "contrast": 63042,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest",
+   "wrong_city": "Helsinki"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Italy, they arrive in",
+  "target": 11344,
+  "contrast": 68696,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome",
+   "wrong_city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Finland's capital city is called",
+  "target": 63042,
+  "contrast": 168490,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki",
+   "wrong_city": "Rabat"
+  }
+ },
+ {
+  "prompt": "The capital city of Morocco is",
+  "target": 168490,
+  "contrast": 66293,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "The capital city of Greece is",
+  "target": 38721,
+  "contrast": 34298,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Russia's capital city is called",
+  "target": 23970,
+  "contrast": 89075,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow",
+   "wrong_city": "Ankara"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Portugal?\nA: The capital of Portugal is",
+  "target": 68696,
+  "contrast": 34298,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Japan's capital city is called",
+  "target": 22099,
+  "contrast": 98586,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Morocco?\nA: The capital of Morocco is",
+  "target": 168490,
+  "contrast": 35533,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat",
+   "wrong_city": "Lima"
+  }
+ },
+ {
+  "prompt": "Iraq's capital city is called",
+  "target": 100667,
+  "contrast": 41106,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Sweden, they arrive in",
+  "target": 41106,
+  "contrast": 107077,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm",
+   "wrong_city": "Accra"
+  }
+ },
+ {
+  "prompt": "Thailand's capital city is called",
+  "target": 52717,
+  "contrast": 106038,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok",
+   "wrong_city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Spain?\nA: The capital of Spain is",
+  "target": 15500,
+  "contrast": 44264,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of China, they arrive in",
+  "target": 33395,
+  "contrast": 48015,
+  "meta": {
+   "country": "China",
+   "city": "Beijing",
+   "wrong_city": "Budapest"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of France, they arrive in",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "country": "France",
+   "city": "Paris",
+   "wrong_city": "Ankara"
+  }
+ },
+ {
+  "prompt": "Iran's capital city is called",
+  "target": 88558,
+  "contrast": 53731,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran",
+   "wrong_city": "Cairo"
+  }
+ },
+ {
+  "prompt": "The capital city of Japan is",
+  "target": 22099,
+  "contrast": 53731,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo",
+   "wrong_city": "Cairo"
+  }
+ },
+ {
+  "prompt": "The capital city of Ireland is",
+  "target": 28998,
+  "contrast": 44264,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Thailand?\nA: The capital of Thailand is",
+  "target": 52717,
+  "contrast": 11344,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok",
+   "wrong_city": "Rome"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Turkey, they arrive in",
+  "target": 89075,
+  "contrast": 98586,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "Egypt's capital city is called",
+  "target": 53731,
+  "contrast": 53057,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Sweden's capital city is called",
+  "target": 41106,
+  "contrast": 107077,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm",
+   "wrong_city": "Accra"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Thailand, they arrive in",
+  "target": 52717,
+  "contrast": 11344,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok",
+   "wrong_city": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of Turkey is",
+  "target": 89075,
+  "contrast": 53057,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "The capital city of Kenya is",
+  "target": 53057,
+  "contrast": 33395,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi",
+   "wrong_city": "Beijing"
+  }
+ },
+ {
+  "prompt": "Poland's capital city is called",
+  "target": 66293,
+  "contrast": 12514,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw",
+   "wrong_city": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Italy?\nA: The capital of Italy is",
+  "target": 11344,
+  "contrast": 106038,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome",
+   "wrong_city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "Belgium's capital city is called",
+  "target": 44264,
+  "contrast": 53057,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of China?\nA: The capital of China is",
+  "target": 33395,
+  "contrast": 66293,
+  "meta": {
+   "country": "China",
+   "city": "Beijing",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "Ghana's capital city is called",
+  "target": 107077,
+  "contrast": 53057,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Norway?\nA: The capital of Norway is",
+  "target": 48283,
+  "contrast": 53731,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo",
+   "wrong_city": "Cairo"
+  }
+ },
+ {
+  "prompt": "The capital city of Peru is",
+  "target": 35533,
+  "contrast": 15500,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of Chile is",
+  "target": 32528,
+  "contrast": 44264,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Iran?\nA: The capital of Iran is",
+  "target": 88558,
+  "contrast": 41106,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "The capital city of Russia is",
+  "target": 23970,
+  "contrast": 44264,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Denmark?\nA: The capital of Denmark is",
+  "target": 61451,
+  "contrast": 12514,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen",
+   "wrong_city": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of Germany is",
+  "target": 12514,
+  "contrast": 22099,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin",
+   "wrong_city": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Egypt?\nA: The capital of Egypt is",
+  "target": 53731,
+  "contrast": 41106,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Chile?\nA: The capital of Chile is",
+  "target": 32528,
+  "contrast": 106038,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago",
+   "wrong_city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "The capital city of Norway is",
+  "target": 48283,
+  "contrast": 107077,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo",
+   "wrong_city": "Accra"
+  }
+ },
+ {
+  "prompt": "The capital city of Egypt is",
+  "target": 53731,
+  "contrast": 87784,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo",
+   "wrong_city": "Havana"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Ukraine?\nA: The capital of Ukraine is",
+  "target": 106038,
+  "contrast": 18127,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv",
+   "wrong_city": "Delhi"
+  }
+ },
+ {
+  "prompt": "The capital city of Cuba is",
+  "target": 87784,
+  "contrast": 11344,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana",
+   "wrong_city": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of Iraq is",
+  "target": 100667,
+  "contrast": 41106,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Spain, they arrive in",
+  "target": 15500,
+  "contrast": 35533,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid",
+   "wrong_city": "Lima"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Iraq, they arrive in",
+  "target": 100667,
+  "contrast": 98586,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "The capital city of Austria is",
+  "target": 34298,
+  "contrast": 32528,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna",
+   "wrong_city": "Santiago"
+  }
+ },
+ {
+  "prompt": "The capital city of Spain is",
+  "target": 15500,
+  "contrast": 44264,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "Austria's capital city is called",
+  "target": 34298,
+  "contrast": 66293,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Egypt, they arrive in",
+  "target": 53731,
+  "contrast": 89075,
+  "meta": {
+   "country": "Egypt",
+   "city": "Cairo",
+   "wrong_city": "Ankara"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Poland, they arrive in",
+  "target": 66293,
+  "contrast": 7127,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Vietnam?\nA: The capital of Vietnam is",
+  "target": 98586,
+  "contrast": 32528,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi",
+   "wrong_city": "Santiago"
+  }
+ },
+ {
+  "prompt": "Morocco's capital city is called",
+  "target": 168490,
+  "contrast": 66293,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of India, they arrive in",
+  "target": 18127,
+  "contrast": 48283,
+  "meta": {
+   "country": "India",
+   "city": "Delhi",
+   "wrong_city": "Oslo"
+  }
+ },
+ {
+  "prompt": "The capital city of China is",
+  "target": 33395,
+  "contrast": 7127,
+  "meta": {
+   "country": "China",
+   "city": "Beijing",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of Iran is",
+  "target": 88558,
+  "contrast": 33395,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran",
+   "wrong_city": "Beijing"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Denmark, they arrive in",
+  "target": 61451,
+  "contrast": 88558,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen",
+   "wrong_city": "Tehran"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of France?\nA: The capital of France is",
+  "target": 7127,
+  "contrast": 98586,
+  "meta": {
+   "country": "France",
+   "city": "Paris",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Vietnam, they arrive in",
+  "target": 98586,
+  "contrast": 12514,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi",
+   "wrong_city": "Berlin"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Greece, they arrive in",
+  "target": 38721,
+  "contrast": 7127,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Belgium?\nA: The capital of Belgium is",
+  "target": 44264,
+  "contrast": 34298,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Sweden?\nA: The capital of Sweden is",
+  "target": 41106,
+  "contrast": 7127,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Russia?\nA: The capital of Russia is",
+  "target": 23970,
+  "contrast": 53731,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow",
+   "wrong_city": "Cairo"
+  }
+ },
+ {
+  "prompt": "Norway's capital city is called",
+  "target": 48283,
+  "contrast": 52717,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo",
+   "wrong_city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Russia, they arrive in",
+  "target": 23970,
+  "contrast": 87784,
+  "meta": {
+   "country": "Russia",
+   "city": "Moscow",
+   "wrong_city": "Havana"
+  }
+ },
+ {
+  "prompt": "China's capital city is called",
+  "target": 33395,
+  "contrast": 7127,
+  "meta": {
+   "country": "China",
+   "city": "Beijing",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "Cuba's capital city is called",
+  "target": 87784,
+  "contrast": 22099,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana",
+   "wrong_city": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Peru?\nA: The capital of Peru is",
+  "target": 35533,
+  "contrast": 52717,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima",
+   "wrong_city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "The capital city of Italy is",
+  "target": 11344,
+  "contrast": 12514,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome",
+   "wrong_city": "Berlin"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Ghana, they arrive in",
+  "target": 107077,
+  "contrast": 100667,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra",
+   "wrong_city": "Baghdad"
+  }
+ },
+ {
+  "prompt": "The capital city of Ukraine is",
+  "target": 106038,
+  "contrast": 66293,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "The capital city of France is",
+  "target": 7127,
+  "contrast": 33395,
+  "meta": {
+   "country": "France",
+   "city": "Paris",
+   "wrong_city": "Beijing"
+  }
+ },
+ {
+  "prompt": "Peru's capital city is called",
+  "target": 35533,
+  "contrast": 34298,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Portugal's capital city is called",
+  "target": 68696,
+  "contrast": 18127,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon",
+   "wrong_city": "Delhi"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Kenya, they arrive in",
+  "target": 53057,
+  "contrast": 15500,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Ireland?\nA: The capital of Ireland is",
+  "target": 28998,
+  "contrast": 168490,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin",
+   "wrong_city": "Rabat"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of India?\nA: The capital of India is",
+  "target": 18127,
+  "contrast": 33395,
+  "meta": {
+   "country": "India",
+   "city": "Delhi",
+   "wrong_city": "Beijing"
+  }
+ },
+ {
+  "prompt": "India's capital city is called",
+  "target": 18127,
+  "contrast": 48283,
+  "meta": {
+   "country": "India",
+   "city": "Delhi",
+   "wrong_city": "Oslo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Ghana?\nA: The capital of Ghana is",
+  "target": 107077,
+  "contrast": 41106,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "The capital city of India is",
+  "target": 18127,
+  "contrast": 34298,
+  "meta": {
+   "country": "India",
+   "city": "Delhi",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Austria, they arrive in",
+  "target": 34298,
+  "contrast": 88558,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna",
+   "wrong_city": "Tehran"
+  }
+ },
+ {
+  "prompt": "Chile's capital city is called",
+  "target": 32528,
+  "contrast": 53731,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago",
+   "wrong_city": "Cairo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Iraq?\nA: The capital of Iraq is",
+  "target": 100667,
+  "contrast": 15500,
+  "meta": {
+   "country": "Iraq",
+   "city": "Baghdad",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Germany, they arrive in",
+  "target": 12514,
+  "contrast": 98586,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Norway, they arrive in",
+  "target": 48283,
+  "contrast": 15500,
+  "meta": {
+   "country": "Norway",
+   "city": "Oslo",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of Finland is",
+  "target": 63042,
+  "contrast": 38721,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki",
+   "wrong_city": "Athens"
+  }
+ },
+ {
+  "prompt": "The capital city of Portugal is",
+  "target": 68696,
+  "contrast": 15500,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Vietnam's capital city is called",
+  "target": 98586,
+  "contrast": 48283,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi",
+   "wrong_city": "Oslo"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Portugal, they arrive in",
+  "target": 68696,
+  "contrast": 15500,
+  "meta": {
+   "country": "Portugal",
+   "city": "Lisbon",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Ukraine, they arrive in",
+  "target": 106038,
+  "contrast": 98586,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "The capital city of Ghana is",
+  "target": 107077,
+  "contrast": 89075,
+  "meta": {
+   "country": "Ghana",
+   "city": "Accra",
+   "wrong_city": "Ankara"
+  }
+ },
+ {
+  "prompt": "Denmark's capital city is called",
+  "target": 61451,
+  "contrast": 7127,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "Turkey's capital city is called",
+  "target": 89075,
+  "contrast": 106038,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara",
+   "wrong_city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "Hungary's capital city is called",
+  "target": 48015,
+  "contrast": 53057,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Greece's capital city is called",
+  "target": 38721,
+  "contrast": 12514,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens",
+   "wrong_city": "Berlin"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Chile, they arrive in",
+  "target": 32528,
+  "contrast": 87784,
+  "meta": {
+   "country": "Chile",
+   "city": "Santiago",
+   "wrong_city": "Havana"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Japan, they arrive in",
+  "target": 22099,
+  "contrast": 48015,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo",
+   "wrong_city": "Budapest"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Morocco, they arrive in",
+  "target": 168490,
+  "contrast": 106038,
+  "meta": {
+   "country": "Morocco",
+   "city": "Rabat",
+   "wrong_city": "Kyiv"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Iran, they arrive in",
+  "target": 88558,
+  "contrast": 11344,
+  "meta": {
+   "country": "Iran",
+   "city": "Tehran",
+   "wrong_city": "Rome"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Belgium, they arrive in",
+  "target": 44264,
+  "contrast": 48283,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels",
+   "wrong_city": "Oslo"
+  }
+ },
+ {
+  "prompt": "Ireland's capital city is called",
+  "target": 28998,
+  "contrast": 68696,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin",
+   "wrong_city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Hungary?\nA: The capital of Hungary is",
+  "target": 48015,
+  "contrast": 61451,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest",
+   "wrong_city": "Copenhagen"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Kenya?\nA: The capital of Kenya is",
+  "target": 53057,
+  "contrast": 168490,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi",
+   "wrong_city": "Rabat"
+  }
+ },
+ {
+  "prompt": "The capital city of Thailand is",
+  "target": 52717,
+  "contrast": 66293,
+  "meta": {
+   "country": "Thailand",
+   "city": "Bangkok",
+   "wrong_city": "Warsaw"
+  }
+ },
+ {
+  "prompt": "Germany's capital city is called",
+  "target": 12514,
+  "contrast": 87784,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin",
+   "wrong_city": "Havana"
+  }
+ },
+ {
+  "prompt": "The capital city of Poland is",
+  "target": 66293,
+  "contrast": 7127,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of Sweden is",
+  "target": 41106,
+  "contrast": 7127,
+  "meta": {
+   "country": "Sweden",
+   "city": "Stockholm",
+   "wrong_city": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of Denmark is",
+  "target": 61451,
+  "contrast": 52717,
+  "meta": {
+   "country": "Denmark",
+   "city": "Copenhagen",
+   "wrong_city": "Bangkok"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Poland?\nA: The capital of Poland is",
+  "target": 66293,
+  "contrast": 28998,
+  "meta": {
+   "country": "Poland",
+   "city": "Warsaw",
+   "wrong_city": "Dublin"
+  }
+ },
+ {
+  "prompt": "Kenya's capital city is called",
+  "target": 53057,
+  "contrast": 68696,
+  "meta": {
+   "country": "Kenya",
+   "city": "Nairobi",
+   "wrong_city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Germany?\nA: The capital of Germany is",
+  "target": 12514,
+  "contrast": 41106,
+  "meta": {
+   "country": "Germany",
+   "city": "Berlin",
+   "wrong_city": "Stockholm"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Finland, they arrive in",
+  "target": 63042,
+  "contrast": 33395,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki",
+   "wrong_city": "Beijing"
+  }
+ },
+ {
+  "prompt": "The capital city of Vietnam is",
+  "target": 98586,
+  "contrast": 34298,
+  "meta": {
+   "country": "Vietnam",
+   "city": "Hanoi",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Finland?\nA: The capital of Finland is",
+  "target": 63042,
+  "contrast": 61451,
+  "meta": {
+   "country": "Finland",
+   "city": "Helsinki",
+   "wrong_city": "Copenhagen"
+  }
+ },
+ {
+  "prompt": "Italy's capital city is called",
+  "target": 11344,
+  "contrast": 15500,
+  "meta": {
+   "country": "Italy",
+   "city": "Rome",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Peru, they arrive in",
+  "target": 35533,
+  "contrast": 68696,
+  "meta": {
+   "country": "Peru",
+   "city": "Lima",
+   "wrong_city": "Lisbon"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Austria?\nA: The capital of Austria is",
+  "target": 34298,
+  "contrast": 15500,
+  "meta": {
+   "country": "Austria",
+   "city": "Vienna",
+   "wrong_city": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Japan?\nA: The capital of Japan is",
+  "target": 22099,
+  "contrast": 100667,
+  "meta": {
+   "country": "Japan",
+   "city": "Tokyo",
+   "wrong_city": "Baghdad"
+  }
+ },
+ {
+  "prompt": "The capital city of Hungary is",
+  "target": 48015,
+  "contrast": 32528,
+  "meta": {
+   "country": "Hungary",
+   "city": "Budapest",
+   "wrong_city": "Santiago"
+  }
+ },
+ {
+  "prompt": "Spain's capital city is called",
+  "target": 15500,
+  "contrast": 23970,
+  "meta": {
+   "country": "Spain",
+   "city": "Madrid",
+   "wrong_city": "Moscow"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Turkey?\nA: The capital of Turkey is",
+  "target": 89075,
+  "contrast": 38721,
+  "meta": {
+   "country": "Turkey",
+   "city": "Ankara",
+   "wrong_city": "Athens"
+  }
+ },
+ {
+  "prompt": "The capital city of Belgium is",
+  "target": 44264,
+  "contrast": 98586,
+  "meta": {
+   "country": "Belgium",
+   "city": "Brussels",
+   "wrong_city": "Hanoi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Greece?\nA: The capital of Greece is",
+  "target": 38721,
+  "contrast": 44264,
+  "meta": {
+   "country": "Greece",
+   "city": "Athens",
+   "wrong_city": "Brussels"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Ireland, they arrive in",
+  "target": 28998,
+  "contrast": 34298,
+  "meta": {
+   "country": "Ireland",
+   "city": "Dublin",
+   "wrong_city": "Vienna"
+  }
+ },
+ {
+  "prompt": "France's capital city is called",
+  "target": 7127,
+  "contrast": 38721,
+  "meta": {
+   "country": "France",
+   "city": "Paris",
+   "wrong_city": "Athens"
+  }
+ },
+ {
+  "prompt": "When people visit the capital of Cuba, they arrive in",
+  "target": 87784,
+  "contrast": 53057,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana",
+   "wrong_city": "Nairobi"
+  }
+ },
+ {
+  "prompt": "Ukraine's capital city is called",
+  "target": 106038,
+  "contrast": 38721,
+  "meta": {
+   "country": "Ukraine",
+   "city": "Kyiv",
+   "wrong_city": "Athens"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Cuba?\nA: The capital of Cuba is",
+  "target": 87784,
+  "contrast": 7127,
+  "meta": {
+   "country": "Cuba",
+   "city": "Havana",
+   "wrong_city": "Paris"
+  }
+ }
+]

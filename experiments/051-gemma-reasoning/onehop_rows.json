@@ -1,0 +1,1124 @@
+[
+ {
+  "prompt": "Q: What is the capital of the US state of Texas?\nA: The capital is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Texas is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Texas is",
+  "target": 22605,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Dallas",
+   "bridge": "Texas",
+   "answer": "Austin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Florida?\nA: The capital is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Florida is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Florida is",
+  "target": 161316,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Miami",
+   "bridge": "Florida",
+   "answer": "Tallahassee"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Illinois?\nA: The capital is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Illinois is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Illinois is",
+  "target": 46777,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Chicago",
+   "bridge": "Illinois",
+   "answer": "Springfield"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Michigan?\nA: The capital is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Michigan is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Michigan is",
+  "target": 83496,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Detroit",
+   "bridge": "Michigan",
+   "answer": "Lansing"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Washington?\nA: The capital is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Washington is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Washington is",
+  "target": 85687,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Seattle",
+   "bridge": "Washington",
+   "answer": "Olympia"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Oregon?\nA: The capital is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Oregon is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Oregon is",
+  "target": 51094,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Portland",
+   "bridge": "Oregon",
+   "answer": "Salem"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of California?\nA: The capital is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of California is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of California is",
+  "target": 43939,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Los Angeles",
+   "bridge": "California",
+   "answer": "Sacramento"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of New York?\nA: The capital is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of New York is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of New York is",
+  "target": 48794,
+  "contrast": 22605,
+  "meta": {
+   "family": "state_capital",
+   "city": "Buffalo",
+   "bridge": "New York",
+   "answer": "Albany"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Pennsylvania?\nA: The capital is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Pennsylvania is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Pennsylvania is",
+  "target": 132168,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Philadelphia",
+   "bridge": "Pennsylvania",
+   "answer": "Harrisburg"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Ohio?\nA: The capital is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Ohio is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Ohio is",
+  "target": 34602,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Cleveland",
+   "bridge": "Ohio",
+   "answer": "Columbus"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Tennessee?\nA: The capital is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Tennessee is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Tennessee is",
+  "target": 47882,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "Memphis",
+   "bridge": "Tennessee",
+   "answer": "Nashville"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of the US state of Louisiana?\nA: The capital is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "The capital city of the US state of Louisiana is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Louisiana is",
+  "target": 120099,
+  "contrast": 48794,
+  "meta": {
+   "family": "state_capital",
+   "city": "New Orleans",
+   "bridge": "Louisiana",
+   "answer": "Baton Rouge"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Germany?\nA: The capital is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "The capital city of Germany is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Germany is",
+  "target": 12514,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "Berlin"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Italy?\nA: The capital is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "The capital city of Italy is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Italy is",
+  "target": 11344,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Rome"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Spain?\nA: The capital is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "The capital city of Spain is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Spain is",
+  "target": 15500,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Madrid"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of France?\nA: The capital is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "The capital city of France is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of France is",
+  "target": 7127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "Paris"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Japan?\nA: The capital is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "The capital city of Japan is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Japan is",
+  "target": 22099,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Tokyo"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of China?\nA: The capital is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "The capital city of China is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of China is",
+  "target": 33395,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Beijing"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of India?\nA: The capital is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "The capital city of India is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of India is",
+  "target": 18127,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Delhi"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Brazil?\nA: The capital is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "The capital city of Brazil is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Brazil is",
+  "target": 4155,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Brasilia"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Canada?\nA: The capital is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "The capital city of Canada is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Canada is",
+  "target": 38812,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "Ottawa"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Turkey?\nA: The capital is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "The capital city of Turkey is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Turkey is",
+  "target": 89075,
+  "contrast": 33395,
+  "meta": {
+   "family": "country_capital",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Ankara"
+  }
+ },
+ {
+  "prompt": "Q: What is the capital of Australia?\nA: The capital is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "The capital city of Australia is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Fact: the capital of Australia is",
+  "target": 80758,
+  "contrast": 89075,
+  "meta": {
+   "family": "country_capital",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "Canberra"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Germany?\nA: The language is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "The main language of Germany is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Germany is",
+  "target": 5132,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Munich",
+   "bridge": "Germany",
+   "answer": "German"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Italy?\nA: The language is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "The main language of Italy is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Italy is",
+  "target": 12710,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Milan",
+   "bridge": "Italy",
+   "answer": "Italian"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Spain?\nA: The language is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "The main language of Spain is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Spain is",
+  "target": 13035,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Barcelona",
+   "bridge": "Spain",
+   "answer": "Spanish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of France?\nA: The language is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "The main language of France is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in France is",
+  "target": 6987,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Lyon",
+   "bridge": "France",
+   "answer": "French"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Japan?\nA: The language is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "The main language of Japan is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Japan is",
+  "target": 11430,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Osaka",
+   "bridge": "Japan",
+   "answer": "Japanese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of China?\nA: The language is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "The main language of China is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in China is",
+  "target": 8974,
+  "contrast": 4645,
+  "meta": {
+   "family": "country_language",
+   "city": "Shanghai",
+   "bridge": "China",
+   "answer": "Chinese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of India?\nA: The language is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "The main language of India is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in India is",
+  "target": 40686,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Mumbai",
+   "bridge": "India",
+   "answer": "Hindi"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Brazil?\nA: The language is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "The main language of Brazil is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Brazil is",
+  "target": 38275,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Rio de Janeiro",
+   "bridge": "Brazil",
+   "answer": "Portuguese"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Canada?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of Canada is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Canada is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Toronto",
+   "bridge": "Canada",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Turkey?\nA: The language is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "The main language of Turkey is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Turkey is",
+  "target": 31526,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Istanbul",
+   "bridge": "Turkey",
+   "answer": "Turkish"
+  }
+ },
+ {
+  "prompt": "Q: What is the main language of Australia?\nA: The language is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "The main language of Australia is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ },
+ {
+  "prompt": "Fact: the language spoken in Australia is",
+  "target": 4645,
+  "contrast": 8974,
+  "meta": {
+   "family": "country_language",
+   "city": "Sydney",
+   "bridge": "Australia",
+   "answer": "English"
+  }
+ }
+]

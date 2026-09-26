@@ -1,0 +1,12 @@
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "triamp400", "n": 39, "ampF0": 1.0033, "ampFM": 1.0652, "sup": 1.0, "cf_amp": 1.2815, "pin0": 0.9208, "pinM": 1.2659, "a_pos_ho": 8.341, "secs": 26.0}
+{"layer": 2, "kind": "resid", "latent": 15688, "arm": "anchor_support", "n": 67742, "anchor_support_rate": 0.00211}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "triamp400", "n": 41, "ampF0": 1.6827, "ampFM": 1.0225, "sup": 0.9347, "cf_amp": 4.6855, "pin0": 0.6108, "pinM": 0.9504, "a_pos_ho": 2.206, "secs": 24.7}
+{"layer": 2, "kind": "resid", "latent": 20312, "arm": "anchor_support", "n": 69156, "anchor_support_rate": 0.00208}
+{"layer": 2, "kind": "resid", "latent": 7837, "arm": "triamp400", "n": 16, "ampF0": 1.0712, "ampFM": 1.1011, "sup": 0.9856, "cf_amp": 1.3154, "pin0": 0.8377, "pinM": 1.3784, "a_pos_ho": 7.601, "secs": 23.7}
+{"layer": 2, "kind": "resid", "latent": 7837, "arm": "anchor_support", "n": 64019, "anchor_support_rate": 0.00225}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "triamp400", "n": 35, "ampF0": 1.1016, "ampFM": 1.1233, "sup": 1.0, "cf_amp": 0.9873, "pin0": 0.7706, "pinM": 0.9121, "a_pos_ho": 10.169, "secs": 40.8}
+{"layer": 4, "kind": "resid", "latent": 21371, "arm": "anchor_support", "n": 118537, "anchor_support_rate": 0.00207}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "triamp400", "n": 57, "ampF0": 1.0556, "ampFM": 1.0938, "sup": 1.0, "cf_amp": 0.9072, "pin0": 0.8845, "pinM": 0.8982, "a_pos_ho": 10.295, "secs": 41.5}
+{"layer": 4, "kind": "resid", "latent": 14795, "arm": "anchor_support", "n": 112880, "anchor_support_rate": 0.00218}
+{"layer": 4, "kind": "resid", "latent": 15287, "arm": "triamp400", "n": 150, "ampF0": 0.8224, "ampFM": 1.2737, "sup": 0.9507, "cf_amp": 1.2759, "pin0": 0.7978, "pinM": 1.0458, "a_pos_ho": 8.028, "secs": 41.7}
+{"layer": 4, "kind": "resid", "latent": 15287, "arm": "anchor_support", "n": 116683, "anchor_support_rate": 0.00207}

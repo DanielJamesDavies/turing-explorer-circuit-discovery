@@ -1,0 +1,299 @@
+[
+ {
+  "prompt": "January, February,",
+  "target": 4482,
+  "contrast": 5468,
+  "meta": {
+   "kind": "month",
+   "prev": "February",
+   "next": "March",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "March, April, May,",
+  "target": 4456,
+  "contrast": 4482,
+  "meta": {
+   "kind": "month",
+   "prev": "May",
+   "next": "June",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "August, September, October, November,",
+  "target": 5824,
+  "contrast": 4826,
+  "meta": {
+   "kind": "month",
+   "prev": "November",
+   "next": "December",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "March, April,",
+  "target": 2782,
+  "contrast": 4482,
+  "meta": {
+   "kind": "month",
+   "prev": "April",
+   "next": "May",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "October, November,",
+  "target": 5824,
+  "contrast": 5424,
+  "meta": {
+   "kind": "month",
+   "prev": "November",
+   "next": "December",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "June, July,",
+  "target": 4826,
+  "contrast": 4456,
+  "meta": {
+   "kind": "month",
+   "prev": "July",
+   "next": "August",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "August, September, October,",
+  "target": 5516,
+  "contrast": 4826,
+  "meta": {
+   "kind": "month",
+   "prev": "October",
+   "next": "November",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "June, July, August,",
+  "target": 5225,
+  "contrast": 4456,
+  "meta": {
+   "kind": "month",
+   "prev": "August",
+   "next": "September",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "June, July, August, September,",
+  "target": 5424,
+  "contrast": 4456,
+  "meta": {
+   "kind": "month",
+   "prev": "September",
+   "next": "October",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "February, March, April,",
+  "target": 2782,
+  "contrast": 6363,
+  "meta": {
+   "kind": "month",
+   "prev": "April",
+   "next": "May",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "July, August, September,",
+  "target": 5424,
+  "contrast": 4707,
+  "meta": {
+   "kind": "month",
+   "prev": "September",
+   "next": "October",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "August, September,",
+  "target": 5424,
+  "contrast": 4826,
+  "meta": {
+   "kind": "month",
+   "prev": "September",
+   "next": "October",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "February, March, April, May,",
+  "target": 4456,
+  "contrast": 6363,
+  "meta": {
+   "kind": "month",
+   "prev": "May",
+   "next": "June",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "January, February, March, April,",
+  "target": 2782,
+  "contrast": 5468,
+  "meta": {
+   "kind": "month",
+   "prev": "April",
+   "next": "May",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "September, October,",
+  "target": 5516,
+  "contrast": 5225,
+  "meta": {
+   "kind": "month",
+   "prev": "October",
+   "next": "November",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "May, June,",
+  "target": 4707,
+  "contrast": 2782,
+  "meta": {
+   "kind": "month",
+   "prev": "June",
+   "next": "July",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "January, February, March,",
+  "target": 4623,
+  "contrast": 5468,
+  "meta": {
+   "kind": "month",
+   "prev": "March",
+   "next": "April",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "February, March,",
+  "target": 4623,
+  "contrast": 6363,
+  "meta": {
+   "kind": "month",
+   "prev": "March",
+   "next": "April",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "May, June, July,",
+  "target": 4826,
+  "contrast": 2782,
+  "meta": {
+   "kind": "month",
+   "prev": "July",
+   "next": "August",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "April, May, June, July,",
+  "target": 4826,
+  "contrast": 4623,
+  "meta": {
+   "kind": "month",
+   "prev": "July",
+   "next": "August",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "July, August, September, October,",
+  "target": 5516,
+  "contrast": 4707,
+  "meta": {
+   "kind": "month",
+   "prev": "October",
+   "next": "November",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "April, May, June,",
+  "target": 4707,
+  "contrast": 4623,
+  "meta": {
+   "kind": "month",
+   "prev": "June",
+   "next": "July",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "March, April, May, June,",
+  "target": 4707,
+  "contrast": 4482,
+  "meta": {
+   "kind": "month",
+   "prev": "June",
+   "next": "July",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "April, May,",
+  "target": 4456,
+  "contrast": 4623,
+  "meta": {
+   "kind": "month",
+   "prev": "May",
+   "next": "June",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "September, October, November,",
+  "target": 5824,
+  "contrast": 5225,
+  "meta": {
+   "kind": "month",
+   "prev": "November",
+   "next": "December",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "May, June, July, August,",
+  "target": 5225,
+  "contrast": 2782,
+  "meta": {
+   "kind": "month",
+   "prev": "August",
+   "next": "September",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "July, August,",
+  "target": 5225,
+  "contrast": 4707,
+  "meta": {
+   "kind": "month",
+   "prev": "August",
+   "next": "September",
+   "run": 2
+  }
+ }
+]

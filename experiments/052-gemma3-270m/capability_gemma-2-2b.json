@@ -1,0 +1,173 @@
+{
+ "model": "unsloth/gemma-2-2b",
+ "tasks": {
+  "ioi": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.6,
+   "pos": 1.0,
+   "margin": 3.90625,
+   "example": "When James and Peter went to the store, Peter gave a letter to",
+   "target": " James",
+   "contrast": " Peter"
+  },
+  "induction": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 12.2828125,
+   "example": "basket book picture island engine pencil basket book picture",
+   "target": " island",
+   "contrast": " chair"
+  },
+  "greater_than": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.3333333333333333,
+   "pos": 1.0,
+   "margin": 4.15,
+   "example": "The war lasted from the year 1914 to the year 19",
+   "target": "2",
+   "contrast": "0"
+  },
+  "agreement_attractor": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.36666666666666664,
+   "pos": 1.0,
+   "margin": 2.5166666666666666,
+   "example": "The letters near the cabinet",
+   "target": " are",
+   "contrast": " is"
+  },
+  "twohop_language": {
+   "n": 15,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 13.35625,
+   "example": "The main language spoken in the city of Munich is",
+   "target": " German",
+   "contrast": " Swedish"
+  },
+  "capital": {
+   "n": 20,
+   "split": 0,
+   "acc": 0.95,
+   "pos": 1.0,
+   "margin": 13.746875,
+   "example": "Q: What is the capital of Greece?\nA: The capital of Greece is",
+   "target": " Athens",
+   "contrast": " Rome"
+  },
+  "country_of_capital": {
+   "n": 20,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 12.28125,
+   "example": "Stockholm is the capital city of",
+   "target": " Sweden",
+   "contrast": " Denmark"
+  },
+  "month_succ": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 7.133333333333334,
+   "example": "February, March, April,",
+   "target": " May",
+   "contrast": " February"
+  },
+  "day_succ": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 6.179166666666666,
+   "example": "Tuesday, Wednesday, Thursday,",
+   "target": " Friday",
+   "contrast": " Tuesday"
+  },
+  "number_succ": {
+   "n": 0,
+   "split": 60
+  },
+  "addition_digits": {
+   "n": 0,
+   "split": 78
+  },
+  "past_tense": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.2833333333333333,
+   "pos": 0.8833333333333333,
+   "margin": 0.8833333333333333,
+   "example": "Today I visit. Yesterday I",
+   "target": " visited",
+   "contrast": " visit"
+  },
+  "plural": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.16666666666666666,
+   "pos": 1.0,
+   "margin": 4.35,
+   "example": "I have one cat. You have two",
+   "target": " cats",
+   "contrast": " cat"
+  },
+  "opposite": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.9666666666666667,
+   "pos": 1.0,
+   "margin": 3.6458333333333335,
+   "example": "The opposite of hard is",
+   "target": " soft",
+   "contrast": " hard"
+  },
+  "pronoun": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 4.627083333333333,
+   "example": "Peter went to the shop because",
+   "target": " he",
+   "contrast": " she"
+  },
+  "list_close": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 6.84375,
+   "example": "We bought peaches, melons, plums,",
+   "target": " and",
+   "contrast": " or"
+  },
+  "acronym": {
+   "n": 10,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 1.0,
+   "margin": 8.18671875,
+   "example": "The National Aeronautics and Space Administration (",
+   "target": "N",
+   "contrast": "Y"
+  },
+  "code_bracket": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 10.325,
+   "example": "def f(total):\n    return (total + 1",
+   "target": ")",
+   "contrast": ":"
+  }
+ }
+}

@@ -885,11 +885,16 @@ class GradientDiscoveryBase(DiscoveryMethod):
                 not in FLOORS_NEEDING_NEGATIVES):
             return None
         cfg = config.discovery.neg_context_selection
+        n_ctr = config.discovery.contrast_context_count
+        if n_ctr == "match":        # as many contrast as activating contexts (same split rule -> same train count)
+            n_ctr = int(min(probe_data.pos_tokens.shape[0], self.probe_sequence_count))
+        elif n_ctr is None:
+            n_ctr = int(self.probe_sequence_count)
         selection = self._neg_context_selector().select(
             seed_comp_idx,
             seed_latent_idx,
             mode,
-            max_sequences=max(1, int(self.probe_sequence_count)),
+            max_sequences=max(1, int(n_ctr)),
             batch_size=max(1, int(config.discovery.probe_batch_size)),
             candidate_pool_size=(
                 self.distant_pool_size if mode == "distant" else cfg.candidate_pool_size

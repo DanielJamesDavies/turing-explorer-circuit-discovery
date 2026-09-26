@@ -1,0 +1,71 @@
+{
+ "prompt": "Q: What is the main language of the country containing the city of Munich?\nA: The language is",
+ "answers": {
+  "Germany/lang": "German",
+  "Germany/cap": "Berlin",
+  "China/lang": "Chinese",
+  "China/cap": "Beijing"
+ },
+ "results": {
+  "none": {
+   "Germany/lang": -0.4743114411830902,
+   "Germany/cap": -14.411811828613281,
+   "China/lang": -14.411811828613281,
+   "China/cap": -26.46454620361328
+  },
+  "entity Germany->China": {
+   "Germany/lang": -0.6375733613967896,
+   "Germany/cap": -14.2625732421875,
+   "China/lang": -2.7625732421875,
+   "China/cap": -12.8250732421875
+  },
+  "relation lang->cap": {
+   "Germany/lang": -0.25330817699432373,
+   "Germany/cap": -14.253308296203613,
+   "China/lang": -14.565808296203613,
+   "China/cap": -24.987682342529297
+  },
+  "both": {
+   "Germany/lang": -0.468456506729126,
+   "Germany/cap": -14.280956268310547,
+   "China/lang": -2.718456506729126,
+   "China/cap": -12.405956268310547
+  }
+ },
+ "groups": {
+  "RELATION": [
+   "att L2.3247",
+   "att L3.14936",
+   "att L4.15521",
+   "mlp L0.209",
+   "mlp L2.3273",
+   "mlp L2.3951",
+   "mlp L3.6875",
+   "mlp L4.5344"
+  ],
+  "ENTITY": [
+   "att L18.1757",
+   "att L18.1892",
+   "att L18.2679",
+   "att L18.4330",
+   "att L18.7034",
+   "att L22.460",
+   "att L22.1118",
+   "att L22.3299",
+   "att L22.5099",
+   "att L22.7621",
+   "att L22.7632",
+   "att L22.8830",
+   "att L22.9127",
+   "att L22.9978",
+   "att L22.11991",
+   "mlp L0.6585",
+   "mlp L0.7801"
+  ],
+  "BOTH": [
+   "att L22.4770",
+   "att L22.7016",
+   "att L22.8732"
+  ]
+ }
+}

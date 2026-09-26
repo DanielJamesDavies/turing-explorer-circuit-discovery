@@ -42,6 +42,14 @@ AGENTS.md
 /experiments/**/*.jsonl.gz
 /experiments/**/*.flag
 /experiments/_archive/
+# 049: flattened tables (regenerable from the shard stores) and the two
+# per-latent csvs (20-45 MB each); everything else in results*/ is tracked
+/experiments/049-circuit-graph/tables*/
+/experiments/049-circuit-graph/results*/amplitude_profiles.csv
+/experiments/049-circuit-graph/results*/fanout_latents.csv
+# 062: run outputs come back from the pod as a tarball; logs are regenerated
+/experiments/062-h100-protocol-v1/out*/
+/experiments/062-h100-protocol-v1/logs/
 
 # Root-level scratch from local smokes (never commit)
 /*.log

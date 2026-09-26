@@ -1,0 +1,122 @@
+{
+ "capital": {
+  "n": 20,
+  "acc": 0.95,
+  "margin": 13.884375,
+  "pos": 1.0,
+  "p_target": 0.86619310118258,
+  "example": ": What is the capital of Norway?\nA: The capital of Norway is",
+  "target": " Oslo",
+  "contrast": " Madrid"
+ },
+ "country_of_capital": {
+  "n": 20,
+  "acc": 1.0,
+  "margin": 13.803125,
+  "pos": 1.0,
+  "p_target": 0.8878887951374054,
+  "example": "Paris is the capital city of",
+  "target": " France",
+  "contrast": " Japan"
+ },
+ "month_succ": {
+  "n": 60,
+  "acc": 1.0,
+  "margin": 7.045833333333333,
+  "pos": 1.0,
+  "p_target": 0.6251632670561472,
+  "example": "April, May, June,",
+  "target": " July",
+  "contrast": " April"
+ },
+ "day_succ": {
+  "n": 60,
+  "acc": 1.0,
+  "margin": 6.160416666666666,
+  "pos": 1.0,
+  "p_target": 0.5847379446029664,
+  "example": "Monday, Tuesday, Wednesday,",
+  "target": " Thursday",
+  "contrast": " Monday"
+ },
+ "past_tense": {
+  "n": 60,
+  "acc": 0.2833333333333333,
+  "margin": 1.4854166666666666,
+  "pos": 0.9166666666666666,
+  "p_target": 0.09793078772102794,
+  "example": "Today I start. Yesterday I",
+  "target": " started",
+  "contrast": " start"
+ },
+ "plural": {
+  "n": 60,
+  "acc": 0.26666666666666666,
+  "margin": 4.31875,
+  "pos": 1.0,
+  "p_target": 0.36311930815378823,
+  "example": "I have one river. You have two",
+  "target": " rivers",
+  "contrast": " river"
+ },
+ "opposite": {
+  "n": 60,
+  "acc": 0.9166666666666666,
+  "margin": 3.73125,
+  "pos": 1.0,
+  "p_target": 0.4943309723089139,
+  "example": "The opposite of rich is",
+  "target": " poor",
+  "contrast": " rich"
+ },
+ "pronoun": {
+  "n": 60,
+  "acc": 1.0,
+  "margin": 4.702083333333333,
+  "pos": 1.0,
+  "p_target": 0.6786663899819056,
+  "example": "Tom went to the shop because",
+  "target": " he",
+  "contrast": " she"
+ },
+ "induction": {
+  "n": 60,
+  "acc": 1.0,
+  "margin": 11.876041666666667,
+  "pos": 1.0,
+  "p_target": 0.7627141386270523,
+  "example": "island letter river forest monkey market island letter river",
+  "target": " forest",
+  "contrast": " basket"
+ },
+ "acronym": {
+  "n": 10,
+  "acc": 0.0,
+  "margin": 8.27109375,
+  "pos": 1.0,
+  "p_target": 0.009176859424769646,
+  "example": "The National Aeronautics and Space Administration (",
+  "target": "N",
+  "contrast": "X"
+ },
+ "code_bracket": {
+  "n": 60,
+  "acc": 1.0,
+  "margin": 10.2625,
+  "pos": 1.0,
+  "p_target": 0.6805309375127157,
+  "example": "def f(n):\n    return (n + 1",
+  "target": ")",
+  "contrast": ":"
+ },
+ "greater_than": {
+  "n": 60,
+  "acc": 0.3,
+  "margin": 4.14375,
+  "pos": 1.0,
+  "p_target": 0.3426776108642419,
+  "example": "The war lasted from the year 1724 to the year 17",
+  "target": "3",
+  "contrast": "1"
+ }
+}

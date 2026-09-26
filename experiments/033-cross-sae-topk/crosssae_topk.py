@@ -58,6 +58,28 @@ N_NULL = int(os.environ.get("N_NULL", 3))
 STEPS, LR = 400, 0.05
 LAM = float(os.environ.get("LAM", 1e-3))
 TAG = "" if LAM == 1e-3 else "_lam%g" % LAM
+# ERROR_MODE (added 2026-09-19 for the 052 Gemma port): "current" = this file's
+# original semantics, site = members/floor + the SAE error of the EDITED stream;
+# "clean" = the same members/floor with the SAE error held at its CLEAN-run value
+# (SFC's error-node convention), via an added (err_clean - err(x)) term that is
+# bitwise zero at identity. Needed on uncapped JumpReLU SAEs (052
+# res_explosion_diag); this re-run checks it leaves TopK results unchanged.
+# ROWS_FILE keeps the check's rows apart from the original rows.jsonl.
+ERROR_MODE = os.environ.get("ERROR_MODE", "current")
+if ERROR_MODE == "clean":
+    TAG += "_clean"
+# BOUND=clamp (052 solution_diag): inside the counterfactual no re-encoded latent
+# may exceed the token's largest clean-run latent value at that site. Exact at
+# identity. (The count cap half of 052's cap+clamp is an exact no-op here: Top-K
+# already fires exactly k.) This re-run asks whether clamp changes TopK results.
+BOUND = [b for b in os.environ.get("BOUND", "").split("+") if b]
+if BOUND:
+    TAG += "_" + "+".join(BOUND)
+CLEAN_MX = {}      # site -> clean-run per-token max latent, same batch as CLEAN_E
+ROWS_FILE = os.environ.get("ROWS_FILE", "rows.jsonl")
+SKIP_GATE = os.environ.get("SKIP_GATE", "0") == "1"
+CLEAN_E = {}       # site -> clean-run SAE error for the batch currently in forward()
+SAES_REF = {}      # the current seed's upstream dictionaries
 TRIPLE_W, DUAL_W = 0.10, 0.25
 torch.set_float32_matmul_precision("high")
 
@@ -158,7 +180,51 @@ class Hooks:
         self.handles = []
 
 
+def sae_error(sae, x, c):
+    """x - (c W_dec + b_dec). ONE function for both runs -> bitwise equal at identity."""
+    return x - (c @ sae["W_dec"] + sae["b_dec"])
+
+
+def clean_errs(tokens, sites):
+    """the SAE error at each site on the UNEDITED run (detached)."""
+    cap, hs = {}, []
+    for s in sites:
+        def grab(mod, inp, out, _s=s):
+            x = out[0] if isinstance(out, tuple) else out
+            c = encode(SAES_REF[_s], x)
+            cap[_s] = sae_error(SAES_REF[_s], x, c).detach()
+            CLEAN_MX[_s] = c.max(-1).values.detach()
+        hs.append(site_module(s).register_forward_hook(grab))
+    try:
+        with torch.no_grad():
+            model(tokens.to(DEV), use_cache=False)
+    finally:
+        for h in hs:
+            h.remove()
+    return cap
+
+
+def enc_site(site, sae, x):
+    """encode, then BOUND=clamp: cap each latent at the token's clean max."""
+    c = encode(sae, x)
+    if "clamp" in BOUND and site in CLEAN_MX:
+        c = torch.minimum(c, CLEAN_MX[site][..., None])
+    return c
+
+
+def err_corr(site, sae, x, c):
+    """ERROR_MODE=clean: (err_clean - err(x)), so the site becomes
+    c_hat W_dec + b_dec + err_clean; zero in current mode."""
+    if ERROR_MODE != "clean" or site not in CLEAN_E:
+        return 0.0
+    return CLEAN_E[site] - sae_error(sae, x, c)
+
+
 def forward(tokens, hooks, grad=False):
+    global CLEAN_E
+    CLEAN_MX.clear()
+    CLEAN_E = (clean_errs(tokens, list(hooks.transforms))
+               if (ERROR_MODE == "clean" or BOUND) and hooks.transforms else {})
     with torch.set_grad_enabled(grad), hooks:
         model(tokens.to(DEV), use_cache=False)
     return hooks.seed_out
@@ -168,14 +234,14 @@ def train_transform(saes, site, temp, params, floors):
     """code = m*alpha*c + (1-m)*floor, decoded as a delta."""
     sae = saes[site]
     def fn(x):
-        c = encode(sae, x)
+        c = enc_site(site, sae, x)
         th, ps = params[site]
         m = torch.sigmoid(th / (temp[0] if temp else 1.0))
         chat = m * F.softplus(ps) * c
         fl = floors.get(site) if floors else None
         if fl is not None:
             chat = chat + (1 - m) * fl
-        return x + decode_delta(sae, chat - c)
+        return x + decode_delta(sae, chat - c) + err_corr(site, sae, x, c)
     return fn
 
 
@@ -186,12 +252,12 @@ def eval_transform(saes, site, members_alpha, floor):
     av = torch.tensor([ma[int(i)] for i in idx.tolist()], device=DEV)
     fl = floor.get(site) if floor else None
     def fn(x):
-        c = encode(sae, x)
+        c = enc_site(site, sae, x)
         chat = (fl.expand_as(c).clone() if fl is not None
                 else torch.zeros_like(c))
         if len(idx):
             chat[..., idx] = c[..., idx] * av
-        return x + decode_delta(sae, chat - c)
+        return x + decode_delta(sae, chat - c) + err_corr(site, sae, x, c)
     return fn
 
 
@@ -266,7 +332,8 @@ def scan():
 def run():
     data = torch.load(HERE / SCAN_FILE, weights_only=False)
     toks, seeds = data["tokens"], data["seeds"]
-    rows_path = HERE / "rows.jsonl"
+    global SAES_REF
+    rows_path = HERE / ROWS_FILE
     done = set()
     if rows_path.exists():
         for line in rows_path.open():
@@ -290,6 +357,7 @@ def run():
         if not UP:
             continue
         saes = {s: load_sae(hookpoint(s)) for s in UP}
+        SAES_REF = saes
         seed_sae = load_sae(hookpoint(seed_site))
         pos, neg = toks[S["pos_windows"]], toks[S["neg_windows"]]
         pos_tr, pos_ho = pos[:N_TRAIN], pos[N_TRAIN:]
@@ -421,11 +489,11 @@ def run():
                     continue
                 sae = saes[site]
                 idx = torch.tensor(sorted(d), device=DEV, dtype=torch.long)
-                def fn(x, _sae=sae, _idx=idx):
-                    c = encode(_sae, x)
+                def fn(x, _sae=sae, _idx=idx, _s=site):
+                    c = enc_site(_s, _sae, x)
                     chat = c.clone()
                     chat[..., _idx] = 0.0
-                    return x + decode_delta(_sae, chat - c)
+                    return x + decode_delta(_sae, chat - c) + err_corr(_s, _sae, x, c)
                 sup_tr[site] = fn
             a_sup = read(sup_tr, pos_ho, anchors_ho) if sup_tr else a_pos_ho
             inj = {}
@@ -437,13 +505,55 @@ def run():
                 idx = torch.tensor(sorted(d), device=DEV, dtype=torch.long)
                 vals = torch.tensor([d[int(i)] * float(pins[site][int(i)])
                                      for i in idx.tolist()], device=DEV)
-                def fn(x, _sae=sae, _idx=idx, _v=vals):
-                    c = encode(_sae, x)
+                def fn(x, _sae=sae, _idx=idx, _v=vals, _s=site):
+                    c = enc_site(_s, _sae, x)
                     chat = c.clone()
                     chat[..., _idx] = _v
-                    return x + decode_delta(_sae, chat - c)
+                    return x + decode_delta(_sae, chat - c) + err_corr(_s, _sae, x, c)
                 inj[site] = fn
             a_inj = read(inj, neg_ho, na_ho) if inj else a_base
+
+            def pin_read(floor):
+                """phi_pin^a (2026-09-20): members CLAMPED to alpha x their CLEAN
+                position-wise values, non-members at the floor. On Gemma the free
+                scores are ~0.8-1.1 while pinned collapses to 0.0-0.2; this asks
+                whether that gap is a JumpReLU artifact or a property of the method,
+                by measuring the same thing on genuine Top-K dictionaries."""
+                cap_, hs_ = {}, []
+                for site_ in UP:
+                    d_ = ma.get(site_, {})
+                    if not d_:
+                        continue
+                    ix = torch.tensor(sorted(d_), device=DEV, dtype=torch.long)
+
+                    def grab(mod, inp, out, _s=site_, _ix=ix):
+                        x = out[0] if isinstance(out, tuple) else out
+                        cap_[_s] = encode(saes[_s], x)[..., _ix].detach()
+                    hs_.append(site_module(site_).register_forward_hook(grab))
+                try:
+                    with torch.no_grad():
+                        model(pos_ho.to(DEV), use_cache=False)
+                finally:
+                    for h_ in hs_:
+                        h_.remove()
+                tr_ = {}
+                for site_ in UP:
+                    d_ = ma.get(site_, {})
+                    ix = torch.tensor(sorted(d_), device=DEV, dtype=torch.long) if d_ else None
+                    av = torch.tensor([d_[int(i)] for i in ix.tolist()], device=DEV) if d_ else None
+                    fl_ = floor.get(site_) if floor else None
+
+                    def fn(x, _s=site_, _ix=ix, _av=av, _fl=fl_):
+                        c = enc_site(_s, saes[_s], x)
+                        chat = (_fl.expand_as(c).clone() if _fl is not None
+                                else torch.zeros_like(c))
+                        if _ix is not None:
+                            chat[..., _ix] = cap_[_s] * _av
+                        return x + decode_delta(saes[_s], chat - c) + err_corr(_s, saes[_s], x, c)
+                    tr_[site_] = fn
+                return read(tr_, pos_ho, anchors_ho)
+            a_pin0 = pin_read({}) if n else e0
+            a_pinM = pin_read(means_pos) if n else eM
             row = {"layer": L, "kind": kind, "latent": sl, "arm": tag,
                    "n": n,
                    "ampF0": round((aw0 - e0) / (a_pos_ho - e0), 4)
@@ -454,11 +564,15 @@ def run():
                    if a_pos_ho > 1e-9 else None,
                    "cf_amp": round((a_inj - a_base) / (a_pos_ho - a_base), 4)
                    if abs(a_pos_ho - a_base) > 1e-9 else None,
+                   "pin0": round((a_pin0 - e0) / (a_pos_ho - e0), 4)
+                   if abs(a_pos_ho - e0) > 1e-9 else None,
+                   "pinM": round((a_pinM - eM) / (a_pos_ho - eM), 4)
+                   if abs(a_pos_ho - eM) > 1e-9 else None,
                    "a_pos_ho": round(a_pos_ho, 3), "secs": round(secs, 1)}
             fh.write(json.dumps(row) + "\n"); fh.flush()
-            print("  %-14s n=%-6d ampF0=%-8s ampFM=%-8s sup=%-7s cf_amp=%s"
+            print("  %-14s n=%-6d ampF0=%-8s ampFM=%-8s sup=%-7s cf_amp=%-8s pin0=%-8s pinM=%s"
                   % (tag, n, row["ampF0"], row["ampFM"], row["sup"],
-                     row["cf_amp"]), flush=True)
+                     row["cf_amp"], row["pin0"], row["pinM"]), flush=True)
             return row
 
         n_ref = None
@@ -466,7 +580,7 @@ def run():
             t0 = time.time()
             n_ref = score(fit(True, LAM), "triamp400" + TAG,
                           time.time() - t0)["n"]
-        if (kind, L, sl, "gate400" + TAG) not in done:
+        if not SKIP_GATE and (kind, L, sl, "gate400" + TAG) not in done:
             t0 = time.time()
             score(fit(False, LAM), "gate400" + TAG, time.time() - t0)
         if n_ref is None:

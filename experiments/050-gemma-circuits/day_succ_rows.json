@@ -1,0 +1,134 @@
+[
+ {
+  "prompt": "Monday, Tuesday,",
+  "target": 10500,
+  "contrast": 8778,
+  "meta": {
+   "kind": "day",
+   "prev": "Tuesday",
+   "next": "Wednesday",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "Monday, Tuesday, Wednesday,",
+  "target": 10282,
+  "contrast": 8778,
+  "meta": {
+   "kind": "day",
+   "prev": "Wednesday",
+   "next": "Thursday",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "Thursday, Friday,",
+  "target": 8733,
+  "contrast": 10282,
+  "meta": {
+   "kind": "day",
+   "prev": "Friday",
+   "next": "Saturday",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "Thursday, Friday, Saturday,",
+  "target": 8084,
+  "contrast": 10282,
+  "meta": {
+   "kind": "day",
+   "prev": "Saturday",
+   "next": "Sunday",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "Tuesday, Wednesday, Thursday, Friday,",
+  "target": 8733,
+  "contrast": 10111,
+  "meta": {
+   "kind": "day",
+   "prev": "Friday",
+   "next": "Saturday",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "Wednesday, Thursday,",
+  "target": 7886,
+  "contrast": 10500,
+  "meta": {
+   "kind": "day",
+   "prev": "Thursday",
+   "next": "Friday",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "Friday, Saturday,",
+  "target": 8084,
+  "contrast": 7886,
+  "meta": {
+   "kind": "day",
+   "prev": "Saturday",
+   "next": "Sunday",
+   "run": 2
+  }
+ },
+ {
+  "prompt": "Monday, Tuesday, Wednesday, Thursday,",
+  "target": 7886,
+  "contrast": 8778,
+  "meta": {
+   "kind": "day",
+   "prev": "Thursday",
+   "next": "Friday",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "Tuesday, Wednesday, Thursday,",
+  "target": 7886,
+  "contrast": 10111,
+  "meta": {
+   "kind": "day",
+   "prev": "Thursday",
+   "next": "Friday",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "Wednesday, Thursday, Friday, Saturday,",
+  "target": 8084,
+  "contrast": 10500,
+  "meta": {
+   "kind": "day",
+   "prev": "Saturday",
+   "next": "Sunday",
+   "run": 4
+  }
+ },
+ {
+  "prompt": "Wednesday, Thursday, Friday,",
+  "target": 8733,
+  "contrast": 10500,
+  "meta": {
+   "kind": "day",
+   "prev": "Friday",
+   "next": "Saturday",
+   "run": 3
+  }
+ },
+ {
+  "prompt": "Tuesday, Wednesday,",
+  "target": 10282,
+  "contrast": 10111,
+  "meta": {
+   "kind": "day",
+   "prev": "Wednesday",
+   "next": "Thursday",
+   "run": 2
+  }
+ }
+]

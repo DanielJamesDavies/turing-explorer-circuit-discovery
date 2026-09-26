@@ -1,0 +1,10 @@
+{
+ "n_rows": 5096687,
+ "amp_median": 1.0564,
+ "frac_gt1": 0.701860247647148,
+ "frac_lt05": 0.008198463040794931,
+ "n_profiled": 26910,
+ "n_boosted": 3478,
+ "n_reduced": 5,
+ "n_flips": 18
+}

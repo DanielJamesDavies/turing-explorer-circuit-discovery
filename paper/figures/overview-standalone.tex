@@ -1,0 +1,14 @@
+% Figure 1 on its own, for slides and applications. Same fonts as main.tex.
+% Build: pdflatex overview-standalone.tex, then
+%        pdftocairo -png -r 300 -singlefile overview-standalone.pdf overview
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,calc,backgrounds,arrows.meta,patterns}
+\begin{document}
+\input{overview}
+\end{document}

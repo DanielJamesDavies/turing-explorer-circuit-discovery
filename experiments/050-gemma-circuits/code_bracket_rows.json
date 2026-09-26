@@ -1,0 +1,1602 @@
+[
+ {
+  "prompt": "def total(size):\n    return (size - 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def f(n):\n    return (n * 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m - 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(x):\n    return (x * 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(k):\n    return (k * 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def count(size):\n    return (size + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value - 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m + 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def g(size):\n    return (size - 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n + 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def check(m):\n    return (m - 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def total(size):\n    return (size + 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(n):\n    return (n - 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(m):\n    return (m - 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def step(k):\n    return (k * 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def solve(k):\n    return (k - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(x):\n    return (x - 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n * 18",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(n):\n    return (n * 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def score(size):\n    return (size * 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value + 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def total(size):\n    return (size - 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value * 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def f(value):\n    return (value - 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k - 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(x):\n    return (x * 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def score(m):\n    return (m * 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n + 10",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size - 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def step(value):\n    return (value - 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def check(value):\n    return (value - 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def check(value):\n    return (value + 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k - 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size * 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k * 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n * 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(value):\n    return (value * 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(m):\n    return (m * 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size - 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m - 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def check(k):\n    return (k * 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(k):\n    return (k + 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(m):\n    return (m + 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def check(value):\n    return (value - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value + 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size * 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(k):\n    return (k - 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size * 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(value):\n    return (value * 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def f(k):\n    return (k - 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m * 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m * 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def total(k):\n    return (k + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n - 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def solve(k):\n    return (k + 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(value):\n    return (value + 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(m):\n    return (m + 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size * 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(m):\n    return (m * 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k + 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def score(value):\n    return (value + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n + 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def check(size):\n    return (size - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value + 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value * 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k - 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def count(value):\n    return (value + 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k * 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def total(m):\n    return (m + 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size - 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def step(k):\n    return (k - 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def g(n):\n    return (n + 18",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m - 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(x):\n    return (x - 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n * 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(x):\n    return (x + 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size * 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k - 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(value):\n    return (value + 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def f(n):\n    return (n * 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n * 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(m):\n    return (m + 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(size):\n    return (size + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def check(size):\n    return (size + 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def score(value):\n    return (value + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n * 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n * 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def step(x):\n    return (x - 10",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value * 18",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(size):\n    return (size + 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n - 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(m):\n    return (m - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(x):\n    return (x - 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def score(size):\n    return (size - 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def f(k):\n    return (k - 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n - 10",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size - 10",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(x):\n    return (x - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def check(x):\n    return (x + 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def solve(m):\n    return (m * 7",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(size):\n    return (size * 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def g(x):\n    return (x * 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def score(k):\n    return (k + 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def score(value):\n    return (value * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m * 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def solve(size):\n    return (size - 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def g(value):\n    return (value + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def step(x):\n    return (x + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def solve(k):\n    return (k - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m * 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def f(n):\n    return (n - 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def total(m):\n    return (m + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(m):\n    return (m * 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n + 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def step(value):\n    return (value + 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def count(x):\n    return (x - 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def check(x):\n    return (x * 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def score(k):\n    return (k - 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n * 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k - 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(size):\n    return (size + 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(k):\n    return (k - 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def g(x):\n    return (x * 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(m):\n    return (m + 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(n):\n    return (n - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def step(value):\n    return (value * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(size):\n    return (size * 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k - 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(n):\n    return (n - 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def check(k):\n    return (k - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def g(value):\n    return (value * 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(m):\n    return (m * 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(value):\n    return (value - 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n - 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def f(k):\n    return (k * 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size + 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def f(x):\n    return (x * 13",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def solve(value):\n    return (value + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def count(size):\n    return (size * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def score(m):\n    return (m - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def g(value):\n    return (value * 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value + 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(value):\n    return (value + 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m * 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def g(size):\n    return (size + 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def step(x):\n    return (x - 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def f(n):\n    return (n + 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(k):\n    return (k - 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(value):\n    return (value + 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value + 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(k):\n    return (k + 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def solve(x):\n    return (x - 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value + 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def check(x):\n    return (x * 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def step(x):\n    return (x * 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n * 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m + 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def check(k):\n    return (k - 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n + 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def g(m):\n    return (m * 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def check(k):\n    return (k * 11",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def g(x):\n    return (x - 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def step(n):\n    return (n - 18",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def check(x):\n    return (x - 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n * 9",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def g(m):\n    return (m + 4",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def f(value):\n    return (value + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def f(k):\n    return (k - 17",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def total(value):\n    return (value * 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def check(value):\n    return (value * 15",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def solve(n):\n    return (n + 12",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def f(size):\n    return (size + 14",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def g(m):\n    return (m - 10",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m - 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m + 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(n):\n    return (n - 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def total(n):\n    return (n - 1",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "n"
+  }
+ },
+ {
+  "prompt": "def score(k):\n    return (k - 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "k"
+  }
+ },
+ {
+  "prompt": "def step(m):\n    return (m + 5",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def score(x):\n    return (x - 19",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def step(size):\n    return (size - 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m - 18",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m * 2",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def count(value):\n    return (value - 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(x):\n    return (x * 8",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "x"
+  }
+ },
+ {
+  "prompt": "def count(m):\n    return (m + 3",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "m"
+  }
+ },
+ {
+  "prompt": "def g(value):\n    return (value * 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def check(value):\n    return (value + 20",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def step(value):\n    return (value - 16",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "value"
+  }
+ },
+ {
+  "prompt": "def g(size):\n    return (size * 6",
+  "target": 235275,
+  "contrast": 235292,
+  "meta": {
+   "var": "size"
+  }
+ }
+]

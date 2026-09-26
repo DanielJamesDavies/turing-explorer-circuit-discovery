@@ -1,0 +1,147 @@
+{
+ "n_prompts": 219,
+ "n_universe": 567,
+ "n_pairs": 60,
+ "roles": {
+  "subj": [
+   "1.attn.403",
+   "1.attn.6824",
+   "1.attn.31112",
+   "2.attn.1923",
+   "2.attn.6358",
+   "2.attn.33315",
+   "2.resid.12515",
+   "2.resid.13234",
+   "2.resid.19371",
+   "3.attn.1229",
+   "3.attn.16703",
+   "3.attn.26710",
+   "3.resid.18214",
+   "3.resid.28583",
+   "4.attn.20843",
+   "4.attn.28806",
+   "4.attn.34842",
+   "4.resid.9446",
+   "4.resid.20395",
+   "5.attn.3461",
+   "5.attn.27803",
+   "5.resid.4667",
+   "6.attn.7797",
+   "6.attn.17381",
+   "6.attn.27983",
+   "6.attn.38065",
+   "6.attn.39512",
+   "6.attn.40308",
+   "7.attn.3046",
+   "7.attn.36886",
+   "7.resid.23540",
+   "7.resid.23740",
+   "8.attn.2692",
+   "8.attn.7152",
+   "8.attn.36004",
+   "8.resid.39289",
+   "9.attn.24543",
+   "9.resid.13303",
+   "9.resid.13470",
+   "9.resid.14077",
+   "9.resid.32750",
+   "11.attn.31542",
+   "11.mlp.28789"
+  ],
+  "final": [
+   "0.attn.8367",
+   "1.attn.31112",
+   "1.attn.34829",
+   "1.resid.3160",
+   "2.attn.1377",
+   "2.resid.19371",
+   "3.attn.26710",
+   "4.attn.12352",
+   "4.attn.34842",
+   "4.resid.23041",
+   "4.resid.23387",
+   "5.attn.3461",
+   "5.attn.18160",
+   "5.resid.2808",
+   "6.attn.1133",
+   "6.attn.7797",
+   "6.attn.17381",
+   "6.attn.17994",
+   "6.attn.39512",
+   "6.mlp.8348",
+   "6.mlp.37070",
+   "6.resid.21617",
+   "7.attn.23273",
+   "7.mlp.19096",
+   "7.resid.23540",
+   "7.resid.23740",
+   "7.resid.31773",
+   "7.resid.37128",
+   "7.resid.37899",
+   "8.attn.29188",
+   "8.resid.10358",
+   "9.resid.13470",
+   "9.resid.14077",
+   "10.attn.34293",
+   "10.resid.9294",
+   "10.resid.15423",
+   "10.resid.16840",
+   "11.mlp.11058"
+  ],
+  "out": [
+   "7.resid.23740",
+   "9.resid.28714"
+  ]
+ },
+ "recv_margin": 2.543098924557368,
+ "swap": {
+  "HARNESS CHECK zero all @ final": {
+   "n_lat": 402,
+   "margin": 1.8096353848775228,
+   "score": 0.12444407690213133,
+   "flipped": 0.13333333333333333
+  },
+  "HARNESS CHECK zero all @ subject": {
+   "n_lat": 296,
+   "margin": 2.332812511920929,
+   "score": 0.053017257821970976,
+   "flipped": 0.08333333333333333
+  },
+  "SUBJECT readers @ subject pos": {
+   "n_lat": 43,
+   "margin": 2.5532551924387614,
+   "score": -0.0030864197530864196,
+   "flipped": 0.016666666666666666
+  },
+  "all members @ subject pos": {
+   "n_lat": 296,
+   "margin": 2.473828117052714,
+   "score": 0.014627541046086281,
+   "flipped": 0.05
+  },
+  "FINAL-number readers @ final pos": {
+   "n_lat": 38,
+   "margin": 2.633333339293798,
+   "score": -0.037989833946174216,
+   "flipped": 0.016666666666666666
+  },
+  "all members @ final pos": {
+   "n_lat": 402,
+   "margin": 2.4033854166666666,
+   "score": 0.0065075479396164825,
+   "flipped": 0.016666666666666666
+  },
+  "random matched @ subject pos": {
+   "n_lat": 43,
+   "margin": 2.536067740122477,
+   "score": 0.0,
+   "flipped": 0.016666666666666666
+  },
+  "random matched @ final pos": {
+   "n_lat": 38,
+   "margin": 2.2328125019868215,
+   "score": 0.06155302750068179,
+   "flipped": 0.08333333333333333
+  }
+ }
+}

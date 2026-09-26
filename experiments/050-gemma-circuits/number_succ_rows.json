@@ -1,0 +1,47 @@
+[
+ {
+  "prompt": "5, 6, 7, 8, ",
+  "target": 235315,
+  "contrast": 235321,
+  "meta": {
+   "start": 5,
+   "next": 9
+  }
+ },
+ {
+  "prompt": "3, 4, 5, 6, ",
+  "target": 235324,
+  "contrast": 235318,
+  "meta": {
+   "start": 3,
+   "next": 7
+  }
+ },
+ {
+  "prompt": "2, 3, 4, 5, ",
+  "target": 235318,
+  "contrast": 235308,
+  "meta": {
+   "start": 2,
+   "next": 6
+  }
+ },
+ {
+  "prompt": "1, 2, 3, 4, ",
+  "target": 235308,
+  "contrast": 235310,
+  "meta": {
+   "start": 1,
+   "next": 5
+  }
+ },
+ {
+  "prompt": "4, 5, 6, 7, ",
+  "target": 235321,
+  "contrast": 235324,
+  "meta": {
+   "start": 4,
+   "next": 8
+  }
+ }
+]

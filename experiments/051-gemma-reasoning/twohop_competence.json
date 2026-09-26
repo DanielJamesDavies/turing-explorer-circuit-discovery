@@ -1,0 +1,56 @@
+{
+ "state_capital.hop1": {
+  "n": 10,
+  "acc": 1.0,
+  "margin": 8.0625,
+  "p": 0.9278487741947175
+ },
+ "state_capital.one_hop": {
+  "n": 10,
+  "acc": 1.0,
+  "margin": 11.7125,
+  "p": 0.856020164489746
+ },
+ "state_capital.two_hop": {
+  "n": 10,
+  "acc": 1.0,
+  "margin": 7.75625,
+  "p": 0.6959164142608643
+ },
+ "country_capital.hop1": {
+  "n": 14,
+  "acc": 1.0,
+  "margin": 9.049107142857142,
+  "p": 0.9169058884893145
+ },
+ "country_capital.one_hop": {
+  "n": 14,
+  "acc": 0.9285714285714286,
+  "margin": 11.207589285714286,
+  "p": 0.8097268332328115
+ },
+ "country_capital.two_hop": {
+  "n": 14,
+  "acc": 0.9285714285714286,
+  "margin": 8.758928571428571,
+  "p": 0.7126445599964687
+ },
+ "country_language.hop1": {
+  "n": 10,
+  "acc": 1.0,
+  "margin": 9.39375,
+  "p": 0.9174768686294555
+ },
+ "country_language.one_hop": {
+  "n": 10,
+  "acc": 0.9,
+  "margin": 10.875,
+  "p": 0.6327810674905777
+ },
+ "country_language.two_hop": {
+  "n": 10,
+  "acc": 0.8,
+  "margin": 8.175,
+  "p": 0.5730535462498665
+ }
+}

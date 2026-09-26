@@ -1,0 +1,167 @@
+{
+ "model": "TuringLLM",
+ "tasks": {
+  "ioi": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 0.48333333333333334,
+   "margin": -0.41561686197916664,
+   "example": "When James and Peter went to the store, Peter gave a letter to",
+   "target": " James",
+   "contrast": " Peter"
+  },
+  "induction": {
+   "n": 34,
+   "split": 26,
+   "acc": 0.0,
+   "pos": 0.5882352941176471,
+   "margin": 0.9850715188419118,
+   "example": "basket book picture island engine pencil basket book picture",
+   "target": " island",
+   "contrast": " chair"
+  },
+  "greater_than": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.4,
+   "pos": 0.9166666666666666,
+   "margin": 3.283333333333333,
+   "example": "The war lasted from the year 1914 to the year 19",
+   "target": "2",
+   "contrast": "0"
+  },
+  "agreement_attractor": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.2,
+   "pos": 0.85,
+   "margin": 2.60625,
+   "example": "The letters near the cabinet",
+   "target": " are",
+   "contrast": " is"
+  },
+  "twohop_language": {
+   "n": 15,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 0.6666666666666666,
+   "margin": 1.0846354166666667,
+   "example": "The main language spoken in the city of Munich is",
+   "target": " German",
+   "contrast": " Swedish"
+  },
+  "capital": {
+   "n": 1,
+   "split": 19,
+   "acc": 0.0,
+   "pos": 0.0,
+   "margin": -0.5234375,
+   "example": "Q: What is the capital of Austria?\nA: The capital of Austria is",
+   "target": " Vienna",
+   "contrast": " Stockholm"
+  },
+  "country_of_capital": {
+   "n": 14,
+   "split": 6,
+   "acc": 0.0,
+   "pos": 0.7857142857142857,
+   "margin": 2.05078125,
+   "example": "Madrid is the capital city of",
+   "target": " Spain",
+   "contrast": " Greece"
+  },
+  "month_succ": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 0.2833333333333333,
+   "margin": -0.6682291666666667,
+   "example": "February, March, April,",
+   "target": " May",
+   "contrast": " February"
+  },
+  "day_succ": {
+   "n": 0,
+   "split": 60
+  },
+  "number_succ": {
+   "n": 0,
+   "split": 60
+  },
+  "addition_digits": {
+   "n": 0,
+   "split": 78
+  },
+  "past_tense": {
+   "n": 49,
+   "split": 11,
+   "acc": 0.0,
+   "pos": 0.22448979591836735,
+   "margin": -0.9017857142857143,
+   "example": "Today I visit. Yesterday I",
+   "target": " visited",
+   "contrast": " visit"
+  },
+  "plural": {
+   "n": 48,
+   "split": 12,
+   "acc": 0.3333333333333333,
+   "pos": 0.8541666666666666,
+   "margin": 1.6373697916666667,
+   "example": "I have one book. You have two",
+   "target": " books",
+   "contrast": " book"
+  },
+  "opposite": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 0.5666666666666667,
+   "margin": 0.002994791666666667,
+   "example": "The opposite of hard is",
+   "target": " soft",
+   "contrast": " hard"
+  },
+  "pronoun": {
+   "n": 60,
+   "split": 0,
+   "acc": 0.0,
+   "pos": 0.4666666666666667,
+   "margin": 0.5088541666666667,
+   "example": "Peter went to the shop because",
+   "target": " he",
+   "contrast": " she"
+  },
+  "list_close": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 3.0364583333333335,
+   "example": "We bought peaches, melons, plums,",
+   "target": " and",
+   "contrast": " or"
+  },
+  "acronym": {
+   "n": 10,
+   "split": 0,
+   "acc": 0.6,
+   "pos": 1.0,
+   "margin": 9.77685546875,
+   "example": "The National Aeronautics and Space Administration (",
+   "target": "N",
+   "contrast": "Y"
+  },
+  "code_bracket": {
+   "n": 60,
+   "split": 0,
+   "acc": 1.0,
+   "pos": 1.0,
+   "margin": 6.175520833333334,
+   "example": "def f(total):\n    return (total + 1",
+   "target": ")",
+   "contrast": ":"
+  }
+ }
+}

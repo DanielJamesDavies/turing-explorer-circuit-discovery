@@ -1,0 +1,4537 @@
+[
+ {
+  "latent": "0.attn.5663",
+  "why": "hub fan-out 14966",
+  "n": 64,
+  "peak_top": [
+   [
+    "symbols",
+    19
+   ],
+   [
+    "symbol",
+    10
+   ],
+   [
+    "graph",
+    4
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "node",
+    2
+   ],
+   [
+    "notable",
+    2
+   ],
+   [
+    "section",
+    2
+   ]
+  ],
+  "windows": [
+   " [[symbols]]",
+   " [[symbols]]",
+   " [[symbols]]"
+  ]
+ },
+ {
+  "latent": "0.attn.712",
+  "why": "hub fan-out 14686",
+  "n": 64,
+  "peak_top": [
+   [
+    "like",
+    12
+   ],
+   [
+    "1",
+    10
+   ],
+   [
+    "(",
+    9
+   ]
+  ],
+  "peak_consistency": 0.1875,
+  "prev_top": [
+   [
+    "1",
+    8
+   ],
+   [
+    "",
+    7
+   ],
+   [
+    "ers",
+    4
+   ]
+  ],
+  "windows": [
+   " [[1]]",
+   " [[1]]",
+   " [[1]]"
+  ]
+ },
+ {
+  "latent": "0.attn.18179",
+  "why": "hub fan-out 14268",
+  "n": 64,
+  "peak_top": [
+   [
+    "Cov",
+    17
+   ],
+   [
+    "spons",
+    6
+   ],
+   [
+    "kern",
+    5
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [],
+  "windows": [
+   " [[tutorial]]",
+   " [[tutorial]]",
+   " [[Cov]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.1349",
+  "why": "hub fan-out 14023",
+  "n": 64,
+  "peak_top": [
+   [
+    "Bi",
+    10
+   ],
+   [
+    "Marie",
+    6
+   ],
+   [
+    "Computer",
+    3
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "<s>",
+    55
+   ],
+   [
+    ".",
+    3
+   ],
+   [
+    "Bi",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> [[Civil]]",
+   "<s> [[Chem]]",
+   "<s> [[Mechan]]"
+  ]
+ },
+ {
+  "latent": "0.resid.6299",
+  "why": "hub fan-out 13835",
+  "n": 64,
+  "peak_top": [
+   [
+    "inter",
+    10
+   ],
+   [
+    "new",
+    6
+   ],
+   [
+    "strateg",
+    4
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "approach",
+    9
+   ],
+   [
+    ",",
+    6
+   ],
+   [
+    "ate",
+    4
+   ]
+  ],
+  "windows": [
+   "research must incorporate [[inter]]",
+   "research must incorporate [[inter]]",
+   "important factor is [[integrated]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.11515",
+  "why": "hub fan-out 13424",
+  "n": 64,
+  "peak_top": [
+   [
+    "spec",
+    3
+   ],
+   [
+    "\ufffd",
+    3
+   ],
+   [
+    "configuration",
+    3
+   ]
+  ],
+  "peak_consistency": 0.046875,
+  "prev_top": [
+   [
+    "re",
+    4
+   ],
+   [
+    "the",
+    4
+   ],
+   [
+    "often",
+    3
+   ]
+  ],
+  "windows": [
+   "\u0142adys\u0142aw Sikorski [[form]]",
+   "ras desse tipo s\u00e3o frequent [[emente]]",
+   "estudiante recibi\u00f3 una ho [[ja]]"
+  ]
+ },
+ {
+  "latent": "1.attn.13899",
+  "why": "hub fan-out 13353",
+  "n": 64,
+  "peak_top": [
+   [
+    "ip",
+    4
+   ],
+   [
+    "father",
+    3
+   ],
+   [
+    "phys",
+    2
+   ]
+  ],
+  "peak_consistency": 0.0625,
+  "prev_top": [
+   [
+    "a",
+    5
+   ],
+   [
+    "Sh",
+    4
+   ],
+   [
+    "(",
+    4
+   ]
+  ],
+  "windows": [
+   "\"biggest blunder,\" [[wasn]]",
+   "family as he was an educated [[phys]]",
+   "family as he was an educated [[phys]]"
+  ]
+ },
+ {
+  "latent": "1.attn.16130",
+  "why": "hub fan-out 12863",
+  "n": 64,
+  "peak_top": [
+   [
+    "CD",
+    5
+   ],
+   [
+    "Coll",
+    4
+   ],
+   [
+    "collision",
+    3
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [
+   [
+    "astic",
+    8
+   ],
+   [
+    "/",
+    5
+   ],
+   [
+    "ative",
+    3
+   ]
+  ],
+  "windows": [
+   "Transform Method in Solving [[Second]]",
+   "etic Energy in Inelastic [[Coll]]",
+   "autenticamente attraverso lo [[que]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.406",
+  "why": "hub fan-out 12477",
+  "n": 64,
+  "peak_top": [
+   [
+    "in",
+    17
+   ],
+   [
+    "the",
+    4
+   ],
+   [
+    "dah",
+    4
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [],
+  "windows": [
+   " [[coefficients]]",
+   " [[convolution]]",
+   " [[std]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.32903",
+  "why": "hub fan-out 12426",
+  "n": 64,
+  "peak_top": [
+   [
+    "campion",
+    6
+   ],
+   [
+    "gesamt",
+    6
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [],
+  "windows": [
+   " [[aturen]]",
+   " [[std]]",
+   " [[aturen]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.40345",
+  "why": "hub fan-out 12402",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    26
+   ],
+   [
+    "arante",
+    10
+   ],
+   [
+    "ing",
+    7
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [],
+  "windows": [
+   " [[to]]",
+   " [[to]]",
+   " [[,]]"
+  ]
+ },
+ {
+  "latent": "1.attn.35565",
+  "why": "hub fan-out 12326",
+  "n": 64,
+  "peak_top": [
+   [
+    "Reb",
+    6
+   ],
+   [
+    "'-",
+    4
+   ],
+   [
+    "verb",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "Indian",
+    6
+   ],
+   [
+    "the",
+    5
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "windows": [
+   "verbs have an ending in [['-]]",
+   "verbs have an ending in [['-]]",
+   "19 years after the Indian [[Reb]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.21893",
+  "why": "hub fan-out 12005",
+  "n": 64,
+  "peak_top": [
+   [
+    "ing",
+    20
+   ],
+   [
+    "etten",
+    6
+   ],
+   [
+    "egin",
+    4
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [],
+  "windows": [
+   " [[o\u00f9]]",
+   " [[o\u00f9]]",
+   " [[ing]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.1428",
+  "why": "hub fan-out 11949",
+  "n": 64,
+  "peak_top": [
+   [
+    "iety",
+    7
+   ],
+   [
+    "function",
+    4
+   ],
+   [
+    "encrypted",
+    4
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    "anx",
+    7
+   ],
+   [
+    "une",
+    4
+   ],
+   [
+    "establish",
+    4
+   ]
+  ],
+  "windows": [
+   "ormones/hormone [[reg]]",
+   "regulate emotion and stress [[responses]]",
+   "of coordinates used in spatial reference [[maps]]"
+  ]
+ },
+ {
+  "latent": "0.attn.2835",
+  "why": "hub fan-out 11609",
+  "n": 64,
+  "peak_top": [
+   [
+    "kern",
+    19
+   ],
+   [
+    "LOCK",
+    13
+   ],
+   [
+    "Sta",
+    9
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [],
+  "windows": [
+   " [[headers]]",
+   " [[kern]]",
+   " [[kern]]"
+  ]
+ },
+ {
+  "latent": "0.resid.11515",
+  "why": "hub fan-out 11284",
+  "n": 64,
+  "peak_top": [
+   [
+    "\ufffd",
+    6
+   ],
+   [
+    "emente",
+    2
+   ],
+   [
+    "iante",
+    2
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "\ufffd",
+    6
+   ],
+   [
+    "frequent",
+    2
+   ],
+   [
+    "\u0905",
+    2
+   ]
+  ],
+  "windows": [
+   "ras desse tipo s\u00e3o frequent [[emente]]",
+   "the '\u0905 [[\u0928]]",
+   "\u0642 [[\u064e]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.15205",
+  "why": "hub fan-out 11211",
+  "n": 64,
+  "peak_top": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "ORT",
+    11
+   ],
+   [
+    "Germania",
+    6
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[aturen]]",
+   " [[aturen]]",
+   " [[Germania]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.27056",
+  "why": "hub fan-out 11167",
+  "n": 64,
+  "peak_top": [
+   [
+    "with",
+    25
+   ],
+   [
+    "the",
+    17
+   ],
+   [
+    "ing",
+    8
+   ]
+  ],
+  "peak_consistency": 0.390625,
+  "prev_top": [],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.1982",
+  "why": "hub fan-out 11162",
+  "n": 64,
+  "peak_top": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "Germania",
+    6
+   ],
+   [
+    "iglia",
+    6
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[\ufffd]]",
+   " [[\ufffd]]",
+   " [[ION]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.10252",
+  "why": "hub fan-out 11110",
+  "n": 64,
+  "peak_top": [
+   [
+    "gesamt",
+    6
+   ],
+   [
+    "Classes",
+    4
+   ],
+   [
+    "Components",
+    3
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [],
+  "windows": [
+   " [[:)]]",
+   " [[\u043e\u043d\u0443]]",
+   " [[problema]]"
+  ]
+ },
+ {
+  "latent": "0.resid.40345",
+  "why": "hub fan-out 11064",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    30
+   ],
+   [
+    "for",
+    21
+   ],
+   [
+    "ing",
+    5
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [],
+  "windows": [
+   " [[to]]",
+   " [[to]]",
+   " [[for]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.9162",
+  "why": "hub fan-out 11048",
+  "n": 64,
+  "peak_top": [
+   [
+    "ing",
+    51
+   ],
+   [
+    "of",
+    8
+   ],
+   [
+    "the",
+    2
+   ]
+  ],
+  "peak_consistency": 0.796875,
+  "prev_top": [],
+  "windows": [
+   " [[ing]]",
+   " [[ing]]",
+   " [[ing]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.26380",
+  "why": "hub fan-out 10991",
+  "n": 64,
+  "peak_top": [
+   [
+    "adjacent",
+    6
+   ],
+   [
+    "color",
+    5
+   ],
+   [
+    "problem",
+    5
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "the",
+    13
+   ],
+   [
+    "same",
+    5
+   ],
+   [
+    "two",
+    5
+   ]
+  ],
+  "windows": [
+   "two adjacent vertices are the same [[color]]",
+   "resulting from this interaction, Bell [[numerical]]",
+   "resulting from this interaction, Bell [[numerical]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.5646",
+  "why": "hub fan-out 10929",
+  "n": 64,
+  "peak_top": [
+   [
+    "Lock",
+    20
+   ],
+   [
+    "temperature",
+    7
+   ],
+   [
+    "Bol",
+    6
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    ",",
+    22
+   ],
+   [
+    "John",
+    20
+   ],
+   [
+    "(",
+    6
+   ]
+  ],
+  "windows": [
+   "ers, [[scient]]",
+   "and scientists, including John [[Lock]]",
+   "and scientists, including John [[Lock]]"
+  ]
+ },
+ {
+  "latent": "0.resid.17961",
+  "why": "hub fan-out 10923",
+  "n": 64,
+  "peak_top": [
+   [
+    "Susan",
+    6
+   ],
+   [
+    "Marie",
+    5
+   ],
+   [
+    "<s>",
+    5
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "<s>",
+    39
+   ],
+   [
+    "Past",
+    6
+   ],
+   [
+    "?.",
+    5
+   ]
+  ],
+  "windows": [
+   "<s> Past [[Simple]]",
+   "Continuous.<s> Past [[Simple]]",
+   "<s> James Curran.<s> [[Susan]]"
+  ]
+ },
+ {
+  "latent": "0.resid.32903",
+  "why": "hub fan-out 10817",
+  "n": 64,
+  "peak_top": [
+   [
+    "campion",
+    6
+   ],
+   [
+    "gesamt",
+    6
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [],
+  "windows": [
+   " [[campion]]",
+   " [[campion]]",
+   " [[campion]]"
+  ]
+ },
+ {
+  "latent": "0.resid.21893",
+  "why": "hub fan-out 10431",
+  "n": 64,
+  "peak_top": [
+   [
+    "ing",
+    50
+   ],
+   [
+    "egin",
+    4
+   ],
+   [
+    "ers",
+    3
+   ]
+  ],
+  "peak_consistency": 0.78125,
+  "prev_top": [],
+  "windows": [
+   " [[stract]]",
+   " [[ing]]",
+   " [[ers]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.621",
+  "why": "hub fan-out 10369",
+  "n": 64,
+  "peak_top": [
+   [
+    "iding",
+    5
+   ],
+   [
+    "ers",
+    3
+   ],
+   [
+    "serves",
+    3
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [
+   [
+    "gu",
+    5
+   ],
+   [
+    "also",
+    5
+   ],
+   [
+    "cent",
+    3
+   ]
+  ],
+  "windows": [
+   "correlation between PMA and C [[DF]]",
+   ", chord sequences [[play]]",
+   "tool in digital recording, gu [[iding]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.28752",
+  "why": "hub fan-out 10243",
+  "n": 64,
+  "peak_top": [
+   [
+    "devices",
+    4
+   ],
+   [
+    "songs",
+    2
+   ],
+   [
+    "used",
+    2
+   ]
+  ],
+  "peak_consistency": 0.0625,
+  "prev_top": [
+   [
+    "time",
+    3
+   ],
+   [
+    "popular",
+    2
+   ],
+   [
+    "are",
+    2
+   ]
+  ],
+  "windows": [
+   "of compression in shaping popular [[songs]]",
+   "elaborate energy management systems are [[used]]",
+   "transportation, high- [[speed]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.16354",
+  "why": "hub fan-out 10080",
+  "n": 64,
+  "peak_top": [
+   [
+    "K\u00fc",
+    10
+   ],
+   [
+    "line",
+    7
+   ],
+   [
+    "campion",
+    6
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [],
+  "windows": [
+   " [[Bild]]",
+   " [[Bild]]",
+   " [[line]]"
+  ]
+ },
+ {
+  "latent": "0.resid.15658",
+  "why": "hub fan-out 10067",
+  "n": 64,
+  "peak_top": [
+   [
+    "un",
+    16
+   ],
+   [
+    "innov",
+    8
+   ],
+   [
+    "Customer",
+    6
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [],
+  "windows": [
+   " [[Customer]]",
+   " [[Customer]]",
+   " [[Customer]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.3223",
+  "why": "hub fan-out 9969",
+  "n": 64,
+  "peak_top": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[std]]",
+   " [[aturen]]",
+   " [[aturen]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.28097",
+  "why": "hub fan-out 9959",
+  "n": 64,
+  "peak_top": [
+   [
+    "ivot",
+    36
+   ],
+   [
+    ",",
+    19
+   ],
+   [
+    "2",
+    4
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [],
+  "windows": [
+   " [[2]]",
+   " [[2]]",
+   " [[,]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.15578",
+  "why": "hub fan-out 9830",
+  "n": 64,
+  "peak_top": [
+   [
+    "vare",
+    34
+   ],
+   [
+    "pc",
+    6
+   ],
+   [
+    "Parti",
+    4
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [],
+  "windows": [
+   " [[std]]",
+   " [[tot]]",
+   " [[rand]]"
+  ]
+ },
+ {
+  "latent": "0.resid.21148",
+  "why": "hub fan-out 9786",
+  "n": 64,
+  "peak_top": [
+   [
+    "Oliv",
+    8
+   ],
+   [
+    "Susan",
+    6
+   ],
+   [
+    "Elizabeth",
+    4
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "<s>",
+    37
+   ],
+   [
+    "Bruce",
+    4
+   ],
+   [
+    "Professor",
+    3
+   ]
+  ],
+  "windows": [
+   "ier Blanchard.<s> [[Oliv]]",
+   "ier Blanchard.<s> [[Oliv]]",
+   "Franco Modigliani.<s> [[Oliv]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.39049",
+  "why": "hub fan-out 9702",
+  "n": 64,
+  "peak_top": [
+   [
+    "ouc",
+    6
+   ],
+   [
+    "campion",
+    6
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [],
+  "windows": [
+   " [[rand]]",
+   " [[rand]]",
+   " [[std]]"
+  ]
+ },
+ {
+  "latent": "0.resid.12366",
+  "why": "hub fan-out 9638",
+  "n": 64,
+  "peak_top": [
+   [
+    "coffee",
+    17
+   ],
+   [
+    "math",
+    6
+   ],
+   [
+    "watching",
+    3
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "like",
+    10
+   ],
+   [
+    "a",
+    5
+   ],
+   [
+    "your",
+    4
+   ]
+  ],
+  "windows": [
+   "ling skies and roughie [[pe]]",
+   ", raking in the Rub [[ik]]",
+   ", raking in the Rub [[ik]]"
+  ]
+ },
+ {
+  "latent": "1.attn.34495",
+  "why": "hub fan-out 9465",
+  "n": 64,
+  "peak_top": [
+   [
+    "is",
+    5
+   ],
+   [
+    "imm",
+    5
+   ],
+   [
+    "interaction",
+    4
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [],
+  "windows": [
+   " [[scale]]",
+   " [[cells]]",
+   " [[target]]"
+  ]
+ },
+ {
+  "latent": "0.attn.15350",
+  "why": "hub fan-out 9444",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    17
+   ],
+   [
+    "ider",
+    3
+   ],
+   [
+    "it",
+    2
+   ]
+  ],
+  "windows": [
+   "...... [[.]]",
+   "...... [[.]]",
+   "...... [[.]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.15729",
+  "why": "hub fan-out 9323",
+  "n": 64,
+  "peak_top": [
+   [
+    "campion",
+    6
+   ],
+   [
+    "etten",
+    6
+   ],
+   [
+    "Germania",
+    6
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [],
+  "windows": [
+   " [[aturen]]",
+   " [[aturen]]",
+   " [[campion]]"
+  ]
+ },
+ {
+  "latent": "0.attn.4540",
+  "why": "reduced median gain 0.45 (n 7903)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    62
+   ],
+   [
+    ".",
+    2
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    ".",
+    4
+   ],
+   [
+    "Geography",
+    2
+   ]
+  ],
+  "windows": [
+   " [[<s>]]",
+   " [[<s>]]",
+   " [[<s>]]"
+  ]
+ },
+ {
+  "latent": "0.attn.25914",
+  "why": "reduced median gain 0.49 (n 8777)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> Culinary Arts. [[<s>]]",
+   "<s> Culinary Arts. [[<s>]]",
+   " [[<s>]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.26665",
+  "why": "reduced median gain 0.57 (n 1596)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    7
+   ],
+   [
+    "on",
+    6
+   ],
+   [
+    "ou",
+    4
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [],
+  "windows": [
+   " [[\u0623]]",
+   " [[\u064a]]",
+   " [[\u0641]]"
+  ]
+ },
+ {
+  "latent": "1.attn.12218",
+  "why": "reduced median gain 0.60 (n 2487)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    62
+   ],
+   [
+    "Neil",
+    1
+   ],
+   [
+    "Jess",
+    1
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    ".",
+    62
+   ],
+   [
+    "<s>",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> Geoffrey Hinton. [[<s>]]",
+   "<s> Rodney Brooks. [[<s>]]",
+   "<s> Douglas McIlroy. [[<s>]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.18413",
+  "why": "reduced median gain 0.65 (n 10)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ins",
+    63
+   ],
+   [
+    "Ins",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [],
+  "windows": [
+   " [[ins]]",
+   " [[ins]]",
+   " [[ins]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.21662",
+  "why": "reduced median gain 0.66 (n 1900)",
+  "n": 64,
+  "peak_top": [
+   [
+    "cial",
+    6
+   ],
+   [
+    "course",
+    4
+   ],
+   [
+    "corner",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "the",
+    15
+   ],
+   [
+    "cru",
+    6
+   ],
+   [
+    "cial",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> Over the [[course]]",
+   "<s> Over the [[course]]",
+   ", agriculture has been a [[corner]]"
+  ]
+ },
+ {
+  "latent": "0.resid.5186",
+  "why": "reduced median gain 0.70 (n 14)",
+  "n": 64,
+  "peak_top": [
+   [
+    "social",
+    35
+   ],
+   [
+    "Social",
+    28
+   ],
+   [
+    "soci",
+    1
+   ]
+  ],
+  "peak_consistency": 0.546875,
+  "prev_top": [
+   [
+    "of",
+    28
+   ],
+   [
+    "<s>",
+    8
+   ],
+   [
+    "in",
+    7
+   ]
+  ],
+  "windows": [
+   "1. Origins of [[Social]]",
+   ".<s> With the rise of [[social]]",
+   "standing the Evolution of [[Social]]"
+  ]
+ },
+ {
+  "latent": "1.attn.21468",
+  "why": "reduced median gain 0.70 (n 439)",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    14
+   ],
+   [
+    "of",
+    10
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "a",
+    4
+   ],
+   [
+    "front",
+    3
+   ],
+   [
+    "at",
+    3
+   ]
+  ],
+  "windows": [
+   "field that merges engineering with [[bi]]",
+   "field that merges engineering with [[bi]]",
+   "core sciences: physics, mathematics [[,]]"
+  ]
+ },
+ {
+  "latent": "10.mlp.26678",
+  "why": "boosted median gain 7.09 (n 20)",
+  "n": 64,
+  "peak_top": [
+   [
+    "also",
+    15
+   ],
+   [
+    "and",
+    11
+   ],
+   [
+    "only",
+    10
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "but",
+    12
+   ],
+   [
+    ",",
+    10
+   ],
+   [
+    "not",
+    10
+   ]
+  ],
+  "windows": [
+   ", redefines conflict, [[and]]",
+   ", redefines conflict, [[and]]",
+   "ance, enhances clarity [[,]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.1182",
+  "why": "boosted median gain 6.75 (n 15)",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    3
+   ],
+   [
+    "to",
+    3
+   ],
+   [
+    ",",
+    3
+   ]
+  ],
+  "peak_consistency": 0.046875,
+  "prev_top": [
+   [
+    ":",
+    4
+   ],
+   [
+    "the",
+    3
+   ],
+   [
+    "such",
+    3
+   ]
+  ],
+  "windows": [
+   "sound, shaped by the [[complex]]",
+   "variation within optical components, such [[as]]",
+   "y over this element involves knowing [[which]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.34769",
+  "why": "boosted median gain 6.70 (n 15)",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    5
+   ],
+   [
+    "ry",
+    4
+   ],
+   [
+    "as",
+    4
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [
+   [
+    "ival",
+    4
+   ],
+   [
+    "with",
+    4
+   ],
+   [
+    "serve",
+    3
+   ]
+  ],
+  "windows": [
+   ", genetic composition, food [[web]]",
+   ", genetic composition, food [[web]]",
+   "anky hotels and nich [[es]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.13730",
+  "why": "boosted median gain 6.59 (n 178)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    14
+   ],
+   [
+    ",",
+    6
+   ],
+   [
+    "more",
+    4
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "and",
+    4
+   ],
+   [
+    "with",
+    4
+   ],
+   [
+    "in",
+    3
+   ]
+  ],
+  "windows": [
+   "redefining their role in [[modern]]",
+   "redefining their role in [[modern]]",
+   "cellular reproduction methods and [[how]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.12287",
+  "why": "boosted median gain 6.49 (n 139)",
+  "n": 64,
+  "peak_top": [
+   [
+    "point",
+    7
+   ],
+   [
+    "number",
+    6
+   ],
+   [
+    "curve",
+    5
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    "a",
+    7
+   ],
+   [
+    "the",
+    5
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "by using the limits of their [[ratio]]",
+   "by using the limits of their [[ratio]]",
+   "overall truth value of the complex [[proposition]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.15376",
+  "why": "boosted median gain 6.41 (n 12)",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    32
+   ],
+   [
+    "like",
+    22
+   ],
+   [
+    "of",
+    2
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "kin",
+    10
+   ],
+   [
+    "ed",
+    9
+   ],
+   [
+    "similar",
+    7
+   ]
+  ],
+  "windows": [
+   "balances can be akin [[to]]",
+   "commodity risk are similar [[to]]",
+   "commodity risk are similar [[to]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.13142",
+  "why": "boosted median gain 6.22 (n 11)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    9
+   ],
+   [
+    "and",
+    8
+   ],
+   [
+    "or",
+    7
+   ]
+  ],
+  "peak_consistency": 0.140625,
+  "prev_top": [
+   [
+    ",",
+    6
+   ],
+   [
+    "control",
+    5
+   ],
+   [
+    "the",
+    4
+   ]
+  ],
+  "windows": [
+   "understanding of specific principles involved in [[the]]",
+   "understanding of specific principles involved in [[the]]",
+   "to understand various factors that influence [[the]]"
+  ]
+ },
+ {
+  "latent": "10.resid.10514",
+  "why": "boosted median gain 6.01 (n 10)",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    7
+   ],
+   [
+    "standard",
+    4
+   ],
+   [
+    "patient",
+    3
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    ",",
+    7
+   ],
+   [
+    "amount",
+    7
+   ],
+   [
+    "and",
+    5
+   ]
+  ],
+  "windows": [
+   "healthcare, and improve the [[standard]]",
+   "healthcare, and improve the [[standard]]",
+   "urance portability, and provide [[patient]]"
+  ]
+ },
+ {
+  "latent": "3.attn.28052",
+  "why": "family 0 core (n 921)",
+  "n": 64,
+  "peak_top": [
+   [
+    "+",
+    6
+   ],
+   [
+    "",
+    4
+   ],
+   [
+    "=",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "}",
+    4
+   ],
+   [
+    "M",
+    4
+   ],
+   [
+    "",
+    4
+   ]
+  ],
+  "windows": [
+   ",\\,\\,\\,\\,\\,\\ [[,\\]]",
+   ",\\,\\,\\,\\,\\,\\ [[,\\]]",
+   "\u062f\u0645\u0627\u062a \u0627\u0644\u0634 [[\u062e]]"
+  ]
+ },
+ {
+  "latent": "3.resid.38093",
+  "why": "family 0 core (n 921)",
+  "n": 64,
+  "peak_top": [
+   [
+    "Haz",
+    4
+   ],
+   [
+    "ance",
+    4
+   ],
+   [
+    "decor",
+    4
+   ]
+  ],
+  "peak_consistency": 0.0625,
+  "prev_top": [
+   [
+    "with",
+    13
+   ],
+   [
+    "govern",
+    4
+   ],
+   [
+    "social",
+    4
+   ]
+  ],
+  "windows": [
+   "conjugation, punctuation [[usage]]",
+   "conjugation, punctuation [[usage]]",
+   "stone relief figures depicting [[gods]]"
+  ]
+ },
+ {
+  "latent": "4.attn.22966",
+  "why": "family 0 core (n 921)",
+  "n": 64,
+  "peak_top": [
+   [
+    "have",
+    11
+   ],
+   [
+    "can",
+    6
+   ],
+   [
+    "could",
+    6
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "can",
+    24
+   ],
+   [
+    "could",
+    9
+   ],
+   [
+    "be",
+    5
+   ]
+  ],
+  "windows": [
+   "states that if an event A [[can]]",
+   "of quantum computing, history could [[see]]",
+   "of quantum computing, history could [[see]]"
+  ]
+ },
+ {
+  "latent": "4.attn.35245",
+  "why": "family 0 core (n 921)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "its",
+    5
+   ],
+   [
+    "to",
+    5
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "and",
+    7
+   ],
+   [
+    ",",
+    4
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "windows": [
+   "the United Kingdom by outlin [[ing]]",
+   "the economic health of a region [[are]]",
+   "imodal data and lever [[aging]]"
+  ]
+ },
+ {
+  "latent": "4.resid.20318",
+  "why": "family 0 core (n 921)",
+  "n": 64,
+  "peak_top": [
+   [
+    "0",
+    10
+   ],
+   [
+    "ctors",
+    4
+   ],
+   [
+    "ic",
+    4
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "and",
+    17
+   ],
+   [
+    "se",
+    4
+   ],
+   [
+    "ut",
+    4
+   ]
+  ],
+  "windows": [
+   "000s/2 [[0]]",
+   "000s/2 [[0]]",
+   ".<s> Circles and se [[ctors]]"
+  ]
+ },
+ {
+  "latent": "4.resid.40230",
+  "why": "family 1 core (n 873)",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    12
+   ],
+   [
+    "ampa",
+    11
+   ],
+   [
+    "Classes",
+    4
+   ]
+  ],
+  "peak_consistency": 0.1875,
+  "prev_top": [],
+  "windows": [
+   " [[to]]",
+   " [[\u043e\u043d\u0443]]",
+   " [[o\u00f9]]"
+  ]
+ },
+ {
+  "latent": "5.resid.12617",
+  "why": "family 1 core (n 873)",
+  "n": 64,
+  "peak_top": [
+   [
+    "wert",
+    11
+   ],
+   [
+    "it\u00e4",
+    6
+   ],
+   [
+    "campion",
+    6
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[\u200c]]",
+   " [[ured]]",
+   " [[ured]]"
+  ]
+ },
+ {
+  "latent": "5.resid.17009",
+  "why": "family 1 core (n 873)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ampa",
+    11
+   ],
+   [
+    "ismiss",
+    9
+   ],
+   [
+    "buf",
+    4
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[in]]",
+   " [[in]]",
+   " [[buf]]"
+  ]
+ },
+ {
+  "latent": "5.resid.28742",
+  "why": "family 1 core (n 873)",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    60
+   ],
+   [
+    "++,",
+    2
+   ],
+   [
+    "++)",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [],
+  "windows": [
+   " [[++,]]",
+   " [[,]]",
+   " [[,]]"
+  ]
+ },
+ {
+  "latent": "5.resid.4332",
+  "why": "family 1 core (n 873)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ers",
+    10
+   ],
+   [
+    "approach",
+    7
+   ],
+   [
+    "campion",
+    6
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [],
+  "windows": [
+   " [[aturen]]",
+   " [[aturen]]",
+   " [[std]]"
+  ]
+ },
+ {
+  "latent": "1.attn.32074",
+  "why": "family 2 core (n 819)",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    19
+   ],
+   [
+    "ware",
+    6
+   ],
+   [
+    "tocol",
+    4
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "and",
+    9
+   ],
+   [
+    "om",
+    6
+   ],
+   [
+    ",",
+    6
+   ]
+  ],
+  "windows": [
+   "ate how data is transmitted [[and]]",
+   "define how data is transmitted [[and]]",
+   "used to understand and solve combin [[atorial]]"
+  ]
+ },
+ {
+  "latent": "1.attn.36952",
+  "why": "family 2 core (n 819)",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    3
+   ],
+   [
+    "chem",
+    3
+   ],
+   [
+    "fer",
+    2
+   ]
+  ],
+  "peak_consistency": 0.046875,
+  "prev_top": [
+   [
+    ",",
+    4
+   ],
+   [
+    "electro",
+    3
+   ],
+   [
+    "and",
+    3
+   ]
+  ],
+  "windows": [
+   "she answered each with clarity [[and]]",
+   ".ullum.<s> Robin [[Lak]]",
+   "rey West.<s> Philip Kot [[ler]]"
+  ]
+ },
+ {
+  "latent": "1.resid.16054",
+  "why": "family 2 core (n 819)",
+  "n": 64,
+  "peak_top": [
+   [
+    "s",
+    6
+   ],
+   [
+    "model",
+    3
+   ],
+   [
+    "opy",
+    3
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "Network",
+    6
+   ],
+   [
+    "esian",
+    3
+   ],
+   [
+    "sc",
+    3
+   ]
+  ],
+  "windows": [
+   "-Stokes equations under the [[assumption]]",
+   ") are both essential tools in [[statistical]]",
+   "as Recurrent Neural Network [[s]]"
+  ]
+ },
+ {
+  "latent": "1.resid.19787",
+  "why": "family 2 core (n 819)",
+  "n": 64,
+  "peak_top": [
+   [
+    "implementation",
+    50
+   ],
+   [
+    "compiler",
+    6
+   ],
+   [
+    "cycle",
+    2
+   ]
+  ],
+  "peak_consistency": 0.78125,
+  "prev_top": [],
+  "windows": [
+   " [[compiler]]",
+   " [[compiler]]",
+   " [[cycle]]"
+  ]
+ },
+ {
+  "latent": "1.resid.10405",
+  "why": "family 3 core (n 705)",
+  "n": 64,
+  "peak_top": [
+   [
+    "how",
+    32
+   ],
+   [
+    "dec",
+    5
+   ],
+   [
+    "emot",
+    4
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "how",
+    14
+   ],
+   [
+    "they",
+    3
+   ],
+   [
+    "these",
+    3
+   ]
+  ],
+  "windows": [
+   " [[how]]",
+   " [[how]]",
+   " [[how]]"
+  ]
+ },
+ {
+  "latent": "1.resid.18103",
+  "why": "family 3 core (n 705)",
+  "n": 64,
+  "peak_top": [
+   [
+    "amplitude",
+    7
+   ],
+   [
+    "the",
+    3
+   ],
+   [
+    "with",
+    3
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    "the",
+    6
+   ],
+   [
+    "ate",
+    3
+   ],
+   [
+    "lished",
+    2
+   ]
+  ],
+  "windows": [
+   "by waves; the higher the [[amplitude]]",
+   "in turn results in lou [[der]]",
+   "a complex-valued probability [[amplitude]]"
+  ]
+ },
+ {
+  "latent": "1.resid.34057",
+  "why": "family 3 core (n 705)",
+  "n": 64,
+  "peak_top": [
+   [
+    "inary",
+    63
+   ],
+   [
+    "ity",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "cipl",
+    63
+   ],
+   [
+    "inar",
+    1
+   ]
+  ],
+  "windows": [
+   "interdiscipl [[inary]]",
+   "interdiscipl [[inary]]",
+   "discipl [[inary]]"
+  ]
+ },
+ {
+  "latent": "3.resid.39984",
+  "why": "family 3 core (n 705)",
+  "n": 64,
+  "peak_top": [
+   [
+    "form",
+    8
+   ],
+   [
+    "5",
+    4
+   ],
+   [
+    "ing",
+    3
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    ".",
+    20
+   ],
+   [
+    "product",
+    8
+   ],
+   [
+    "<s>",
+    7
+   ]
+  ],
+  "windows": [
+   "new connections and relationships.<s> [[Form]]",
+   "ness and texture.ice on [[sc]]",
+   "esty.ower [[ing]]"
+  ]
+ },
+ {
+  "latent": "5.resid.29648",
+  "why": "family 3 core (n 705)",
+  "n": 64,
+  "peak_top": [
+   [
+    "conduct",
+    36
+   ],
+   [
+    "met",
+    12
+   ],
+   [
+    "trad",
+    7
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [
+   [
+    "involves",
+    33
+   ],
+   [
+    "involve",
+    11
+   ],
+   [
+    "includes",
+    8
+   ]
+  ],
+  "windows": [
+   "involves [[conduct]]",
+   "involves [[conduct]]",
+   "includes [[met]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.10302",
+  "why": "family 4 core (n 674)",
+  "n": 64,
+  "peak_top": [
+   [
+    "corpor",
+    17
+   ],
+   [
+    "execut",
+    11
+   ],
+   [
+    "Officer",
+    10
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "senior",
+    10
+   ],
+   [
+    "Executive",
+    8
+   ],
+   [
+    "organiz",
+    5
+   ]
+  ],
+  "windows": [
+   "including roles such as Chief Executive [[Officer]]",
+   "officer leadership roles for many other [[senior]]",
+   "officer leadership roles for many other [[senior]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.12868",
+  "why": "family 4 core (n 674)",
+  "n": 64,
+  "peak_top": [
+   [
+    "economic",
+    30
+   ],
+   [
+    "economy",
+    10
+   ],
+   [
+    "policy",
+    9
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "the",
+    11
+   ],
+   [
+    "during",
+    10
+   ],
+   [
+    "cal",
+    9
+   ]
+  ],
+  "windows": [
+   "to influence aggregate demand within the [[economy]]",
+   "to influence aggregate demand within the [[economy]]",
+   "ation.ansionary fiscal [[policy]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.2943",
+  "why": "family 4 core (n 674)",
+  "n": 64,
+  "peak_top": [
+   [
+    "derivatives",
+    14
+   ],
+   [
+    "derivative",
+    14
+   ],
+   [
+    "invest",
+    8
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "financial",
+    8
+   ],
+   [
+    "as",
+    5
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "from swapping contracts with [[invest]]",
+   "from swapping contracts with [[invest]]",
+   "t management, equity, [[derivatives]]"
+  ]
+ },
+ {
+  "latent": "0.resid.2943",
+  "why": "family 4 core (n 674)",
+  "n": 64,
+  "peak_top": [
+   [
+    "derivative",
+    17
+   ],
+   [
+    "derivatives",
+    11
+   ],
+   [
+    "invest",
+    10
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "financial",
+    5
+   ],
+   [
+    "as",
+    4
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "windows": [
+   "from swapping contracts with [[invest]]",
+   "from swapping contracts with [[invest]]",
+   "t management, equity, [[derivatives]]"
+  ]
+ },
+ {
+  "latent": "1.resid.2476",
+  "why": "family 4 core (n 674)",
+  "n": 64,
+  "peak_top": [
+   [
+    "derivatives",
+    13
+   ],
+   [
+    "derivative",
+    10
+   ],
+   [
+    "invest",
+    8
+   ]
+  ],
+  "peak_consistency": 0.203125,
+  "prev_top": [
+   [
+    "financial",
+    6
+   ],
+   [
+    ",",
+    5
+   ],
+   [
+    "h",
+    5
+   ]
+  ],
+  "windows": [
+   "), metal futures, and [[derivatives]]",
+   "such as stock options and fut [[ures]]",
+   "from swapping contracts with [[invest]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.21860",
+  "why": "family 7 core (n 463)",
+  "n": 64,
+  "peak_top": [
+   [
+    "urrency",
+    18
+   ],
+   [
+    "ous",
+    15
+   ],
+   [
+    "concurrent",
+    8
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "conc",
+    18
+   ],
+   [
+    "simultane",
+    15
+   ],
+   [
+    "consist",
+    5
+   ]
+  ],
+  "windows": [
+   "temporal relationships.iversion conc [[urrency]]",
+   "method is multiversion conc [[urrency]]",
+   "concurrently., advanced conc [[urrency]]"
+  ]
+ },
+ {
+  "latent": "0.resid.17162",
+  "why": "family 7 core (n 463)",
+  "n": 64,
+  "peak_top": [
+   [
+    "integrity",
+    4
+   ],
+   [
+    "ibility",
+    4
+   ],
+   [
+    "ecycle",
+    4
+   ]
+  ],
+  "peak_consistency": 0.0625,
+  "prev_top": [
+   [
+    "content",
+    5
+   ],
+   [
+    "legal",
+    5
+   ],
+   [
+    "data",
+    4
+   ]
+  ],
+  "windows": [
+   "\u0623 [[\u0633]]",
+   "\ufffd [[\ufffd]]",
+   "\u064a [[\u062c]]"
+  ]
+ },
+ {
+  "latent": "0.resid.39852",
+  "why": "family 7 core (n 463)",
+  "n": 64,
+  "peak_top": [
+   [
+    "Python",
+    23
+   ],
+   [
+    "developers",
+    8
+   ],
+   [
+    "Git",
+    7
+   ]
+  ],
+  "peak_consistency": 0.359375,
+  "prev_top": [
+   [
+    "and",
+    14
+   ],
+   [
+    "or",
+    9
+   ],
+   [
+    "for",
+    8
+   ]
+  ],
+  "windows": [
+   ", Java, and C++, [[developers]]",
+   "like C++, Java, or [[Python]]",
+   "engine), and unittest for [[Python]]"
+  ]
+ },
+ {
+  "latent": "3.attn.24987",
+  "why": "family 7 core (n 463)",
+  "n": 64,
+  "peak_top": [
+   [
+    "algorithms",
+    15
+   ],
+   [
+    "ction",
+    12
+   ],
+   [
+    "models",
+    11
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "learning",
+    16
+   ],
+   [
+    "extra",
+    12
+   ],
+   [
+    "for",
+    7
+   ]
+  ],
+  "windows": [
+   "LP [[models]]",
+   "embeddings underpin the [[algorithms]]",
+   "LP [[models]]"
+  ]
+ },
+ {
+  "latent": "3.resid.3425",
+  "why": "family 7 core (n 463)",
+  "n": 64,
+  "peak_top": [
+   [
+    "thread",
+    18
+   ],
+   [
+    "threads",
+    16
+   ],
+   [
+    "ization",
+    8
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "concurrent",
+    12
+   ],
+   [
+    "or",
+    8
+   ],
+   [
+    "synchron",
+    4
+   ]
+  ],
+  "windows": [
+   "deadlocks, ensuring [[thread]]",
+   "C#, [[memory]]",
+   "urrency, managed through various synchron [[ization]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.16181",
+  "why": "family 8 core (n 462)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    23
+   ],
+   [
+    "and",
+    5
+   ],
+   [
+    "to",
+    5
+   ]
+  ],
+  "windows": [
+   "the index of refraction of [[the]]",
+   "the product of the lengths of [[the]]",
+   "dimensions of both the original and [[the]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.28234",
+  "why": "family 8 core (n 462)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    63
+   ],
+   [
+    "_\\",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "of",
+    13
+   ],
+   [
+    "in",
+    3
+   ],
+   [
+    "and",
+    3
+   ]
+  ],
+  "windows": [
+   "medium and the sine of [[the]]",
+   " [[the]]",
+   "_\\_\\_\\_\\_\\_\\ [[_\\]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.3997",
+  "why": "family 8 core (n 462)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    42
+   ],
+   [
+    "from",
+    4
+   ],
+   [
+    "at",
+    2
+   ]
+  ],
+  "windows": [
+   "field vector points directly away from [[the]]",
+   "the normal to the interface of [[the]]",
+   "ite) to the length of [[the]]"
+  ]
+ },
+ {
+  "latent": "0.resid.16181",
+  "why": "family 8 core (n 462)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    26
+   ],
+   [
+    "to",
+    4
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "windows": [
+   "directly away from the ring if [[the]]",
+   "the index of refraction of [[the]]",
+   "the derivative of the inner of [[the]]"
+  ]
+ },
+ {
+  "latent": "0.resid.28234",
+  "why": "family 8 core (n 462)",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    63
+   ],
+   [
+    "The",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "and",
+    6
+   ],
+   [
+    "to",
+    6
+   ]
+  ],
+  "windows": [
+   "raction of the first medium and [[the]]",
+   "the circle to the ends outside [[the]]",
+   "axis passing through the center of [[the]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.12130",
+  "why": "family 9 core (n 431)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    58
+   ],
+   [
+    "instance",
+    1
+   ],
+   [
+    "ardo",
+    1
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [],
+  "windows": [
+   " [[<s>]]",
+   " [[instance]]",
+   " [[<s>]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.18445",
+  "why": "family 9 core (n 431)",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    16
+   ],
+   [
+    "include",
+    8
+   ],
+   [
+    "using",
+    7
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [],
+  "windows": [
+   " [[involves]]",
+   " [[the]]",
+   " [[<s>]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.33440",
+  "why": "family 9 core (n 431)",
+  "n": 64,
+  "peak_top": [
+   [
+    "inten",
+    7
+   ],
+   [
+    "Imp",
+    5
+   ],
+   [
+    "High",
+    5
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [],
+  "windows": [
+   " [[dis]]",
+   " [[<s>]]",
+   " [[<s>]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.3390",
+  "why": "family 9 core (n 431)",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    11
+   ],
+   [
+    "fil",
+    6
+   ],
+   [
+    "compr",
+    6
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [],
+  "windows": [
+   " [[mod]]",
+   " [[equ]]",
+   " [[equ]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.4746",
+  "why": "family 9 core (n 431)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ete",
+    7
+   ],
+   [
+    "pel",
+    6
+   ],
+   [
+    "station",
+    4
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [],
+  "windows": [
+   " [[pel]]",
+   " [[ony]]",
+   " [[pow]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.18657",
+  "why": "family 10 core (n 377)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ci",
+    29
+   ],
+   [
+    "ation",
+    20
+   ],
+   [
+    "cia",
+    10
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "spe",
+    39
+   ],
+   [
+    "ci",
+    18
+   ],
+   [
+    "gent",
+    3
+   ]
+  ],
+  "windows": [
+   "population.apatric speci [[ation]]",
+   "al isolation.standing spe [[ci]]",
+   "al isolation.standing spe [[ci]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.21210",
+  "why": "family 10 core (n 377)",
+  "n": 64,
+  "peak_top": [
+   [
+    "species",
+    29
+   ],
+   [
+    "fish",
+    12
+   ],
+   [
+    "animals",
+    5
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "marine",
+    8
+   ],
+   [
+    "atic",
+    6
+   ],
+   [
+    "al",
+    6
+   ]
+  ],
+  "windows": [
+   "ic of saltwater aquatic [[animals]]",
+   "ic of saltwater aquatic [[animals]]",
+   ", marine mammalsbird [[birds]]"
+  ]
+ },
+ {
+  "latent": "0.resid.18657",
+  "why": "family 10 core (n 377)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ation",
+    24
+   ],
+   [
+    "ci",
+    13
+   ],
+   [
+    "product",
+    5
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "ci",
+    22
+   ],
+   [
+    "spe",
+    15
+   ],
+   [
+    "re",
+    5
+   ]
+  ],
+  "windows": [
+   "population.apatric speci [[ation]]",
+   "isolation.standing speci [[ation]]",
+   "al isolation.standing spe [[ci]]"
+  ]
+ },
+ {
+  "latent": "1.resid.10198",
+  "why": "family 10 core (n 377)",
+  "n": 64,
+  "peak_top": [
+   [
+    "memb",
+    33
+   ],
+   [
+    "ATP",
+    19
+   ],
+   [
+    "osph",
+    3
+   ]
+  ],
+  "peak_consistency": 0.515625,
+  "prev_top": [
+   [
+    "id",
+    30
+   ],
+   [
+    "into",
+    8
+   ],
+   [
+    "produce",
+    3
+   ]
+  ],
+  "windows": [
+   "s' thylakoid [[memb]]",
+   "s' thylakoid [[memb]]",
+   "the thylakoid [[memb]]"
+  ]
+ },
+ {
+  "latent": "1.resid.13036",
+  "why": "family 10 core (n 377)",
+  "n": 64,
+  "peak_top": [
+   [
+    "habitat",
+    26
+   ],
+   [
+    "species",
+    11
+   ],
+   [
+    "ystem",
+    6
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [
+   [
+    "cos",
+    6
+   ],
+   [
+    "ef",
+    5
+   ],
+   [
+    "as",
+    4
+   ]
+  ],
+  "windows": [
+   "ecological networks such as [[habitat]]",
+   "support biodiversity by providing [[habitat]]",
+   "ecological networks such as [[habitat]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.29437",
+  "why": "family 13 core (n 344)",
+  "n": 64,
+  "peak_top": [
+   [
+    "Union",
+    13
+   ],
+   [
+    "aty",
+    11
+   ],
+   [
+    "Peace",
+    8
+   ]
+  ],
+  "peak_consistency": 0.203125,
+  "prev_top": [
+   [
+    "the",
+    13
+   ],
+   [
+    "Tre",
+    13
+   ],
+   [
+    "Soviet",
+    13
+   ]
+  ],
+  "windows": [
+   "that aimed to limit the [[arms]]",
+   "that aimed to limit the [[arms]]",
+   "ald Reagan and General Secretary [[Mik]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.97",
+  "why": "family 13 core (n 344)",
+  "n": 64,
+  "peak_top": [
+   [
+    "Renaissance",
+    29
+   ],
+   [
+    "Europe",
+    11
+   ],
+   [
+    "Latin",
+    10
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "ian",
+    15
+   ],
+   [
+    "medieval",
+    9
+   ],
+   [
+    "promoted",
+    8
+   ]
+  ],
+  "windows": [
+   "ian Renaissance and the Ottonian [[Renaissance]]",
+   "ian Renaissance under Charlemagne promoted [[Latin]]",
+   "ian Renaissance under Charlemagne promoted [[Latin]]"
+  ]
+ },
+ {
+  "latent": "0.resid.22922",
+  "why": "family 13 core (n 344)",
+  "n": 64,
+  "peak_top": [
+   [
+    "international",
+    20
+   ],
+   [
+    "countries",
+    13
+   ],
+   [
+    "nations",
+    7
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "international",
+    12
+   ],
+   [
+    "member",
+    7
+   ],
+   [
+    "multiple",
+    6
+   ]
+  ],
+  "windows": [
+   "encompass a group of [[countries]]",
+   "international [[agre]]",
+   "trade barriers among neighboring [[countries]]"
+  ]
+ },
+ {
+  "latent": "0.resid.39343",
+  "why": "family 13 core (n 344)",
+  "n": 64,
+  "peak_top": [
+   [
+    "troops",
+    18
+   ],
+   [
+    "illery",
+    9
+   ],
+   [
+    "war",
+    9
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "French",
+    14
+   ],
+   [
+    "German",
+    13
+   ],
+   [
+    "art",
+    9
+   ]
+  ],
+  "windows": [
+   "of Verdur meant that French [[soldiers]]",
+   "of Verdur meant that French [[soldiers]]",
+   "barbed wire, and art [[illery]]"
+  ]
+ },
+ {
+  "latent": "1.resid.4286",
+  "why": "family 13 core (n 344)",
+  "n": 64,
+  "peak_top": [
+   [
+    "Germany",
+    19
+   ],
+   [
+    "bia",
+    9
+   ],
+   [
+    "June",
+    8
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "East",
+    10
+   ],
+   [
+    "in",
+    9
+   ],
+   [
+    "Ser",
+    9
+   ]
+  ],
+  "windows": [
+   "Soviet invasion of Eastern [[Germany]]",
+   "ia, Hungary, East [[Germany]]",
+   "oslovakia (the Soviet [[Republic]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.10471",
+  "why": "family 16 core (n 315)",
+  "n": 64,
+  "peak_top": [
+   [
+    "=",
+    8
+   ],
+   [
+    "\u03b8",
+    6
+   ],
+   [
+    "radius",
+    5
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "the",
+    12
+   ],
+   [
+    "(",
+    4
+   ],
+   [
+    "as",
+    3
+   ]
+  ],
+  "windows": [
+   "length (s) equals the [[radius]]",
+   ". formula for population variance, [[denoted]]",
+   "by its mean, expressed as [[percentage]]"
+  ]
+ },
+ {
+  "latent": "1.resid.8861",
+  "why": "family 16 core (n 315)",
+  "n": 64,
+  "peak_top": [
+   [
+    "algebraic",
+    18
+   ],
+   [
+    "ical",
+    10
+   ],
+   [
+    "geometry",
+    10
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "algebra",
+    10
+   ],
+   [
+    "algebraic",
+    9
+   ],
+   [
+    "of",
+    8
+   ]
+  ],
+  "windows": [
+   "of algebra and mathematics, algebra [[ical]]",
+   "of algebra and mathematics, algebra [[ical]]",
+   "<s> Using algebraic geometry, [[mathemat]]"
+  ]
+ },
+ {
+  "latent": "2.attn.34610",
+  "why": "family 16 core (n 315)",
+  "n": 64,
+  "peak_top": [
+   [
+    "groups",
+    11
+   ],
+   [
+    "eties",
+    10
+   ],
+   [
+    "geometric",
+    8
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "vari",
+    10
+   ],
+   [
+    "the",
+    9
+   ],
+   [
+    "include",
+    4
+   ]
+  ],
+  "windows": [
+   "that yields insights into the [[geometric]]",
+   "and their relationships. structures include [[groups]]",
+   "and their relationships. structures include [[groups]]"
+  ]
+ },
+ {
+  "latent": "3.attn.39465",
+  "why": "family 16 core (n 315)",
+  "n": 64,
+  "peak_top": [
+   [
+    "numbers",
+    9
+   ],
+   [
+    "conver",
+    9
+   ],
+   [
+    "functions",
+    7
+   ]
+  ],
+  "peak_consistency": 0.140625,
+  "prev_top": [
+   [
+    "real",
+    9
+   ],
+   [
+    "every",
+    9
+   ],
+   [
+    "metric",
+    7
+   ]
+  ],
+  "windows": [
+   "an open set. dealing with [[sequences]]",
+   "every nonempty subset of real [[numbers]]",
+   "dealing with infinite series and integr [[als]]"
+  ]
+ },
+ {
+  "latent": "3.resid.24606",
+  "why": "family 16 core (n 315)",
+  "n": 64,
+  "peak_top": [
+   [
+    "open",
+    28
+   ],
+   [
+    "gent",
+    8
+   ],
+   [
+    "product",
+    5
+   ]
+  ],
+  "peak_consistency": 0.4375,
+  "prev_top": [
+   [
+    "every",
+    17
+   ],
+   [
+    "conver",
+    8
+   ],
+   [
+    "inner",
+    5
+   ]
+  ],
+  "windows": [
+   "algebraic [[topology]]",
+   "is compact if every cover by [[open]]",
+   "space is considered compact if every [[open]]"
+  ]
+ },
+ {
+  "latent": "0.resid.10847",
+  "why": "family 19 core (n 271)",
+  "n": 64,
+  "peak_top": [
+   [
+    "verb",
+    16
+   ],
+   [
+    "jective",
+    12
+   ],
+   [
+    "oun",
+    7
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "ad",
+    13
+   ],
+   [
+    "ver",
+    6
+   ],
+   [
+    "modify",
+    4
+   ]
+  ],
+  "windows": [
+   "ives involves their placement after [[subject]]",
+   "oun, verb and ad [[jective]]",
+   "oun, verb and ad [[jective]]"
+  ]
+ },
+ {
+  "latent": "1.resid.21617",
+  "why": "family 19 core (n 271)",
+  "n": 64,
+  "peak_top": [
+   [
+    "verb",
+    16
+   ],
+   [
+    "future",
+    13
+   ],
+   [
+    "perfect",
+    7
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "or",
+    10
+   ],
+   [
+    "past",
+    9
+   ],
+   [
+    "+",
+    6
+   ]
+  ],
+  "windows": [
+   "past action ('had been + [[verb]]",
+   "past action ('had been + [[verb]]",
+   "past action ('had been + [[verb]]"
+  ]
+ },
+ {
+  "latent": "2.attn.36677",
+  "why": "family 19 core (n 271)",
+  "n": 64,
+  "peak_top": [
+   [
+    "German",
+    8
+   ],
+   [
+    "prefix",
+    6
+   ],
+   [
+    "1",
+    6
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "",
+    6
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "windows": [
+   "part of language formation; comp [[ound]]",
+   "part of language formation; comp [[ound]]",
+   "indicate case, gender, and [[number]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.39178",
+  "why": "family 19 core (n 271)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ural",
+    15
+   ],
+   [
+    "that",
+    8
+   ],
+   [
+    "singular",
+    6
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "pl",
+    15
+   ],
+   [
+    "indicate",
+    6
+   ],
+   [
+    "to",
+    5
+   ]
+  ],
+  "windows": [
+   "ose\" serve as plural [[nom]]",
+   "ose\" serve as plural [[nom]]",
+   "as the subject of the relative [[clause]]"
+  ]
+ },
+ {
+  "latent": "2.resid.190",
+  "why": "family 19 core (n 271)",
+  "n": 64,
+  "peak_top": [
+   [
+    "clause",
+    26
+   ],
+   [
+    "who",
+    6
+   ],
+   [
+    "ownership",
+    5
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [
+   [
+    "relative",
+    16
+   ],
+   [
+    "the",
+    7
+   ],
+   [
+    "'",
+    5
+   ]
+  ],
+  "windows": [
+   "as the subject of the relative [[clause]]",
+   "relative [[clause]]",
+   "relative [[clause]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.19324",
+  "why": "family 22 core (n 227)",
+  "n": 64,
+  "peak_top": [
+   [
+    "art",
+    55
+   ],
+   [
+    "Pic",
+    3
+   ],
+   [
+    "Expression",
+    2
+   ]
+  ],
+  "peak_consistency": 0.859375,
+  "prev_top": [
+   [
+    "the",
+    5
+   ],
+   [
+    "as",
+    4
+   ],
+   [
+    "fine",
+    4
+   ]
+  ],
+  "windows": [
+   "works, expanding upon this [[art]]",
+   "crucial works of art inspired [[art]]",
+   "Impressionism as a new [[art]]"
+  ]
+ },
+ {
+  "latent": "0.resid.24314",
+  "why": "family 22 core (n 227)",
+  "n": 64,
+  "peak_top": [
+   [
+    "gla",
+    14
+   ],
+   [
+    "oil",
+    6
+   ],
+   [
+    "dry",
+    5
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "g",
+    4
+   ],
+   [
+    "and",
+    4
+   ],
+   [
+    "to",
+    4
+   ]
+  ],
+  "windows": [
+   "canvas with oil paint using g [[esso]]",
+   "canvas with oil paint using g [[esso]]",
+   "aturation, oils require [[gla]]"
+  ]
+ },
+ {
+  "latent": "1.resid.17994",
+  "why": "family 22 core (n 227)",
+  "n": 64,
+  "peak_top": [
+   [
+    "art",
+    48
+   ],
+   [
+    "istic",
+    5
+   ],
+   [
+    "works",
+    5
+   ]
+  ],
+  "peak_consistency": 0.75,
+  "prev_top": [
+   [
+    "art",
+    9
+   ],
+   [
+    "ual",
+    6
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "windows": [
+   "lies such artistic expression as [[art]]",
+   "artists redefine what [[art]]",
+   "works, expanding upon this [[art]]"
+  ]
+ },
+ {
+  "latent": "1.resid.19430",
+  "why": "family 22 core (n 227)",
+  "n": 64,
+  "peak_top": [
+   [
+    "colors",
+    18
+   ],
+   [
+    "alette",
+    10
+   ],
+   [
+    "ues",
+    9
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "ivid",
+    10
+   ],
+   [
+    "p",
+    10
+   ],
+   [
+    "h",
+    9
+   ]
+  ],
+  "windows": [
+   "Claude Monet used vivid [[colors]]",
+   "Claude Monet used vivid [[colors]]",
+   "Claude Monet used vivid [[colors]]"
+  ]
+ },
+ {
+  "latent": "2.resid.35520",
+  "why": "family 22 core (n 227)",
+  "n": 64,
+  "peak_top": [
+   [
+    "G",
+    7
+   ],
+   [
+    "water",
+    7
+   ],
+   [
+    "transfer",
+    6
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    "and",
+    7
+   ],
+   [
+    "van",
+    6
+   ],
+   [
+    "while",
+    4
+   ]
+  ],
+  "windows": [
+   "as these are necessary for creating [[visual]]",
+   "impasto, sgraff [[ito]]",
+   "ant pigments, while [[Abstract]]"
+  ]
+ },
+ {
+  "latent": "1.attn.9699",
+  "why": "family 23 core (n 221)",
+  "n": 64,
+  "peak_top": [
+   [
+    "iness",
+    4
+   ],
+   [
+    "texture",
+    4
+   ],
+   [
+    "erk",
+    4
+   ]
+  ],
+  "peak_consistency": 0.0625,
+  "prev_top": [
+   [
+    "nut",
+    5
+   ],
+   [
+    "meat",
+    4
+   ],
+   [
+    "salt",
+    4
+   ]
+  ],
+  "windows": [
+   "ients that imitate classic meat [[reci]]",
+   "ients that imitate classic meat [[reci]]",
+   "bitter taste, mild salt [[iness]]"
+  ]
+ },
+ {
+  "latent": "2.attn.3006",
+  "why": "family 23 core (n 221)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ients",
+    19
+   ],
+   [
+    "fs",
+    18
+   ],
+   [
+    "pes",
+    6
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "red",
+    19
+   ],
+   [
+    "che",
+    18
+   ],
+   [
+    "reci",
+    6
+   ]
+  ],
+  "windows": [
+   "less-seasoned ingred [[ients]]",
+   "less-seasoned ingred [[ients]]",
+   "cooks and che [[fs]]"
+  ]
+ },
+ {
+  "latent": "3.attn.36331",
+  "why": "family 23 core (n 221)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ients",
+    10
+   ],
+   [
+    "ishes",
+    4
+   ],
+   [
+    "cook",
+    4
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "red",
+    10
+   ],
+   [
+    "and",
+    5
+   ],
+   [
+    "d",
+    4
+   ]
+  ],
+  "windows": [
+   ", reflecting local ingred [[ients]]",
+   ", reflecting local ingred [[ients]]",
+   ", reflecting local ingred [[ients]]"
+  ]
+ },
+ {
+  "latent": "3.resid.39827",
+  "why": "family 23 core (n 221)",
+  "n": 64,
+  "peak_top": [
+   [
+    "local",
+    8
+   ],
+   [
+    "\u00e9",
+    4
+   ],
+   [
+    "ing",
+    3
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "to",
+    4
+   ],
+   [
+    "ut",
+    4
+   ],
+   [
+    "natural",
+    3
+   ]
+  ],
+  "windows": [
+   "ize traditional dishes such as [[mac]]",
+   "ize traditional dishes such as [[mac]]",
+   ". recipes offer insight into [[local]]"
+  ]
+ },
+ {
+  "latent": "4.attn.38942",
+  "why": "family 23 core (n 221)",
+  "n": 64,
+  "peak_top": [
+   [
+    "ients",
+    16
+   ],
+   [
+    "ishes",
+    5
+   ],
+   [
+    "season",
+    3
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "red",
+    16
+   ],
+   [
+    "d",
+    6
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "windows": [
+   "as seen infusion cuis [[ine]]",
+   "as seen infusion cuis [[ine]]",
+   "locally sourced ingred [[ients]]"
+  ]
+ },
+ {
+  "latent": "0.attn.6888",
+  "why": "family 24 core (n 217)",
+  "n": 64,
+  "peak_top": [
+   [
+    "1",
+    30
+   ],
+   [
+    "0",
+    28
+   ],
+   [
+    "3",
+    4
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "0",
+    14
+   ],
+   [
+    "1",
+    8
+   ],
+   [
+    "9",
+    6
+   ]
+  ],
+  "windows": [
+   "00/200 [[0]]",
+   "00/200 [[0]]",
+   "/1999/ [[0]]"
+  ]
+ },
+ {
+  "latent": "0.mlp.1288",
+  "why": "family 24 core (n 217)",
+  "n": 64,
+  "peak_top": [
+   [
+    "0",
+    15
+   ],
+   [
+    "3",
+    8
+   ],
+   [
+    "8",
+    6
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "0",
+    24
+   ],
+   [
+    "9",
+    15
+   ],
+   [
+    "6",
+    8
+   ]
+  ],
+  "windows": [
+   "70s-19 [[8]]",
+   "70s-19 [[8]]",
+   "190 [[0]]"
+  ]
+ },
+ {
+  "latent": "0.resid.1288",
+  "why": "family 24 core (n 217)",
+  "n": 64,
+  "peak_top": [
+   [
+    "0",
+    42
+   ],
+   [
+    "3",
+    8
+   ],
+   [
+    "8",
+    4
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    "0",
+    16
+   ],
+   [
+    "9",
+    12
+   ],
+   [
+    "5",
+    10
+   ]
+  ],
+  "windows": [
+   "0s-198 [[0]]",
+   "0s-198 [[0]]",
+   "90, 19 [[8]]"
+  ]
+ },
+ {
+  "latent": "1.resid.6366",
+  "why": "family 26 core (n 201)",
+  "n": 64,
+  "peak_top": [
+   [
+    "plot",
+    32
+   ],
+   [
+    "protagon",
+    9
+   ],
+   [
+    "narr",
+    6
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "their",
+    8
+   ],
+   [
+    "flash",
+    5
+   ]
+  ],
+  "windows": [
+   "characters develop their own narrative [[narr]]",
+   "narrative arcs, with [[protagon]]",
+   "foreshadowing, flash [[back]]"
+  ]
+ },
+ {
+  "latent": "2.resid.8166",
+  "why": "family 26 core (n 201)",
+  "n": 64,
+  "peak_top": [
+   [
+    "internal",
+    13
+   ],
+   [
+    "plot",
+    6
+   ],
+   [
+    "F",
+    5
+   ]
+  ],
+  "peak_consistency": 0.203125,
+  "prev_top": [
+   [
+    "sub",
+    7
+   ],
+   [
+    "-",
+    6
+   ],
+   [
+    "ian",
+    5
+   ]
+  ],
+  "windows": [
+   "crucial in creating multi- [[dimensional]]",
+   "crucial in creating multi- [[dimensional]]",
+   "essential to skillfully weave [[dialog]]"
+  ]
+ }
+]

@@ -1,0 +1,18 @@
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "triamp400_clean", "n": 42, "ampF0": 1.0214, "ampFM": 1.0512, "sup": 1.0, "cf_amp": 3.7609, "a_pos_ho": 2.84, "secs": 38.8}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "anchor_support", "n": 43017, "anchor_support_rate": 0.00219}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "null0_clean", "n": 42, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0004, "cf_amp": 0.0, "a_pos_ho": 2.84, "secs": 35.3}
+{"layer": 1, "kind": "resid", "latent": 6115, "arm": "null1_clean", "n": 42, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0006, "cf_amp": 0.0, "a_pos_ho": 2.84, "secs": 37.6}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "triamp400_clean", "n": 26, "ampF0": 1.0527, "ampFM": 1.0172, "sup": 1.0, "cf_amp": 2.3306, "a_pos_ho": 8.593, "secs": 37.2}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "anchor_support", "n": 43103, "anchor_support_rate": 0.0022}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "null0_clean", "n": 26, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 8.593, "secs": 37.8}
+{"layer": 1, "kind": "resid", "latent": 6626, "arm": "null1_clean", "n": 26, "ampF0": 0.0, "ampFM": 0.0, "sup": -0.0, "cf_amp": 0.0, "a_pos_ho": 8.593, "secs": 36.4}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "triamp400_clean", "n": 59, "ampF0": 0.7707, "ampFM": 0.833, "sup": 0.9834, "cf_amp": 3.9415, "a_pos_ho": 1.083, "secs": 28.8}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "anchor_support", "n": 29497, "anchor_support_rate": 0.00248}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "null0_clean", "n": 59, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0003, "a_pos_ho": 1.083, "secs": 28.1}
+{"layer": 1, "kind": "mlp", "latent": 24775, "arm": "null1_clean", "n": 59, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0045, "a_pos_ho": 1.083, "secs": 28.4}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "triamp400_clean", "n": 33, "ampF0": 0.7518, "ampFM": 0.7474, "sup": 1.0, "cf_amp": 3.2217, "a_pos_ho": 1.676, "secs": 29.1}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "anchor_support", "n": 28417, "anchor_support_rate": 0.00259}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "null0_clean", "n": 33, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": 0.0, "a_pos_ho": 1.676, "secs": 28.5}
+{"layer": 1, "kind": "mlp", "latent": 26871, "arm": "null1_clean", "n": 33, "ampF0": 0.0, "ampFM": 0.0, "sup": 0.0, "cf_amp": -0.0009, "a_pos_ho": 1.676, "secs": 29.8}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "triamp400_clean", "n": 66, "ampF0": 0.5623, "ampFM": 0.5308, "sup": 1.0, "cf_amp": 0.2481, "a_pos_ho": 2.847, "secs": 25.6}
+{"layer": 1, "kind": "attn", "latent": 32511, "arm": "anchor_support", "n": 24994, "anchor_support_rate": 0.00227}

@@ -1,0 +1,392 @@
+[
+ {
+  "kind": "att",
+  "layer": 0,
+  "latent": 786,
+  "alpha": 1.5822,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 4
+ },
+ {
+  "kind": "att",
+  "layer": 0,
+  "latent": 2362,
+  "alpha": 1.5863,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 7
+ },
+ {
+  "kind": "att",
+  "layer": 0,
+  "latent": 2998,
+  "alpha": 1.1966,
+  "fires": 160,
+  "top_word": "engine",
+  "purity": 0.075,
+  "rank": 3
+ },
+ {
+  "kind": "att",
+  "layer": 0,
+  "latent": 9424,
+  "alpha": 0.3735,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 7
+ },
+ {
+  "kind": "att",
+  "layer": 0,
+  "latent": 11238,
+  "alpha": 0.9948,
+  "fires": 84,
+  "top_word": "engine",
+  "purity": 0.10714285714285714,
+  "rank": 8
+ },
+ {
+  "kind": "att",
+  "layer": 3,
+  "latent": 4041,
+  "alpha": 2.0358,
+  "fires": 180,
+  "top_word": "doctor",
+  "purity": 0.08333333333333333,
+  "rank": 10
+ },
+ {
+  "kind": "att",
+  "layer": 3,
+  "latent": 6576,
+  "alpha": 2.1335,
+  "fires": 170,
+  "top_word": "doctor",
+  "purity": 0.08823529411764706,
+  "rank": 22
+ },
+ {
+  "kind": "att",
+  "layer": 3,
+  "latent": 13998,
+  "alpha": 1.8386,
+  "fires": 199,
+  "top_word": "doctor",
+  "purity": 0.08040201005025126,
+  "rank": 23
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 1502,
+  "alpha": 1.6443,
+  "fires": 181,
+  "top_word": "doctor",
+  "purity": 0.08839779005524862,
+  "rank": 9
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 1916,
+  "alpha": 2.231,
+  "fires": 162,
+  "top_word": "engine",
+  "purity": 0.08024691358024691,
+  "rank": 11
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 2840,
+  "alpha": 2.7972,
+  "fires": 76,
+  "top_word": "engine",
+  "purity": 0.10526315789473684,
+  "rank": 14
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 5252,
+  "alpha": 1.3954,
+  "fires": 199,
+  "top_word": "doctor",
+  "purity": 0.08040201005025126,
+  "rank": 11
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 9401,
+  "alpha": 2.1759,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 4
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 11557,
+  "alpha": 1.76,
+  "fires": 190,
+  "top_word": "doctor",
+  "purity": 0.08421052631578947,
+  "rank": 4
+ },
+ {
+  "kind": "att",
+  "layer": 5,
+  "latent": 11619,
+  "alpha": 1.3733,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 11
+ },
+ {
+  "kind": "att",
+  "layer": 9,
+  "latent": 4526,
+  "alpha": 1.0419,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 11,
+  "latent": 5232,
+  "alpha": 1.9013,
+  "fires": 175,
+  "top_word": "engine",
+  "purity": 0.08,
+  "rank": 5
+ },
+ {
+  "kind": "att",
+  "layer": 11,
+  "latent": 5999,
+  "alpha": 2.6029,
+  "fires": 172,
+  "top_word": "doctor",
+  "purity": 0.08139534883720931,
+  "rank": 13
+ },
+ {
+  "kind": "att",
+  "layer": 11,
+  "latent": 14462,
+  "alpha": 0.9837,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 12,
+  "latent": 4004,
+  "alpha": 1.8415,
+  "fires": 200,
+  "top_word": "doctor",
+  "purity": 0.08,
+  "rank": 19
+ },
+ {
+  "kind": "att",
+  "layer": 12,
+  "latent": 14215,
+  "alpha": 2.329,
+  "fires": 115,
+  "top_word": "doctor",
+  "purity": 0.08695652173913043,
+  "rank": 11
+ },
+ {
+  "kind": "att",
+  "layer": 12,
+  "latent": 16096,
+  "alpha": 3.6086,
+  "fires": 196,
+  "top_word": "doctor",
+  "purity": 0.08163265306122448,
+  "rank": 21
+ },
+ {
+  "kind": "att",
+  "layer": 14,
+  "latent": 5432,
+  "alpha": 3.1834,
+  "fires": 179,
+  "top_word": "doctor",
+  "purity": 0.08379888268156424,
+  "rank": 14
+ },
+ {
+  "kind": "att",
+  "layer": 16,
+  "latent": 4881,
+  "alpha": 1.1001,
+  "fires": 192,
+  "top_word": "doctor",
+  "purity": 0.08333333333333333,
+  "rank": 6
+ },
+ {
+  "kind": "att",
+  "layer": 18,
+  "latent": 6712,
+  "alpha": 2.1395,
+  "fires": 170,
+  "top_word": "doctor",
+  "purity": 0.08235294117647059,
+  "rank": 8
+ },
+ {
+  "kind": "att",
+  "layer": 19,
+  "latent": 2485,
+  "alpha": 2.1548,
+  "fires": 78,
+  "top_word": "pencil",
+  "purity": 0.11538461538461539,
+  "rank": 12
+ },
+ {
+  "kind": "att",
+  "layer": 19,
+  "latent": 12796,
+  "alpha": 2.8162,
+  "fires": 33,
+  "top_word": "monkey",
+  "purity": 0.18181818181818182,
+  "rank": 20
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 2534,
+  "alpha": 1.7363,
+  "fires": 63,
+  "top_word": "river",
+  "purity": 0.1746031746031746,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 2580,
+  "alpha": 0.9722,
+  "fires": 49,
+  "top_word": "chair",
+  "purity": 0.24489795918367346,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 3583,
+  "alpha": 2.2634,
+  "fires": 103,
+  "top_word": "meadow",
+  "purity": 0.10679611650485436,
+  "rank": 2
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 7067,
+  "alpha": 1.3804,
+  "fires": 56,
+  "top_word": "doctor",
+  "purity": 0.2857142857142857,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 8685,
+  "alpha": 2.189,
+  "fires": 70,
+  "top_word": "engine",
+  "purity": 0.08571428571428572,
+  "rank": 2
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 8982,
+  "alpha": 1.6615,
+  "fires": 75,
+  "top_word": "meadow",
+  "purity": 0.14666666666666667,
+  "rank": 3
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 9739,
+  "alpha": 0.8598,
+  "fires": 50,
+  "top_word": "market",
+  "purity": 0.18,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 15463,
+  "alpha": 0.8806,
+  "fires": 49,
+  "top_word": "doctor",
+  "purity": 0.12244897959183673,
+  "rank": 7
+ },
+ {
+  "kind": "att",
+  "layer": 22,
+  "latent": 15641,
+  "alpha": 1.3393,
+  "fires": 56,
+  "top_word": "engine",
+  "purity": 0.25,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 23,
+  "latent": 3025,
+  "alpha": 1.2441,
+  "fires": 58,
+  "top_word": "window",
+  "purity": 0.08620689655172414,
+  "rank": 1
+ },
+ {
+  "kind": "att",
+  "layer": 25,
+  "latent": 10343,
+  "alpha": 2.9093,
+  "fires": 106,
+  "top_word": "doctor",
+  "purity": 0.14150943396226415,
+  "rank": 16
+ },
+ {
+  "kind": "att",
+  "layer": 25,
+  "latent": 11940,
+  "alpha": 1.7644,
+  "fires": 71,
+  "top_word": "lantern",
+  "purity": 0.11267605633802817,
+  "rank": 21
+ }
+]

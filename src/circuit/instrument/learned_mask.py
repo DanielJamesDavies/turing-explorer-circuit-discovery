@@ -221,6 +221,14 @@ class LearnedMaskPatcher:
         self.bin_threshold = float(bin_threshold)
         self.temperature = 1.0
         self.seed_pre: Optional[torch.Tensor] = None
+        # OFF-TARGET TERM (2026-09-23): when capture_site is set, the stream
+        # at the seed's site is kept (graph-connected) so the loss can read
+        # every latent's pre-activation there; offtarget_ref holds the
+        # per-anchor reference max(clean, empty-circuit) for this patcher's
+        # ablation. Both stay off/None by default (bit-identical).
+        self.capture_site = False
+        self.seed_x: Optional[torch.Tensor] = None
+        self.offtarget_ref: Optional[torch.Tensor] = None
         # constant per-site tensors cast once per (site, device, dtype) —
         # the per-call .to() copies were ~700 kernel launches per step.
         self._const_cache: Dict[Any, torch.Tensor] = {}
@@ -240,6 +248,7 @@ class LearnedMaskPatcher:
         the multi-pass ratchet fix the discovery instruments needed
         (vram-ledger 2026-07-31)."""
         self.seed_pre = None
+        self.seed_x = None
 
     def __call__(self, model: Any):
         return multi_patch(model, self.transform)
@@ -256,6 +265,8 @@ class LearnedMaskPatcher:
                 _tau = torch.topk(_full, _k, dim=-1).values[..., -1]
                 _pre = _pre - _tau.to(_pre.dtype)
             self.seed_pre = _pre
+            if self.capture_site:
+                self.seed_x = x
             return x
         theta = self.thetas.get((layer_idx, kind))
         psi = self.deltas.get((layer_idx, kind))
@@ -340,6 +351,7 @@ class LearnedMaskPatcher:
 def _forward_preact(inference: Any, patcher: LearnedMaskPatcher,
                     tokens: torch.Tensor, grad: bool) -> torch.Tensor:
     patcher.seed_pre = None
+    patcher.seed_x = None
     # Never run a patcher forward through the compiled model: each distinct
     # patcher closure fails dynamo's guards and adds a recompile variant to
     # module-level caches. This matches the eager-patcher policy every other
@@ -552,6 +564,48 @@ def _run_learned_mask_impl(
     # amplitudes deviate from natural only when the data term earns it.
     # 0.0 = truly free range.
     amp_l1: float = 0.0,
+    # OFF-TARGET TERM (2026-09-23, experiment 056): gamma_S on
+    # sum_{j != seed} relu(pre_j - max(pre_j clean, pre_j empty))^2 at the
+    # seed's site, added inside every ablation term of the pos objective (so
+    # it carries that term's floor weight and the shared normaliser). A
+    # circuit may not restore the seed by lifting its site's other latents
+    # above where the clean model or the ablation alone would put them.
+    # 0.0 = off, bit-identical.
+    offtarget_weight: float = 0.0,
+    # "all": charge every lift above max(clean, empty). "cut": also raise the
+    # reference to the clean Top-K cut at that anchor, so only lifts that
+    # SWITCH A LATENT ON are charged (sub-threshold drift is free).
+    offtarget_mode: str = "all",
+    # With margin_topk, divide the terms by the seed's PLAIN pre-activation
+    # scale mean(pre^2) instead of mean(margin^2). For a seed that barely
+    # clears the Top-K cut the natural margin is ~0, so the margin scale
+    # inflates the data terms until lambda is negligible (measured
+    # 2026-09-23: 4k-200k-node "circuits"). False = historical behaviour.
+    margin_plain_norm: bool = False,
+    # TOP-K HINGE (2026-09-23): gamma_R * relu(tau + rank_delta - pre_seed)^2
+    # inside every ablation term, tau = the k-th largest pre-activation among
+    # the site's OTHER latents at the anchor (the value the seed must beat to
+    # be in the Top-K). Zero while the seed is inside the Top-K by rank_delta;
+    # one-sided and additive, so the seed term still fits the natural value.
+    # 0.0 = off, bit-identical.
+    rank_weight: float = 0.0,
+    rank_delta: float = 0.0,
+    # "cut": beat the k-th other latent (stay in the Top-K). "keep": beat the
+    # rival at the seed's own CLEAN rank (hold its natural rank). "top":
+    # gamma_R * ((smooth rank - 1) / k)^2, a convex pull toward rank 1;
+    # rank_temp sets the sigmoid temperature as a fraction of the seed's clean
+    # pre-activation at each anchor.
+    rank_mode: str = "cut",
+    rank_temp: float = 0.05,
+    # "top": exponent p of ((rank - 1) / k)^p. Higher p = flatter near rank 1.
+    rank_power: float = 2.0,
+    # HELD-OUT LEAK FIX (2026-09-24): build the mean-ablation values (the C
+    # floor from neg_tokens, the A floor from pos_tokens) from the TRAINING
+    # split only, the same first-n_train contexts the evaluation uses. Before
+    # this they were built from all contexts, so the held-out 25% leaked into
+    # every A/C ablation value the fit trained against. False = the old
+    # behaviour, kept only to reproduce earlier runs.
+    floors_train_only: bool = True,
     binarize: str = "none",
     anneal_reach_frac: float = 1.0,
     support: Optional[Dict[Site, torch.Tensor]] = None,
@@ -626,6 +680,15 @@ def _run_learned_mask_impl(
         raise ValueError("objective='raise' requires target_act "
                          "(the seed's natural posctx level; the "
                          "objective targets raise_gamma * it)")
+    if offtarget_mode not in ("all", "cut"):
+        raise ValueError(f"offtarget_mode must be 'all' or 'cut', got {offtarget_mode!r}")
+    if rank_mode not in ("cut", "keep", "top"):
+        raise ValueError(f"rank_mode must be 'cut', 'keep' or 'top', got {rank_mode!r}")
+    if (offtarget_weight > 0 or rank_weight > 0) and objective != "pos":
+        raise ValueError("offtarget_weight / rank_weight need objective='pos'")
+    # With margin_topk the SEED term fits the seed's lead over the site's
+    # k-th pre-activation; the off-target term still reads every latent's
+    # PLAIN pre-activation from the captured stream, so the two compose.
     _SIGNED_AMP[0] = bool(signed_amplitude)
     if margin_topk is not None:
         _sae_m = bank.saes[seed_kind][seed_layer]
@@ -722,6 +785,14 @@ def _run_learned_mask_impl(
             "carry a negative-context term, so composing them with a dual "
             "floor is a different experiment — do it deliberately, not by "
             "accident.")
+    def _train_part(tokens: torch.Tensor) -> torch.Tensor:
+        """The training split of `tokens` (the same rule as split() below and
+        as the evaluation): the first n - round(n * holdout_frac)."""
+        if not floors_train_only:
+            return tokens
+        n = int(tokens.shape[0])
+        return tokens[:max(1, n - int(round(n * holdout_frac)))]
+
     floors: Optional[Dict[Site, torch.Tensor]] = None
     if mask_floor_source != "zero":
         from eval.floors import collect_site_means
@@ -732,9 +803,9 @@ def _run_learned_mask_impl(
                     "were supplied. Refusing to fall back: a run labelled "
                     f"{mask_floor_source!r} that silently used posctx is worse "
                     "than a visible failure.")
-            floor_tokens = neg_tokens
+            floor_tokens = _train_part(neg_tokens)
         else:
-            floor_tokens = pos_tokens
+            floor_tokens = _train_part(pos_tokens)
         floors = collect_site_means(inference, bank, floor_tokens, set(sites))
         if logger is not None:
             logger.note(f"learned_mask: {mask_floor_source} floor over "
@@ -745,10 +816,11 @@ def _run_learned_mask_impl(
     floors_pos: Optional[Dict[Site, torch.Tensor]] = None
     if pos_floor:
         from eval.floors import collect_site_means as _csm
-        floors_pos = _csm(inference, bank, pos_tokens, set(sites))
+        _pos_floor_tokens = _train_part(pos_tokens)
+        floors_pos = _csm(inference, bank, _pos_floor_tokens, set(sites))
         if logger is not None:
             logger.note(f"learned_mask: {mask_floor_source} posctx floor over "
-                        f"{int(pos_tokens.shape[0])} sequences")
+                        f"{int(_pos_floor_tokens.shape[0])} sequences")
 
     # Depth-adaptive VRAM guard (the sites x per-site-tensors law): every
     # backward holds dense-code graphs at ALL masked sites simultaneously,
@@ -1196,7 +1268,44 @@ def _run_learned_mask_impl(
             tgt = torch.full_like(vals, float(target_act))
         else:
             tgt = tg[:vals.shape[0]].to(vals.device, vals.dtype)
-        return ((vals - tgt) ** 2).mean()
+        loss = ((vals - tgt) ** 2).mean()
+        if pat.capture_site and tokens is pt_tr:
+            # every site latent's pre-activation at the seed's anchors
+            xa = _at(pat.seed_x, an)
+            pre_all = xa.to(_ot_W.dtype) @ _ot_W.T + _ot_b
+            if pat.offtarget_ref is not None:
+                # OFF-TARGET TERM: other latents charged only for rising
+                # above their reference (the seed's column is excluded there).
+                ref = pat.offtarget_ref[s:s + pre_all.shape[0]]
+                excess = torch.relu(pre_all - ref)
+                loss = loss + float(offtarget_weight) * (excess ** 2).sum(-1).mean()
+            if rank_weight > 0:
+                _sd = int(seed_latent_idx)
+                _others = pre_all.index_fill(-1, torch.tensor([_sd], device=pre_all.device),
+                                             float("-inf"))
+                _ps = pre_all[:, _sd]
+                if rank_mode == "cut":
+                    # TOP-K HINGE: the seed must beat the k-th largest OTHER latent.
+                    _tau = torch.topk(_others, int(bank.k), dim=-1).values[:, -1]
+                    _pen = torch.relu(_tau + float(rank_delta) - _ps) ** 2
+                elif rank_mode == "keep":
+                    # RANK-PRESERVING: the seed must beat the rival at its own
+                    # CLEAN rank r (r = 1: it must stay on top).
+                    _r = _rank_clean[s:s + _ps.shape[0]]
+                    _tops = torch.topk(_others, int(_r.max()), dim=-1).values
+                    _tau = _tops.gather(1, (_r - 1).long()[:, None]).squeeze(1)
+                    _pen = torch.relu(_tau + float(rank_delta) - _ps) ** 2
+                else:
+                    # DISTANCE FROM RANK 1, convex: smooth rank - 1 = number of
+                    # rivals above the seed (sigmoid count, temperature T), then
+                    # ((rank - 1) / k)^2: gentle near the top, steep far down.
+                    # Dimensionless, so scale by dual_norm to cancel the terms'
+                    # 1/nu and leave gamma_R * ((rank - 1) / k)^2.
+                    _T = _rank_T[s:s + _ps.shape[0]]
+                    _above = torch.sigmoid((_others - _ps[:, None]) / _T[:, None]).sum(-1)
+                    _pen = float(dual_norm) * (_above / float(bank.k)) ** float(rank_power)
+                loss = loss + float(rank_weight) * _pen.mean()
+        return loss
 
     # TERM SCALING. Both dual terms measure the SAME quantity - squared error
     # of the seed's pre-activation against its natural value - on the SAME
@@ -1240,6 +1349,14 @@ def _run_learned_mask_impl(
                     norm_floor = max(closed_loss, 1e-6)
             # bounded by construction: the natural target's own scale
             dual_norm = max(float((ptgt_tr.to(torch.float32) ** 2).mean()), 1e-6)
+            if margin_topk is not None and margin_plain_norm:
+                _m_saved, _MARGIN[0] = _MARGIN[0], None     # plain pre-activation, no margin
+                try:
+                    _plain = _at(_natural(inference, bank, pt_tr, seed_layer, seed_kind,
+                                          w_seed, b_seed, code_dtype=code_dtype), pa_tr)
+                finally:
+                    _MARGIN[0] = _m_saved
+                dual_norm = max(float((_plain.to(torch.float32) ** 2).mean()), 1e-6)
         if logger is not None:
             logger.note(f"learned_mask[dual]: scale mean(target^2) "
                         f"{dual_norm:.4f} | gamma {dual_floor_weight} | "
@@ -1248,6 +1365,70 @@ def _run_learned_mask_impl(
                         f"{norm_zero / max(norm_floor, 1e-12):.4g}x — large "
                         f"means the zero floor's empty state is far "
                         f"off-manifold, NOT that the term is down-weighted)")
+
+    # OFF-TARGET REFERENCES (2026-09-23): per training anchor, every site
+    # latent's pre-activation in the clean model and in the EMPTY circuit
+    # under each patcher's own ablation; the penalty charges only lifts above
+    # the larger of the two, i.e. inflation the circuit itself causes. One
+    # no-grad pass per ablation before training; references stay on device
+    # ([n_train, d_sae] each, ~8 MB).
+    _ot_W = _ot_b = None
+    _ot_info: Dict[str, Any] = {}
+    if offtarget_weight > 0 or rank_weight > 0:
+        # both terms read every site latent's pre-activation from the stream
+        # captured at the seed's site
+        _sae_ot = bank.saes[seed_kind][seed_layer]
+        _ot_W = _sae_ot.encoder.weight.detach()
+        _ot_b = _sae_ot._get_bias_eff().detach()
+        for _p in (patcher_zero, patcher, patcher_pos):
+            if _p is not None and _p.tap_seed:
+                _p.capture_site = True
+
+        @torch.no_grad()
+        def _site_pre(th, fl):
+            p_ref = LearnedMaskPatcher(bank, th, seed_layer, seed_kind, w_seed,
+                                       b_seed, code_dtype=code_dtype, floors=fl)
+            p_ref.capture_site = True
+            out = []
+            for s0 in range(0, int(pt_tr.shape[0]), max(1, int(micro_bs))):
+                _forward_preact(inference, p_ref, pt_tr[s0:s0 + micro_bs], grad=False)
+                xa = _at(p_ref.seed_x, pa_tr[s0:s0 + micro_bs])
+                out.append((xa.to(_ot_W.dtype) @ _ot_W.T + _ot_b).float())
+            return torch.cat(out)
+
+        _open = {s: torch.full((bank.d_sae,), 40.0, device=device) for s in sites}
+        _shut = {s: torch.full((bank.d_sae,), -40.0, device=device) for s in sites}
+        _clean = _site_pre(_open, None)                     # m = 1 everywhere: identity
+        # the seed's clean rank among the OTHER site latents (1 = top), per
+        # training anchor: the "keep" rank mode's per-anchor target
+        _sd0 = int(seed_latent_idx)
+        _clean_seed = _clean[:, _sd0]
+        _clean_others = _clean.index_fill(-1, torch.tensor([_sd0], device=_clean.device), float("-inf"))
+        _rank_clean = ((_clean_others > _clean_seed[:, None]).sum(-1) + 1).clamp(1, int(bank.k)).to(device)
+        # soft-rank temperature for the "top" mode: a fraction of the seed's
+        # own clean pre-activation at that anchor
+        _rank_T = (float(rank_temp) * _clean_seed.abs()).clamp(min=1e-3).to(device)
+        if logger is not None and rank_weight > 0:
+            logger.note("learned_mask[rank]: mode %s gamma_R %g | clean rank per anchor median %d "
+                        "(min %d, max %d)" % (rank_mode, rank_weight, int(_rank_clean.median()),
+                                              int(_rank_clean.min()), int(_rank_clean.max())))
+    if offtarget_weight > 0:
+        _cut = torch.topk(_clean, int(bank.k), dim=-1).values[:, -1:]   # clean Top-K cut per anchor
+        for _tag, _p in (("zero", patcher_zero), ("floor", patcher), ("pos", patcher_pos)):
+            if _p is None or not _p.tap_seed:
+                continue
+            _empty = _site_pre(_shut, _p.floors or None)
+            _ref = torch.maximum(_clean, _empty)
+            if offtarget_mode == "cut":
+                _ref = torch.maximum(_ref, _cut)
+            _ref[:, int(seed_latent_idx)] = 1e30             # the seed is not off-target
+            _p.offtarget_ref = _ref.to(device)
+            _p.capture_site = True
+            _ot_info[_tag] = int((_empty > _clean).any(0).sum())
+        if logger is not None:
+            logger.note("learned_mask[offtarget]: gamma_S %g | latents the empty "
+                        "circuit alone lifts above clean, per ablation: %s"
+                        % (offtarget_weight, _ot_info))
 
     # Per-step losses stay on the GPU during the loop (a float() per term
     # was a host sync that serialised CPU issue and GPU execution —
@@ -1640,12 +1821,21 @@ def _run_learned_mask_impl(
         "site_lambda_weighted": site_lambda_weights is not None,
         "mask_floor_source": mask_floor_source,
         "mask_floor_sites": len(floors) if floors else 0,
+        "floors_train_only": bool(floors_train_only) if mask_floor_source != "zero" else None,
         "dual_floor_weight": (float(dual_floor_weight) if zero_term
                               else None),
         "triple_floor_weight": (float(triple_floor_weight) if pos_floor
                                 else None),
         "free_amplitude": bool(free_amplitude),
         "amp_l1": float(amp_l1) if free_amplitude else None,
+        "offtarget_weight": float(offtarget_weight) if offtarget_weight > 0 else None,
+        "offtarget_mode": offtarget_mode if offtarget_weight > 0 else None,
+        "margin_plain_norm": bool(margin_plain_norm) if margin_topk is not None else None,
+        "rank_weight": float(rank_weight) if rank_weight > 0 else None,
+        "rank_delta": float(rank_delta) if rank_weight > 0 else None,
+        "rank_mode": rank_mode if rank_weight > 0 else None,
+        "rank_temp": float(rank_temp) if (rank_weight > 0 and rank_mode == "top") else None,
+        "rank_power": float(rank_power) if (rank_weight > 0 and rank_mode == "top") else None,
         "amp_stats": _amp_stats,
         "amp_kept": _amp_kept,
         "dual_norm_shared": round(dual_norm, 6) if dual_floor else None,

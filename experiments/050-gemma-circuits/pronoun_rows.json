@@ -1,0 +1,1082 @@
+[
+ {
+  "prompt": "Kate went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Kate",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Peter said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Peter",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Victor answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Victor",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Oscar answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Oscar",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Julia went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Julia",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Mark answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Mark",
+   "female": false
+  }
+ },
+ {
+  "prompt": "James finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "James",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Alice said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Alice",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Nina answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Nina",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Helen said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Helen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Lucy went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Lucy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Mark went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Mark",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Tom finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Tom",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Jack finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Jack",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Mark finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Mark",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Clara said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Clara",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Anna went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Anna",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Anna answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Anna",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Rosa said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Rosa",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Amy went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Amy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Tom answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Tom",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Frank went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Frank",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Oscar went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Oscar",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Peter finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Peter",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Clara answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Clara",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Laura finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Laura",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Steve finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Steve",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Peter answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Peter",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Clara finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Clara",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Laura went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Laura",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Ellen answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Ellen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Oscar said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Oscar",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Laura said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Laura",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Alice went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Alice",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Julia finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Julia",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Mary said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Mary",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Lucy answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Lucy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, David said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "David",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Helen finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Helen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Victor went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Victor",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Henry went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Henry",
+   "female": false
+  }
+ },
+ {
+  "prompt": "David went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "David",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Henry answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Henry",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Alice answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Alice",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, John said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "John",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Henry finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Henry",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Helen answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Helen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Robert went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Robert",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Kate said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Kate",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Lucy finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Lucy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Ellen said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Ellen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Robert finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Robert",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Mary went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Mary",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Paul answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Paul",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Simon said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Simon",
+   "female": false
+  }
+ },
+ {
+  "prompt": "John went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "John",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Frank said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Frank",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Julia answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Julia",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Frank finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Frank",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Tom said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Tom",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Laura answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Laura",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Oscar finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Oscar",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Rosa finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Rosa",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Tom went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Tom",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Steve said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Steve",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Henry said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Henry",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Rosa went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Rosa",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Simon went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Simon",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Mary finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Mary",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Robert said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Robert",
+   "female": false
+  }
+ },
+ {
+  "prompt": "James went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "James",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Steve went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Steve",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Anna finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Anna",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Emma said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Emma",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Robert answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Robert",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Rosa answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Rosa",
+   "female": true
+  }
+ },
+ {
+  "prompt": "David finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "David",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Frank answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Frank",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Jack went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Jack",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Emma went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Emma",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Lucy said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Lucy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Victor finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Victor",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Simon finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Simon",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Kate answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Kate",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Anna said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Anna",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Alice finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Alice",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Emma answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Emma",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, James answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "James",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, James said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "James",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Paul finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Paul",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Julia said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Julia",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Paul said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Paul",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Sarah finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Sarah",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Nina said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Nina",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Mark said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Mark",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Ellen finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Ellen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Peter went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Peter",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Kate finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Kate",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Helen went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Helen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Jack answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Jack",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, Mary answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Mary",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Emma finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Emma",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Sarah answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Sarah",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Simon answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Simon",
+   "female": false
+  }
+ },
+ {
+  "prompt": "John finished the work quickly because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "John",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Sarah said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Sarah",
+   "female": true
+  }
+ },
+ {
+  "prompt": "After the meeting, Victor said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Victor",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Nina went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Nina",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Amy finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Amy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Paul went to the shop because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Paul",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Nina finished the work quickly because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Nina",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, David answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "David",
+   "female": false
+  }
+ },
+ {
+  "prompt": "When the phone rang, John answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "John",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Jack said that",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Jack",
+   "female": false
+  }
+ },
+ {
+  "prompt": "After the meeting, Amy said that",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Amy",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Clara went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Clara",
+   "female": true
+  }
+ },
+ {
+  "prompt": "Sarah went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Sarah",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Steve answered because",
+  "target": 693,
+  "contrast": 1284,
+  "meta": {
+   "name": "Steve",
+   "female": false
+  }
+ },
+ {
+  "prompt": "Ellen went to the shop because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Ellen",
+   "female": true
+  }
+ },
+ {
+  "prompt": "When the phone rang, Amy answered because",
+  "target": 1284,
+  "contrast": 693,
+  "meta": {
+   "name": "Amy",
+   "female": true
+  }
+ }
+]

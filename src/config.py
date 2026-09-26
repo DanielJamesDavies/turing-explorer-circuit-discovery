@@ -809,6 +809,33 @@ class LearnedMaskConfig(BaseModel):
     # optional price on |alpha - 1| for members (weighted by the gate);
     # 0.0 = truly free range (the panel/production setting).
     amp_l1: float = 0.0
+    # OFF-TARGET TERM (2026-09-23, experiment 056): weight gamma_S on a
+    # one-sided penalty for lifting OTHER latents at the seed's site above
+    # max(clean, empty-circuit) pre-activation, inside every ablation term.
+    # Stops circuits that restore the seed by inflating its whole site
+    # (concept amplifiers, rival inflation). 0.0 = off, bit-identical.
+    offtarget_weight: float = 0.0
+    # "all" charges every lift above max(clean, empty); "cut" only lifts
+    # above the clean Top-K cut (latents the circuit switches on).
+    offtarget_mode: str = "all"
+    # With margin_topk: normalise by the seed's plain pre-activation scale
+    # instead of the (near-zero, for near-threshold seeds) margin scale.
+    margin_plain_norm: bool = False
+    # TOP-K HINGE (2026-09-23): gamma_R on relu(tau + rank_delta - seed)^2,
+    # tau = the k-th largest other pre-activation at the seed's site; zero
+    # while the seed stays in the Top-K. 0.0 = off.
+    rank_weight: float = 0.0
+    rank_delta: float = 0.0
+    # cut (stay in the Top-K) | keep (hold the seed's clean rank) |
+    # top (convex pull toward rank 1; rank_temp = soft-rank temperature as a
+    # fraction of the seed's clean pre-activation)
+    rank_mode: str = "cut"
+    rank_temp: float = 0.05
+    # "top": exponent of ((rank - 1) / k)^p; higher = flatter near rank 1
+    rank_power: float = 2.0
+    # HELD-OUT LEAK FIX (2026-09-24): mean-ablation values from the training
+    # split only (matches the evaluation). False reproduces pre-fix runs.
+    floors_train_only: bool = True
     # NEG-AMP, signed variant: alpha = raw psi (may go negative), psi init
     # 1.0. Circuits may contain negative-amplitude members (the
     # register-discriminator latents of the 2026-08 sign census).
@@ -1501,6 +1528,12 @@ class DiscoveryConfig(BaseModel):
     # in dev-notes/planned-sweeps-2026-07-30.md; change this default only
     # with that sweep's result, then re-anchor.
     floor_negctx_mode: str = "store"  # "store" | "close" | "random" | "distant"
+    # How many contrast contexts the selector retrieves for the C ablation value (the per-site mean over the
+    # TRAINING part of them). None = probe_sequence_count (the historical behaviour); an int = that many;
+    # "match" = as many as the target has activating contexts, so the contrast training count equals the
+    # activating training count under the same split rule (2026-09-24, 059). Only the C mean depends on it:
+    # every ablation term runs on the activating contexts.
+    contrast_context_count: Optional[Union[int, str]] = None
     # Position-aware allowed-set selection (orthogonal to attribution_mode).
     # When true, discovery keeps the token-position axis of the gradient
     # attribution and selects the allowed set as the union, over each seed's
@@ -1606,6 +1639,15 @@ class DiscoveryConfig(BaseModel):
         if v not in allowed:
             raise ValueError(f"floor_negctx_mode must be one of {allowed}, got {v!r}")
         return v
+
+    @field_validator("contrast_context_count")
+    @classmethod
+    def validate_contrast_context_count(cls, v):
+        if v is None or v == "match":
+            return v
+        if isinstance(v, int) and v >= 1:
+            return v
+        raise ValueError(f"contrast_context_count must be None, 'match' or an int >= 1, got {v!r}")
 
     @field_validator("position_aware_top_n")
     @classmethod

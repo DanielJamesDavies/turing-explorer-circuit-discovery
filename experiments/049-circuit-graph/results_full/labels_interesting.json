@@ -1,0 +1,13782 @@
+[
+ {
+  "latent": "10.mlp.29174",
+  "why": "score 2.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "cre",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "their",
+    12
+   ],
+   [
+    "where",
+    5
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "s have been transformed, providing [[cre]]",
+   "work in these mediums, [[cre]]",
+   "work in these mediums, [[cre]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.9180",
+  "why": "score 1.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "through",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "break",
+    64
+   ]
+  ],
+  "windows": [
+   "efficient quantum communication.ent break [[through]]",
+   "into quantum field theory. break [[through]]",
+   "efficient quantum communication.ent break [[through]]"
+  ]
+ },
+ {
+  "latent": "11.attn.16497",
+  "why": "score 1.79",
+  "n": 64,
+  "peak_top": [
+   [
+    "Keep",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> [[Keep]]",
+   "<s> [[Keep]]",
+   "<s> [[Keep]]"
+  ]
+ },
+ {
+  "latent": "11.attn.15279",
+  "why": "score 1.75",
+  "n": 64,
+  "peak_top": [
+   [
+    "Display",
+    27
+   ],
+   [
+    "a",
+    5
+   ],
+   [
+    "to",
+    4
+   ]
+  ],
+  "peak_consistency": 0.421875,
+  "prev_top": [
+   [
+    "<s>",
+    27
+   ],
+   [
+    ",",
+    2
+   ],
+   [
+    "inside",
+    2
+   ]
+  ],
+  "windows": [
+   "Europe is Trianon, [[a]]",
+   "Europe is Trianon, [[a]]",
+   "contain lines of magnetic field inside [[an]]"
+  ]
+ },
+ {
+  "latent": "11.attn.3084",
+  "why": "score 1.69",
+  "n": 64,
+  "peak_top": [
+   [
+    "databases",
+    59
+   ],
+   [
+    "database",
+    5
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [],
+  "windows": [
+   " [[databases]]",
+   " [[databases]]",
+   " [[database]]"
+  ]
+ },
+ {
+  "latent": "1.resid.19090",
+  "why": "score 1.66",
+  "n": 64,
+  "peak_top": [
+   [
+    "Conf",
+    29
+   ],
+   [
+    "Sebastian",
+    24
+   ],
+   [
+    "Deb",
+    5
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "Johann",
+    24
+   ],
+   [
+    "<s>",
+    9
+   ],
+   [
+    "External",
+    9
+   ]
+  ],
+  "windows": [
+   "in Plot Structure.<s> [[Conf]]",
+   "<s> [[Conf]]",
+   "ternal Conflict.<s> External [[Conf]]"
+  ]
+ },
+ {
+  "latent": "9.attn.24229",
+  "why": "score 1.51",
+  "n": 64,
+  "peak_top": [
+   [
+    "Writing",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> [[Writing]]",
+   "<s> [[Writing]]",
+   "<s> [[Writing]]"
+  ]
+ },
+ {
+  "latent": "11.attn.8046",
+  "why": "score 1.50",
+  "n": 64,
+  "peak_top": [
+   [
+    "Cy",
+    47
+   ],
+   [
+    "cal",
+    15
+   ],
+   [
+    "(",
+    2
+   ]
+  ],
+  "peak_consistency": 0.734375,
+  "prev_top": [
+   [
+    "<s>",
+    47
+   ],
+   [
+    "is",
+    15
+   ],
+   [
+    "ius",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> [[Cy]]",
+   "<s> [[Cy]]",
+   "<s> Fis [[cal]]"
+  ]
+ },
+ {
+  "latent": "1.resid.37165",
+  "why": "score 1.49",
+  "n": 64,
+  "peak_top": [
+   [
+    "bridge",
+    44
+   ],
+   [
+    "ology",
+    9
+   ],
+   [
+    "table",
+    7
+   ]
+  ],
+  "peak_consistency": 0.6875,
+  "prev_top": [
+   [
+    "a",
+    11
+   ],
+   [
+    "ont",
+    11
+   ],
+   [
+    "the",
+    10
+   ]
+  ],
+  "windows": [
+   "address within the table, the [[bridge]]",
+   "address within the table, the [[bridge]]",
+   "represent these complex relationships, a [[bridge]]"
+  ]
+ },
+ {
+  "latent": "11.attn.1426",
+  "why": "score 1.49",
+  "n": 64,
+  "peak_top": [
+   [
+    "its",
+    52
+   ],
+   [
+    "This",
+    12
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [],
+  "windows": [
+   " [[This]]",
+   " [[This]]",
+   " [[This]]"
+  ]
+ },
+ {
+  "latent": "11.resid.16872",
+  "why": "score 1.47",
+  "n": 64,
+  "peak_top": [
+   [
+    "ped",
+    17
+   ],
+   [
+    "agog",
+    8
+   ],
+   [
+    "virtue",
+    4
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "ped",
+    8
+   ],
+   [
+    "by",
+    5
+   ],
+   [
+    "an",
+    4
+   ]
+  ],
+  "windows": [
+   "determination, courage, integrity [[,]]",
+   "determination, courage, integrity [[,]]",
+   ", identifying core elements and [[ped]]"
+  ]
+ },
+ {
+  "latent": "11.attn.9241",
+  "why": "score 1.46",
+  "n": 64,
+  "peak_top": [
+   [
+    "in",
+    15
+   ],
+   [
+    "from",
+    7
+   ],
+   [
+    "of",
+    6
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "ed",
+    6
+   ],
+   [
+    "philosophy",
+    5
+   ],
+   [
+    "ated",
+    4
+   ]
+  ],
+  "windows": [
+   "y transformed intellectual thought by emphas [[izing]]",
+   "critically with themes such [[as]]",
+   "Continental Philosophy is centered [[around]]"
+  ]
+ },
+ {
+  "latent": "11.attn.22687",
+  "why": "score 1.45",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    25
+   ],
+   [
+    "from",
+    10
+   ],
+   [
+    "of",
+    9
+   ]
+  ],
+  "peak_consistency": 0.390625,
+  "prev_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "changes",
+    8
+   ],
+   [
+    "saw",
+    6
+   ]
+  ],
+  "windows": [
+   "was also essentially redefining [[the]]",
+   "was also essentially redefining [[the]]",
+   ", and it involved the implementation [[of]]"
+  ]
+ },
+ {
+  "latent": "11.attn.35052",
+  "why": "score 1.44",
+  "n": 64,
+  "peak_top": [
+   [
+    "a",
+    11
+   ],
+   [
+    "the",
+    10
+   ],
+   [
+    "given",
+    8
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "whether",
+    6
+   ],
+   [
+    "initely",
+    4
+   ],
+   [
+    "is",
+    4
+   ]
+  ],
+  "windows": [
+   "certain input. Turing introduced [[this]]",
+   "is a fundamental concept that addresses [[the]]",
+   "is a fundamental concept that addresses [[the]]"
+  ]
+ },
+ {
+  "latent": "11.resid.12730",
+  "why": "score 1.43",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    9
+   ],
+   [
+    "of",
+    7
+   ],
+   [
+    "and",
+    6
+   ]
+  ],
+  "peak_consistency": 0.140625,
+  "prev_top": [
+   [
+    "color",
+    4
+   ],
+   [
+    ",",
+    4
+   ],
+   [
+    "engineering",
+    3
+   ]
+  ],
+  "windows": [
+   "water such as temperature, color [[or]]",
+   "water such as temperature, color [[or]]",
+   "bodies regularly using standardized methods [[.]]"
+  ]
+ },
+ {
+  "latent": "11.attn.28551",
+  "why": "score 1.43",
+  "n": 64,
+  "peak_top": [
+   [
+    "section",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [],
+  "windows": [
+   " [[section]]",
+   " [[section]]",
+   " [[section]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.20378",
+  "why": "score 1.42",
+  "n": 64,
+  "peak_top": [
+   [
+    "Ch",
+    39
+   ],
+   [
+    "val",
+    25
+   ]
+  ],
+  "peak_consistency": 0.609375,
+  "prev_top": [
+   [
+    "ly",
+    39
+   ],
+   [
+    "feel",
+    20
+   ],
+   [
+    "feels",
+    4
+   ]
+  ],
+  "windows": [
+   "Planning.<s> Supply [[Ch]]",
+   "ain Control.<s> Supply [[Ch]]",
+   "Execution.<s> Supply [[Ch]]"
+  ]
+ },
+ {
+  "latent": "11.resid.23598",
+  "why": "score 1.42",
+  "n": 64,
+  "peak_top": [
+   [
+    "literature",
+    42
+   ],
+   [
+    "ure",
+    10
+   ],
+   [
+    "poetry",
+    8
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    ",",
+    50
+   ],
+   [
+    "sculpt",
+    10
+   ],
+   [
+    "cl",
+    2
+   ]
+  ],
+  "windows": [
+   "architecture, music, dance, [[literature]]",
+   "architecture, music, dance, [[literature]]",
+   "grammar, poetry, drama, [[literature]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.26",
+  "why": "score 1.41",
+  "n": 64,
+  "peak_top": [
+   [
+    "that",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "way",
+    37
+   ],
+   [
+    "ways",
+    26
+   ],
+   [
+    "manner",
+    1
+   ]
+  ],
+  "windows": [
+   "can be interpreted in a way [[that]]",
+   "and painted on sound in ways [[that]]",
+   "odic notes in a way [[that]]"
+  ]
+ },
+ {
+  "latent": "11.resid.5899",
+  "why": "score 1.41",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    15
+   ],
+   [
+    "to",
+    13
+   ],
+   [
+    "experience",
+    8
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "state",
+    9
+   ],
+   [
+    "birds",
+    8
+   ],
+   [
+    "animals",
+    6
+   ]
+  ],
+  "windows": [
+   "iological changes that allow animals [[to]]",
+   "iological changes that allow animals [[to]]",
+   "iological states that enable animals [[to]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.34670",
+  "why": "score 1.35",
+  "n": 64,
+  "peak_top": [
+   [
+    "par",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "trans",
+    62
+   ],
+   [
+    "Trans",
+    2
+   ]
+  ],
+  "windows": [
+   "and clear communication., trans [[par]]",
+   ".<s> Clearly, trans [[par]]",
+   "investigative process.<s> Trans [[par]]"
+  ]
+ },
+ {
+  "latent": "11.attn.20202",
+  "why": "score 1.35",
+  "n": 23,
+  "peak_top": [
+   [
+    "mathematical",
+    8
+   ],
+   [
+    "of",
+    3
+   ],
+   [
+    "applications",
+    3
+   ]
+  ],
+  "peak_consistency": 0.34782608695652173,
+  "prev_top": [
+   [
+    "combine",
+    8
+   ],
+   [
+    "favor",
+    2
+   ],
+   [
+    "driven",
+    2
+   ]
+  ],
+  "windows": [
+   "jection of biases in favor [[of]]",
+   "jection of biases in favor [[of]]",
+   "through the combination of physical activity [[and]]"
+  ]
+ },
+ {
+  "latent": "11.attn.23772",
+  "why": "score 1.34",
+  "n": 64,
+  "peak_top": [
+   [
+    "introduced",
+    10
+   ],
+   [
+    "of",
+    9
+   ],
+   [
+    "the",
+    6
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "use",
+    6
+   ],
+   [
+    "edes",
+    5
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "his principle to the field with [[his]]",
+   "his principle to the field with [[his]]",
+   "(), for example, by [[using]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.19092",
+  "why": "score 1.34",
+  "n": 64,
+  "peak_top": [
+   [
+    "intr",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "the",
+    40
+   ],
+   [
+    "an",
+    18
+   ],
+   [
+    "The",
+    3
+   ]
+  ],
+  "windows": [
+   ", culminating in an [[intr]]",
+   ", culminating in an [[intr]]",
+   "life is a result of the [[intr]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.12942",
+  "why": "score 1.33",
+  "n": 64,
+  "peak_top": [
+   [
+    "Mother",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "from",
+    5
+   ],
+   [
+    "where",
+    5
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "also acknowledging the call from [[Mother]]",
+   "humans have a constant struggle with [[Mother]]",
+   "ing our environment while sparing [[Mother]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.17646",
+  "why": "score 1.33",
+  "n": 64,
+  "peak_top": [
+   [
+    "us",
+    9
+   ],
+   [
+    "ed",
+    9
+   ],
+   [
+    ",",
+    8
+   ]
+  ],
+  "peak_consistency": 0.140625,
+  "prev_top": [
+   [
+    "Columb",
+    9
+   ],
+   [
+    "transport",
+    9
+   ],
+   [
+    "la",
+    6
+   ]
+  ],
+  "windows": [
+   "was the voyages of Columb [[us]]",
+   "was the voyages of Columb [[us]]",
+   "ips.<s> Samantha [[White]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.3292",
+  "why": "score 1.33",
+  "n": 64,
+  "peak_top": [
+   [
+    "exam",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "By",
+    41
+   ],
+   [
+    "by",
+    16
+   ],
+   [
+    ".",
+    4
+   ]
+  ],
+  "windows": [
+   "investigative techniques.<s> By [[exam]]",
+   "can account for these processes by [[exam]]",
+   "their fundamental properties.<s> By [[exam]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.10497",
+  "why": "score 1.31",
+  "n": 64,
+  "peak_top": [
+   [
+    "yn",
+    60
+   ],
+   [
+    "Id",
+    4
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "os",
+    60
+   ],
+   [
+    "<s>",
+    4
+   ]
+  ],
+  "windows": [
+   "idation of the nucleos [[yn]]",
+   "core, stellar nucleos [[yn]]",
+   "discovery of nucleos [[yn]]"
+  ]
+ },
+ {
+  "latent": "4.attn.27411",
+  "why": "score 1.30",
+  "n": 64,
+  "peak_top": [
+   [
+    "two",
+    34
+   ],
+   [
+    "electrons",
+    22
+   ],
+   [
+    "electron",
+    7
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "no",
+    34
+   ],
+   [
+    "two",
+    29
+   ],
+   [
+    "ferm",
+    1
+   ]
+  ],
+  "windows": [
+   "which states that no two ferm [[ions]]",
+   "ple asserts that no [[two]]",
+   "5, states that no two [[electron]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.1589",
+  "why": "score 1.30",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ",",
+    50
+   ],
+   [
+    ";",
+    4
+   ],
+   [
+    "(",
+    4
+   ]
+  ],
+  "windows": [
+   "you slowly move through time, [[as]]",
+   "you slowly move through time, [[as]]",
+   "in poetry, [[as]]"
+  ]
+ },
+ {
+  "latent": "11.attn.2400",
+  "why": "score 1.30",
+  "n": 64,
+  "peak_top": [
+   [
+    "polym",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [],
+  "windows": [
+   " [[polym]]",
+   " [[polym]]",
+   " [[polym]]"
+  ]
+ },
+ {
+  "latent": "10.resid.18460",
+  "why": "score 1.30",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    8
+   ],
+   [
+    "much",
+    7
+   ],
+   [
+    "and",
+    5
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    ",",
+    12
+   ],
+   [
+    "be",
+    6
+   ],
+   [
+    "are",
+    6
+   ]
+  ],
+  "windows": [
+   "istic systems worldwide, not [[only]]",
+   "room of English, but they [[remain]]",
+   "room of English, but they [[remain]]"
+  ]
+ },
+ {
+  "latent": "11.resid.12468",
+  "why": "score 1.29",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    16
+   ],
+   [
+    "on",
+    5
+   ],
+   [
+    "ural",
+    4
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "es",
+    12
+   ],
+   [
+    "struct",
+    4
+   ],
+   [
+    "which",
+    4
+   ]
+  ],
+  "windows": [
+   ". recognizes that people are [[active]]",
+   ". recognizes that people are [[active]]",
+   "ces aren't just pass [[ive]]"
+  ]
+ },
+ {
+  "latent": "10.resid.25765",
+  "why": "score 1.29",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    17
+   ],
+   [
+    "a",
+    15
+   ],
+   [
+    "any",
+    8
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "for",
+    18
+   ],
+   [
+    "within",
+    7
+   ],
+   [
+    "where",
+    7
+   ]
+  ],
+  "windows": [
+   ") describes the natural relation between [[an]]",
+   ") describes the natural relation between [[an]]",
+   "an interval. states that for [[a]]"
+  ]
+ },
+ {
+  "latent": "8.resid.22220",
+  "why": "score 1.29",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    26
+   ],
+   [
+    "and",
+    23
+   ],
+   [
+    "denotes",
+    2
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [
+   [
+    "ity",
+    34
+   ],
+   [
+    "clear",
+    8
+   ],
+   [
+    "which",
+    4
+   ]
+  ],
+  "windows": [
+   "communication, which involves using clear [[,]]",
+   "communication, which involves using clear [[,]]",
+   "veying information with concise [[and]]"
+  ]
+ },
+ {
+  "latent": "4.attn.4546",
+  "why": "score 1.28",
+  "n": 64,
+  "peak_top": [
+   [
+    "power",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "over",
+    64
+   ]
+  ],
+  "windows": [
+   "le reinforcement without over [[power]]",
+   "to the dish without over [[power]]",
+   "to the dish without over [[power]]"
+  ]
+ },
+ {
+  "latent": "10.mlp.40539",
+  "why": "score 1.28",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    63
+   ],
+   [
+    ").",
+    1
+   ]
+  ],
+  "windows": [
+   "in the Islamic World. [[<s>]]",
+   "the Byzantine Empire. [[<s>]]",
+   "<s> Prehistoric Music. [[<s>]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.3537",
+  "why": "score 1.28",
+  "n": 64,
+  "peak_top": [
+   [
+    "ced",
+    63
+   ],
+   [
+    ")-",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "pre",
+    63
+   ],
+   [
+    "\\",
+    1
+   ]
+  ],
+  "windows": [
+   "\\) from an \\( n \\ [[)-]]",
+   "global trade patterns in unpre [[ced]]",
+   "global trade patterns in unpre [[ced]]"
+  ]
+ },
+ {
+  "latent": "1.resid.2319",
+  "why": "score 1.28",
+  "n": 64,
+  "peak_top": [
+   [
+    "virtue",
+    59
+   ],
+   [
+    "moder",
+    4
+   ],
+   [
+    "kid",
+    1
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [
+   [
+    "of",
+    14
+   ],
+   [
+    "virtue",
+    8
+   ],
+   [
+    "in",
+    5
+   ]
+  ],
+  "windows": [
+   "social and personal relationships into effective [[virtue]]",
+   "it encourages the exercise of [[virtue]]",
+   "it encourages the exercise of [[virtue]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.18019",
+  "why": "score 1.28",
+  "n": 64,
+  "peak_top": [
+   [
+    "at",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "bre",
+    64
+   ]
+  ],
+  "windows": [
+   "a powerful technique used to bre [[at]]",
+   "methods, composers can bre [[at]]",
+   "It's important to bre [[at]]"
+  ]
+ },
+ {
+  "latent": "2.resid.4163",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "ul",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    25
+   ],
+   [
+    ",",
+    16
+   ],
+   [
+    "used",
+    5
+   ]
+  ],
+  "windows": [
+   ", [[ul]]",
+   "and research-focused [[ul]]",
+   ", and research-oriented [[ul]]"
+  ]
+ },
+ {
+  "latent": "11.resid.8702",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "Ent",
+    30
+   ],
+   [
+    "ty",
+    4
+   ],
+   [
+    "es",
+    2
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "<s>",
+    13
+   ],
+   [
+    "of",
+    8
+   ],
+   [
+    "to",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> # [[Ent]]",
+   "<s> # [[Ent]]",
+   "anglement Entropy.<s> [[Ent]]"
+  ]
+ },
+ {
+  "latent": "11.attn.30203",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    14
+   ],
+   [
+    "the",
+    9
+   ],
+   [
+    "in",
+    5
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    ",",
+    7
+   ],
+   [
+    "concept",
+    6
+   ],
+   [
+    "on",
+    4
+   ]
+  ],
+  "windows": [
+   "not about parties, but rather [[about]]",
+   "Entanglement provides interesting results [[in]]",
+   "local phenomenon in itself ( [[see]]"
+  ]
+ },
+ {
+  "latent": "9.attn.21770",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    22
+   ],
+   [
+    "ing",
+    8
+   ],
+   [
+    "of",
+    7
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "used",
+    10
+   ],
+   [
+    "us",
+    6
+   ],
+   [
+    "construct",
+    6
+   ]
+  ],
+  "windows": [
+   "(in English) are words [[that]]",
+   "(in English) are words [[that]]",
+   "are crucial to the concept [[of]]"
+  ]
+ },
+ {
+  "latent": "11.resid.35298",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    25
+   ],
+   [
+    "s",
+    8
+   ],
+   [
+    "level",
+    5
+   ]
+  ],
+  "peak_consistency": 0.390625,
+  "prev_top": [
+   [
+    "'",
+    8
+   ],
+   [
+    "sense",
+    7
+   ],
+   [
+    "-",
+    5
+   ]
+  ],
+  "windows": [
+   "the workplace; it includes [[both]]",
+   "the workplace; it includes [[both]]",
+   "there is a need to meet [[the]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.12384",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "4",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> ###  [[4]]",
+   "<s> ###  [[4]]",
+   "<s> ###  [[4]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.15011",
+  "why": "score 1.27",
+  "n": 64,
+  "peak_top": [
+   [
+    "econ",
+    62
+   ],
+   [
+    "introduced",
+    2
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    "of",
+    19
+   ],
+   [
+    "in",
+    11
+   ],
+   [
+    ",",
+    9
+   ]
+  ],
+  "windows": [
+   ".<s> The fundamental concept of [[econ]]",
+   ".<s> The foundation upon which [[econ]]",
+   "this approach, [[econ]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.16792",
+  "why": "score 1.26",
+  "n": 64,
+  "peak_top": [
+   [
+    "mat",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "gram",
+    64
+   ]
+  ],
+  "windows": [
+   "can represent both words and gram [[mat]]",
+   "modify existing words to convey gram [[mat]]",
+   "phological features shape the gram [[mat]]"
+  ]
+ },
+ {
+  "latent": "4.resid.31095",
+  "why": "score 1.26",
+  "n": 64,
+  "peak_top": [
+   [
+    "suffix",
+    32
+   ],
+   [
+    "emes",
+    9
+   ],
+   [
+    "letters",
+    6
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "and",
+    13
+   ],
+   [
+    ",",
+    10
+   ],
+   [
+    "ixed",
+    9
+   ]
+  ],
+  "windows": [
+   "es, suffixes, inf [[ix]]",
+   ", infixes, and [[suffix]]",
+   "ixation includes prefixes, [[suffix]]"
+  ]
+ },
+ {
+  "latent": "6.resid.22519",
+  "why": "score 1.25",
+  "n": 64,
+  "peak_top": [
+   [
+    "x",
+    42
+   ],
+   [
+    "ical",
+    16
+   ],
+   [
+    "xes",
+    6
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    "ado",
+    48
+   ],
+   [
+    "x",
+    16
+   ]
+  ],
+  "windows": [
+   "paradoxical parado [[x]]",
+   "philosophy.<s> Paradox [[ical]]",
+   ", paradoxic parado [[x]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.11451",
+  "why": "score 1.25",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "part",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> As part [[of]]",
+   "<s> As part [[of]]",
+   "<s> As part [[of]]"
+  ]
+ },
+ {
+  "latent": "10.attn.16271",
+  "why": "score 1.25",
+  "n": 64,
+  "peak_top": [
+   [
+    "aint",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "M",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> M [[aint]]",
+   "<s> M [[aint]]",
+   "<s> M [[aint]]"
+  ]
+ },
+ {
+  "latent": "10.resid.25024",
+  "why": "score 1.25",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    43
+   ],
+   [
+    ",",
+    10
+   ],
+   [
+    "to",
+    4
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "ending",
+    43
+   ],
+   [
+    "iture",
+    4
+   ],
+   [
+    "jobs",
+    2
+   ]
+  ],
+  "windows": [
+   "altering government spending [[and]]",
+   "direct government spending on jobs [[and]]",
+   "direct government spending on jobs [[and]]"
+  ]
+ },
+ {
+  "latent": "9.attn.16847",
+  "why": "score 1.24",
+  "n": 64,
+  "peak_top": [
+   [
+    "by",
+    16
+   ],
+   [
+    "of",
+    9
+   ],
+   [
+    "with",
+    8
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "marked",
+    9
+   ],
+   [
+    "began",
+    6
+   ],
+   [
+    ",",
+    5
+   ]
+  ],
+  "windows": [
+   "Crisis refers to the series [[of]]",
+   "of World War I. began [[with]]",
+   "of World War I. began [[with]]"
+  ]
+ },
+ {
+  "latent": "10.attn.26192",
+  "why": "score 1.24",
+  "n": 27,
+  "peak_top": [
+   [
+    "scenario",
+    5
+   ],
+   [
+    "of",
+    5
+   ],
+   [
+    "from",
+    3
+   ]
+  ],
+  "peak_consistency": 0.18518518518518517,
+  "prev_top": [
+   [
+    "platform",
+    5
+   ],
+   [
+    "of",
+    4
+   ],
+   [
+    "result",
+    3
+   ]
+  ],
+  "windows": [
+   ", such as ice or mirror [[;]]",
+   ", such as ice or mirror [[;]]",
+   "-shaped structures that result [[from]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.5826",
+  "why": "score 1.23",
+  "n": 64,
+  "peak_top": [
+   [
+    "friend",
+    46
+   ],
+   [
+    "-",
+    18
+   ]
+  ],
+  "peak_consistency": 0.71875,
+  "prev_top": [
+   [
+    "-",
+    44
+   ],
+   [
+    "decision",
+    18
+   ],
+   [
+    "'",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> Designing for user- [[friend]]",
+   "<s> Identifying Eco- [[friend]]",
+   "the principles of Eco- [[friend]]"
+  ]
+ },
+ {
+  "latent": "9.resid.8481",
+  "why": "score 1.23",
+  "n": 64,
+  "peak_top": [
+   [
+    "evolution",
+    12
+   ],
+   [
+    "distribution",
+    8
+   ],
+   [
+    "ification",
+    7
+   ]
+  ],
+  "peak_consistency": 0.1875,
+  "prev_top": [
+   [
+    "language",
+    22
+   ],
+   [
+    "divers",
+    12
+   ],
+   [
+    "species",
+    9
+   ]
+  ],
+  "windows": [
+   "behind species dispersal/colon [[ization]]",
+   "behind species dispersal/colon [[ization]]",
+   "cial insights for species divers [[ification]]"
+  ]
+ },
+ {
+  "latent": "10.attn.20603",
+  "why": "score 1.23",
+  "n": 64,
+  "peak_top": [
+   [
+    "any",
+    24
+   ],
+   [
+    "craft",
+    12
+   ],
+   [
+    "ative",
+    8
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "with",
+    20
+   ],
+   [
+    "inary",
+    10
+   ],
+   [
+    "cre",
+    8
+   ]
+  ],
+  "windows": [
+   "<s> As with [[any]]",
+   "<s> As with [[any]]",
+   "or relationship-building endeavor [[in]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.33748",
+  "why": "score 1.22",
+  "n": 64,
+  "peak_top": [
+   [
+    "cop",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "block",
+    18
+   ],
+   [
+    "ush",
+    16
+   ],
+   [
+    "into",
+    8
+   ]
+  ],
+  "windows": [
+   "boundaries of future innovations in [[cop]]",
+   "ering these frontiers in block [[cop]]",
+   "specialized [[cop]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.1674",
+  "why": "score 1.22",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "dynamics",
+    12
+   ],
+   [
+    "rule",
+    5
+   ],
+   [
+    "consequences",
+    4
+   ]
+  ],
+  "windows": [
+   "policies favoring the Spanish Crown [[.]]",
+   "diversity of the African continent [[.]]",
+   "caused changes in global political dynamics [[.]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.18188",
+  "why": "score 1.21",
+  "n": 64,
+  "peak_top": [
+   [
+    "ve",
+    55
+   ],
+   [
+    "closed",
+    4
+   ],
+   [
+    "ynamic",
+    4
+   ]
+  ],
+  "peak_consistency": 0.859375,
+  "prev_top": [
+   [
+    "con",
+    56
+   ],
+   [
+    "od",
+    4
+   ],
+   [
+    "of",
+    3
+   ]
+  ],
+  "windows": [
+   "ids are crucial in con [[ve]]",
+   "considering [[closed]]",
+   "<s> Depending on their thermod [[ynamic]]"
+  ]
+ },
+ {
+  "latent": "11.attn.29096",
+  "why": "score 1.21",
+  "n": 64,
+  "peak_top": [
+   [
+    "On",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> [[On]]",
+   "<s> [[On]]",
+   "<s> [[On]]"
+  ]
+ },
+ {
+  "latent": "8.resid.37060",
+  "why": "score 1.21",
+  "n": 64,
+  "peak_top": [
+   [
+    "is",
+    30
+   ],
+   [
+    "be",
+    17
+   ],
+   [
+    "are",
+    8
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "xygen",
+    10
+   ],
+   [
+    "energy",
+    10
+   ],
+   [
+    "can",
+    9
+   ]
+  ],
+  "windows": [
+   "rients and hormones [[are]]",
+   "rients and hormones [[are]]",
+   "oxygen and nutrients [[are]]"
+  ]
+ },
+ {
+  "latent": "9.resid.30382",
+  "why": "score 1.21",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    46
+   ],
+   [
+    "in",
+    6
+   ],
+   [
+    "by",
+    4
+   ]
+  ],
+  "peak_consistency": 0.71875,
+  "prev_top": [
+   [
+    "behavior",
+    22
+   ],
+   [
+    "iors",
+    7
+   ],
+   [
+    "capabilities",
+    7
+   ]
+  ],
+  "windows": [
+   "explores the collective behavior [[of]]",
+   "natural and artificial. emerges [[from]]",
+   "inspired by the collective behavior [[of]]"
+  ]
+ },
+ {
+  "latent": "2.resid.14906",
+  "why": "score 1.20",
+  "n": 64,
+  "peak_top": [
+   [
+    "retrieve",
+    25
+   ],
+   [
+    "es",
+    10
+   ],
+   [
+    "Sort",
+    5
+   ]
+  ],
+  "peak_consistency": 0.390625,
+  "prev_top": [
+   [
+    "to",
+    18
+   ],
+   [
+    "arriv",
+    10
+   ],
+   [
+    "and",
+    5
+   ]
+  ],
+  "windows": [
+   "significantly reduces the time required to [[retrieve]]",
+   "a manner that minimizes disk [[reads]]",
+   "descending call stacks to [[retrieve]]"
+  ]
+ },
+ {
+  "latent": "11.attn.13101",
+  "why": "score 1.20",
+  "n": 64,
+  "peak_top": [
+   [
+    "Besides",
+    56
+   ],
+   [
+    "ation",
+    8
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "<s>",
+    56
+   ],
+   [
+    "lev",
+    8
+   ]
+  ],
+  "windows": [
+   "<s> [[Besides]]",
+   "<s> [[Besides]]",
+   "<s> [[Besides]]"
+  ]
+ },
+ {
+  "latent": "9.attn.22928",
+  "why": "score 1.20",
+  "n": 64,
+  "peak_top": [
+   [
+    "in",
+    18
+   ],
+   [
+    "by",
+    14
+   ],
+   [
+    "of",
+    7
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "process",
+    8
+   ],
+   [
+    "to",
+    6
+   ],
+   [
+    "stone",
+    5
+   ]
+  ],
+  "windows": [
+   "the Haber process used to [[produce]]",
+   "discovery of the Haber process [[in]]",
+   "the Haber process used to [[produce]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.20617",
+  "why": "score 1.20",
+  "n": 64,
+  "peak_top": [
+   [
+    "it",
+    63
+   ],
+   [
+    "they",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "as",
+    64
+   ]
+  ],
+  "windows": [
+   "of precision and grace, as [[it]]",
+   "frustrating characters, as [[it]]",
+   "learning and retention, as [[it]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.1954",
+  "why": "score 1.20",
+  "n": 64,
+  "peak_top": [
+   [
+    "Per",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "Past",
+    52
+   ],
+   [
+    "Future",
+    11
+   ],
+   [
+    "ent",
+    1
+   ]
+  ],
+  "windows": [
+   "ense Usage.<s> Past [[Per]]",
+   "Future Perfect.<s> Future [[Per]]",
+   "ense Usage.<s> Past [[Per]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.33626",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    63
+   ],
+   [
+    ".\"",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    ".\"",
+    4
+   ],
+   [
+    "other",
+    4
+   ],
+   [
+    "belong",
+    4
+   ]
+  ],
+  "windows": [
+   "having interests, but understanding them [[.]]",
+   "understood without any need to worry [[.]]",
+   "understood without any need to worry [[.]]"
+  ]
+ },
+ {
+  "latent": "2.resid.22077",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    "nt",
+    33
+   ],
+   [
+    "ried",
+    26
+   ],
+   [
+    "ox",
+    3
+   ]
+  ],
+  "peak_consistency": 0.515625,
+  "prev_top": [
+   [
+    "dow",
+    33
+   ],
+   [
+    "d",
+    18
+   ],
+   [
+    "D",
+    8
+   ]
+  ],
+  "windows": [
+   "Value of D [[ried]]",
+   "<s> The importance of d [[ried]]",
+   "\"1. Value of D [[ried]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.36663",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    "adv",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "ological",
+    64
+   ]
+  ],
+  "windows": [
+   "various factors, including technological [[adv]]",
+   ", and utilizing technological [[adv]]",
+   ", and utilizing technological [[adv]]"
+  ]
+ },
+ {
+  "latent": "9.attn.27179",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    16
+   ],
+   [
+    "of",
+    14
+   ],
+   [
+    "during",
+    5
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    ",",
+    9
+   ],
+   [
+    "types",
+    6
+   ],
+   [
+    "animals",
+    6
+   ]
+  ],
+  "windows": [
+   "ations in animals, allowing them [[to]]",
+   "ivation are two distinct forms [[of]]",
+   "ivation are two distinct forms [[of]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.29953",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    "ely",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "fin",
+    64
+   ]
+  ],
+  "windows": [
+   "components, much like a fin [[ely]]",
+   "fin [[ely]]",
+   "response that's as fin [[ely]]"
+  ]
+ },
+ {
+  "latent": "11.resid.29942",
+  "why": "score 1.19",
+  "n": 64,
+  "peak_top": [
+   [
+    "with",
+    17
+   ],
+   [
+    "on",
+    8
+   ],
+   [
+    "involves",
+    6
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "that",
+    9
+   ],
+   [
+    "concerned",
+    9
+   ],
+   [
+    "als",
+    6
+   ]
+  ],
+  "windows": [
+   "is a branch of physics that [[studies]]",
+   "is a branch of physics that [[studies]]",
+   "branch of physics that deals [[with]]"
+  ]
+ },
+ {
+  "latent": "1.resid.37356",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "icing",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "pr",
+    64
+   ]
+  ],
+  "windows": [
+   "concept that goes beyond traditional pr [[icing]]",
+   "concept that goes beyond traditional pr [[icing]]",
+   "cost-plus pr [[icing]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.34509",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "W",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "DA",
+    64
+   ]
+  ],
+  "windows": [
+   "Audio Workstations (DA [[W]]",
+   "Audio Workstations (DA [[W]]",
+   "Audio Workstations (DA [[W]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.32833",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "laid",
+    34
+   ],
+   [
+    "set",
+    25
+   ],
+   [
+    "provided",
+    4
+   ]
+  ],
+  "windows": [
+   "mathematicians laid [[the]]",
+   "work provided atomic energy and set [[the]]",
+   "work provided atomic energy and set [[the]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.37426",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "it",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "ep",
+    64
+   ]
+  ],
+  "windows": [
+   "developments ep [[it]]",
+   "year imprisonment, which ep [[it]]",
+   ", F=ma, ep [[it]]"
+  ]
+ },
+ {
+  "latent": "2.resid.40267",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "around",
+    14
+   ],
+   [
+    "ens",
+    14
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "api",
+    14
+   ],
+   [
+    "ia",
+    10
+   ],
+   [
+    "s",
+    7
+   ]
+  ],
+  "windows": [
+   "showcased the earliest signs [[of]]",
+   "Egyptian hieroglyphs [[and]]",
+   "Egyptian hieroglyphs [[and]]"
+  ]
+ },
+ {
+  "latent": "3.resid.19402",
+  "why": "score 1.18",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    30
+   ],
+   [
+    ",",
+    20
+   ],
+   [
+    "or",
+    9
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    ".",
+    16
+   ],
+   [
+    ",",
+    16
+   ],
+   [
+    "...",
+    3
+   ]
+  ],
+  "windows": [
+   "vs., person vs. [[,]]",
+   ", be it character vs. [[,]]",
+   "u' and v to v [[']]"
+  ]
+ },
+ {
+  "latent": "0.resid.4386",
+  "why": "score 1.17",
+  "n": 64,
+  "peak_top": [
+   [
+    "permut",
+    20
+   ],
+   [
+    "inheritance",
+    17
+   ],
+   [
+    "Morgan",
+    13
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "unt",
+    7
+   ],
+   [
+    "De",
+    6
+   ]
+  ],
+  "windows": [
+   "signs, and appear in the [[deriv]]",
+   "signs, and appear in the [[deriv]]",
+   ", unlike classical Mendelian [[inheritance]]"
+  ]
+ },
+ {
+  "latent": "11.attn.3126",
+  "why": "score 1.17",
+  "n": 64,
+  "peak_top": [
+   [
+    "further",
+    60
+   ],
+   [
+    "solid",
+    3
+   ],
+   [
+    "valid",
+    1
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "further",
+    4
+   ]
+  ],
+  "windows": [
+   " [[further]]",
+   " [[further]]",
+   " [[further]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.36443",
+  "why": "score 1.17",
+  "n": 64,
+  "peak_top": [
+   [
+    "osis",
+    35
+   ],
+   [
+    "agnostics",
+    27
+   ],
+   [
+    "treatment",
+    1
+   ]
+  ],
+  "peak_consistency": 0.546875,
+  "prev_top": [
+   [
+    "diagn",
+    35
+   ],
+   [
+    "di",
+    27
+   ],
+   [
+    "cancer",
+    1
+   ]
+  ],
+  "windows": [
+   "modern nuclear medicine for accurate diagn [[osis]]",
+   "significant problems, including cancer diagn [[osis]]",
+   "significant problems, including cancer diagn [[osis]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.14100",
+  "why": "score 1.17",
+  "n": 64,
+  "peak_top": [
+   [
+    "norm",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "established",
+    31
+   ],
+   [
+    "etal",
+    10
+   ],
+   [
+    "traditional",
+    9
+   ]
+  ],
+  "windows": [
+   "convention by challenging societal [[norm]]",
+   "ara sought to challenge societal [[norm]]",
+   "ara sought to challenge societal [[norm]]"
+  ]
+ },
+ {
+  "latent": "0.resid.6609",
+  "why": "score 1.17",
+  "n": 64,
+  "peak_top": [
+   [
+    "landscape",
+    22
+   ],
+   [
+    "society",
+    8
+   ],
+   [
+    "Date",
+    4
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "the",
+    5
+   ],
+   [
+    "(",
+    4
+   ],
+   [
+    "H",
+    3
+   ]
+  ],
+  "windows": [
+   "ally changed the landscape of Australian [[society]]",
+   "fernes\" are still considered [[Baron]]",
+   "fernes\" are still considered [[Baron]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.1318",
+  "why": "score 1.16",
+  "n": 64,
+  "peak_top": [
+   [
+    "cial",
+    40
+   ],
+   [
+    "to",
+    13
+   ],
+   [
+    "essential",
+    6
+   ]
+  ],
+  "peak_consistency": 0.625,
+  "prev_top": [
+   [
+    "cru",
+    40
+   ],
+   [
+    "ative",
+    10
+   ],
+   [
+    "it",
+    6
+   ]
+  ],
+  "windows": [
+   "digital transformation, it becomes cru [[cial]]",
+   "complex, it becomes imperative [[to]]",
+   "increases, it becomes crucial [[to]]"
+  ]
+ },
+ {
+  "latent": "2.resid.3558",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "-",
+    24
+   ],
+   [
+    ":",
+    13
+   ],
+   [
+    ".",
+    9
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    ":",
+    13
+   ],
+   [
+    "4",
+    6
+   ],
+   [
+    "<s>",
+    6
+   ]
+  ],
+  "windows": [
+   "\"he.\"3.5 [[?]]",
+   "\"he.\"3.5 [[?]]",
+   ".<s> Review: 4 [[:]]"
+  ]
+ },
+ {
+  "latent": "8.resid.16415",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "child",
+    19
+   ],
+   [
+    "brother",
+    16
+   ],
+   [
+    "owner",
+    7
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "one",
+    16
+   ],
+   [
+    "the",
+    7
+   ],
+   [
+    "her",
+    4
+   ]
+  ],
+  "windows": [
+   "instance, someone writes \"the [[girl]]",
+   "instance, someone writes \"the [[girl]]",
+   "is less common than \"my [[friend]]"
+  ]
+ },
+ {
+  "latent": "10.attn.22690",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "8",
+    50
+   ],
+   [
+    "7",
+    14
+   ]
+  ],
+  "windows": [
+   "<s> ### 8 [[.]]",
+   "<s> ### 8 [[.]]",
+   "<s> ### 8 [[.]]"
+  ]
+ },
+ {
+  "latent": "3.resid.17247",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    19
+   ],
+   [
+    "a",
+    12
+   ],
+   [
+    "of",
+    11
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "much",
+    51
+   ],
+   [
+    "depth",
+    2
+   ],
+   [
+    "fact",
+    2
+   ]
+  ],
+  "windows": [
+   "his work? About as much [[as]]",
+   "ist should have as much depth [[as]]",
+   "works seek to provide as much [[detail]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.8229",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "po",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "is",
+    43
+   ],
+   [
+    "are",
+    21
+   ]
+  ],
+  "windows": [
+   "intelligence (BI) is [[po]]",
+   "of medicine, method development is [[po]]",
+   "of medicine, method development is [[po]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.37470",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "od",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "flo",
+    64
+   ]
+  ],
+  "windows": [
+   "oding occurs most often, flo [[od]]",
+   "oding occurs most often, flo [[od]]",
+   "regulations and controls, flo [[od]]"
+  ]
+ },
+ {
+  "latent": "1.resid.34168",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "cor",
+    60
+   ],
+   [
+    "blow",
+    4
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "my",
+    29
+   ],
+   [
+    "In",
+    13
+   ],
+   [
+    "cor",
+    8
+   ]
+  ],
+  "windows": [
+   "uncorrupted/uncor [[cor]]",
+   "uncorrupted/uncor [[cor]]",
+   "(Glarus or My [[cor]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.10618",
+  "why": "score 1.15",
+  "n": 64,
+  "peak_top": [
+   [
+    "ult",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "oc",
+    35
+   ],
+   [
+    "c",
+    29
+   ]
+  ],
+  "windows": [
+   "of power distance in socioc [[ult]]",
+   "of power distance in socioc [[ult]]",
+   "Distance\" in socioc [[ult]]"
+  ]
+ },
+ {
+  "latent": "10.attn.16541",
+  "why": "score 1.14",
+  "n": 14,
+  "peak_top": [
+   [
+    "while",
+    2
+   ],
+   [
+    "whereas",
+    2
+   ],
+   [
+    "these",
+    2
+   ]
+  ],
+  "peak_consistency": 0.14285714285714285,
+  "prev_top": [
+   [
+    "constant",
+    2
+   ],
+   [
+    ",",
+    2
+   ],
+   [
+    ";",
+    2
+   ]
+  ],
+  "windows": [
+   ": some moving objects remain constant [[while]]",
+   ": some moving objects remain constant [[while]]",
+   "over time but remain stable, [[whereas]]"
+  ]
+ },
+ {
+  "latent": "9.attn.26501",
+  "why": "score 1.14",
+  "n": 28,
+  "peak_top": [
+   [
+    "the",
+    9
+   ],
+   [
+    "on",
+    6
+   ],
+   [
+    "personal",
+    4
+   ]
+  ],
+  "peak_consistency": 0.32142857142857145,
+  "prev_top": [
+   [
+    "to",
+    5
+   ],
+   [
+    "based",
+    4
+   ],
+   [
+    "ing",
+    4
+   ]
+  ],
+  "windows": [
+   "ured grid may be chosen depending [[on]]",
+   "ured grid may be chosen depending [[on]]",
+   "Gridgen will be chosen based [[on]]"
+  ]
+ },
+ {
+  "latent": "4.resid.10983",
+  "why": "score 1.14",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    61
+   ],
+   [
+    "or",
+    3
+   ]
+  ],
+  "peak_consistency": 0.953125,
+  "prev_top": [
+   [
+    "men",
+    11
+   ],
+   [
+    "R",
+    7
+   ],
+   [
+    "Spain",
+    7
+   ]
+  ],
+  "windows": [
+   "speech may utilize alternate double [[and]]",
+   ".aboration between HR [[and]]",
+   "which offer innovative twists [[and]]"
+  ]
+ },
+ {
+  "latent": "11.resid.40146",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    27
+   ],
+   [
+    "s",
+    4
+   ],
+   [
+    "possessed",
+    4
+   ]
+  ],
+  "peak_consistency": 0.421875,
+  "prev_top": [
+   [
+    "source",
+    12
+   ],
+   [
+    "expression",
+    5
+   ],
+   [
+    "'",
+    4
+   ]
+  ],
+  "windows": [
+   "izes itself to be an expression [[of]]",
+   "izes itself to be an expression [[of]]",
+   "being within us; they find [[an]]"
+  ]
+ },
+ {
+  "latent": "11.mlp.32263",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    "Des",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "Ren\u00e9",
+    26
+   ],
+   [
+    "as",
+    13
+   ],
+   [
+    "like",
+    10
+   ]
+  ],
+  "windows": [
+   "17th Century, Ren\u00e9 [[Des]]",
+   "While discussing rationalism, [[Des]]",
+   "ius Erasmus, Ren\u00e9 [[Des]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.4152",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    "m",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "rag",
+    63
+   ],
+   [
+    "Prag",
+    1
+   ]
+  ],
+  "windows": [
+   "matic aspects and prag [[m]]",
+   "matic aspects and prag [[m]]",
+   "artificial intelligence to understand prag [[m]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.25013",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "approach",
+    7
+   ],
+   [
+    "Theory",
+    6
+   ],
+   [
+    "framework",
+    5
+   ]
+  ],
+  "windows": [
+   "both comprehensive yet concise [[,]]",
+   "both comprehensive yet concise [[,]]",
+   "and epochs. its core [[,]]"
+  ]
+ },
+ {
+  "latent": "11.resid.10145",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    "government",
+    33
+   ],
+   [
+    "annual",
+    4
+   ],
+   [
+    "company",
+    4
+   ]
+  ],
+  "peak_consistency": 0.515625,
+  "prev_top": [
+   [
+    ",",
+    15
+   ],
+   [
+    "as",
+    8
+   ],
+   [
+    "and",
+    6
+   ]
+  ],
+  "windows": [
+   "English (with detailed analysis), [[government]]",
+   "English (with detailed analysis), [[government]]",
+   "police reports/3rd [[party]]"
+  ]
+ },
+ {
+  "latent": "10.resid.12454",
+  "why": "score 1.13",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    8
+   ],
+   [
+    ",",
+    5
+   ],
+   [
+    "and",
+    5
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    ",",
+    5
+   ],
+   [
+    "of",
+    4
+   ],
+   [
+    "agreement",
+    3
+   ]
+  ],
+  "windows": [
+   "igals, characterized by [[their]]",
+   "Continuous tense due [[to]]",
+   "Continuous tense due [[to]]"
+  ]
+ },
+ {
+  "latent": "10.attn.39564",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "the",
+    6
+   ],
+   [
+    ".",
+    6
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "that",
+    7
+   ],
+   [
+    "of",
+    6
+   ],
+   [
+    "leaders",
+    4
+   ]
+  ],
+  "windows": [
+   "context of economics and business [[,]]",
+   "on of status quo bias [[involves]]",
+   "on of status quo bias [[involves]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.34533",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "stell",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    24
+   ],
+   [
+    "for",
+    9
+   ],
+   [
+    "in",
+    7
+   ]
+  ],
+  "windows": [
+   "not only for the study of [[stell]]",
+   "the broader implications for [[stell]]",
+   "more accurate and dynamic models of [[stell]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.5382",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "ien",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "aud",
+    64
+   ]
+  ],
+  "windows": [
+   "als employ segmentation of aud [[ien]]",
+   "are engaging with their aud [[ien]]",
+   "key component for understanding media aud [[ien]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.16529",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "While",
+    47
+   ],
+   [
+    "t",
+    13
+   ],
+   [
+    "Although",
+    3
+   ]
+  ],
+  "peak_consistency": 0.734375,
+  "prev_top": [
+   [
+    "<s>",
+    49
+   ],
+   [
+    "-",
+    13
+   ],
+   [
+    ":",
+    1
+   ]
+  ],
+  "windows": [
+   "Olympics in brain training.<s> [[While]]",
+   "tuning.<s> Fine- [[t]]",
+   "eulogizing.<s> [[While]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.24138",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "prof",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "a",
+    19
+   ],
+   [
+    "most",
+    13
+   ],
+   [
+    "more",
+    10
+   ]
+  ],
+  "windows": [
+   "diverse art movements and leaving a [[prof]]",
+   "able, enabling a more [[prof]]",
+   "since become one of the most [[prof]]"
+  ]
+ },
+ {
+  "latent": "10.resid.14806",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "require",
+    20
+   ],
+   [
+    "need",
+    15
+   ],
+   [
+    "itate",
+    7
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "that",
+    21
+   ],
+   [
+    "necess",
+    7
+   ],
+   [
+    "changes",
+    6
+   ]
+  ],
+  "windows": [
+   "provide information about possible areas that [[need]]",
+   "that could arise. may necess [[itate]]",
+   "that could arise. may necess [[itate]]"
+  ]
+ },
+ {
+  "latent": "10.attn.35054",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    20
+   ],
+   [
+    "how",
+    8
+   ],
+   [
+    "that",
+    6
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "ates",
+    7
+   ],
+   [
+    "on",
+    6
+   ],
+   [
+    "ating",
+    5
+   ]
+  ],
+  "windows": [
+   "is a fundamental phenomenon illustr [[ating]]",
+   "effect is a phenomenon observed [[when]]",
+   "aspect of light. demonstrates [[that]]"
+  ]
+ },
+ {
+  "latent": "11.resid.15853",
+  "why": "score 1.12",
+  "n": 64,
+  "peak_top": [
+   [
+    "published",
+    10
+   ],
+   [
+    "\"",
+    5
+   ],
+   [
+    "between",
+    5
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "ge",
+    10
+   ],
+   [
+    "sides",
+    4
+   ],
+   [
+    "anced",
+    4
+   ]
+  ],
+  "windows": [
+   "and semantics: his distinction between [[\u2018]]",
+   "and semantics: his distinction between [[\u2018]]",
+   "all three pairs of corresponding sides [[are]]"
+  ]
+ },
+ {
+  "latent": "10.attn.9609",
+  "why": "score 1.11",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    21
+   ],
+   [
+    "in",
+    19
+   ],
+   [
+    "on",
+    12
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "impact",
+    10
+   ],
+   [
+    "in",
+    6
+   ],
+   [
+    "changes",
+    6
+   ]
+  ],
+  "windows": [
+   "a significant period in the evolution [[of]]",
+   "a significant period in the evolution [[of]]",
+   "English periods had a significant impact [[on]]"
+  ]
+ },
+ {
+  "latent": "2.resid.35111",
+  "why": "score 1.11",
+  "n": 64,
+  "peak_top": [
+   [
+    "ism",
+    63
+   ],
+   [
+    "il",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "se",
+    59
+   ],
+   [
+    "Se",
+    4
+   ],
+   [
+    "So",
+    1
+   ]
+  ],
+  "windows": [
+   "Seismology, or se [[ism]]",
+   "Seismology, or se [[ism]]",
+   "surface to accurately measure se [[ism]]"
+  ]
+ },
+ {
+  "latent": "1.resid.40959",
+  "why": "score 1.11",
+  "n": 64,
+  "peak_top": [
+   [
+    "xt",
+    33
+   ],
+   [
+    "ivari",
+    14
+   ],
+   [
+    "EM",
+    10
+   ]
+  ],
+  "peak_consistency": 0.515625,
+  "prev_top": [
+   [
+    "fi",
+    28
+   ],
+   [
+    "mult",
+    9
+   ],
+   [
+    "Mult",
+    5
+   ]
+  ],
+  "windows": [
+   "ainable (lower flow fi [[xt]]",
+   "ainable (lower flow fi [[xt]]",
+   "xtures, low flow fi [[xt]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.32964",
+  "why": "score 1.11",
+  "n": 64,
+  "peak_top": [
+   [
+    "et",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "gen",
+    62
+   ],
+   [
+    "Gen",
+    2
+   ]
+  ],
+  "windows": [
+   "ence in Gen [[et]]",
+   ". the realm of gen [[et]]",
+   "union of molecular gen [[et]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.10053",
+  "why": "score 1.11",
+  "n": 64,
+  "peak_top": [
+   [
+    "1",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "-",
+    42
+   ],
+   [
+    "\u2013",
+    16
+   ],
+   [
+    "",
+    6
+   ]
+  ],
+  "windows": [
+   "(1787\u2013 [[1]]",
+   "(1787\u2013 [[1]]",
+   "(1770- [[1]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.36988",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "rather",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ",",
+    35
+   ],
+   [
+    ";",
+    17
+   ],
+   [
+    ":",
+    4
+   ]
+  ],
+  "windows": [
+   "on parallel or distributed computing; [[rather]]",
+   "on parallel or distributed computing; [[rather]]",
+   "than being pure substance; [[rather]]"
+  ]
+ },
+ {
+  "latent": "1.resid.40308",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "1",
+    29
+   ],
+   [
+    ",",
+    11
+   ],
+   [
+    ".",
+    2
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "",
+    30
+   ],
+   [
+    "i",
+    8
+   ],
+   [
+    "Finland",
+    5
+   ]
+  ],
+  "windows": [
+   "Helsinki Palace in  [[1]]",
+   "Accords in Helsinki [[.]]",
+   "Accords in Helsinki [[.]]"
+  ]
+ },
+ {
+  "latent": "6.resid.2942",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "with",
+    41
+   ],
+   [
+    "across",
+    8
+   ],
+   [
+    "in",
+    8
+   ]
+  ],
+  "peak_consistency": 0.640625,
+  "prev_top": [
+   [
+    "ases",
+    18
+   ],
+   [
+    "increases",
+    14
+   ],
+   [
+    "decrease",
+    13
+   ]
+  ],
+  "windows": [
+   "the rate of change diminishes [[over]]",
+   ", temperature generally decreases [[with]]",
+   "of a magnetic field diminishes [[with]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.3541",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "ete",
+    46
+   ],
+   [
+    "ks",
+    17
+   ],
+   [
+    "arp",
+    1
+   ]
+  ],
+  "peak_consistency": 0.71875,
+  "prev_top": [
+   [
+    "D",
+    46
+   ],
+   [
+    "see",
+    17
+   ],
+   [
+    "Sh",
+    1
+   ]
+  ],
+  "windows": [
+   "ance of Intrusion D [[ete]]",
+   ". of Intrusion D [[ete]]",
+   "alls and Intrusion D [[ete]]"
+  ]
+ },
+ {
+  "latent": "11.resid.30729",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "cultural",
+    21
+   ],
+   [
+    "etic",
+    13
+   ],
+   [
+    "unique",
+    6
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "gen",
+    13
+   ],
+   [
+    "unique",
+    10
+   ],
+   [
+    "the",
+    10
+   ]
+  ],
+  "windows": [
+   "vast array of species, gen [[etic]]",
+   "vast array of species, gen [[etic]]",
+   "society while maintaining their distinct [[ive]]"
+  ]
+ },
+ {
+  "latent": "11.attn.33607",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "a",
+    7
+   ],
+   [
+    "how",
+    7
+   ],
+   [
+    "by",
+    5
+   ]
+  ],
+  "peak_consistency": 0.109375,
+  "prev_top": [
+   [
+    "of",
+    5
+   ],
+   [
+    "various",
+    4
+   ],
+   [
+    "particles",
+    4
+   ]
+  ],
+  "windows": [
+   "ically) \"the probability of [[a]]",
+   "ically) \"the probability of [[a]]",
+   "probability distribution in energy terms of [[a]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.24900",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "lic",
+    61
+   ],
+   [
+    "yl",
+    2
+   ],
+   [
+    "-",
+    1
+   ]
+  ],
+  "peak_consistency": 0.953125,
+  "prev_top": [
+   [
+    "y",
+    48
+   ],
+   [
+    "ry",
+    13
+   ],
+   [
+    "box",
+    2
+   ]
+  ],
+  "windows": [
+   "for leveraging carboxy [[lic]]",
+   ", world of carboxy [[lic]]",
+   "key players include carboxy [[lic]]"
+  ]
+ },
+ {
+  "latent": "2.resid.12054",
+  "why": "score 1.10",
+  "n": 64,
+  "peak_top": [
+   [
+    "fi",
+    55
+   ],
+   [
+    "self",
+    6
+   ],
+   [
+    "mem",
+    2
+   ]
+  ],
+  "peak_consistency": 0.859375,
+  "prev_top": [
+   [
+    "of",
+    6
+   ],
+   [
+    "natural",
+    5
+   ],
+   [
+    "include",
+    4
+   ]
+  ],
+  "windows": [
+   "Kwolek who invented [[fi]]",
+   "insightful is when analyzing [[fi]]",
+   "Kwolek who invented [[fi]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.21579",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "ide",
+    43
+   ],
+   [
+    "elf",
+    21
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "W",
+    43
+   ],
+   [
+    "w",
+    21
+   ]
+  ],
+  "windows": [
+   "and the World W [[ide]]",
+   "5. and the World W [[ide]]",
+   "the principle that the World W [[ide]]"
+  ]
+ },
+ {
+  "latent": "2.resid.17475",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "sur",
+    49
+   ],
+   [
+    "ef",
+    9
+   ],
+   [
+    "feed",
+    2
+   ]
+  ],
+  "peak_consistency": 0.765625,
+  "prev_top": [
+   [
+    "sub",
+    48
+   ],
+   [
+    "re",
+    9
+   ],
+   [
+    "in",
+    2
+   ]
+  ],
+  "windows": [
+   "is an essential element of sub [[sur]]",
+   "is an essential element of sub [[sur]]",
+   "face area, drives this sub [[sur]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.33096",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "power",
+    60
+   ],
+   [
+    "energy",
+    4
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "solar",
+    41
+   ],
+   [
+    "wind",
+    13
+   ],
+   [
+    "ric",
+    4
+   ]
+  ],
+  "windows": [
+   "renewable sources such as solar [[power]]",
+   "ewable resources, including solar [[power]]",
+   "resources include solar power, wind [[power]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.12536",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "oms",
+    45
+   ],
+   [
+    "aste",
+    16
+   ],
+   [
+    "ca",
+    3
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "i",
+    45
+   ],
+   [
+    "w",
+    16
+   ],
+   [
+    "fran",
+    3
+   ]
+  ],
+  "windows": [
+   "Idi [[oms]]",
+   "Poetry.<s> Idi [[oms]]",
+   "in Education.<s> Idi [[oms]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.5782",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "situ",
+    63
+   ],
+   [
+    "lived",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "in",
+    53
+   ],
+   [
+    ".",
+    9
+   ],
+   [
+    "the",
+    1
+   ]
+  ],
+  "windows": [
+   "approach involves the integration of in [[situ]]",
+   "the field of civil engineering. [[situ]]",
+   "to biodiversity: in [[situ]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.32342",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "ities",
+    44
+   ],
+   [
+    "Des",
+    20
+   ]
+  ],
+  "peak_consistency": 0.6875,
+  "prev_top": [
+   [
+    "external",
+    44
+   ],
+   [
+    "as",
+    9
+   ],
+   [
+    "Ren\u00e9",
+    3
+   ]
+  ],
+  "windows": [
+   "<s> Positive external [[ities]]",
+   "production.ly, positive external [[ities]]",
+   "ly, positive external [[ities]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.35180",
+  "why": "score 1.09",
+  "n": 64,
+  "peak_top": [
+   [
+    "ize",
+    60
+   ],
+   [
+    "izes",
+    2
+   ],
+   [
+    "izing",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "maxim",
+    64
+   ]
+  ],
+  "windows": [
+   "who make decisions to maxim [[ize]]",
+   "who make decisions to maxim [[ize]]",
+   "who make decisions to maxim [[ize]]"
+  ]
+ },
+ {
+  "latent": "9.resid.28465",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "kn",
+    20
+   ],
+   [
+    "ife",
+    20
+   ],
+   [
+    "Sur",
+    15
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "kn",
+    28
+   ],
+   [
+    "Army",
+    17
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "like a linguistic Swiss Army [[kn]]",
+   ".<s> The Swiss Army kn [[ife]]",
+   "still considered the Swiss Army kn [[ives]]"
+  ]
+ },
+ {
+  "latent": "10.resid.21485",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "animate",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "in",
+    63
+   ],
+   [
+    "-",
+    1
+   ]
+  ],
+  "windows": [
+   "add depth and meaning to in [[animate]]",
+   "adding human qualities to in [[animate]]",
+   "inject human qualities into in [[animate]]"
+  ]
+ },
+ {
+  "latent": "4.attn.12304",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "bb",
+    47
+   ],
+   [
+    "s",
+    17
+   ]
+  ],
+  "windows": [
+   "sequently, understanding the ebb [[and]]",
+   "ides readers through the ebb [[and]]",
+   "the ebb [[and]]"
+  ]
+ },
+ {
+  "latent": "11.resid.18587",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "ible",
+    6
+   ],
+   [
+    "that",
+    5
+   ],
+   [
+    "which",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "vers",
+    7
+   ],
+   [
+    "and",
+    7
+   ],
+   [
+    ",",
+    5
+   ]
+  ],
+  "windows": [
+   "them. inelastic coll [[isions]]",
+   "entropy highlights the irrevers [[ible]]",
+   "isolated systems, underlines why [[certain]]"
+  ]
+ },
+ {
+  "latent": "11.attn.31644",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "developing",
+    5
+   ],
+   [
+    ",",
+    4
+   ],
+   [
+    "the",
+    4
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [
+   [
+    "to",
+    5
+   ],
+   [
+    "began",
+    5
+   ],
+   [
+    "elements",
+    2
+   ]
+  ],
+  "windows": [
+   "eukaryotes are marked [[by]]",
+   "often chosen for structural elements [[or]]",
+   "often chosen for structural elements [[or]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.35597",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "itch",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "k",
+    64
+   ]
+  ],
+  "windows": [
+   "um is present in all k [[itch]]",
+   "plastics in our k [[itch]]",
+   "s in schools and professional k [[itch]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.32601",
+  "why": "score 1.08",
+  "n": 64,
+  "peak_top": [
+   [
+    "iv",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "p",
+    64
+   ]
+  ],
+  "windows": [
+   "Aquifer testing is a p [[iv]]",
+   "catalysis stands as a p [[iv]]",
+   "making stellarators a p [[iv]]"
+  ]
+ },
+ {
+  "latent": "10.attn.25029",
+  "why": "score 1.08",
+  "n": 9,
+  "peak_top": [
+   [
+    "a",
+    2
+   ],
+   [
+    "previous",
+    2
+   ],
+   [
+    "straightforward",
+    2
+   ]
+  ],
+  "peak_consistency": 0.2222222222222222,
+  "prev_top": [
+   [
+    "of",
+    2
+   ],
+   [
+    "the",
+    2
+   ],
+   [
+    "a",
+    2
+   ]
+  ],
+  "windows": [
+   "applications is the sector area of [[a]]",
+   "applications is the sector area of [[a]]",
+   "disturbance, permitting the [[previous]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.38300",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    "Quant",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "<s>",
+    55
+   ],
+   [
+    "of",
+    3
+   ],
+   [
+    "#",
+    3
+   ]
+  ],
+  "windows": [
+   "<s> [[Quant]]",
+   "<s> [[Quant]]",
+   "<s> [[Quant]]"
+  ]
+ },
+ {
+  "latent": "9.resid.19457",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    15
+   ],
+   [
+    "or",
+    12
+   ],
+   [
+    "(",
+    9
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "energy",
+    10
+   ],
+   [
+    "(",
+    6
+   ],
+   [
+    "represented",
+    5
+   ]
+  ],
+  "windows": [
+   "Gibbs free energy, represented [[by]]",
+   "(G) is what describes [[a]]",
+   "(G) is what describes [[a]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.29114",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    "tack",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "to",
+    48
+   ],
+   [
+    "can",
+    6
+   ],
+   [
+    "To",
+    5
+   ]
+  ],
+  "windows": [
+   "implement these advanced methodologies to [[tack]]",
+   "<s> To [[tack]]",
+   "<s> To [[tack]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.13829",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    "spons",
+    50
+   ],
+   [
+    "och",
+    14
+   ]
+  ],
+  "peak_consistency": 0.78125,
+  "prev_top": [
+   [
+    "mit",
+    14
+   ],
+   [
+    ",",
+    10
+   ],
+   [
+    "of",
+    6
+   ]
+  ],
+  "windows": [
+   "helped clarify their role in mit [[och]]",
+   "helped clarify their role in mit [[och]]",
+   "mit [[och]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.25027",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "icial",
+    4
+   ],
+   [
+    "power",
+    4
+   ],
+   [
+    "ities",
+    4
+   ]
+  ],
+  "windows": [
+   "located and where labor is demanded [[.]]",
+   "located and where labor is demanded [[.]]",
+   "aping its content and distribution models [[.]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.38680",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    "altern",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "with",
+    9
+   ],
+   [
+    "by",
+    8
+   ],
+   [
+    "of",
+    7
+   ]
+  ],
+  "windows": [
+   ", in [[altern]]",
+   "employs [[altern]]",
+   "solo performance is characterized by [[altern]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.21783",
+  "why": "score 1.07",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "ates updates flawlessly. [[,]]",
+   "ates updates flawlessly. [[,]]",
+   "without any courtship drama. [[,]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.38053",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "p",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "under",
+    64
+   ]
+  ],
+  "windows": [
+   "is a fundamental principle that under [[p]]",
+   "is a fundamental principle that under [[p]]",
+   ", a key insight that under [[p]]"
+  ]
+ },
+ {
+  "latent": "1.resid.25478",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "finds",
+    58
+   ],
+   [
+    "find",
+    3
+   ],
+   [
+    "drawn",
+    2
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "it",
+    10
+   ],
+   [
+    "ological",
+    6
+   ],
+   [
+    "one",
+    5
+   ]
+  ],
+  "windows": [
+   "human mind [[finds]]",
+   "human mind [[finds]]",
+   "mere academic arithmetic, and it [[finds]]"
+  ]
+ },
+ {
+  "latent": "1.resid.12137",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "credit",
+    60
+   ],
+   [
+    "optimize",
+    3
+   ],
+   [
+    "aku",
+    1
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "'",
+    8
+   ],
+   [
+    "including",
+    8
+   ],
+   [
+    "of",
+    6
+   ]
+  ],
+  "windows": [
+   "from bad credit situations, extending [[credit]]",
+   "to capital and the building of [[credit]]",
+   "folios, and monitoring the [[credit]]"
+  ]
+ },
+ {
+  "latent": "9.resid.8463",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "reflect",
+    29
+   ],
+   [
+    "s",
+    8
+   ],
+   [
+    "with",
+    6
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "ately",
+    16
+   ],
+   [
+    "reflect",
+    8
+   ],
+   [
+    "prices",
+    6
+   ]
+  ],
+  "windows": [
+   "in this market are constantly reflect [[ing]]",
+   "robust data that accurately mirror [[s]]",
+   "in this market are constantly reflect [[ing]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.18949",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "Art. [[<s>]]",
+   "Art. [[<s>]]",
+   ". [[<s>]]"
+  ]
+ },
+ {
+  "latent": "10.attn.27934",
+  "why": "score 1.06",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    16
+   ],
+   [
+    "of",
+    16
+   ],
+   [
+    "in",
+    6
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    "for",
+    4
+   ],
+   [
+    "course",
+    4
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "windows": [
+   "played essentially hand in arm for [[the]]",
+   "played essentially hand in arm for [[the]]",
+   "can have enduring consequences on [[the]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.40934",
+  "why": "score 1.05",
+  "n": 64,
+  "peak_top": [
+   [
+    "0",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "0",
+    38
+   ],
+   [
+    "3",
+    12
+   ],
+   [
+    "5",
+    9
+   ]
+  ],
+  "windows": [
+   "020253 [[0]]",
+   "020253 [[0]]",
+   "000000 [[0]]"
+  ]
+ },
+ {
+  "latent": "1.attn.28513",
+  "why": "score 1.05",
+  "n": 64,
+  "peak_top": [
+   [
+    "H",
+    36
+   ],
+   [
+    "which",
+    8
+   ],
+   [
+    "first",
+    3
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [
+   [
+    "EM",
+    40
+   ],
+   [
+    "),",
+    11
+   ],
+   [
+    ")",
+    3
+   ]
+  ],
+  "windows": [
+   "Market Hypothesis (EM [[H]]",
+   "Market Hypothesis (EM [[H]]",
+   "Market Hypothesis (EM [[H]]"
+  ]
+ },
+ {
+  "latent": "5.resid.17670",
+  "why": "score 1.05",
+  "n": 64,
+  "peak_top": [
+   [
+    "systems",
+    21
+   ],
+   [
+    "platforms",
+    11
+   ],
+   [
+    "equipment",
+    5
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "ics",
+    8
+   ],
+   [
+    "learning",
+    5
+   ],
+   [
+    "feedback",
+    5
+   ]
+  ],
+  "windows": [
+   "ming/linguist programming [[models]]",
+   "ming/linguist programming [[models]]",
+   "chat rooms or virtual call capture [[services]]"
+  ]
+ },
+ {
+  "latent": "8.resid.1991",
+  "why": "score 1.05",
+  "n": 64,
+  "peak_top": [
+   [
+    "switch",
+    37
+   ],
+   [
+    "ult",
+    26
+   ],
+   [
+    "ling",
+    1
+   ]
+  ],
+  "peak_consistency": 0.578125,
+  "prev_top": [
+   [
+    "-",
+    31
+   ],
+   [
+    "oc",
+    23
+   ],
+   [
+    "\u2013",
+    7
+   ]
+  ],
+  "windows": [
+   "language production, the socioc [[ult]]",
+   "language acquisition and socioc [[ult]]",
+   "ances the depth of code- [[switch]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.15613",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "st",
+    47
+   ],
+   [
+    "_",
+    3
+   ],
+   [
+    ",",
+    2
+   ]
+  ],
+  "peak_consistency": 0.734375,
+  "prev_top": [
+   [
+    "over",
+    46
+   ],
+   [
+    "left",
+    4
+   ],
+   [
+    "L",
+    2
+   ]
+  ],
+  "windows": [
+   "er join, such as left [[,]]",
+   "er join, such as left [[,]]",
+   "mathbf{k}}(\\mathbf{ [[r]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.25210",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "text",
+    28
+   ],
+   [
+    "iz",
+    26
+   ],
+   [
+    "-",
+    10
+   ]
+  ],
+  "peak_consistency": 0.4375,
+  "prev_top": [
+   [
+    "sub",
+    27
+   ],
+   [
+    "war",
+    26
+   ],
+   [
+    "community",
+    10
+   ]
+  ],
+  "windows": [
+   "a delicate balance between sub [[text]]",
+   "a Al-Khwar [[iz]]",
+   "a al-Khwar [[iz]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.12847",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "urban",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "dist",
+    64
+   ]
+  ],
+  "windows": [
+   "experiences unforeseen dist [[urban]]",
+   "and human-induced dist [[urban]]",
+   "to internal changes or external dist [[urban]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.2700",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "lications",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "imp",
+    64
+   ]
+  ],
+  "windows": [
+   "rinos has profound imp [[lications]]",
+   "Levels have profound imp [[lications]]",
+   "Levels have profound imp [[lications]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.21436",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "loyal",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "ers",
+    7
+   ],
+   [
+    "to",
+    5
+   ],
+   [
+    "and",
+    5
+   ]
+  ],
+  "windows": [
+   "ultimately, this approach fosters [[loyal]]",
+   "the feedback mechanism that fosters [[loyal]]",
+   "their focus from loyal customers to [[loyal]]"
+  ]
+ },
+ {
+  "latent": "3.resid.38461",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "it",
+    56
+   ],
+   [
+    "yst",
+    8
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "facil",
+    56
+   ],
+   [
+    "catal",
+    7
+   ],
+   [
+    "ke",
+    1
+   ]
+  ],
+  "windows": [
+   "es with reactantes, facil [[it]]",
+   "with the reactants, facil [[it]]",
+   "chemical transformations, while also facil [[it]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.37024",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "osc",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "nan",
+    58
+   ],
+   [
+    "Nan",
+    6
+   ]
+  ],
+  "windows": [
+   "ation mechanisms at the nan [[osc]]",
+   "of sensor technology to the nan [[osc]]",
+   "of sensor technology to the nan [[osc]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.12785",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "s",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "'",
+    63
+   ],
+   [
+    "\u2019",
+    1
+   ]
+  ],
+  "windows": [
+   ", it' [[s]]",
+   "<s> It' [[s]]",
+   "lifeworld, it' [[s]]"
+  ]
+ },
+ {
+  "latent": "0.resid.12578",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "literally",
+    61
+   ],
+   [
+    "Pope",
+    3
+   ]
+  ],
+  "peak_consistency": 0.953125,
+  "prev_top": [
+   [
+    "literally",
+    24
+   ],
+   [
+    ",",
+    11
+   ],
+   [
+    "quite",
+    9
+   ]
+  ],
+  "windows": [
+   "walk into \u2013 one can literally [[literally]]",
+   "walk into \u2013 one can literally [[literally]]",
+   "i.e., the verb [[literally]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.475",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "esian",
+    62
+   ],
+   [
+    "es",
+    1
+   ],
+   [
+    "ian",
+    1
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    "Bay",
+    62
+   ],
+   [
+    "en",
+    2
+   ]
+  ],
+  "windows": [
+   "Probability: A Bay [[esian]]",
+   "to Bay [[esian]]",
+   "Bay [[esian]]"
+  ]
+ },
+ {
+  "latent": "9.resid.103",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    38
+   ],
+   [
+    "by",
+    4
+   ],
+   [
+    "to",
+    4
+   ]
+  ],
+  "peak_consistency": 0.59375,
+  "prev_top": [
+   [
+    "distribution",
+    19
+   ],
+   [
+    "behavior",
+    10
+   ],
+   [
+    "statistics",
+    4
+   ]
+  ],
+  "windows": [
+   "instein statistics describe the distribution [[of]]",
+   "instein statistics describe the distribution [[of]]",
+   "924, predicting [[that]]"
+  ]
+ },
+ {
+  "latent": "9.resid.37056",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "relationships",
+    14
+   ],
+   [
+    "space",
+    9
+   ],
+   [
+    "world",
+    8
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "of",
+    14
+   ],
+   [
+    "spatial",
+    13
+   ],
+   [
+    "the",
+    13
+   ]
+  ],
+  "windows": [
+   "and interpret the three-dimensional [[world]]",
+   "onometry expand our understanding of [[space]]",
+   "essential in mathematics to visualize [[forms]]"
+  ]
+ },
+ {
+  "latent": "4.resid.22374",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "ago",
+    11
+   ],
+   [
+    "6",
+    8
+   ],
+   [
+    "9",
+    6
+   ]
+  ],
+  "windows": [
+   "starts around 12 months [[,]]",
+   ", 9, 9 [[,]]",
+   ", 9, 9 [[,]]"
+  ]
+ },
+ {
+  "latent": "10.mlp.11519",
+  "why": "score 1.04",
+  "n": 64,
+  "peak_top": [
+   [
+    "across",
+    34
+   ],
+   [
+    "over",
+    16
+   ],
+   [
+    "multiple",
+    5
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "data",
+    9
+   ],
+   [
+    "resources",
+    7
+   ],
+   [
+    "across",
+    5
+   ]
+  ],
+  "windows": [
+   "allows for flexible resource availability [[across]]",
+   "allows for flexible resource availability [[across]]",
+   "environments or dedicated resources from a [[single]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.33154",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    62
+   ],
+   [
+    "),",
+    2
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    "history",
+    13
+   ],
+   [
+    "engineering",
+    9
+   ],
+   [
+    "arts",
+    5
+   ]
+  ],
+  "windows": [
+   "field of aerospace engineering [[,]]",
+   "major turning point in naval engineering [[,]]",
+   "major turning point in naval engineering [[,]]"
+  ]
+ },
+ {
+  "latent": "10.attn.25728",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    25
+   ],
+   [
+    "Ex",
+    8
+   ],
+   [
+    "Le",
+    6
+   ]
+  ],
+  "peak_consistency": 0.390625,
+  "prev_top": [
+   [
+    "of",
+    26
+   ],
+   [
+    "ple",
+    21
+   ],
+   [
+    "ples",
+    7
+   ]
+  ],
+  "windows": [
+   "Principle of [[Le]]",
+   "Principle of In [[clusion]]",
+   "Principle of [[Le]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.14359",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "ely",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "vers",
+    64
+   ]
+  ],
+  "windows": [
+   "the applied force increases.vers [[ely]]",
+   "vers [[ely]]",
+   "the mass remains constant.vers [[ely]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.9141",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "cient",
+    34
+   ],
+   [
+    "primitive",
+    14
+   ],
+   [
+    "sc",
+    9
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "An",
+    22
+   ],
+   [
+    ".",
+    12
+   ],
+   [
+    "from",
+    11
+   ]
+  ],
+  "windows": [
+   "<s> An [[cient]]",
+   "<s> An [[cient]]",
+   "<s> An [[cient]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.24075",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "avel",
+    59
+   ],
+   [
+    "communic",
+    3
+   ],
+   [
+    "share",
+    2
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [
+   [
+    "w",
+    59
+   ],
+   [
+    "Tele",
+    2
+   ],
+   [
+    "tele",
+    1
+   ]
+  ],
+  "windows": [
+   "refractive index across w [[avel]]",
+   "refractive index across w [[avel]]",
+   "through various media.orter w [[avel]]"
+  ]
+ },
+ {
+  "latent": "10.mlp.14078",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "dich",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "the",
+    20
+   ],
+   [
+    "this",
+    16
+   ],
+   [
+    "ical",
+    8
+   ]
+  ],
+  "windows": [
+   "Zuckerberg confronted the [[dich]]",
+   "and stillness is a fundamental [[dich]]",
+   "with contemporary art emphasizing this [[dich]]"
+  ]
+ },
+ {
+  "latent": "1.resid.15725",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "ost",
+    58
+   ],
+   [
+    "unity",
+    6
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "comp",
+    58
+   ],
+   [
+    "imm",
+    6
+   ]
+  ],
+  "windows": [
+   "ables into nutritious comp [[ost]]",
+   ", maintaining an appropriate comp [[ost]]",
+   ", maintaining an appropriate comp [[ost]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.32555",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "'",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "reader",
+    17
+   ],
+   [
+    "artist",
+    16
+   ],
+   [
+    "chef",
+    8
+   ]
+  ],
+  "windows": [
+   "provides a window into the artist [[']]",
+   "which conveys the writer [[']]",
+   "hand, style represents the artist [[']]"
+  ]
+ },
+ {
+  "latent": "6.resid.36079",
+  "why": "score 1.03",
+  "n": 64,
+  "peak_top": [
+   [
+    "alk",
+    56
+   ],
+   [
+    "id",
+    8
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "ox",
+    8
+   ],
+   [
+    ",",
+    7
+   ],
+   [
+    "and",
+    6
+   ]
+  ],
+  "windows": [
+   "(alkynes converting to [[alk]]",
+   "(alkynes converting to [[alk]]",
+   "ritic and aromatic [[alk]]"
+  ]
+ },
+ {
+  "latent": "7.attn.18055",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "the",
+    5
+   ],
+   [
+    "particular",
+    4
+   ]
+  ],
+  "peak_consistency": 0.125,
+  "prev_top": [
+   [
+    "to",
+    5
+   ],
+   [
+    "that",
+    4
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "dimensional knot, which exhib [[its]]",
+   "of a knot projected [[onto]]",
+   "into the overall structure of that [[particular]]"
+  ]
+ },
+ {
+  "latent": "7.resid.17364",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    63
+   ],
+   [
+    "),",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "interest",
+    8
+   ],
+   [
+    "options",
+    4
+   ],
+   [
+    "tasks",
+    4
+   ]
+  ],
+  "windows": [
+   "elihood and impact of each risk [[,]]",
+   "prerequisites are established [[,]]",
+   "ates specific strategic initiatives [[,]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.25720",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "ade",
+    60
+   ],
+   [
+    "inth",
+    3
+   ],
+   [
+    "ze",
+    1
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "in",
+    56
+   ],
+   [
+    "In",
+    4
+   ],
+   [
+    "yr",
+    3
+   ]
+  ],
+  "windows": [
+   "challenges can range from in [[ade]]",
+   "these areas often struggle with in [[ade]]",
+   "per land use, and in [[ade]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.21451",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "SW",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "a",
+    10
+   ],
+   [
+    ",",
+    7
+   ],
+   [
+    "use",
+    7
+   ]
+  ],
+  "windows": [
+   "issue with [[SW]]",
+   "issue with [[SW]]",
+   "ularly revisiting [[SW]]"
+  ]
+ },
+ {
+  "latent": "9.attn.12331",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    21
+   ],
+   [
+    "ing",
+    7
+   ],
+   [
+    "that",
+    4
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "concept",
+    16
+   ],
+   [
+    "maintain",
+    7
+   ],
+   [
+    "emphas",
+    4
+   ]
+  ],
+  "windows": [
+   "human behaviour and government administration, [[including]]",
+   "human behaviour and government administration, [[including]]",
+   "; while at its core there [[are]]"
+  ]
+ },
+ {
+  "latent": "8.resid.306",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "ular",
+    28
+   ],
+   [
+    "icon",
+    28
+   ],
+   [
+    "fier",
+    6
+   ]
+  ],
+  "peak_consistency": 0.4375,
+  "prev_top": [
+   [
+    "sec",
+    28
+   ],
+   [
+    "sem",
+    28
+   ],
+   [
+    "a",
+    5
+   ]
+  ],
+  "windows": [
+   "sec [[ular]]",
+   "sec [[ular]]",
+   "<s> When sec [[ular]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.29907",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "p",
+    43
+   ],
+   [
+    "al",
+    12
+   ],
+   [
+    "layer",
+    9
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "a",
+    43
+   ],
+   [
+    "convolution",
+    12
+   ],
+   [
+    "-",
+    9
+   ]
+  ],
+  "windows": [
+   "and pooling layers. convolution [[al]]",
+   "propagation algorithm plays a [[p]]",
+   "and pooling layers. convolution [[al]]"
+  ]
+ },
+ {
+  "latent": "10.attn.3325",
+  "why": "score 1.02",
+  "n": 8,
+  "peak_top": [
+   [
+    "and",
+    2
+   ],
+   [
+    "within",
+    2
+   ],
+   [
+    "particularly",
+    2
+   ]
+  ],
+  "peak_consistency": 0.25,
+  "prev_top": [
+   [
+    ",",
+    4
+   ],
+   [
+    "algorithms",
+    2
+   ],
+   [
+    "such",
+    2
+   ]
+  ],
+  "windows": [
+   "based), indirect, register, [[and]]",
+   "based), indirect, register, [[and]]",
+   "computational parsing takes place. algorithms [[within]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.17485",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "by",
+    31
+   ],
+   [
+    "through",
+    16
+   ],
+   [
+    "using",
+    7
+   ]
+  ],
+  "windows": [
+   "of the matrix subtracted by [[the]]",
+   "is described using the equations by [[the]]",
+   "homogeneous linear differential equations using [[the]]"
+  ]
+ },
+ {
+  "latent": "2.resid.34402",
+  "why": "score 1.02",
+  "n": 64,
+  "peak_top": [
+   [
+    "ance",
+    45
+   ],
+   [
+    "ry",
+    13
+   ],
+   [
+    "competition",
+    6
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "domin",
+    41
+   ],
+   [
+    "rival",
+    13
+   ],
+   [
+    "rom",
+    4
+   ]
+  ],
+  "windows": [
+   "be classified as incomplete domin [[ance]]",
+   "<s> Complete domin [[ance]]",
+   "oles may involve intense rival [[ry]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.28141",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "osc",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "iar",
+    64
+   ]
+  ],
+  "windows": [
+   "moods like chiar [[osc]]",
+   "manner, known as chiar [[osc]]",
+   ", the technique of chiar [[osc]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.11999",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "iast",
+    44
+   ],
+   [
+    "atr",
+    20
+   ]
+  ],
+  "peak_consistency": 0.6875,
+  "prev_top": [
+   [
+    "les",
+    44
+   ],
+   [
+    "the",
+    18
+   ],
+   [
+    "The",
+    2
+   ]
+  ],
+  "windows": [
+   "it shifted the eccles [[iast]]",
+   "<s> The [[atr]]",
+   "which sprang from eccles [[iast]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.19667",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "w",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "minimum",
+    64
+   ]
+  ],
+  "windows": [
+   "laws, such as the minimum [[w]]",
+   "of which there were defined minimum [[w]]",
+   "of which there were defined minimum [[w]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.7826",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "oph",
+    60
+   ],
+   [
+    "aking",
+    2
+   ],
+   [
+    "natural",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "ge",
+    60
+   ],
+   [
+    "b",
+    2
+   ],
+   [
+    "a",
+    2
+   ]
+  ],
+  "windows": [
+   "discipline employs various ge [[oph]]",
+   "discipline employs various ge [[oph]]",
+   "Within the realm of ge [[oph]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.1260",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "lingu",
+    51
+   ],
+   [
+    "ingu",
+    13
+   ]
+  ],
+  "peak_consistency": 0.796875,
+  "prev_top": [
+   [
+    "of",
+    15
+   ],
+   [
+    "L",
+    13
+   ],
+   [
+    "within",
+    11
+   ]
+  ],
+  "windows": [
+   "and promote scientific research in L [[ingu]]",
+   "the secret sauce in a [[lingu]]",
+   "intriguing lineage within [[lingu]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.8666",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "by",
+    40
+   ],
+   [
+    "in",
+    8
+   ],
+   [
+    "on",
+    7
+   ]
+  ],
+  "windows": [
+   "concept is founded on [[the]]",
+   "ing, which is supported by [[the]]",
+   "ing, which is supported by [[the]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.17239",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "bre",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "ground",
+    64
+   ]
+  ],
+  "windows": [
+   "950s, ground [[bre]]",
+   "ground [[bre]]",
+   "2 period. period saw ground [[bre]]"
+  ]
+ },
+ {
+  "latent": "10.attn.11705",
+  "why": "score 1.01",
+  "n": 9,
+  "peak_top": [
+   [
+    "of",
+    2
+   ],
+   [
+    "(",
+    2
+   ],
+   [
+    ";",
+    2
+   ]
+  ],
+  "peak_consistency": 0.2222222222222222,
+  "prev_top": [
+   [
+    "range",
+    2
+   ],
+   [
+    "the",
+    2
+   ],
+   [
+    "calling",
+    2
+   ]
+  ],
+  "windows": [
+   "a symbol of the diverse range [[of]]",
+   "a symbol of the diverse range [[of]]",
+   "allows one to find exactly the [[(]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.26882",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "loyment",
+    34
+   ],
+   [
+    "rain",
+    30
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "emp",
+    34
+   ],
+   [
+    "d",
+    30
+   ]
+  ],
+  "windows": [
+   "important pathways for modern d [[rain]]",
+   "important pathways for modern d [[rain]]",
+   "clical unemp [[loyment]]"
+  ]
+ },
+ {
+  "latent": "9.attn.22192",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    35
+   ],
+   [
+    ";",
+    3
+   ],
+   [
+    "ishes",
+    2
+   ]
+  ],
+  "peak_consistency": 0.546875,
+  "prev_top": [
+   [
+    "ines",
+    7
+   ],
+   [
+    "Theory",
+    6
+   ],
+   [
+    "is",
+    4
+   ]
+  ],
+  "windows": [
+   "maintaining their connections. distingu [[ishes]]",
+   "maintaining their connections. distingu [[ishes]]",
+   "the binding of anaphors [[;]]"
+  ]
+ },
+ {
+  "latent": "10.resid.21641",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "structures",
+    19
+   ],
+   [
+    "characteristics",
+    6
+   ],
+   [
+    "ins",
+    4
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "and",
+    17
+   ],
+   [
+    "prote",
+    4
+   ],
+   [
+    "DNA",
+    4
+   ]
+  ],
+  "windows": [
+   "can transform strings into enticing [[pieces]]",
+   "create materials with specific properties and [[structures]]",
+   "can transform strings into enticing [[pieces]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.32579",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "similar",
+    52
+   ],
+   [
+    "ed",
+    10
+   ],
+   [
+    "able",
+    2
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    ",",
+    50
+   ],
+   [
+    "ken",
+    10
+   ],
+   [
+    "compar",
+    2
+   ]
+  ],
+  "windows": [
+   "inherent inverse, liken [[ed]]",
+   "oiled machine, liken [[ed]]",
+   "murky economic impact, compar [[able]]"
+  ]
+ },
+ {
+  "latent": "3.resid.19274",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "ial",
+    22
+   ],
+   [
+    "ical",
+    13
+   ],
+   [
+    "ist",
+    6
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    ".",
+    28
+   ],
+   [
+    "imon",
+    20
+   ],
+   [
+    "ath",
+    8
+   ]
+  ],
+  "windows": [
+   "to this imbalance. [[ist]]",
+   "to this imbalance. [[ist]]",
+   "in relation to their context. [[ical]]"
+  ]
+ },
+ {
+  "latent": "1.resid.20172",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "appropriate",
+    53
+   ],
+   [
+    "relevant",
+    6
+   ],
+   [
+    "immediate",
+    5
+   ]
+  ],
+  "peak_consistency": 0.828125,
+  "prev_top": [
+   [
+    "and",
+    7
+   ],
+   [
+    "using",
+    7
+   ],
+   [
+    "provide",
+    6
+   ]
+  ],
+  "windows": [
+   ", selecting [[appropriate]]",
+   "results. media, which provide [[immediate]]",
+   "results. media, which provide [[immediate]]"
+  ]
+ },
+ {
+  "latent": "9.resid.3292",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "ster",
+    42
+   ],
+   [
+    "Ster",
+    12
+   ],
+   [
+    "old",
+    9
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    "<s>",
+    12
+   ],
+   [
+    ",",
+    11
+   ],
+   [
+    "aff",
+    9
+   ]
+  ],
+  "windows": [
+   "individual components before adding them under [[ster]]",
+   "individual components before adding them under [[ster]]",
+   "<s> [[Ster]]"
+  ]
+ },
+ {
+  "latent": "0.resid.1511",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "ount",
+    42
+   ],
+   [
+    "grat",
+    9
+   ],
+   [
+    "\u3002",
+    2
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    "disc",
+    42
+   ],
+   [
+    "instant",
+    7
+   ],
+   [
+    "\ufffd",
+    3
+   ]
+  ],
+  "windows": [
+   "\ufffd\ufffd\ufffd,\ufffd\ufffd [[\ufffd]]",
+   "hyperbolic and exponential disc [[ount]]",
+   "bolic disc [[ount]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.14122",
+  "why": "score 1.01",
+  "n": 64,
+  "peak_top": [
+   [
+    "'",
+    41
+   ],
+   [
+    "estr",
+    23
+   ]
+  ],
+  "peak_consistency": 0.640625,
+  "prev_top": [
+   [
+    "orch",
+    23
+   ],
+   [
+    "ology",
+    6
+   ],
+   [
+    "ography",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> Molecular biology [[']]",
+   "<s> Molecular biology [[']]",
+   "<s> Cellular biology [[']]"
+  ]
+ },
+ {
+  "latent": "3.resid.30283",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "yet",
+    27
+   ],
+   [
+    "ly",
+    9
+   ],
+   [
+    "even",
+    8
+   ]
+  ],
+  "peak_consistency": 0.421875,
+  "prev_top": [
+   [
+    ",",
+    30
+   ],
+   [
+    "important",
+    9
+   ],
+   [
+    "or",
+    8
+   ]
+  ],
+  "windows": [
+   "nor, but, or, [[yet]]",
+   "nor, but, or, [[yet]]",
+   "and intentions, as well [[as]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.31678",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "ado",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "par",
+    52
+   ],
+   [
+    "Par",
+    12
+   ]
+  ],
+  "windows": [
+   "<s> Par [[ado]]",
+   "<s> Par [[ado]]",
+   "most common types include logical par [[ado]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.31071",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "w",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "under",
+    64
+   ]
+  ],
+  "windows": [
+   "during this period, they under [[w]]",
+   "CE, both ancient languages under [[w]]",
+   "CE, human civilizations under [[w]]"
+  ]
+ },
+ {
+  "latent": "3.resid.5448",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "grat",
+    37
+   ],
+   [
+    "bla",
+    18
+   ],
+   [
+    "sie",
+    8
+   ]
+  ],
+  "peak_consistency": 0.578125,
+  "prev_top": [
+   [
+    "and",
+    9
+   ],
+   [
+    "with",
+    6
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "wavelengths.mission [[grat]]",
+   "of selective diffraction, [[grat]]",
+   "ensures optimal [[bla]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.29522",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "c",
+    58
+   ],
+   [
+    "something",
+    2
+   ],
+   [
+    "anything",
+    2
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "inter",
+    58
+   ],
+   [
+    "suggest",
+    2
+   ],
+   [
+    "saying",
+    2
+   ]
+  ],
+  "windows": [
+   "understanding are key components of inter [[c]]",
+   "ful navigation and management of inter [[c]]",
+   "inder the achievement of inter [[c]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.40657",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    ".",
+    56
+   ],
+   [
+    "ither",
+    2
+   ],
+   [
+    ".\"",
+    2
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "customers",
+    4
+   ],
+   [
+    "applications",
+    3
+   ],
+   [
+    "isms",
+    3
+   ]
+  ],
+  "windows": [
+   "ties within communities.ender [[.]]",
+   "ties within communities.ender [[.]]",
+   "Transcendental ego [[.]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.12251",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "thanks",
+    52
+   ],
+   [
+    "due",
+    12
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    ",",
+    53
+   ],
+   [
+    "available",
+    3
+   ],
+   [
+    "ly",
+    2
+   ]
+  ],
+  "windows": [
+   "pizza crusts, [[thanks]]",
+   "pizza crusts, [[thanks]]",
+   "have become more accessible to artists [[due]]"
+  ]
+ },
+ {
+  "latent": "0.resid.1043",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "ix",
+    49
+   ],
+   [
+    "suffix",
+    13
+   ],
+   [
+    "fix",
+    2
+   ]
+  ],
+  "peak_consistency": 0.765625,
+  "prev_top": [
+   [
+    "aff",
+    31
+   ],
+   [
+    "and",
+    10
+   ],
+   [
+    "inf",
+    6
+   ]
+  ],
+  "windows": [
+   "refixation attaches aff [[ix]]",
+   "refixes are aff [[ix]]",
+   "ixes insert within roots. [[ix]]"
+  ]
+ },
+ {
+  "latent": "4.resid.24841",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    56
+   ],
+   [
+    "2",
+    6
+   ],
+   [
+    "that",
+    2
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "all",
+    57
+   ],
+   [
+    "0",
+    6
+   ],
+   [
+    "remember",
+    1
+   ]
+  ],
+  "windows": [
+   "of practical wisdom\u2014after all [[,]]",
+   "'fun' \u2013 after all [[,]]",
+   "zy' idea\u2014after all [[,]]"
+  ]
+ },
+ {
+  "latent": "7.resid.39312",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "ving",
+    20
+   ],
+   [
+    "their",
+    18
+   ],
+   [
+    "improve",
+    16
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "impro",
+    20
+   ],
+   [
+    "improve",
+    13
+   ],
+   [
+    "to",
+    6
+   ]
+  ],
+  "windows": [
+   "refine their work and improve [[their]]",
+   "a unique opportunity to practice and [[improve]]",
+   "improving them and making improvements [[in]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.19343",
+  "why": "score 1.00",
+  "n": 64,
+  "peak_top": [
+   [
+    "igen",
+    63
+   ],
+   [
+    "oun",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "ind",
+    63
+   ],
+   [
+    "enc",
+    1
+   ]
+  ],
+  "windows": [
+   "asant encounters with ind [[igen]]",
+   "course of development for both ind [[igen]]",
+   "course of development for both ind [[igen]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.5803",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "et",
+    45
+   ],
+   [
+    "fib",
+    15
+   ],
+   [
+    "particle",
+    4
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "of",
+    11
+   ],
+   [
+    ",",
+    9
+   ],
+   [
+    "etic",
+    5
+   ]
+  ],
+  "windows": [
+   "<s> Optical [[fib]]",
+   "stewardship, honoring [[et]]",
+   "its core, [[et]]"
+  ]
+ },
+ {
+  "latent": "10.attn.8004",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    15
+   ],
+   [
+    "the",
+    7
+   ],
+   [
+    "involves",
+    7
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "types",
+    5
+   ],
+   [
+    "master",
+    4
+   ],
+   [
+    "that",
+    4
+   ]
+  ],
+  "windows": [
+   "other speech production: the introduction [[of]]",
+   "other speech production: the introduction [[of]]",
+   "terms of phonetic structure [[:]]"
+  ]
+ },
+ {
+  "latent": "3.resid.33227",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "improve",
+    20
+   ],
+   [
+    "reduce",
+    11
+   ],
+   [
+    "support",
+    4
+   ]
+  ],
+  "peak_consistency": 0.3125,
+  "prev_top": [
+   [
+    "and",
+    14
+   ],
+   [
+    "to",
+    14
+   ],
+   [
+    "as",
+    6
+   ]
+  ],
+  "windows": [
+   "es to minimize injury and [[improve]]",
+   "es to minimize injury and [[improve]]",
+   "relaxing shoulders, and gradually [[build]]"
+  ]
+ },
+ {
+  "latent": "10.attn.14721",
+  "why": "score 0.99",
+  "n": 8,
+  "peak_top": [
+   [
+    "guide",
+    4
+   ],
+   [
+    "including",
+    2
+   ],
+   [
+    "through",
+    2
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "that",
+    4
+   ],
+   [
+    ",",
+    2
+   ],
+   [
+    "ities",
+    2
+   ]
+  ],
+  "windows": [
+   "ers. principles and methods that [[guide]]",
+   "ers. principles and methods that [[guide]]",
+   "ation. principles and methods that [[guide]]"
+  ]
+ },
+ {
+  "latent": "7.resid.10790",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "When",
+    63
+   ],
+   [
+    "Yet",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "<s>",
+    64
+   ]
+  ],
+  "windows": [
+   "<s> [[When]]",
+   "<s> [[When]]",
+   "<s> [[When]]"
+  ]
+ },
+ {
+  "latent": "5.resid.16793",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "York",
+    14
+   ],
+   [
+    "\u043d\u043e",
+    6
+   ],
+   [
+    "\u043d\u043e\u0441\u0442\u0438",
+    6
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "New",
+    14
+   ],
+   [
+    "\u0440\u0435\u043d",
+    4
+   ],
+   [
+    "\u043d",
+    4
+   ]
+  ],
+  "windows": [
+   "\u0441\u0442\u0438\u043a\u0430 \u0441\u043e\u043e\u0442\u0432\u0435\u0440\u0435\u043d [[\u043d\u043e]]",
+   "\u0441\u0442\u0438\u043a\u0430 \u0441\u043e\u043e\u0442\u0432\u0435\u0440\u0435\u043d [[\u043d\u043e]]",
+   "North Carolina through the Moh [[awk]]"
+  ]
+ },
+ {
+  "latent": "3.resid.36740",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "anal",
+    41
+   ],
+   [
+    "ograph",
+    12
+   ],
+   [
+    "rome",
+    6
+   ]
+  ],
+  "peak_consistency": 0.640625,
+  "prev_top": [
+   [
+    "is",
+    41
+   ],
+   [
+    "inf",
+    10
+   ],
+   [
+    "synd",
+    6
+   ]
+  ],
+  "windows": [
+   "is [[anal]]",
+   "is [[anal]]",
+   ". and Software for Creating Inf [[ograph]]"
+  ]
+ },
+ {
+  "latent": "1.resid.11129",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "resources",
+    58
+   ],
+   [
+    "resource",
+    4
+   ],
+   [
+    "Resources",
+    2
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "human",
+    62
+   ],
+   [
+    "Human",
+    2
+   ]
+  ],
+  "windows": [
+   "change in the evolution of human [[resources]]",
+   "what was the development of human [[resources]]",
+   "change in the evolution of human [[resources]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.10303",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "ten",
+    63
+   ],
+   [
+    "as",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "at",
+    63
+   ],
+   [
+    "such",
+    1
+   ]
+  ],
+  "windows": [
+   "20% of all at [[ten]]",
+   "20% of all at [[ten]]",
+   "share quick responses with potential at [[ten]]"
+  ]
+ },
+ {
+  "latent": "10.resid.23683",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "maintenance",
+    19
+   ],
+   [
+    "optimization",
+    10
+   ],
+   [
+    "analysis",
+    6
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "ive",
+    21
+   ],
+   [
+    "route",
+    10
+   ],
+   [
+    "time",
+    8
+   ]
+  ],
+  "windows": [
+   "smart meters), more predictive [[analysis]]",
+   "smart meters), more predictive [[analysis]]",
+   "logistics by enabling route [[optimization]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.12450",
+  "why": "score 0.99",
+  "n": 64,
+  "peak_top": [
+   [
+    "Charles",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "by",
+    14
+   ],
+   [
+    "as",
+    9
+   ],
+   [
+    "like",
+    8
+   ]
+  ],
+  "windows": [
+   "Louis Hjelmslev, [[Charles]]",
+   "and Britain, language teachers like [[Charles]]",
+   ", thanks to instructors like [[Charles]]"
+  ]
+ },
+ {
+  "latent": "10.attn.29343",
+  "why": "score 0.99",
+  "n": 18,
+  "peak_top": [
+   [
+    "the",
+    4
+   ],
+   [
+    "and",
+    4
+   ],
+   [
+    "traditional",
+    4
+   ]
+  ],
+  "peak_consistency": 0.2222222222222222,
+  "prev_top": [
+   [
+    ",",
+    4
+   ],
+   [
+    "into",
+    2
+   ],
+   [
+    "on",
+    2
+   ]
+  ],
+  "windows": [
+   "surveys and focus groups, [[with]]",
+   "surveys and focus groups, [[with]]",
+   "as it provides insights into [[the]]"
+  ]
+ },
+ {
+  "latent": "10.attn.3953",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    14
+   ],
+   [
+    "nas",
+    6
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "South",
+    13
+   ],
+   [
+    "of",
+    6
+   ],
+   [
+    "angles",
+    5
+   ]
+  ],
+  "windows": [
+   "geometrical constructions [...] Their [[distinct]]",
+   "geometrical constructions [...] Their [[distinct]]",
+   "circle this happens quite literally: [[an]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.15708",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "un",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "to",
+    31
+   ],
+   [
+    "can",
+    25
+   ],
+   [
+    "and",
+    3
+   ]
+  ],
+  "windows": [
+   "us to track multiple parameters and [[un]]",
+   "ing this skill, readers can [[un]]",
+   "combining computer science and mathematics to [[un]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.40779",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "as",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "serves",
+    52
+   ],
+   [
+    "acts",
+    7
+   ],
+   [
+    "serving",
+    5
+   ]
+  ],
+  "windows": [
+   "buying experience; it acts [[as]]",
+   "buying experience; it acts [[as]]",
+   "its next level\" and serves [[as]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.14418",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "Field",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "um",
+    51
+   ],
+   [
+    "al",
+    11
+   ],
+   [
+    "ing",
+    1
+   ]
+  ],
+  "windows": [
+   "to Topological Quantum [[Field]]",
+   "<s> # Conformal [[Field]]",
+   "<s> # Quantum [[Field]]"
+  ]
+ },
+ {
+  "latent": "0.resid.35320",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "ing",
+    22
+   ],
+   [
+    "ure",
+    14
+   ],
+   [
+    "ed",
+    10
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "script",
+    49
+   ],
+   [
+    "Script",
+    10
+   ],
+   [
+    "Found",
+    5
+   ]
+  ],
+  "windows": [
+   ", script [[ing]]",
+   "adapters as these script [[ing]]",
+   "period' impact of global script [[ed]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.14480",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "find",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "way",
+    50
+   ],
+   [
+    "ways",
+    6
+   ],
+   [
+    "Way",
+    5
+   ]
+  ],
+  "windows": [
+   "promote fair and inclusive way [[find]]",
+   "settings, signage and way [[find]]",
+   "shift towards digital implementations in way [[find]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.9156",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    52
+   ],
+   [
+    "or",
+    12
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    "ities",
+    7
+   ],
+   [
+    "onomy",
+    6
+   ],
+   [
+    "ion",
+    3
+   ]
+  ],
+  "windows": [
+   "displacement of unique worldviews [[and]]",
+   "to enrich character motivations [[and]]",
+   "down traditional accessibility barriers [[and]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.24138",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "-",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "problem",
+    51
+   ],
+   [
+    "game",
+    8
+   ],
+   [
+    "Problem",
+    5
+   ]
+  ],
+  "windows": [
+   "R is quickly becoming a game [[-]]",
+   "a powerful methodology for problem [[-]]",
+   "pioneering new methods of problem [[-]]"
+  ]
+ },
+ {
+  "latent": "8.resid.22299",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    60
+   ],
+   [
+    ":",
+    4
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "instance",
+    28
+   ],
+   [
+    "example",
+    19
+   ],
+   [
+    "Japan",
+    9
+   ]
+  ],
+  "windows": [
+   ", and engagement. instance [[,]]",
+   ", and engagement. instance [[,]]",
+   ", and engagement. instance [[,]]"
+  ]
+ },
+ {
+  "latent": "7.resid.16318",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "est",
+    49
+   ],
+   [
+    "plan",
+    7
+   ],
+   [
+    "planet",
+    7
+   ]
+  ],
+  "peak_consistency": 0.765625,
+  "prev_top": [
+   [
+    "cel",
+    49
+   ],
+   [
+    "of",
+    14
+   ],
+   [
+    "plan",
+    1
+   ]
+  ],
+  "windows": [
+   "trajectories that governs cel [[est]]",
+   "trajectories that governs cel [[est]]",
+   "it explains the orbits of [[plan]]"
+  ]
+ },
+ {
+  "latent": "8.resid.2734",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "ain",
+    24
+   ],
+   [
+    "opp",
+    15
+   ],
+   [
+    ",",
+    9
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "att",
+    24
+   ],
+   [
+    "in",
+    3
+   ],
+   [
+    "fe",
+    3
+   ]
+  ],
+  "windows": [
+   "that were previously considered unatt [[ain]]",
+   "unlocking previously unatt [[ain]]",
+   "solutions that were otherwise unatt [[ain]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.24147",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "Im",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "from",
+    16
+   ],
+   [
+    "-",
+    9
+   ],
+   [
+    "the",
+    8
+   ]
+  ],
+  "windows": [
+   "with surface appearance, the newer [[Im]]",
+   "significant change as the movement from [[Im]]",
+   "significant change as the movement from [[Im]]"
+  ]
+ },
+ {
+  "latent": "10.mlp.14093",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "where",
+    13
+   ],
+   [
+    "of",
+    11
+   ],
+   [
+    "ating",
+    9
+   ]
+  ],
+  "peak_consistency": 0.203125,
+  "prev_top": [
+   [
+    "transl",
+    9
+   ],
+   [
+    ",",
+    7
+   ],
+   [
+    "inding",
+    5
+   ]
+  ],
+  "windows": [
+   "es the intricate mechanism by [[which]]",
+   "of transcription that involves writing [[down]]",
+   "of transcription that involves writing [[down]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.21372",
+  "why": "score 0.98",
+  "n": 64,
+  "peak_top": [
+   [
+    "-",
+    38
+   ],
+   [
+    "ism",
+    18
+   ],
+   [
+    "and",
+    7
+   ]
+  ],
+  "peak_consistency": 0.59375,
+  "prev_top": [
+   [
+    "light",
+    45
+   ],
+   [
+    "ual",
+    18
+   ],
+   [
+    "Light",
+    1
+   ]
+  ],
+  "windows": [
+   "reactions known as the light [[-]]",
+   "symbiosis of light [[-]]",
+   "reactions known as the light [[-]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.13443",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    57
+   ],
+   [
+    ",",
+    7
+   ]
+  ],
+  "peak_consistency": 0.890625,
+  "prev_top": [
+   [
+    "organizations",
+    8
+   ],
+   [
+    "artists",
+    7
+   ],
+   [
+    "countries",
+    7
+   ]
+  ],
+  "windows": [
+   "ments, businesses, organizations [[,]]",
+   "ments, businesses, organizations [[,]]",
+   "act as mediators between artists [[and]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.21415",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "eu",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "man",
+    64
+   ]
+  ],
+  "windows": [
+   "carriers), tactical man [[eu]]",
+   "aped by the strategic man [[eu]]",
+   "emphasizing their tactical man [[eu]]"
+  ]
+ },
+ {
+  "latent": "6.resid.26490",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    43
+   ],
+   [
+    "to",
+    21
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "consideration",
+    40
+   ],
+   [
+    "attention",
+    16
+   ],
+   [
+    "given",
+    5
+   ]
+  ],
+  "windows": [
+   "ic conditions demands careful attention [[to]]",
+   "requires attention to detail and consideration [[of]]",
+   "requires attention to detail and consideration [[of]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.12862",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "provides",
+    36
+   ],
+   [
+    "offers",
+    14
+   ],
+   [
+    "provide",
+    8
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [
+   [
+    "section",
+    9
+   ],
+   [
+    "also",
+    4
+   ],
+   [
+    "ll",
+    4
+   ]
+  ],
+  "windows": [
+   "fields allowing.<s> This section [[provides]]",
+   ".amining these fundamental systems [[provides]]",
+   "of dark matter and dark energy [[provides]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.40844",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "impl",
+    59
+   ],
+   [
+    "Information",
+    4
+   ],
+   [
+    "ph",
+    1
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [
+   [
+    "of",
+    16
+   ],
+   [
+    "for",
+    7
+   ],
+   [
+    "as",
+    6
+   ]
+  ],
+  "windows": [
+   ", research into biomedical [[impl]]",
+   ", research into biomedical [[impl]]",
+   "include: compatible structures such as [[impl]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.21659",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "these",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ",",
+    31
+   ],
+   [
+    "of",
+    6
+   ],
+   [
+    "these",
+    4
+   ]
+  ],
+  "windows": [
+   "of [[these]]",
+   "of [[these]]",
+   "of these [[these]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.24408",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "bul",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "tur",
+    57
+   ],
+   [
+    "Tur",
+    7
+   ]
+  ],
+  "windows": [
+   "are at their peak during tur [[bul]]",
+   "are at their peak during tur [[bul]]",
+   "both safety and performance in tur [[bul]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.2437",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "that",
+    45
+   ],
+   [
+    "\u00e2n",
+    12
+   ],
+   [
+    "cu",
+    3
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "Br",
+    12
+   ],
+   [
+    "culture",
+    5
+   ],
+   [
+    "ities",
+    4
+   ]
+  ],
+  "windows": [
+   ", Br [[\u00e2n]]",
+   "u` which itself depends on [[`]]",
+   "Br [[\u00e2n]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.32570",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "is",
+    49
+   ],
+   [
+    "attention",
+    12
+   ],
+   [
+    "focus",
+    3
+   ]
+  ],
+  "peak_consistency": 0.765625,
+  "prev_top": [
+   [
+    "emphas",
+    49
+   ],
+   [
+    "more",
+    5
+   ],
+   [
+    "increasing",
+    2
+   ]
+  ],
+  "windows": [
+   "), there might be greater emphas [[is]]",
+   "), there might be greater emphas [[is]]",
+   "has led to a greater emphas [[is]]"
+  ]
+ },
+ {
+  "latent": "7.resid.10074",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "world",
+    14
+   ],
+   [
+    "stage",
+    4
+   ],
+   [
+    "istry",
+    4
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "ological",
+    6
+   ],
+   [
+    "English",
+    4
+   ]
+  ],
+  "windows": [
+   "ors of our planet's [[surface]]",
+   "scenes celebs of the [[body]]",
+   "puted champions of chemical innov [[ation]]"
+  ]
+ },
+ {
+  "latent": "2.resid.40211",
+  "why": "score 0.97",
+  "n": 64,
+  "peak_top": [
+   [
+    "revel",
+    53
+   ],
+   [
+    "anticip",
+    11
+   ]
+  ],
+  "peak_consistency": 0.828125,
+  "prev_top": [
+   [
+    "of",
+    13
+   ],
+   [
+    "ed",
+    5
+   ],
+   [
+    "unexpected",
+    4
+   ]
+  ],
+  "windows": [
+   "lines vary in their handling of [[revel]]",
+   "lines vary in their handling of [[revel]]",
+   "lines vary in their handling of [[revel]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.7826",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "ive",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "cript",
+    59
+   ],
+   [
+    "descript",
+    5
+   ]
+  ],
+  "windows": [
+   "cript [[ive]]",
+   "<s> # Descript [[ive]]",
+   "## 11.cript [[ive]]"
+  ]
+ },
+ {
+  "latent": "10.attn.14191",
+  "why": "score 0.96",
+  "n": 11,
+  "peak_top": [
+   [
+    "of",
+    2
+   ],
+   [
+    "while",
+    2
+   ],
+   [
+    "the",
+    2
+   ]
+  ],
+  "peak_consistency": 0.18181818181818182,
+  "prev_top": [
+   [
+    "roots",
+    2
+   ],
+   [
+    ",",
+    2
+   ],
+   [
+    "to",
+    2
+   ]
+  ],
+  "windows": [
+   "target audiences. roots [[of]]",
+   "target audiences. roots [[of]]",
+   "are particularly enigmatic [[.]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.19632",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "latter",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "the",
+    48
+   ],
+   [
+    "The",
+    12
+   ],
+   [
+    "these",
+    2
+   ]
+  ],
+  "windows": [
+   "and services.<s> During the [[latter]]",
+   "precedented change in the [[latter]]",
+   "to lose its importance in the [[latter]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.23179",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "World",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "-",
+    64
+   ]
+  ],
+  "windows": [
+   "post- [[World]]",
+   "post- [[World]]",
+   "was triggered by the post- [[World]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.6072",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "Ram",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    30
+   ],
+   [
+    "in",
+    5
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "windows": [
+   ").<s> At the heart of [[Ram]]",
+   ").<s> At the heart of [[Ram]]",
+   "hancement of [[Ram]]"
+  ]
+ },
+ {
+  "latent": "3.resid.39024",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "tower",
+    35
+   ],
+   [
+    "jump",
+    21
+   ],
+   [
+    "swing",
+    6
+   ]
+  ],
+  "peak_consistency": 0.546875,
+  "prev_top": [
+   [
+    "ing",
+    8
+   ],
+   [
+    "tower",
+    8
+   ],
+   [
+    "the",
+    6
+   ]
+  ],
+  "windows": [
+   "ulus stratusand towering [[tower]]",
+   "ulus stratusand towering [[tower]]",
+   "ulus stratusand towering [[tower]]"
+  ]
+ },
+ {
+  "latent": "8.resid.1629",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "France",
+    10
+   ],
+   [
+    "City",
+    6
+   ],
+   [
+    "UK",
+    4
+   ]
+  ],
+  "peak_consistency": 0.15625,
+  "prev_top": [
+   [
+    "in",
+    22
+   ],
+   [
+    "York",
+    6
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "ude Van Dampside in [[Paris]]",
+   "ude Van Dampside in [[Paris]]",
+   "the Jura region in southern [[France]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.24118",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    9
+   ],
+   [
+    "replace",
+    5
+   ],
+   [
+    "ing",
+    4
+   ]
+  ],
+  "windows": [
+   "by the smaller and then replace [[the]]",
+   "by the smaller and then replace [[the]]",
+   "and selecting the subinterval where [[the]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.40066",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "tant",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "is",
+    31
+   ],
+   [
+    "be",
+    4
+   ],
+   [
+    "as",
+    4
+   ]
+  ],
+  "windows": [
+   "use of metaphors is [[tant]]",
+   "a revolution in accuracy that is [[tant]]",
+   "deadlines, which can be [[tant]]"
+  ]
+ },
+ {
+  "latent": "4.attn.19822",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "ple",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "Princi",
+    64
+   ]
+  ],
+  "windows": [
+   "Inclusion-Exclusion Princi [[ple]]",
+   "Inclusion-Exclusion Princi [[ple]]",
+   "Inclusion-Exclusion Princi [[ple]]"
+  ]
+ },
+ {
+  "latent": "9.resid.1019",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "different",
+    22
+   ],
+   [
+    "to",
+    13
+   ],
+   [
+    "various",
+    9
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "under",
+    32
+   ],
+   [
+    "behave",
+    8
+   ],
+   [
+    "ability",
+    6
+   ]
+  ],
+  "windows": [
+   "reliability, and performance under [[different]]",
+   "reliability, and performance under [[different]]",
+   "how the material will behave under [[different]]"
+  ]
+ },
+ {
+  "latent": "10.resid.9668",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "format",
+    24
+   ],
+   [
+    "al",
+    3
+   ],
+   [
+    "ied",
+    2
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "in",
+    24
+   ],
+   [
+    "-",
+    4
+   ],
+   [
+    "increment",
+    3
+   ]
+  ],
+  "windows": [
+   "create a full-bod [[ied]]",
+   "create a full-bod [[ied]]",
+   "endurance sports.low- [[fit]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.5198",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "(",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "elligence",
+    42
+   ],
+   [
+    "Systems",
+    12
+   ],
+   [
+    "intelligence",
+    10
+   ]
+  ],
+  "windows": [
+   "operations.ificial Intelligence [[(]]",
+   "of Artificial Intelligence [[(]]",
+   "of Artificial Intelligence [[(]]"
+  ]
+ },
+ {
+  "latent": "5.resid.13677",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "-",
+    52
+   ],
+   [
+    "means",
+    2
+   ],
+   [
+    "understand",
+    2
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    "easy",
+    44
+   ],
+   [
+    "to",
+    16
+   ],
+   [
+    "-",
+    4
+   ]
+  ],
+  "windows": [
+   "offer an easy [[-]]",
+   "highly effective. offer an easy [[-]]",
+   "phrases and concepts into easy [[-]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.28739",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "each",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "with",
+    60
+   ],
+   [
+    "understand",
+    2
+   ],
+   [
+    "to",
+    2
+   ]
+  ],
+  "windows": [
+   "altered how individuals interact with [[each]]",
+   "ize the way people interact with [[each]]",
+   "the way people communicate and understand [[each]]"
+  ]
+ },
+ {
+  "latent": "3.resid.34833",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "exer",
+    45
+   ],
+   [
+    "era",
+    11
+   ],
+   [
+    "dol",
+    8
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "ing",
+    12
+   ],
+   [
+    "th",
+    11
+   ],
+   [
+    "specific",
+    7
+   ]
+  ],
+  "windows": [
+   "tests include listening [[exer]]",
+   "tests include listening [[exer]]",
+   "and answers. tests include listening [[exer]]"
+  ]
+ },
+ {
+  "latent": "4.resid.21992",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    45
+   ],
+   [
+    ",",
+    19
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "ales",
+    34
+   ],
+   [
+    ",",
+    12
+   ],
+   [
+    "ato",
+    7
+   ]
+  ],
+  "windows": [
+   "us (17th) [[and]]",
+   "us (17th) [[and]]",
+   "early thinkers like Thales [[and]]"
+  ]
+ },
+ {
+  "latent": "4.resid.5740",
+  "why": "score 0.96",
+  "n": 64,
+  "peak_top": [
+   [
+    "ular",
+    34
+   ],
+   [
+    "abol",
+    12
+   ],
+   [
+    "ive",
+    7
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "cell",
+    29
+   ],
+   [
+    "met",
+    12
+   ],
+   [
+    "gener",
+    8
+   ]
+  ],
+  "windows": [
+   "symbolizes the beauty of cell [[ular]]",
+   "a gateway to other met [[abol]]",
+   "es' activity, and cell [[ular]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.18151",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "fo",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "sea",
+    64
+   ]
+  ],
+  "windows": [
+   "tasked with mastering sea [[fo]]",
+   "choose from a range of sea [[fo]]",
+   "choose from a range of sea [[fo]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.38754",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "figure",
+    51
+   ],
+   [
+    "ely",
+    7
+   ],
+   [
+    "del",
+    6
+   ]
+  ],
+  "peak_consistency": 0.796875,
+  "prev_top": [
+   [
+    "prominent",
+    8
+   ],
+   [
+    "vers",
+    7
+   ],
+   [
+    "section",
+    6
+   ]
+  ],
+  "windows": [
+   "to have been a seminal [[figure]]",
+   "to have been a seminal [[figure]]",
+   "from screens to prints.vers [[ely]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.22800",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "rop",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "c",
+    64
+   ]
+  ],
+  "windows": [
+   "the Agricultural Revolution made c [[rop]]",
+   "ptation strategies include c [[rop]]",
+   "led to significant improvements in c [[rop]]"
+  ]
+ },
+ {
+  "latent": "8.resid.32569",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "plane",
+    27
+   ],
+   [
+    "interval",
+    9
+   ],
+   [
+    "point",
+    8
+   ]
+  ],
+  "peak_consistency": 0.421875,
+  "prev_top": [
+   [
+    "the",
+    23
+   ],
+   [
+    "a",
+    18
+   ],
+   [
+    "an",
+    8
+   ]
+  ],
+  "windows": [
+   "to a double integral over the [[plane]]",
+   "a simple closed curve in a [[plane]]",
+   "and the line integral over the [[boundary]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.8395",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "which",
+    53
+   ],
+   [
+    "that",
+    11
+   ]
+  ],
+  "peak_consistency": 0.828125,
+  "prev_top": [
+   [
+    ",",
+    51
+   ],
+   [
+    "(",
+    4
+   ],
+   [
+    "technique",
+    3
+   ]
+  ],
+  "windows": [
+   ": spectrophotometry, [[which]]",
+   ": spectrophotometry, [[which]]",
+   "kscreen, meanwhile, [[which]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.31535",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "our",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "s",
+    64
+   ]
+  ],
+  "windows": [
+   "stone of sustainable s [[our]]",
+   "practices to sustainable s [[our]]",
+   "ments of sustainable s [[our]]"
+  ]
+ },
+ {
+  "latent": "9.attn.24049",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "introduced",
+    6
+   ],
+   [
+    "proposed",
+    6
+   ],
+   [
+    "ts",
+    6
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "ser",
+    6
+   ],
+   [
+    "propos",
+    6
+   ],
+   [
+    "on",
+    4
+   ]
+  ],
+  "windows": [
+   "89, provided the basis [[for]]",
+   "89, provided the basis [[for]]",
+   "and measures rightness according to [[an]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.6118",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "ff",
+    38
+   ],
+   [
+    "both",
+    26
+   ]
+  ],
+  "peak_consistency": 0.59375,
+  "prev_top": [
+   [
+    "gra",
+    38
+   ],
+   [
+    "including",
+    5
+   ],
+   [
+    "includes",
+    5
+   ]
+  ],
+  "windows": [
+   "and discuss the significance of gra [[ff]]",
+   "isms to be used for both [[both]]",
+   "iculate their intended purpose using [[both]]"
+  ]
+ },
+ {
+  "latent": "10.attn.31129",
+  "why": "score 0.95",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    15
+   ],
+   [
+    "of",
+    12
+   ],
+   [
+    "studying",
+    7
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    "due",
+    9
+   ],
+   [
+    "pain",
+    4
+   ],
+   [
+    "principles",
+    4
+   ]
+  ],
+  "windows": [
+   "letal disorders, including [[joint]]",
+   "letal disorders, including [[joint]]",
+   "pain and stiffness due [[to]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.3277",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "macro",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    20
+   ],
+   [
+    "a",
+    9
+   ],
+   [
+    "between",
+    7
+   ]
+  ],
+  "windows": [
+   ", and societal changes. [[macro]]",
+   ", and societal changes. [[macro]]",
+   "economic hardships. [[macro]]"
+  ]
+ },
+ {
+  "latent": "8.resid.40031",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "abandon",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    31
+   ],
+   [
+    "that",
+    6
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "iry explores the concept of [[abandon]]",
+   "fronting these complex dimensions of [[abandon]]",
+   "iry explores the concept of [[abandon]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.29712",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "current",
+    37
+   ],
+   [
+    "also",
+    27
+   ]
+  ],
+  "peak_consistency": 0.578125,
+  "prev_top": [
+   [
+    ".",
+    37
+   ],
+   [
+    "period",
+    27
+   ]
+  ],
+  "windows": [
+   "well beyond its initial mission. [[current]]",
+   "uncontrolled reactions. [[current]]",
+   "uncontrolled reactions. [[current]]"
+  ]
+ },
+ {
+  "latent": "9.resid.6756",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "rig",
+    48
+   ],
+   [
+    "per",
+    12
+   ],
+   [
+    "Moz",
+    2
+   ]
+  ],
+  "peak_consistency": 0.75,
+  "prev_top": [
+   [
+    "ir",
+    48
+   ],
+   [
+    "re",
+    12
+   ],
+   [
+    "from",
+    2
+   ]
+  ],
+  "windows": [
+   "novative ir [[rig]]",
+   "novative ir [[rig]]",
+   "ering work into innovative ir [[rig]]"
+  ]
+ },
+ {
+  "latent": "3.resid.6422",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "0",
+    34
+   ],
+   [
+    "",
+    20
+   ],
+   [
+    "1",
+    8
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "0",
+    34
+   ],
+   [
+    ",",
+    12
+   ],
+   [
+    ".",
+    8
+   ]
+  ],
+  "windows": [
+   "2.58 million before [[]]",
+   "2.58 million before [[]]",
+   "ations.<s> 3. [[1]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.31411",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "stir",
+    31
+   ],
+   [
+    "quot",
+    30
+   ],
+   [
+    "vers",
+    3
+   ]
+  ],
+  "peak_consistency": 0.484375,
+  "prev_top": [
+   [
+    "of",
+    20
+   ],
+   [
+    ",",
+    7
+   ],
+   [
+    "ize",
+    3
+   ]
+  ],
+  "windows": [
+   "atcher helped to popularize [[stir]]",
+   "atcher helped to popularize [[stir]]",
+   "<s> Within written communication, [[quot]]"
+  ]
+ },
+ {
+  "latent": "9.resid.9093",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "levels",
+    17
+   ],
+   [
+    "level",
+    15
+   ],
+   [
+    "water",
+    6
+   ]
+  ],
+  "peak_consistency": 0.265625,
+  "prev_top": [
+   [
+    "sea",
+    32
+   ],
+   [
+    "and",
+    4
+   ],
+   [
+    "weather",
+    3
+   ]
+  ],
+  "windows": [
+   "profound implications for sea [[level]]",
+   "vital role in regulating sea [[levels]]",
+   "vital role in regulating sea [[levels]]"
+  ]
+ },
+ {
+  "latent": "9.resid.15172",
+  "why": "score 0.94",
+  "n": 64,
+  "peak_top": [
+   [
+    "rank",
+    60
+   ],
+   [
+    "phase",
+    2
+   ],
+   [
+    "Visible",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    ",",
+    14
+   ],
+   [
+    "of",
+    10
+   ],
+   [
+    "The",
+    10
+   ]
+  ],
+  "windows": [
+   "and potential dimensionality, the [[rank]]",
+   "is the relationship between Morley [[rank]]",
+   ", [[rank]]"
+  ]
+ },
+ {
+  "latent": "6.resid.34272",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    43
+   ],
+   [
+    "these",
+    8
+   ],
+   [
+    "s",
+    6
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "standing",
+    55
+   ],
+   [
+    "'",
+    6
+   ],
+   [
+    "ref",
+    2
+   ]
+  ],
+  "windows": [
+   "fluctuations.standing [[the]]",
+   "impacting the environment.standing [[the]]",
+   "impacting the environment.standing [[the]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.24852",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "-",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "large",
+    63
+   ],
+   [
+    "larger",
+    1
+   ]
+  ],
+  "windows": [
+   "undertaken by people on large [[-]]",
+   "it a robust selection for large [[-]]",
+   ", large [[-]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.1497",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "ir",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    17
+   ],
+   [
+    ",",
+    11
+   ],
+   [
+    "and",
+    6
+   ]
+  ],
+  "windows": [
+   "evolution of [[ir]]",
+   ", which represents the evolution of [[ir]]",
+   "ation, emerged for advanced [[ir]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.33982",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "clin",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "in",
+    17
+   ],
+   [
+    "of",
+    10
+   ],
+   [
+    "as",
+    9
+   ]
+  ],
+  "windows": [
+   "an effective treatment plan. as [[clin]]",
+   "an effective treatment plan. as [[clin]]",
+   "that holds significant implications for [[clin]]"
+  ]
+ },
+ {
+  "latent": "3.resid.21260",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "tender",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "tender",
+    19
+   ],
+   [
+    "the",
+    14
+   ],
+   [
+    "by",
+    8
+   ]
+  ],
+  "windows": [
+   "about cooking but also about [[tender]]",
+   "about cooking but also about [[tender]]",
+   "ing but also about tender, [[tender]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.35684",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "ticket",
+    40
+   ],
+   [
+    "ver",
+    24
+   ]
+  ],
+  "peak_consistency": 0.625,
+  "prev_top": [
+   [
+    "ad",
+    17
+   ],
+   [
+    "mobile",
+    12
+   ],
+   [
+    "online",
+    8
+   ]
+  ],
+  "windows": [
+   "have also led to instantaneous [[ticket]]",
+   "and savings applied through mobile [[ticket]]",
+   "amentally, these ad [[ver]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.36274",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "while",
+    61
+   ],
+   [
+    "whilst",
+    2
+   ],
+   [
+    "whereas",
+    1
+   ]
+  ],
+  "peak_consistency": 0.953125,
+  "prev_top": [
+   [
+    ",",
+    29
+   ],
+   [
+    "criticism",
+    9
+   ],
+   [
+    ")",
+    4
+   ]
+  ],
+  "windows": [
+   "ing with egalition) [[while]]",
+   "ability to offer constructive criticism [[while]]",
+   "ability to offer constructive criticism [[while]]"
+  ]
+ },
+ {
+  "latent": "2.resid.22960",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "eigen",
+    62
+   ],
+   [
+    "ogram",
+    2
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    "all",
+    11
+   ],
+   [
+    "the",
+    9
+   ],
+   [
+    "an",
+    7
+   ]
+  ],
+  "windows": [
+   "; any scalar multiple of an [[eigen]]",
+   "a subspace composed entirely of [[eigen]]",
+   "the number of linearly independent [[eigen]]"
+  ]
+ },
+ {
+  "latent": "9.mlp.31365",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "ful",
+    30
+   ],
+   [
+    "ive",
+    15
+   ],
+   [
+    "fficient",
+    11
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "Success",
+    30
+   ],
+   [
+    "Effect",
+    15
+   ],
+   [
+    "E",
+    11
+   ]
+  ],
+  "windows": [
+   "<s> Success [[ful]]",
+   "<s> Effect [[ive]]",
+   "<s> Effect [[ive]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.14570",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "without",
+    60
+   ],
+   [
+    "is",
+    2
+   ],
+   [
+    "sp",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "heat",
+    4
+   ],
+   [
+    "atmosphere",
+    4
+   ],
+   [
+    "gency",
+    4
+   ]
+  ],
+  "windows": [
+   "flow smoothly through the surface [[without]]",
+   "flow smoothly through the surface [[without]]",
+   "transfer of electrons between molecules [[without]]"
+  ]
+ },
+ {
+  "latent": "8.resid.11962",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "in",
+    45
+   ],
+   [
+    "on",
+    7
+   ],
+   [
+    "within",
+    7
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "performance",
+    17
+   ],
+   [
+    "even",
+    9
+   ],
+   [
+    "ability",
+    4
+   ]
+  ],
+  "windows": [
+   "ultimately results in stability for vessel [[in]]",
+   "ultimately results in stability for vessel [[in]]",
+   "smooth operation of these systems even [[in]]"
+  ]
+ },
+ {
+  "latent": "5.resid.22795",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "ru",
+    39
+   ],
+   [
+    "cru",
+    14
+   ],
+   [
+    "param",
+    7
+   ]
+  ],
+  "peak_consistency": 0.609375,
+  "prev_top": [
+   [
+    "Inst",
+    25
+   ],
+   [
+    "is",
+    15
+   ],
+   [
+    "inter",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> String Inst [[ru]]",
+   "<s> String Inst [[ru]]",
+   "History of Optical Inst [[ru]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.18809",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "its",
+    58
+   ],
+   [
+    "their",
+    6
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "With",
+    64
+   ]
+  ],
+  "windows": [
+   "for future development.<s> With [[its]]",
+   "<s> With [[its]]",
+   "<s> With [[its]]"
+  ]
+ },
+ {
+  "latent": "5.resid.9998",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "\ufffd",
+    37
+   ],
+   [
+    "er",
+    18
+   ],
+   [
+    "SY",
+    2
+   ]
+  ],
+  "peak_consistency": 0.578125,
+  "prev_top": [
+   [
+    "\ufffd",
+    10
+   ],
+   [
+    "",
+    10
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "as F\u2081\u2090 [[\ufffd]]",
+   "(F\u2081\u2090 [[\ufffd]]",
+   "\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd [[\ufffd]]"
+  ]
+ },
+ {
+  "latent": "9.attn.18398",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "which",
+    15
+   ],
+   [
+    ",",
+    14
+   ],
+   [
+    "s",
+    12
+   ]
+  ],
+  "peak_consistency": 0.234375,
+  "prev_top": [
+   [
+    ",",
+    21
+   ],
+   [
+    "'",
+    12
+   ],
+   [
+    "bach",
+    9
+   ]
+  ],
+  "windows": [
+   "<s> According to Goldbach [[,]]",
+   "<s> According to Goldbach [[,]]",
+   "<s> According to Goldbach [[,]]"
+  ]
+ },
+ {
+  "latent": "1.resid.32901",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "als",
+    30
+   ],
+   [
+    "ation",
+    10
+   ],
+   [
+    "US",
+    7
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "numer",
+    47
+   ],
+   [
+    "calcul",
+    15
+   ],
+   [
+    "hed",
+    2
+   ]
+  ],
+  "windows": [
+   "on modern calculators. numer [[als]]",
+   "become known as Arabic numer [[als]]",
+   "The introduction of Arabic numer [[als]]"
+  ]
+ },
+ {
+  "latent": "6.mlp.18168",
+  "why": "score 0.93",
+  "n": 64,
+  "peak_top": [
+   [
+    "it",
+    60
+   ],
+   [
+    "ck",
+    3
+   ],
+   [
+    "",
+    1
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "what",
+    60
+   ],
+   [
+    "bu",
+    3
+   ],
+   [
+    "ruction",
+    1
+   ]
+  ],
+  "windows": [
+   "has transformed our understanding of what [[it]]",
+   "unique perspectives on what [[it]]",
+   "they challenge our understanding of what [[it]]"
+  ]
+ },
+ {
+  "latent": "5.resid.36185",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    60
+   ],
+   [
+    "the",
+    2
+   ],
+   [
+    "all",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "number",
+    56
+   ],
+   [
+    "of",
+    4
+   ],
+   [
+    "sum",
+    3
+   ]
+  ],
+  "windows": [
+   "factorial of the total number [[of]]",
+   "by the ratio of the number [[of]]",
+   "by the ratio of the number [[of]]"
+  ]
+ },
+ {
+  "latent": "0.resid.8251",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "\u00b0",
+    45
+   ],
+   [
+    "uniform",
+    10
+   ],
+   [
+    "norm",
+    9
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "4",
+    15
+   ],
+   [
+    "0",
+    14
+   ],
+   [
+    "5",
+    9
+   ]
+  ],
+  "windows": [
+   "0\u00b0C/80 [[\u00b0]]",
+   "0\u00b0C/80 [[\u00b0]]",
+   "80\u00b0 (24 [[\u00b0]]"
+  ]
+ },
+ {
+  "latent": "4.mlp.31463",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "pie",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "of",
+    11
+   ],
+   [
+    "the",
+    9
+   ],
+   [
+    "high",
+    6
+   ]
+  ],
+  "windows": [
+   "ro electric materials offer superior [[pie]]",
+   "ro electric materials offer superior [[pie]]",
+   "a more comprehensive approach to [[pie]]"
+  ]
+ },
+ {
+  "latent": "0.resid.16619",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "ige",
+    31
+   ],
+   [
+    "agnet",
+    16
+   ],
+   [
+    "\u00e9",
+    12
+   ]
+  ],
+  "peak_consistency": 0.484375,
+  "prev_top": [
+   [
+    "P",
+    16
+   ],
+   [
+    "p",
+    15
+   ],
+   [
+    "Diam",
+    9
+   ]
+  ],
+  "windows": [
+   "of Paramagnetism and Diam [[agnet]]",
+   "igeonholes and P [[ige]]",
+   "of Paramagnetism and Diam [[agnet]]"
+  ]
+ },
+ {
+  "latent": "4.resid.26669",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    ",",
+    29
+   ],
+   [
+    "by",
+    5
+   ],
+   [
+    "'",
+    4
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "stein",
+    6
+   ],
+   [
+    "like",
+    6
+   ],
+   [
+    "Google",
+    4
+   ]
+  ],
+  "windows": [
+   "and articles can be capitalize [[D]]",
+   "and articles can be capitalize [[D]]",
+   "range; however, synthetic [[indic]]"
+  ]
+ },
+ {
+  "latent": "8.resid.6924",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "and",
+    26
+   ],
+   [
+    "the",
+    21
+   ],
+   [
+    "including",
+    5
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [
+   [
+    "ny",
+    24
+   ],
+   [
+    "and",
+    12
+   ],
+   [
+    "processes",
+    5
+   ]
+  ],
+  "windows": [
+   "spinning jenny and [[the]]",
+   "ile production, exemplified by [[the]]",
+   "the spinning jenny [[and]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.38111",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "ni",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "om",
+    59
+   ],
+   [
+    "en",
+    5
+   ]
+  ],
+  "windows": [
+   "proposed this idea as being om [[ni]]",
+   "matter, while also being om [[ni]]",
+   "presence of gravity is an om [[ni]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.33656",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "1",
+    5
+   ],
+   [
+    "ulate",
+    4
+   ],
+   [
+    "cot",
+    4
+   ]
+  ],
+  "peak_consistency": 0.078125,
+  "prev_top": [
+   [
+    "accum",
+    4
+   ],
+   [
+    "like",
+    4
+   ],
+   [
+    "tra",
+    4
+   ]
+  ],
+  "windows": [
+   "ulation.ries sought to accum [[ulate]]",
+   "ulation.ries sought to accum [[ulate]]",
+   "international trade led to nations ho [[arding]]"
+  ]
+ },
+ {
+  "latent": "4.resid.12415",
+  "why": "score 0.92",
+  "n": 64,
+  "peak_top": [
+   [
+    "osp",
+    32
+   ],
+   [
+    "conf",
+    27
+   ],
+   [
+    "dom",
+    3
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "ge",
+    22
+   ],
+   [
+    "magnetic",
+    17
+   ],
+   [
+    "Ge",
+    10
+   ]
+  ],
+  "windows": [
+   "amentals of Ge [[osp]]",
+   "ospatial Data.<s> Ge [[osp]]",
+   "potency of Ge [[osp]]"
+  ]
+ },
+ {
+  "latent": "4.resid.27325",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "ad",
+    32
+   ],
+   [
+    "on",
+    18
+   ],
+   [
+    "Mass",
+    11
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "kk",
+    32
+   ],
+   [
+    "ol",
+    18
+   ],
+   [
+    "the",
+    2
+   ]
+  ],
+  "windows": [
+   "<s> Decol [[on]]",
+   "<s> Decol [[on]]",
+   "<s> Decol [[on]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.29584",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "true",
+    58
+   ],
+   [
+    "0",
+    2
+   ],
+   [
+    "Environment",
+    1
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "is",
+    16
+   ],
+   [
+    "are",
+    16
+   ],
+   [
+    "be",
+    15
+   ]
+  ],
+  "windows": [
+   "Q is true whenever P is [[true]]",
+   "true if 'Q' is [[true]]",
+   "true if 'q' is [[true]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.804",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "s",
+    61
+   ],
+   [
+    "imm",
+    3
+   ]
+  ],
+  "peak_consistency": 0.953125,
+  "prev_top": [
+   [
+    "more",
+    39
+   ],
+   [
+    "highly",
+    16
+   ],
+   [
+    "ly",
+    6
+   ]
+  ],
+  "windows": [
+   "ulinary techniques were becoming more [[s]]",
+   "effects often skew much more [[s]]",
+   "ulinary techniques were becoming more [[s]]"
+  ]
+ },
+ {
+  "latent": "7.mlp.1641",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "istic",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "oph",
+    64
+   ]
+  ],
+  "windows": [
+   "being replaced by more soph [[istic]]",
+   "being replaced by more soph [[istic]]",
+   "the development of more soph [[istic]]"
+  ]
+ },
+ {
+  "latent": "7.resid.6442",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "ing",
+    43
+   ],
+   [
+    "less",
+    8
+   ],
+   [
+    "shared",
+    2
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "ent",
+    43
+   ],
+   [
+    "ver",
+    7
+   ],
+   [
+    "our",
+    2
+   ]
+  ],
+  "windows": [
+   "able curiosity and our relent [[less]]",
+   "ity's unrelent [[ing]]",
+   "ity's unrelent [[ing]]"
+  ]
+ },
+ {
+  "latent": "3.resid.3762",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "ition",
+    21
+   ],
+   [
+    "cent",
+    19
+   ],
+   [
+    "otion",
+    17
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "pract",
+    21
+   ],
+   [
+    "dev",
+    17
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "windows": [
+   "practitioners (general pract [[ition]]",
+   "practitioners (general pract [[ition]]",
+   "studying these traditions, pract [[ition]]"
+  ]
+ },
+ {
+  "latent": "1.resid.33071",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "devices",
+    30
+   ],
+   [
+    "components",
+    26
+   ],
+   [
+    "parts",
+    8
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "storage",
+    11
+   ],
+   [
+    ".",
+    10
+   ],
+   [
+    "mechanical",
+    5
+   ]
+  ],
+  "windows": [
+   "miniature integrated circuits or [[components]]",
+   "miniature integrated circuits or [[components]]",
+   "fit together like miniature mechanical [[parts]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.35341",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "ch",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "cro",
+    64
+   ]
+  ],
+  "windows": [
+   "19th century, cro [[ch]]",
+   "19th century, cro [[ch]]",
+   "cro [[ch]]"
+  ]
+ },
+ {
+  "latent": "5.resid.35002",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "retro",
+    26
+   ],
+   [
+    "pover",
+    21
+   ],
+   [
+    "2",
+    17
+   ]
+  ],
+  "peak_consistency": 0.40625,
+  "prev_top": [
+   [
+    "",
+    17
+   ],
+   [
+    "ural",
+    12
+   ],
+   [
+    "of",
+    10
+   ]
+  ],
+  "windows": [
+   "the creation of bespoke [[retro]]",
+   "it was done in early  [[2]]",
+   ", [[retro]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.22734",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "om",
+    59
+   ],
+   [
+    "in",
+    2
+   ],
+   [
+    "the",
+    2
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [
+   [
+    "on",
+    36
+   ],
+   [
+    "On",
+    23
+   ],
+   [
+    "expressed",
+    2
+   ]
+  ],
+  "windows": [
+   "ativeness (often expressed [[in]]",
+   "ativeness (often expressed [[in]]",
+   "adept at employing on [[om]]"
+  ]
+ },
+ {
+  "latent": "3.resid.21022",
+  "why": "score 0.91",
+  "n": 64,
+  "peak_top": [
+   [
+    "ce",
+    57
+   ],
+   [
+    "hr",
+    7
+   ]
+  ],
+  "peak_consistency": 0.890625,
+  "prev_top": [
+   [
+    "arma",
+    57
+   ],
+   [
+    "P",
+    7
+   ]
+  ],
+  "windows": [
+   "ing the scope of pharma [[ce]]",
+   "diverse applications such as pharma [[ce]]",
+   "diverse applications such as pharma [[ce]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.2196",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "traditional",
+    32
+   ],
+   [
+    "purely",
+    7
+   ],
+   [
+    "rural",
+    6
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "from",
+    40
+   ],
+   [
+    "the",
+    10
+   ],
+   [
+    "more",
+    3
+   ]
+  ],
+  "windows": [
+   "shift, transitioning from the [[traditional]]",
+   "era observed a shift from the [[traditional]]",
+   ". process moved away from the [[traditional]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.36792",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "otic",
+    48
+   ],
+   [
+    "ness",
+    10
+   ],
+   [
+    "be",
+    5
+   ]
+  ],
+  "peak_consistency": 0.75,
+  "prev_top": [
+   [
+    "ex",
+    48
+   ],
+   [
+    "fair",
+    10
+   ],
+   [
+    "glo",
+    5
+   ]
+  ],
+  "windows": [
+   "ex [[otic]]",
+   "offering an abundance of ex [[otic]]",
+   "offering an abundance of ex [[otic]]"
+  ]
+ },
+ {
+  "latent": "5.mlp.12873",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "of",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "safety",
+    17
+   ],
+   [
+    "pan",
+    10
+   ],
+   [
+    "integrity",
+    6
+   ]
+  ],
+  "windows": [
+   "ensuring the longevity [[of]]",
+   "extended period. preserve the integrity [[of]]",
+   "-lasting and optimal performance [[of]]"
+  ]
+ },
+ {
+  "latent": "2.resid.7959",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "ly",
+    52
+   ],
+   [
+    "pecially",
+    12
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    "icular",
+    52
+   ],
+   [
+    "es",
+    12
+   ]
+  ],
+  "windows": [
+   "interest in education (particular [[ly]]",
+   "interest in education (particular [[ly]]",
+   "as agriculture (particular [[ly]]"
+  ]
+ },
+ {
+  "latent": "0.resid.39670",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "apest",
+    30
+   ],
+   [
+    "ies",
+    28
+   ],
+   [
+    "phony",
+    6
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "energ",
+    28
+   ],
+   [
+    "t",
+    27
+   ],
+   [
+    "Sym",
+    4
+   ]
+  ],
+  "windows": [
+   "businesses find not a t [[apest]]",
+   "Greek philosophy or Medieval t [[apest]]",
+   "ed as an audible t [[apest]]"
+  ]
+ },
+ {
+  "latent": "1.resid.28936",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "neg",
+    48
+   ],
+   [
+    "preced",
+    8
+   ],
+   [
+    "auxili",
+    3
+   ]
+  ],
+  "peak_consistency": 0.75,
+  "prev_top": [
+   [
+    "ary",
+    10
+   ],
+   [
+    "the",
+    7
+   ],
+   [
+    ",",
+    4
+   ]
+  ],
+  "windows": [
+   "but there is also auxiliary [[neg]]",
+   "but there is also auxiliary [[neg]]",
+   "but there is also auxiliary [[neg]]"
+  ]
+ },
+ {
+  "latent": "1.resid.29196",
+  "why": "score 0.90",
+  "n": 64,
+  "peak_top": [
+   [
+    "initial",
+    49
+   ],
+   [
+    "ynamic",
+    5
+   ],
+   [
+    "numerical",
+    5
+   ]
+  ],
+  "peak_consistency": 0.765625,
+  "prev_top": [
+   [
+    "the",
+    21
+   ],
+   [
+    "and",
+    7
+   ],
+   [
+    "od",
+    3
+   ]
+  ],
+  "windows": [
+   "constant C is determined using the [[initial]]",
+   "the foundation for subsequent aerod [[ynamic]]",
+   "functions of initial variables or the [[initial]]"
+  ]
+ },
+ {
+  "latent": "8.resid.26994",
+  "why": "score 0.89",
+  "n": 64,
+  "peak_top": [
+   [
+    "time",
+    6
+   ],
+   [
+    "history",
+    5
+   ],
+   [
+    "past",
+    4
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "over",
+    6
+   ],
+   [
+    "language",
+    4
+   ],
+   [
+    "s",
+    4
+   ]
+  ],
+  "windows": [
+   "them to identify patterns in language [[usage]]",
+   "it patterns and seasonality over [[time]]",
+   "it patterns and seasonality over [[time]]"
+  ]
+ },
+ {
+  "latent": "1.resid.20912",
+  "why": "score 0.89",
+  "n": 64,
+  "peak_top": [
+   [
+    "th",
+    34
+   ],
+   [
+    "ree",
+    12
+   ],
+   [
+    "centuries",
+    9
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "5",
+    30
+   ],
+   [
+    "deg",
+    12
+   ],
+   [
+    "th",
+    9
+   ]
+  ],
+  "windows": [
+   "stemming from linear (deg [[ree]]",
+   "straight (180deg [[ree]]",
+   "straight (180deg [[ree]]"
+  ]
+ },
+ {
+  "latent": "2.resid.15376",
+  "why": "score 0.89",
+  "n": 64,
+  "peak_top": [
+   [
+    "ced",
+    45
+   ],
+   [
+    "itud",
+    12
+   ],
+   [
+    "ent",
+    6
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "indu",
+    45
+   ],
+   [
+    "lat",
+    18
+   ],
+   [
+    "famil",
+    1
+   ]
+  ],
+  "windows": [
+   ": \"climate-indu [[ced]]",
+   ": natural and human-indu [[ced]]",
+   ": natural and human-indu [[ced]]"
+  ]
+ },
+ {
+  "latent": "3.mlp.28374",
+  "why": "score 0.89",
+  "n": 64,
+  "peak_top": [
+   [
+    "trying",
+    28
+   ],
+   [
+    "attempting",
+    25
+   ],
+   [
+    "try",
+    10
+   ]
+  ],
+  "peak_consistency": 0.4375,
+  "prev_top": [
+   [
+    "like",
+    17
+   ],
+   [
+    "when",
+    9
+   ],
+   [
+    ",",
+    8
+   ]
+  ],
+  "windows": [
+   "time zones is comparable to [[trying]]",
+   "as part of the challenge of [[trying]]",
+   ", for example, [[attempting]]"
+  ]
+ },
+ {
+  "latent": "1.resid.7843",
+  "why": "score 0.88",
+  "n": 64,
+  "peak_top": [
+   [
+    "million",
+    60
+   ],
+   [
+    "istics",
+    3
+   ],
+   [
+    "yth",
+    1
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "8",
+    13
+   ],
+   [
+    "0",
+    11
+   ],
+   [
+    "3",
+    7
+   ]
+  ],
+  "windows": [
+   "(1\u20132 [[million]]",
+   "(1\u20132 [[million]]",
+   "million to 548 [[million]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.30913",
+  "why": "score 0.88",
+  "n": 64,
+  "peak_top": [
+   [
+    "ien",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "aud",
+    64
+   ]
+  ],
+  "windows": [
+   "ies were redefined as aud [[ien]]",
+   "younger viewers, older aud [[ien]]",
+   "younger viewers, older aud [[ien]]"
+  ]
+ },
+ {
+  "latent": "8.attn.28611",
+  "why": "score 0.88",
+  "n": 64,
+  "peak_top": [
+   [
+    "has",
+    37
+   ],
+   [
+    "a",
+    18
+   ],
+   [
+    "contain",
+    3
+   ]
+  ],
+  "peak_consistency": 0.578125,
+  "prev_top": [
+   [
+    "cover",
+    26
+   ],
+   [
+    "has",
+    17
+   ],
+   [
+    "space",
+    4
+   ]
+  ],
+  "windows": [
+   "called compact if every open cover [[has]]",
+   "a space where every open cover [[has]]",
+   "a space where every open cover [[has]]"
+  ]
+ },
+ {
+  "latent": "2.resid.18815",
+  "why": "score 0.88",
+  "n": 64,
+  "peak_top": [
+   [
+    "comb",
+    48
+   ],
+   [
+    "sun",
+    12
+   ],
+   [
+    "inf",
+    3
+   ]
+  ],
+  "peak_consistency": 0.75,
+  "prev_top": [
+   [
+    "the",
+    16
+   ],
+   [
+    "internal",
+    9
+   ],
+   [
+    "ternal",
+    4
+   ]
+  ],
+  "windows": [
+   "ternal [[comb]]",
+   "ternal [[comb]]",
+   "This one's like the [[sun]]"
+  ]
+ },
+ {
+  "latent": "8.mlp.17420",
+  "why": "score 0.87",
+  "n": 64,
+  "peak_top": [
+   [
+    "'",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    ".",
+    64
+   ]
+  ],
+  "windows": [
+   "see how to identify them. [[']]",
+   "see how to identify them. [[']]",
+   "paint dry in math class. [[']]"
+  ]
+ },
+ {
+  "latent": "2.resid.11138",
+  "why": "score 0.87",
+  "n": 64,
+  "peak_top": [
+   [
+    "orrow",
+    29
+   ],
+   [
+    "ien",
+    16
+   ],
+   [
+    "imagination",
+    5
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "tom",
+    21
+   ],
+   [
+    "aud",
+    20
+   ],
+   [
+    "Tom",
+    8
+   ]
+  ],
+  "windows": [
+   "version (\"Will she visit tom [[orrow]]",
+   "version (\"Will she visit tom [[orrow]]",
+   "yesterday's waste into tom [[orrow]]"
+  ]
+ },
+ {
+  "latent": "8.attn.38035",
+  "why": "score 0.87",
+  "n": 12,
+  "peak_top": [
+   [
+    "(",
+    4
+   ],
+   [
+    "and",
+    2
+   ],
+   [
+    "custom",
+    2
+   ]
+  ],
+  "peak_consistency": 0.3333333333333333,
+  "prev_top": [
+   [
+    "Value",
+    4
+   ],
+   [
+    "mathematics",
+    2
+   ],
+   [
+    "building",
+    2
+   ]
+  ],
+  "windows": [
+   "significance is not limited to mathematics [[and]]",
+   "significance is not limited to mathematics [[and]]",
+   "SP), or Enterprise Value [[(]]"
+  ]
+ },
+ {
+  "latent": "2.resid.8075",
+  "why": "score 0.87",
+  "n": 64,
+  "peak_top": [
+   [
+    "'",
+    63
+   ],
+   [
+    "\u2019",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "well",
+    7
+   ],
+   [
+    "iver",
+    5
+   ],
+   [
+    "ay",
+    3
+   ]
+  ],
+  "windows": [
+   "Clerk Maxwell [[']]",
+   "<s> Essentially, Maxwell [[']]",
+   "is Engelhardt [[']]"
+  ]
+ },
+ {
+  "latent": "2.resid.702",
+  "why": "score 0.86",
+  "n": 64,
+  "peak_top": [
+   [
+    "una",
+    32
+   ],
+   [
+    "affected",
+    11
+   ],
+   [
+    "inhab",
+    7
+   ]
+  ],
+  "peak_consistency": 0.5,
+  "prev_top": [
+   [
+    "with",
+    11
+   ],
+   [
+    "regions",
+    5
+   ],
+   [
+    "of",
+    4
+   ]
+  ],
+  "windows": [
+   ", once a stealthy [[inhab]]",
+   "placing affected individuals alongside those of [[una]]",
+   "regions [[experien]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.11004",
+  "why": "score 0.86",
+  "n": 64,
+  "peak_top": [
+   [
+    "os",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "log",
+    61
+   ],
+   [
+    "eth",
+    2
+   ],
+   [
+    "Log",
+    1
+   ]
+  ],
+  "windows": [
+   ", pathos, and log [[os]]",
+   ", pathos, and log [[os]]",
+   ", pathos, and log [[os]]"
+  ]
+ },
+ {
+  "latent": "2.resid.13958",
+  "why": "score 0.86",
+  "n": 64,
+  "peak_top": [
+   [
+    "ple",
+    60
+   ],
+   [
+    "uting",
+    2
+   ],
+   [
+    "demic",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "de",
+    58
+   ],
+   [
+    "contrib",
+    2
+   ],
+   [
+    "pan",
+    2
+   ]
+  ],
+  "windows": [
+   "n-type's de [[ple]]",
+   "ion, nutrient de [[ple]]",
+   "ion, nutrient de [[ple]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.25126",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "id",
+    36
+   ],
+   [
+    "il",
+    7
+   ],
+   [
+    "belief",
+    6
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [
+   [
+    "equ",
+    51
+   ],
+   [
+    "_",
+    3
+   ],
+   [
+    "Dec",
+    2
+   ]
+  ],
+  "windows": [
+   "hedron are not only equ [[id]]",
+   "polygon, which is both equ [[il]]",
+   "ons, showcasing equ [[id]]"
+  ]
+ },
+ {
+  "latent": "2.resid.25185",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "ower",
+    22
+   ],
+   [
+    "pping",
+    16
+   ],
+   [
+    "closed",
+    14
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "emp",
+    22
+   ],
+   [
+    "la",
+    16
+   ],
+   [
+    "of",
+    8
+   ]
+  ],
+  "windows": [
+   "the line between chance and dest [[iny]]",
+   "closed set, revealing that [[closed]]",
+   "a lack of alignment between emp [[ower]]"
+  ]
+ },
+ {
+  "latent": "2.resid.3692",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "to",
+    29
+   ],
+   [
+    "in",
+    14
+   ],
+   [
+    "at",
+    7
+   ]
+  ],
+  "peak_consistency": 0.453125,
+  "prev_top": [
+   [
+    "contribute",
+    13
+   ],
+   [
+    "arrive",
+    8
+   ],
+   [
+    "uting",
+    6
+   ]
+  ],
+  "windows": [
+   "notch service, which leads [[to]]",
+   "notch service, which leads [[to]]",
+   "in harmony with the rest [[of]]"
+  ]
+ },
+ {
+  "latent": "2.resid.26305",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "the",
+    30
+   ],
+   [
+    "imate",
+    5
+   ],
+   [
+    "object",
+    4
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "of",
+    8
+   ],
+   [
+    "provides",
+    8
+   ],
+   [
+    "account",
+    7
+   ]
+  ],
+  "windows": [
+   "ing narrative voice outside of [[those]]",
+   "ing narrative voice outside of [[those]]",
+   "person limited POV maintains [[object]]"
+  ]
+ },
+ {
+  "latent": "2.resid.5028",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "linked",
+    30
+   ],
+   [
+    "extends",
+    18
+   ],
+   [
+    "ed",
+    7
+   ]
+  ],
+  "peak_consistency": 0.46875,
+  "prev_top": [
+   [
+    "ly",
+    15
+   ],
+   [
+    "closely",
+    11
+   ],
+   [
+    "craft",
+    7
+   ]
+  ],
+  "windows": [
+   "linked lists, including singly [[linked]]",
+   ", [[linked]]",
+   "Linguistic processes are closely [[linked]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.33844",
+  "why": "score 0.85",
+  "n": 64,
+  "peak_top": [
+   [
+    "ial",
+    43
+   ],
+   [
+    "al",
+    10
+   ],
+   [
+    "istic",
+    6
+   ]
+  ],
+  "peak_consistency": 0.671875,
+  "prev_top": [
+   [
+    "factor",
+    43
+   ],
+   [
+    "Mor",
+    11
+   ],
+   [
+    "determin",
+    10
+   ]
+  ],
+  "windows": [
+   "loys the definition of factor [[ial]]",
+   "absolutism.<s> Mor [[al]]",
+   "as it dictates the factor [[ial]]"
+  ]
+ },
+ {
+  "latent": "2.resid.1052",
+  "why": "score 0.84",
+  "n": 64,
+  "peak_top": [
+   [
+    "fra",
+    54
+   ],
+   [
+    "sa",
+    5
+   ],
+   [
+    "sau",
+    5
+   ]
+  ],
+  "peak_consistency": 0.84375,
+  "prev_top": [
+   [
+    "the",
+    7
+   ],
+   [
+    "of",
+    4
+   ],
+   [
+    "ian",
+    3
+   ]
+  ],
+  "windows": [
+   "then perform the addition. the [[fra]]",
+   "M) of denominators, [[fra]]",
+   "convert the fractions into equivalent [[fra]]"
+  ]
+ },
+ {
+  "latent": "0.resid.13158",
+  "why": "score 0.84",
+  "n": 64,
+  "peak_top": [
+   [
+    "side",
+    21
+   ],
+   [
+    "front",
+    7
+   ],
+   [
+    "box",
+    5
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "eastern",
+    8
+   ],
+   [
+    "one",
+    6
+   ],
+   [
+    "the",
+    6
+   ]
+  ],
+  "windows": [
+   "rounded shape (the box), [[neck]]",
+   "rounded shape (the box), [[neck]]",
+   "where lines blurred between [[front]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.9228",
+  "why": "score 0.84",
+  "n": 64,
+  "peak_top": [
+   [
+    "Ent",
+    58
+   ],
+   [
+    "ent",
+    6
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "<s>",
+    24
+   ],
+   [
+    "of",
+    11
+   ],
+   [
+    "um",
+    11
+   ]
+  ],
+  "windows": [
+   "Relation Between Information [[Ent]]",
+   "5. Relation Between Information [[Ent]]",
+   "<s> # [[Ent]]"
+  ]
+ },
+ {
+  "latent": "2.resid.687",
+  "why": "score 0.84",
+  "n": 64,
+  "peak_top": [
+   [
+    "8",
+    54
+   ],
+   [
+    "6",
+    6
+   ],
+   [
+    "5",
+    2
+   ]
+  ],
+  "peak_consistency": 0.84375,
+  "prev_top": [
+   [
+    "1",
+    64
+   ]
+  ],
+  "windows": [
+   "ite Rebellion (1 [[8]]",
+   "ite Rebellion (1 [[8]]",
+   "ite Rebellion (1 [[8]]"
+  ]
+ },
+ {
+  "latent": "0.resid.36071",
+  "why": "score 0.83",
+  "n": 64,
+  "peak_top": [
+   [
+    "'",
+    6
+   ],
+   [
+    "and",
+    4
+   ],
+   [
+    "ulse",
+    3
+   ]
+  ],
+  "peak_consistency": 0.09375,
+  "prev_top": [
+   [
+    "ern",
+    6
+   ],
+   [
+    "over",
+    2
+   ],
+   [
+    "Spanish",
+    2
+   ]
+  ],
+  "windows": [
+   "s, giving them rights over [[newly]]",
+   "s, giving them rights over [[newly]]",
+   "world: \"The Modern Veg [[an]]"
+  ]
+ },
+ {
+  "latent": "2.mlp.23814",
+  "why": "score 0.83",
+  "n": 64,
+  "peak_top": [
+   [
+    "probabil",
+    62
+   ],
+   [
+    "ino",
+    2
+   ]
+  ],
+  "peak_consistency": 0.96875,
+  "prev_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "for",
+    8
+   ],
+   [
+    "complex",
+    5
+   ]
+  ],
+  "windows": [
+   "for the visualization of complex [[probabil]]",
+   "for the visualization of complex [[probabil]]",
+   "cial for maintaining a consistent [[probabil]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.30144",
+  "why": "score 0.83",
+  "n": 64,
+  "peak_top": [
+   [
+    "ism",
+    60
+   ],
+   [
+    "type",
+    2
+   ],
+   [
+    "an",
+    2
+   ]
+  ],
+  "peak_consistency": 0.9375,
+  "prev_top": [
+   [
+    "Cub",
+    62
+   ],
+   [
+    "-",
+    2
+   ]
+  ],
+  "windows": [
+   "its course, Cub [[ism]]",
+   "to architectural designs, Cub [[ism]]",
+   "Cubistis.og Cub [[ism]]"
+  ]
+ },
+ {
+  "latent": "1.resid.10288",
+  "why": "score 0.82",
+  "n": 64,
+  "peak_top": [
+   [
+    "A",
+    42
+   ],
+   [
+    "An",
+    22
+   ]
+  ],
+  "peak_consistency": 0.65625,
+  "prev_top": [
+   [
+    "<s>",
+    28
+   ],
+   [
+    "*",
+    13
+   ],
+   [
+    "that",
+    7
+   ]
+  ],
+  "windows": [
+   "<s> [[An]]",
+   "<s> [[An]]",
+   "<s> [[An]]"
+  ]
+ },
+ {
+  "latent": "1.resid.18221",
+  "why": "score 0.82",
+  "n": 64,
+  "peak_top": [
+   [
+    "umb",
+    19
+   ],
+   [
+    "uff",
+    18
+   ],
+   [
+    "gate",
+    14
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "cr",
+    19
+   ],
+   [
+    "fl",
+    18
+   ],
+   [
+    "kin",
+    5
+   ]
+  ],
+  "windows": [
+   "are like [[need]]",
+   "are akin to bread cr [[umb]]",
+   "\"Peter Piper picked a [[pe]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.8945",
+  "why": "score 0.81",
+  "n": 64,
+  "peak_top": [
+   [
+    "yst",
+    57
+   ],
+   [
+    "text",
+    6
+   ],
+   [
+    "cop",
+    1
+   ]
+  ],
+  "peak_consistency": 0.890625,
+  "prev_top": [
+   [
+    "catal",
+    57
+   ],
+   [
+    "sub",
+    6
+   ],
+   [
+    "ush",
+    1
+   ]
+  ],
+  "windows": [
+   "ogeneous catal [[yst]]",
+   "eterogen-phase catal [[yst]]",
+   "zyme catal [[yst]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.23525",
+  "why": "score 0.81",
+  "n": 64,
+  "peak_top": [
+   [
+    "inu",
+    33
+   ],
+   [
+    "gru",
+    25
+   ],
+   [
+    "ambigu",
+    3
+   ]
+  ],
+  "peak_consistency": 0.515625,
+  "prev_top": [
+   [
+    "con",
+    25
+   ],
+   [
+    ".",
+    24
+   ],
+   [
+    "Cont",
+    9
+   ]
+  ],
+  "windows": [
+   ", meaning any number is con [[gru]]",
+   "<s> ## 5. [[inu]]",
+   ".<s> ### 5. [[inu]]"
+  ]
+ },
+ {
+  "latent": "1.resid.8049",
+  "why": "score 0.81",
+  "n": 64,
+  "peak_top": [
+   [
+    "point",
+    45
+   ],
+   [
+    "moment",
+    17
+   ],
+   [
+    "figure",
+    2
+   ]
+  ],
+  "peak_consistency": 0.703125,
+  "prev_top": [
+   [
+    "turning",
+    16
+   ],
+   [
+    "first",
+    5
+   ],
+   [
+    "ive",
+    4
+   ]
+  ],
+  "windows": [
+   "point marks the [[point]]",
+   ", such as mean (first [[moment]]",
+   ", acting as a critical turning [[point]]"
+  ]
+ },
+ {
+  "latent": "1.resid.36459",
+  "why": "score 0.80",
+  "n": 64,
+  "peak_top": [
+   [
+    "that",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "knowledge",
+    8
+   ],
+   [
+    "information",
+    8
+   ],
+   [
+    "characteristics",
+    6
+   ]
+  ],
+  "windows": [
+   "the.<s> As a business [[that]]",
+   "audience. is through this knowledge [[that]]",
+   "audience. is through this knowledge [[that]]"
+  ]
+ },
+ {
+  "latent": "1.resid.21712",
+  "why": "score 0.80",
+  "n": 64,
+  "peak_top": [
+   [
+    "aments",
+    28
+   ],
+   [
+    "osis",
+    27
+   ],
+   [
+    "ament",
+    8
+   ]
+  ],
+  "peak_consistency": 0.4375,
+  "prev_top": [
+   [
+    "fil",
+    28
+   ],
+   [
+    "diagn",
+    28
+   ],
+   [
+    "fund",
+    5
+   ]
+  ],
+  "windows": [
+   "study of galaxy fil [[aments]]",
+   "rather diagnosed through early diagn [[osis]]",
+   "<s> Galaxy formation within fil [[aments]]"
+  ]
+ },
+ {
+  "latent": "1.resid.18145",
+  "why": "score 0.80",
+  "n": 64,
+  "peak_top": [
+   [
+    "gram",
+    22
+   ],
+   [
+    "units",
+    22
+   ],
+   [
+    "MT",
+    13
+   ]
+  ],
+  "peak_consistency": 0.34375,
+  "prev_top": [
+   [
+    "Tele",
+    14
+   ],
+   [
+    "S",
+    5
+   ],
+   [
+    "B",
+    5
+   ]
+  ],
+  "windows": [
+   "Zimmermann Tele [[gram]]",
+   "Zimmermann Tele [[gram]]",
+   "Zimmermann Tele [[gram]]"
+  ]
+ },
+ {
+  "latent": "0.resid.38022",
+  "why": "score 0.80",
+  "n": 64,
+  "peak_top": [
+   [
+    "ude",
+    36
+   ],
+   [
+    "udes",
+    13
+   ],
+   [
+    "amplit",
+    4
+   ]
+  ],
+  "peak_consistency": 0.5625,
+  "prev_top": [
+   [
+    "plit",
+    41
+   ],
+   [
+    "amplit",
+    8
+   ],
+   [
+    "numer",
+    6
+   ]
+  ],
+  "windows": [
+   "plit [[ude]]",
+   "Engineering: Signal Amplit [[ude]]",
+   "ensation.<s> Amplit [[ude]]"
+  ]
+ },
+ {
+  "latent": "1.resid.22638",
+  "why": "score 0.79",
+  "n": 64,
+  "peak_top": [
+   [
+    "for",
+    34
+   ],
+   [
+    "cert",
+    11
+   ],
+   [
+    "break",
+    8
+   ]
+  ],
+  "peak_consistency": 0.53125,
+  "prev_top": [
+   [
+    "un",
+    64
+   ]
+  ],
+  "windows": [
+   "un [[cert]]",
+   "business industry, acknowledging un [[cert]]",
+   "business industry, acknowledging un [[cert]]"
+  ]
+ },
+ {
+  "latent": "1.resid.10900",
+  "why": "score 0.79",
+  "n": 64,
+  "peak_top": [
+   [
+    "att",
+    44
+   ],
+   [
+    "CP",
+    11
+   ],
+   [
+    "ft",
+    6
+   ]
+  ],
+  "peak_consistency": 0.6875,
+  "prev_top": [
+   [
+    "aw",
+    18
+   ],
+   [
+    "W",
+    12
+   ],
+   [
+    "ow",
+    8
+   ]
+  ],
+  "windows": [
+   "common derivatives include both megaw [[att]]",
+   "common derivatives include both megaw [[att]]",
+   "kW) and megaw [[att]]"
+  ]
+ },
+ {
+  "latent": "1.mlp.17070",
+  "why": "score 0.78",
+  "n": 64,
+  "peak_top": [
+   [
+    "who",
+    55
+   ],
+   [
+    "ction",
+    9
+   ]
+  ],
+  "peak_consistency": 0.859375,
+  "prev_top": [
+   [
+    "those",
+    51
+   ],
+   [
+    "au",
+    9
+   ],
+   [
+    "-",
+    2
+   ]
+  ],
+  "windows": [
+   "those [[who]]",
+   "their work.n from those [[who]]",
+   "adventurers rather than those [[who]]"
+  ]
+ },
+ {
+  "latent": "0.resid.17316",
+  "why": "score 0.78",
+  "n": 64,
+  "peak_top": [
+   [
+    "dialect",
+    59
+   ],
+   [
+    "hair",
+    5
+   ]
+  ],
+  "peak_consistency": 0.921875,
+  "prev_top": [
+   [
+    "regional",
+    6
+   ],
+   [
+    "of",
+    6
+   ],
+   [
+    "both",
+    6
+   ]
+  ],
+  "windows": [
+   "lects that formed distinct regional [[dialect]]",
+   "icate balance between the use of [[dialect]]",
+   "ity or differences between neighboring [[dialect]]"
+  ]
+ },
+ {
+  "latent": "1.resid.36525",
+  "why": "score 0.78",
+  "n": 64,
+  "peak_top": [
+   [
+    "variable",
+    58
+   ],
+   [
+    "suff",
+    3
+   ],
+   [
+    "heap",
+    3
+   ]
+  ],
+  "peak_consistency": 0.90625,
+  "prev_top": [
+   [
+    "independent",
+    21
+   ],
+   [
+    "dependent",
+    13
+   ],
+   [
+    "a",
+    4
+   ]
+  ],
+  "windows": [
+   ". the coefficient of an independent [[variable]]",
+   "roborated by an independent [[variable]]",
+   ", it suggests that as the [[variable]]"
+  ]
+ },
+ {
+  "latent": "0.resid.15211",
+  "why": "score 0.72",
+  "n": 64,
+  "peak_top": [
+   [
+    "u",
+    24
+   ],
+   [
+    "a",
+    7
+   ],
+   [
+    "ap",
+    7
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "Sh",
+    59
+   ],
+   [
+    "mant",
+    5
+   ]
+  ],
+  "windows": [
+   "ers.<s> According to Sh [[a]]",
+   "automobiles including the Sh [[el]]",
+   "automobiles including the Sh [[el]]"
+  ]
+ },
+ {
+  "latent": "0.resid.28812",
+  "why": "score 0.72",
+  "n": 64,
+  "peak_top": [
+   [
+    "amp",
+    11
+   ],
+   [
+    "Pod",
+    11
+   ],
+   [
+    "ish",
+    7
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "d",
+    23
+   ],
+   [
+    "-",
+    11
+   ],
+   [
+    "sp",
+    4
+   ]
+  ],
+  "windows": [
+   "ough looks like molten sp [[agh]]",
+   "ough looks like molten sp [[agh]]",
+   "simple d [[amp]]"
+  ]
+ },
+ {
+  "latent": "0.resid.29342",
+  "why": "score 0.70",
+  "n": 64,
+  "peak_top": [
+   [
+    "iger",
+    56
+   ],
+   [
+    "reci",
+    6
+   ],
+   [
+    "force",
+    1
+   ]
+  ],
+  "peak_consistency": 0.875,
+  "prev_top": [
+   [
+    "fr",
+    56
+   ],
+   [
+    "of",
+    1
+   ],
+   [
+    "od",
+    1
+   ]
+  ],
+  "windows": [
+   "apor-compression refr [[iger]]",
+   "\u00b0C) while refr [[iger]]",
+   "feasibility of a refr [[iger]]"
+  ]
+ },
+ {
+  "latent": "0.resid.32683",
+  "why": "score 0.68",
+  "n": 64,
+  "peak_top": [
+   [
+    "editing",
+    9
+   ],
+   [
+    "\u0169",
+    8
+   ],
+   [
+    "M\u00fcller",
+    6
+   ]
+  ],
+  "peak_consistency": 0.140625,
+  "prev_top": [
+   [
+    "Ng",
+    7
+   ],
+   [
+    "Beat",
+    6
+   ],
+   [
+    "\u064a",
+    3
+   ]
+  ],
+  "windows": [
+   "\u0632 \u0627\u0644\u0645\u0642\u0648\u0644 [[\u0629]]",
+   "\u0641\u064a [[\u0627\u0644]]",
+   "\u0627\u0644\u0645\u062a\u0642\u062f\u0645 [[\u0629]]"
+  ]
+ },
+ {
+  "latent": "0.resid.1466",
+  "why": "score 0.68",
+  "n": 64,
+  "peak_top": [
+   [
+    "constit",
+    24
+   ],
+   [
+    "iat",
+    14
+   ],
+   [
+    "irre",
+    7
+   ]
+  ],
+  "peak_consistency": 0.375,
+  "prev_top": [
+   [
+    "what",
+    8
+   ],
+   [
+    "essentially",
+    6
+   ],
+   [
+    "rat",
+    4
+   ]
+  ],
+  "windows": [
+   "ensive Treatise On Super [[CON]]",
+   "ensive Treatise On Super [[CON]]",
+   " [[iat]]"
+  ]
+ },
+ {
+  "latent": "0.resid.10328",
+  "why": "score 0.68",
+  "n": 64,
+  "peak_top": [
+   [
+    "Media",
+    19
+   ],
+   [
+    "Vel",
+    14
+   ],
+   [
+    "wave",
+    12
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "<s>",
+    23
+   ],
+   [
+    "of",
+    5
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "windows": [
+   "Media Research.<s> [[Media]]",
+   "<s> Media Economics.<s> [[Media]]",
+   ".<s> Media Research.<s> [[Media]]"
+  ]
+ },
+ {
+  "latent": "0.resid.11812",
+  "why": "score 0.68",
+  "n": 64,
+  "peak_top": [
+   [
+    "lished",
+    13
+   ],
+   [
+    "EM",
+    4
+   ],
+   [
+    "in",
+    4
+   ]
+  ],
+  "peak_consistency": 0.203125,
+  "prev_top": [
+   [
+    "pub",
+    13
+   ],
+   [
+    "Western",
+    4
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "windows": [
+   "traditional interpretation and introduced a new [[perspective]]",
+   "ca 1528 [[)]]",
+   "Debt\", co-pub [[lished]]"
+  ]
+ },
+ {
+  "latent": "0.resid.9981",
+  "why": "score 0.67",
+  "n": 64,
+  "peak_top": [
+   [
+    "root",
+    54
+   ],
+   [
+    "branch",
+    10
+   ]
+  ],
+  "peak_consistency": 0.84375,
+  "prev_top": [
+   [
+    "ous",
+    9
+   ],
+   [
+    "the",
+    7
+   ],
+   [
+    "of",
+    5
+   ]
+  ],
+  "windows": [
+   "taproot or fibrous [[root]]",
+   "taproot or fibrous [[root]]",
+   "A decision tree grows from its [[root]]"
+  ]
+ },
+ {
+  "latent": "0.resid.28308",
+  "why": "score 0.66",
+  "n": 64,
+  "peak_top": [
+   [
+    "ers",
+    11
+   ],
+   [
+    "ord",
+    6
+   ],
+   [
+    "sell",
+    4
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "compos",
+    15
+   ],
+   [
+    "ch",
+    6
+   ],
+   [
+    "pol",
+    4
+   ]
+  ],
+  "windows": [
+   "forall$) and existential ($\\ [[exists]]",
+   "\u064a [[\u062c]]",
+   ".versional changes enable compos [[ers]]"
+  ]
+ },
+ {
+  "latent": "0.resid.33004",
+  "why": "score 0.66",
+  "n": 64,
+  "peak_top": [
+   [
+    "desc",
+    18
+   ],
+   [
+    "pre",
+    16
+   ],
+   [
+    "cont",
+    11
+   ]
+  ],
+  "peak_consistency": 0.28125,
+  "prev_top": [
+   [
+    "-",
+    19
+   ],
+   [
+    "in",
+    7
+   ],
+   [
+    "(",
+    6
+   ]
+  ],
+  "windows": [
+   "\u2013nominator\", \" [[pred]]",
+   "\u2013nominator\", \" [[pred]]",
+   "organic (not carbon- [[cont]]"
+  ]
+ },
+ {
+  "latent": "0.resid.15817",
+  "why": "score 0.65",
+  "n": 64,
+  "peak_top": [
+   [
+    "poss",
+    14
+   ],
+   [
+    "verb",
+    13
+   ],
+   [
+    "ject",
+    7
+   ]
+  ],
+  "peak_consistency": 0.21875,
+  "prev_top": [
+   [
+    "ad",
+    19
+   ],
+   [
+    "ver",
+    9
+   ],
+   [
+    "'",
+    7
+   ]
+  ],
+  "windows": [
+   "These adverbs modify ad [[ject]]",
+   "as 'very,' 'ext [[rem]]",
+   "definitely', and 'pro [[bably]]"
+  ]
+ },
+ {
+  "latent": "0.resid.17997",
+  "why": "score 0.64",
+  "n": 64,
+  "peak_top": [
+   [
+    "component",
+    41
+   ],
+   [
+    "vital",
+    3
+   ],
+   [
+    "u",
+    3
+   ]
+  ],
+  "peak_consistency": 0.640625,
+  "prev_top": [
+   [
+    "vital",
+    22
+   ],
+   [
+    "essential",
+    6
+   ],
+   [
+    "and",
+    4
+   ]
+  ],
+  "windows": [
+   "<s> A vital [[component]]",
+   "<s> A vital [[component]]",
+   " [[component]]"
+  ]
+ },
+ {
+  "latent": "0.resid.2347",
+  "why": "score 0.62",
+  "n": 64,
+  "peak_top": [
+   [
+    "Lev",
+    11
+   ],
+   [
+    "ander",
+    11
+   ],
+   [
+    "Cour",
+    11
+   ]
+  ],
+  "peak_consistency": 0.171875,
+  "prev_top": [
+   [
+    "the",
+    11
+   ],
+   [
+    "ave",
+    10
+   ],
+   [
+    "ander",
+    6
+   ]
+  ],
+  "windows": [
+   "Levitation and Diamagnetic [[Lev]]",
+   "Levitation and Diamagnetic [[Lev]]",
+   "Moral motivation.<s> [[Mor]]"
+  ]
+ },
+ {
+  "latent": "0.resid.37830",
+  "why": "score 0.62",
+  "n": 64,
+  "peak_top": [
+   [
+    "comprom",
+    19
+   ],
+   [
+    "jest",
+    7
+   ],
+   [
+    "directly",
+    7
+   ]
+  ],
+  "peak_consistency": 0.296875,
+  "prev_top": [
+   [
+    "cannot",
+    7
+   ],
+   [
+    "this",
+    3
+   ],
+   [
+    "and",
+    3
+   ]
+  ],
+  "windows": [
+   "offers conciliation where parties [[comprom]]",
+   "offers conciliation where parties [[comprom]]",
+   "badours held distinct roles; [[jest]]"
+  ]
+ },
+ {
+  "latent": "0.resid.12730",
+  "why": "score 0.61",
+  "n": 64,
+  "peak_top": [
+   [
+    "feedback",
+    51
+   ],
+   [
+    "tone",
+    12
+   ],
+   [
+    "voice",
+    1
+   ]
+  ],
+  "peak_consistency": 0.796875,
+  "prev_top": [
+   [
+    "ive",
+    18
+   ],
+   [
+    "positive",
+    11
+   ],
+   [
+    "the",
+    5
+   ]
+  ],
+  "windows": [
+   "can one deliver such [[feedback]]",
+   "can transformative feedback has positive [[feedback]]",
+   "feedback: immediate feedback, delayed [[feedback]]"
+  ]
+ },
+ {
+  "latent": "0.resid.18909",
+  "why": "score 0.56",
+  "n": 64,
+  "peak_top": [
+   [
+    "exposed",
+    21
+   ],
+   [
+    "Clay",
+    13
+   ],
+   [
+    "acid",
+    11
+   ]
+  ],
+  "peak_consistency": 0.328125,
+  "prev_top": [
+   [
+    "the",
+    9
+   ],
+   [
+    ",",
+    8
+   ],
+   [
+    "aker",
+    7
+   ]
+  ],
+  "windows": [
+   "determined by ensuring that the [[trial]]",
+   " [[Clay]]",
+   " [[exposed]]"
+  ]
+ },
+ {
+  "latent": "0.resid.7361",
+  "why": "score 0.53",
+  "n": 64,
+  "peak_top": [
+   [
+    "CI",
+    52
+   ],
+   [
+    "/",
+    4
+   ],
+   [
+    "\u043d\u0430",
+    2
+   ]
+  ],
+  "peak_consistency": 0.8125,
+  "prev_top": [
+   [
+    "the",
+    10
+   ],
+   [
+    "vis",
+    6
+   ],
+   [
+    "CI",
+    4
+   ]
+  ],
+  "windows": [
+   "\u222a An| =  [[\u2211]]",
+   "ibility, offers a comprehensive [[CI]]",
+   "offers an integrated approach by embedding [[CI]]"
+  ]
+ },
+ {
+  "latent": "0.resid.37559",
+  "why": "score 0.51",
+  "n": 64,
+  "peak_top": [
+   [
+    "ance",
+    64
+   ]
+  ],
+  "peak_consistency": 1.0,
+  "prev_top": [
+   [
+    "enh",
+    64
+   ]
+  ],
+  "windows": [
+   "facets.<s> To enh [[ance]]",
+   "enhance communication processes and enh [[ance]]",
+   "method, chefs can enh [[ance]]"
+  ]
+ },
+ {
+  "latent": "0.resid.16698",
+  "why": "score 0.50",
+  "n": 64,
+  "peak_top": [
+   [
+    "Integr",
+    63
+   ],
+   [
+    "ynam",
+    1
+   ]
+  ],
+  "peak_consistency": 0.984375,
+  "prev_top": [
+   [
+    "ous",
+    56
+   ],
+   [
+    "and",
+    6
+   ],
+   [
+    "<s>",
+    1
+   ]
+  ],
+  "windows": [
+   "Evolution of Continuous [[Integr]]",
+   "Evolution of Continuous [[Integr]]",
+   "<s> # Continuous [[Integr]]"
+  ]
+ },
+ {
+  "latent": "0.resid.11781",
+  "why": "score 0.49",
+  "n": 64,
+  "peak_top": [
+   [
+    "ater",
+    41
+   ],
+   [
+    "ang",
+    8
+   ],
+   [
+    "ine",
+    6
+   ]
+  ],
+  "peak_consistency": 0.640625,
+  "prev_top": [
+   [
+    "bil",
+    59
+   ],
+   [
+    "then",
+    1
+   ],
+   [
+    "a",
+    1
+   ]
+  ],
+  "windows": [
+   "otes biliteracy, bil [[ang]]",
+   "otes biliteracy, bil [[ang]]",
+   ", bil [[ater]]"
+  ]
+ }
+]
