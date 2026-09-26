@@ -1233,6 +1233,10 @@ def _run_learned_mask_impl(
         return torch.stack(
             [torch.nn.functional.softplus(q).sum() for q in deltas.values()]).sum()
 
+    # rank-term contributions of the current step (diagnostics: the curve
+    # recorded per step; detached GPU scalars, no host sync)
+    _rank_log: List[torch.Tensor] = []
+
     def data_loss(tokens, anchors, targets, micro_index, pat=None) -> torch.Tensor:
         pat = pat if pat is not None else patcher
         s = (micro_index * micro_bs) % max(int(tokens.shape[0]), 1)
@@ -1305,6 +1309,7 @@ def _run_learned_mask_impl(
                     _above = torch.sigmoid((_others - _ps[:, None]) / _T[:, None]).sum(-1)
                     _pen = float(dual_norm) * (_above / float(bank.k)) ** float(rank_power)
                 loss = loss + float(rank_weight) * _pen.mean()
+                _rank_log.append((float(rank_weight) * _pen.mean()).detach())
         return loss
 
     # TERM SCALING. Both dual terms measure the SAME quantity - squared error
@@ -1435,6 +1440,16 @@ def _run_learned_mask_impl(
     # 4 syncs/step, chunk 1 of the 2026-09-05 fit optimisation); they
     # are materialised once after the loop.
     losses_t: List[torch.Tensor] = []
+    # Training curve, per step, same no-sync rule: each data term (named by
+    # its ablation), the penalty, the rank term, the member count at the
+    # keep threshold and the mean gate. Recording only; nothing here feeds
+    # back into the optimisation.
+    term_names: List[str] = []
+    terms_t: List[torch.Tensor] = []
+    pen_t: List[torch.Tensor] = []
+    rank_t: List[torch.Tensor] = []
+    size_t: List[torch.Tensor] = []
+    mm_t: List[torch.Tensor] = []
     inference.disable_compile()
     try:
         for step in range(int(steps)):
@@ -1465,6 +1480,8 @@ def _run_learned_mask_impl(
             # next forward), so peak VRAM is one micro-chunk while the
             # STEP's gradient equals the full effective-batch gradient.
             step_total: Any = None      # detached GPU accumulator
+            step_terms: List[torch.Tensor] = []
+            _rank_log.clear()
             for j in range(accum):
                 mi = step * accum + j
                 # Every loss term is backwarded SEPARATELY (grad(a+b) =
@@ -1528,7 +1545,18 @@ def _run_learned_mask_impl(
                     _dn = dual_norm if objective == "pos" else 1.0
                     terms.append((nt_tr, na_tr, ntgt_tr,
                                   float(neg_suppress_weight) / _dn, None))
-                for tokens_t, anchors_t, targets_t, w, pat_t in terms:
+                if not term_names:
+                    for ti, (_k, _a, _t, _w, pat_t) in enumerate(terms):
+                        if pat_t is not None and pat_t is patcher_zero:
+                            term_names.append("zero")
+                        elif pat_t is not None and pat_t is patcher_pos:
+                            term_names.append("pos")
+                        elif ti > 0 and pat_t is None and objective in ("pos", "maximise", "contrast"):
+                            # neg-suppress / contrast's second term: the hard negatives
+                            term_names.append("neg")
+                        else:
+                            term_names.append("floor" if dual_floor else "data")
+                for ti, (tokens_t, anchors_t, targets_t, w, pat_t) in enumerate(terms):
                     with _phase("fit.fwd"):
                         part = w * data_loss(tokens_t, anchors_t, targets_t,
                                              mi, pat_t) / accum
@@ -1536,6 +1564,10 @@ def _run_learned_mask_impl(
                         part.backward()
                     _pd = part.detach()
                     step_total = _pd if step_total is None else step_total + _pd
+                    if ti < len(step_terms):
+                        step_terms[ti] = step_terms[ti] + _pd
+                    else:
+                        step_terms.append(_pd)
             if objective in ("negctx", "raise"):
                 penalty = l1_lambda * edit_sum()
             elif objective == "pin":
@@ -1608,6 +1640,15 @@ def _run_learned_mask_impl(
                         thetas[st].masked_fill_(excl, SUPPORT_EXCL)
             _pen = penalty.detach()
             losses_t.append((_pen if step_total is None else step_total + _pen))
+            with torch.no_grad():
+                if step_terms and len(step_terms) == len(term_names):
+                    terms_t.append(torch.stack(step_terms))
+                pen_t.append(_pen)
+                rank_t.append(torch.stack(_rank_log).sum() if _rank_log
+                              else torch.zeros((), device=_pen.device))
+                size_t.append(torch.stack([(torch.sigmoid(t) > keep_threshold).sum()
+                                           for t in thetas.values()]).sum())
+                mm_t.append(mask_mean())
             if step_hook is not None:
                 step_hook(step, {
                     "thetas": thetas, "deltas": deltas, "grads": grads_now,
@@ -1626,6 +1667,15 @@ def _run_learned_mask_impl(
         # one host sync for the whole run's loss curve
         losses: List[float] = ([float(v) for v in torch.stack(losses_t).cpu()]
                                if losses_t else [])
+        curve: Dict[str, Any] = {"loss": losses}
+        if losses_t:
+            curve["penalty"] = torch.stack(pen_t).float().cpu().tolist()
+            curve["rank"] = torch.stack(rank_t).float().cpu().tolist()
+            curve["n_members"] = [int(v) for v in torch.stack(size_t).cpu()]
+            curve["mean_m"] = torch.stack(mm_t).float().cpu().tolist()
+            if len(terms_t) == len(losses_t):
+                _tt = torch.stack(terms_t).float().cpu()
+                curve["terms"] = {nm: _tt[:, i].tolist() for i, nm in enumerate(term_names)}
 
         # Release the optimisation graph's cached blocks before the eval
         # phase allocates: measured 2.5GB of reserved memory recovered at L10
@@ -1859,6 +1909,10 @@ def _run_learned_mask_impl(
         "loss_initial": losses[0] if losses else None,
         "loss_final": losses[-1] if losses else None,
         "holdout_data_loss": ho,
+        # per-step training curve (see the loop): loss = sum(terms) + penalty;
+        # each term already includes its own rank contribution, and "rank"
+        # is that contribution summed over terms, before the term weights
+        "curve": curve,
         "n_kept": len(scores),
         "mean_m_final": float(mask_mean().detach()),
         # Mean m among KEPT members — the statistic that quantifies the

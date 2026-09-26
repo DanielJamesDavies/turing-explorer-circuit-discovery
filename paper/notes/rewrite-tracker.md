@@ -40,7 +40,7 @@
   rules and the tab:coact-methods no-data cell markers only. Also removed the
   "--- (P1)"/"--- (P2)" dashes from the Fig 1 panel labels. Build green:
   35pp, zero errors / undefined refs / overfull. Readability review + change
-  ledger live in paper/readability-review-2026-08-09.md.
+  ledger live in paper/notes/readability-review-2026-08-09.md (moved from paper/ on 2026-09-26).
 
 - 2026-08-09 (later): CENTREPIECE v2 LANDED — the figure data gate is CLOSED.
   collector2.py: 3 panel-matched seeds/band (sorted-pool selection, matching

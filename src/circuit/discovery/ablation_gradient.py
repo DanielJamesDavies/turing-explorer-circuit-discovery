@@ -329,6 +329,7 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
         )
         self._pending_inhibitors = {}
         self._stash_amplitudes(prov)
+        self.last_mask_provenance = prov     # training curve + fit stats, for callers that log them
         return scores, float(prov.get("loss_initial") or 0.0), float(
             prov.get("loss_final") or 0.0)
 

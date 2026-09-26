@@ -42,14 +42,17 @@ git push origin multi-device
 `*.pt`, logs and 049's tables are git-ignored, so this adds code, READMEs, target lists and small results.
 Experiments 050–054 are left out; 052 holds ~120 MB of jsonl results.
 
-**2. Start the pod and bootstrap.** Same setup as the tri-amp run: RunPod H100, network volume at `/workspace`.
+**2. Start the pod and bootstrap.** RunPod H100 with the global volume (`inland_copper_crab`) at `/workspace`. The
+global volume disallows chmod, so git lives on the pod disk and the volume holds only models / data /
+`runs_store.tgz`.
 
 ```bash
-bash /workspace/turing/scripts/pod_bootstrap.sh
+git clone --branch multi-device https://github.com/DanielJamesDavies/turing-explorer-circuit-discovery.git /root/turing && bash /root/turing/scripts/pod_bootstrap_global.sh
 ```
 
-This clones `multi-device` to `/root/turing`, copies models / data / discovery artifacts (including `seq_repr.pt`,
-which the close contrast selector needs) from the volume, and builds the venv.
+This copies models / data / discovery artifacts (including `seq_repr.pt`, which the close contrast selector needs)
+from the volume to `/root/turing`, and builds the venv. Everything the run writes (`out/`, `logs/`) is on the pod
+disk, which is wiped when the pod stops, so step 6 is not optional.
 
 **3. Smoke test on the pod (~5 min, 1 GPU).** It checks everything loads and one target runs end to end.
 

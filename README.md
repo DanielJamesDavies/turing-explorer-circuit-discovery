@@ -89,7 +89,7 @@ A *circuit* is a minimal sub-network of SAE latents whose activations alone fait
 | `paper/` | LaTeX draft (`main.tex`), figures, references; build with `paper/build.ps1` |
 | `agent-planning/` | Design/implementation plans (notably `multi-device-improvements/` for the distributed pipeline) |
 | `external/circuit-tracer/` | Git submodule — reference Attribution-Graphs implementation used as an external baseline, pinned to the commit all circuit-tracer numbers were produced with |
-| `description.md` / `concise_description.md` | Long- and short-form module-by-module repo walkthroughs |
+| `docs/description.md` / `docs/concise_description.md` | Long- and short-form module-by-module repo walkthroughs |
 | `dev-notes/` | Local research notes and evidence data (untracked; cited from source docstrings) |
 | `models/`, `data/` | Gitignored, user-supplied: TuringLLM checkpoint + SAE bank, and tokenised `.npy` shards |
 | `outputs/` | All pipeline artifacts (see Outputs below) |

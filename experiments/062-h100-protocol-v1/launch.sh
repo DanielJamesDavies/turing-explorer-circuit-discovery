@@ -11,18 +11,20 @@
 # Progress:  tail -f experiments/062-h100-protocol-v1/logs/main.shard*.log
 # Summary:   PYTHONPATH=src python experiments/062-h100-protocol-v1/merge.py
 
-K=${K:-8}
+K=${K:-8}             # GPUs
+P=${P:-1}             # driver processes per GPU (small fits leave an H100 mostly idle; P=2 roughly doubles throughput)
 MODE=${MODE:-main}
+N=$((K * P))          # total shards; shard i runs on GPU i % K
 D=experiments/062-h100-protocol-v1
 PY=${PY:-./.venv/bin/python}
 mkdir -p "$D/logs"
 
 run_mode() {
   local mode=$1
-  for i in $(seq 0 $((K - 1))); do
+  for i in $(seq 0 $((N - 1))); do
     (
       tries=0
-      until CUDA_VISIBLE_DEVICES=$i SHARD=$i/$K MODE=$mode \
+      until CUDA_VISIBLE_DEVICES=$((i % K)) SHARD=$i/$N MODE=$mode \
           PYTHONPATH=src PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
           $PY -X utf8 $D/driver.py >> "$D/logs/$mode.shard$i.log" 2>&1; do
         tries=$((tries + 1))
@@ -35,7 +37,7 @@ run_mode() {
     sleep 20          # stagger start-up (model + store loading) so the shards don't all hit the disk at once
   done
   wait
-  echo "$mode: all $K shards returned"
+  echo "$mode: all $N shards returned ($K GPUs x $P per GPU)"
 }
 
 if [ "$MODE" = "both" ]; then

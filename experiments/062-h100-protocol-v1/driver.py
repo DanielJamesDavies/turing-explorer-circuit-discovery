@@ -20,7 +20,9 @@ Each process takes targets[i::k] for SHARD=i/k.
   CUDA_VISIBLE_DEVICES=0 SHARD=0/8 MODE=main PYTHONPATH=src python experiments/062-h100-protocol-v1/driver.py
   env: MODE (main | sweep)  SHARD (0/1)  TARGETS (default targets_stage1.txt / targets_sweep.txt)
        OUT (default experiments/062-h100-protocol-v1/out)  LIMIT (first N of this shard, smoke tests)
-       SWEEP_ARMS (comma list, default all)  SKIP_SPEC=1
+       SWEEP_ARMS (comma list, default all)  SKIP_SPEC=1  CURVE_STRIDE (1 = every step of the training curve)
+
+Every fresh fit also writes train.shardN.jsonl: fit stats + the per-step training curve (see train_row).
 """
 import json
 import os
@@ -108,7 +110,9 @@ class Runner:
         return _build_mode_method("ablation_gradient", "mask", self.G["inference"], self.G["bank"], self.G["avg_acts"],
                                   self.G["M0"].probe_builder)
 
-    def fit(self, M, rec, key, arm, path):
+    def fit(self, M, rec, key, arm, path, train_fh=None, label=None):
+        """Fit (or load) one circuit. A fresh fit writes its training row (fit stats + per-step curve) to
+        train_fh before the circuit is saved, so a kill in between refits and repeats the row (merge keeps the last)."""
         if path.exists():
             return torch.load(path, weights_only=False), 0.0
         P, KINDS = self.P, self.G["KINDS"]
@@ -118,11 +122,17 @@ class Runner:
         M.build_probe_dataset = lambda comp, i, _p=pdset: _p
         M._floor_negatives = lambda probe_data, comp, i, logger: probe_data.neg_tokens
         l, k, i = self.H.parse(key)
+        M.last_mask_provenance = None
         t0 = time.time()
         c = M.discover(l * len(KINDS) + KINDS.index(k), i)
+        t_fit = time.time() - t0
+        if train_fh is not None:
+            train_fh.write(json.dumps(train_row(M.last_mask_provenance, seed=key, train_arm=arm, t_fit=round(t_fit, 1),
+                                                accepted=c is not None, shard=TAG, **(label or {}))) + "\n")
+            train_fh.flush()
         path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(c, path)                                    # None = rejected; saved so resume skips it
-        return c, time.time() - t0
+        return c, t_fit
 
     # ---------------------------------------------------------------------------------------------- scoring
     def score(self, c, rec, held):
@@ -138,18 +148,84 @@ class Runner:
         return S.score(self.G, c, self.V, self._taps[0], self._taps[1], arm_label)
 
 
+TRAIN_STATS = ("loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_final", "mean_m_kept", "min_m_kept",
+               "amp_stats", "steps", "batch_size_used", "n_train_pos", "n_holdout_pos", "n_train_neg", "n_holdout_neg")
+CURVE_STRIDE = int(os.environ.get("CURVE_STRIDE", "1"))
+
+
+def train_row(prov, **extra):
+    """One fit's training record: the engine's fit stats and its per-step curve (loss = sum of the data terms +
+    penalty; per-term zero / floor / pos, rank, member count at the keep threshold, mean gate), 4 significant
+    figures, every CURVE_STRIDE-th step plus the last."""
+    row = dict(extra)
+    if prov is None:
+        row["no_provenance"] = True                            # the seed never reached the mask engine
+        return row
+    row.update({k: prov.get(k) for k in TRAIN_STATS})
+    curve = prov.get("curve") or {}
+    n = len(curve.get("loss") or [])
+    idx = list(range(0, n, CURVE_STRIDE)) + ([n - 1] if n and (n - 1) % CURVE_STRIDE else [])
+
+    def thin(v):
+        return [v[j] if isinstance(v[j], int) else float("%.4g" % v[j]) for j in idx]
+
+    row["curve"] = {k: ({t: thin(s) for t, s in v.items()} if isinstance(v, dict) else thin(v))
+                    for k, v in curve.items()}
+    row["curve_steps"] = idx if CURVE_STRIDE > 1 else None
+    return row
+
+
 def n_nodes(c):
     return sum(1 for nd in c.nodes.values() if nd.metadata.get("role") != "seed")
+
+
+def manifest(key, rec, arm):
+    """Provenance of every context the target used: corpus sequence ids (and anchor positions) for the training
+    activating contexts, the held-out strongest / mid-band sets, and the contrast contexts split as the engine splits
+    them (first n - round(n / 4) train, the rest held out)."""
+    def ids_at(pool, idx):
+        p = rec.get(pool)
+        if p is None or p.get("ids") is None:
+            return None
+        return [int(p["ids"][j]) for j in idx]
+
+    def anchors_at(pool, idx):
+        p = rec.get(pool)
+        return None if p is None else [int(p["arg"][j]) for j in idx]
+
+    s, m = rec["strong"], rec.get("mid")
+    if arm == "B":
+        parts = [("strong", rec["D_train"]), ("mid", rec["B_mid"])]
+    else:
+        parts = [("strong", s["train"])]
+    train_ids, train_anchors = [], []
+    for pool, idx in parts:
+        ids = ids_at(pool, idx)
+        train_ids = None if (ids is None or train_ids is None) else train_ids + ids
+        train_anchors += anchors_at(pool, idx)
+    neg = rec.get("neg_ids")
+    n_ntr = None if neg is None else len(neg) - int(round(len(neg) * 0.25))
+    return dict(
+        seed=key, arm=arm,
+        train_ids=train_ids, train_anchors=train_anchors,
+        held_strong_ids=ids_at("strong", s["held"]), held_strong_anchors=anchors_at("strong", s["held"]),
+        held_mid_ids=ids_at("mid", m["held"]) if m else None, held_mid_anchors=anchors_at("mid", m["held"]) if m else None,
+        eval_reference_ids=ids_at("strong", s["train"]),      # the 48 strongest-train contexts: the A ablation value
+        contrast_train_ids=None if neg is None else neg[:n_ntr],
+        contrast_held_ids=None if neg is None else neg[n_ntr:],
+        n_top=rec.get("n_top"), n_mid=rec.get("n_mid"))
 
 
 def main_mode(R, targets):
     d = OUT / "main"
     ev_path, sp_path, st_path = d / ("eval.%s.jsonl" % TAG), d / ("spec.%s.jsonl" % TAG), d / ("status.%s.jsonl" % TAG)
+    cx_path, tr_path = d / ("contexts.%s.jsonl" % TAG), d / ("train.%s.jsonl" % TAG)
     d.mkdir(parents=True, exist_ok=True)
     ev_done, sp_done = jsonl_keys(ev_path, ("seed", "held")), jsonl_keys(sp_path, ("seed",))
-    st_done = jsonl_keys(st_path, ("seed",))
+    st_done, cx_done = jsonl_keys(st_path, ("seed",)), jsonl_keys(cx_path, ("seed",))
     M = R.method(GAMMA, LAM, True)
-    fe, fs, ft = open(ev_path, "a"), open(sp_path, "a"), open(st_path, "a")
+    fe, fs, ft, fc = open(ev_path, "a"), open(sp_path, "a"), open(st_path, "a"), open(cx_path, "a")
+    fr = open(tr_path, "a")
     for n_, key in enumerate(targets):
         if (key,) in st_done:
             continue
@@ -163,7 +239,9 @@ def main_mode(R, targets):
                 continue
             arm, thin = R.train_arm(rec)
             st.update(arm=arm, thin=thin, n_top=rec["n_top"], n_mid=rec["n_mid"])
-            c, t_fit = R.fit(M, rec, key, arm, d / "circuits" / ("%s.pt" % key))
+            if (key,) not in cx_done:
+                fc.write(json.dumps(manifest(key, rec, arm)) + "\n"); fc.flush()
+            c, t_fit = R.fit(M, rec, key, arm, d / "circuits" / ("%s.pt" % key), train_fh=fr)
             st["t_fit"] = round(t_fit, 1)
             if c is None:
                 st["skip"] = "rejected"; ft.write(json.dumps(st) + "\n"); ft.flush(); continue
@@ -199,7 +277,7 @@ def sweep_mode(R, targets):
     d.mkdir(parents=True, exist_ok=True)
     ev_path = d / ("eval.%s.jsonl" % TAG)
     ev_done = jsonl_keys(ev_path, ("seed", "arm"))
-    fe = open(ev_path, "a")
+    fe, fr = open(ev_path, "a"), open(d / ("train.%s.jsonl" % TAG), "a")
     for name, weighted, lam in SWEEP:
         M = R.method(GAMMA, lam, weighted)
         log("arm %s (weighted=%s, lambda %g)" % (name, weighted, lam))
@@ -217,7 +295,8 @@ def sweep_mode(R, targets):
                     path.parent.mkdir(parents=True, exist_ok=True)
                     torch.save(torch.load(main_c, weights_only=False), path)        # identical config: reuse
                 t = time.time()
-                c, t_fit = R.fit(M, rec, key, arm, path)
+                c, t_fit = R.fit(M, rec, key, arm, path, train_fh=fr,
+                                 label=dict(arm=name, weighted=weighted, lam=lam))
                 if c is None:
                     row = dict(seed=key, arm=name, skip="rejected")
                 else:

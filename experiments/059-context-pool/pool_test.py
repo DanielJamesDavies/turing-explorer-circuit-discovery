@@ -83,12 +83,16 @@ def build(G):
     sel = M0._neg_context_selector()
 
     def load(ids):
-        t = pb._load_all_ids(ids, max_length=65)
+        """Tokens for `ids` (same loader path as ProbeDatasetBuilder._load_all_ids) plus the corpus sequence ids actually
+        loaded, row-aligned with the tokens (the loader skips ids it cannot locate)."""
+        batches = list(pb.loader.get_batches_by_ids(ids, max_length=65))
+        t = torch.cat([tk for _, tk in batches], dim=0)
+        got = [int(x) for b, _ in batches for x in b.tolist()]
         pos = t[:, :64]
         tgt = t[:, 1:65]
         if tgt.shape[1] < 64:
             tgt = torch.cat([tgt, torch.zeros(tgt.shape[0], 64 - tgt.shape[1], dtype=tgt.dtype, device=tgt.device)], 1)
-        return pos, tgt
+        return pos, tgt, got
 
     def peak(l, k, i, tokens):
         vals, args = [], []
@@ -124,10 +128,10 @@ def build(G):
             if len(ids) < 8:
                 rec[name] = None
                 continue
-            pos, tgt = load(ids)
+            pos, tgt, got = load(ids)
             v, a = peak(l, k, i, pos)
             tr, ho = stratified_split(v)
-            rec[name] = dict(pos=pos.cpu(), tgt=tgt.cpu(), arg=a, peak=v, train=tr, held=ho)
+            rec[name] = dict(pos=pos.cpu(), tgt=tgt.cpu(), arg=a, peak=v, train=tr, held=ho, ids=got)
         s = rec["strong"]
         if s is None:                                   # too few stored contexts: record and move on (thin target)
             out[key] = rec
@@ -149,6 +153,8 @@ def build(G):
         nt = cs.tokens[:64].cpu()
         order = stratified_order(-torch.arange(nt.shape[0], dtype=torch.float64))
         rec["neg"] = nt[order]
+        nids = [int(x) for x in list(cs.sequence_ids)[:nt.shape[0]]]
+        rec["neg_ids"] = [nids[j] for j in order] if len(nids) == nt.shape[0] else None   # row-aligned with rec["neg"]
         out[key] = rec
         print("built %-15s top %d mid %d | strong peak %.1f-%.1f | mid peak %s | neg %d"
               % (key, rec["n_top"], rec["n_mid"], float(s["peak"].min()), float(s["peak"].max()),

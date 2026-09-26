@@ -109,9 +109,9 @@ Acceptance gates are per-method: `counterfactual_gradient` gates on counterfactu
 
 | Topic | Location |
 |---|---|
-| Full system description | `description.md`, `concise_description.md` |
+| Full system description | `docs/description.md`, `docs/concise_description.md` |
 | Method implementations + docs | `src/circuit/discovery/`, `src/circuit/discovery/METHODS.md` |
 | Evaluation implementations | `src/eval/` |
 | Paper draft | `paper/main.tex` |
-| Run analyses & figures | `paper/analysis-catalogue.md` |
-| Research notes & plans | `dev-notes/`, `ideas.md`, `agent-planning/` |
+| Run analyses & figures | `paper/resources/analysis-catalogue.md` (local, git-ignored) |
+| Research notes & plans | `dev-notes/`, `docs/ideas.md`, `agent-planning/` |

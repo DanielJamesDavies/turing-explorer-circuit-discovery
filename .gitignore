@@ -1,11 +1,16 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 
 # Native extension build artifacts
 *.so
 *.pyd
+*.o
 src/native/build/
 
 # Virtual environment
@@ -15,15 +20,22 @@ src/native/build/
 
 # Data & outputs
 /data/
-outputs/
+/outputs/
 profile_trace/
 /paper/resources/*
 /paper-backups/*
 
-# Editor
-.cursor/
+# Paper build: LaTeX intermediates change on every build; keep only the PDF
+/paper/build/*
+!/paper/build/main.pdf
 
-.venv
+# Editor / OS / local tool settings
+.cursor/
+.claude/settings.local.json
+Thumbs.db
+.DS_Store
+desktop.ini
+
 /models
 AGENTS.md
 /analysis-restyled
@@ -34,6 +46,7 @@ AGENTS.md
 /experiments/**/*.pt
 /experiments/**/*.safetensors
 /experiments/**/*.zip
+/experiments/**/*.tgz
 /experiments/**/*.pickle
 /experiments/**/*.log
 /experiments/**/__pycache__/
@@ -51,8 +64,11 @@ AGENTS.md
 /experiments/062-h100-protocol-v1/out*/
 /experiments/062-h100-protocol-v1/logs/
 
-# Root-level scratch from local smokes (never commit)
+# Root-level scratch from local smokes and transfers (never commit)
 /*.log
 /*.flag
 /*.bak
 /*.tgz
+/*.zip
+# Items staged for deletion (review, then delete the folder in File Explorer)
+/_to_delete/
