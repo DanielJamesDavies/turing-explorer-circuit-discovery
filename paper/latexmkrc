@@ -1,0 +1,10 @@
+# Build the paper into build/ with a plain `latexmk` from this folder.
+# bibtex runs inside build/, where references.bib is not found (every citation came out undefined, 2026-09-27),
+# so add this folder to the bibliography search path.
+# Under Git Bash, perl reports the folder as /x/...; MiKTeX's bibtex needs X:/..., so convert it.
+use Cwd;
+$pdf_mode = 1;
+$out_dir = 'build';
+my $here = getcwd();
+$here =~ s{^/([a-zA-Z])/}{$1:/};
+ensure_path('BIBINPUTS', $here);

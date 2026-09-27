@@ -40,7 +40,8 @@ run_mode() {
       done
       echo "shard $i finished" >> "$D/logs/$mode.shard$i.log"
     ) &
-    sleep 20          # stagger start-up (model + store loading) so the shards don't all hit the disk at once
+    sleep ${STAGGER:-20}   # stagger start-up (model + store loading) so the shards don't all hit the disk at once;
+    #                        STAGGER=5 is plenty on a big pod (8xH100 / 2 TB RAM): 48 shards up in 4 min, not 16
   done
   wait
   echo "$mode: all $N shards returned ($K GPUs x $P per GPU, $THREADS CPU threads each)"
