@@ -21,6 +21,7 @@ Each process takes targets[i::k] for SHARD=i/k.
   env: MODE (main | sweep)  SHARD (0/1)  TARGETS (default targets_stage1.txt / targets_sweep.txt)
        OUT (default experiments/062-h100-protocol-v1/out)  LIMIT (first N of this shard, smoke tests)
        SWEEP_ARMS (comma list, default all)  SKIP_SPEC=1  CURVE_STRIDE (1 = every step of the training curve)
+       ORDER (interleaved | list)  SLOT (co-tenant slot on the GPU; launch.sh sets it)
 
 Every fresh fit also writes train.shardN.jsonl: fit stats + the per-step training curve (see train_row).
 """
@@ -50,6 +51,24 @@ SWEEP = [("W_%g" % l, True, l) for l in W_LAMS] + [("U_%g" % l, False, l) for l 
 WANT = [a for a in os.environ.get("SWEEP_ARMS", "").split(",") if a]
 SWEEP = [a for a in SWEEP if not WANT or a[0] in WANT]
 TAG = "shard%d" % SHARD_I
+# Co-tenant slot on this process's GPU (launch.sh: shard i runs on GPU i % K, so SLOT = i // K). Drives the
+# interleaved order's rotation; see interleave().
+SLOT = int(os.environ.get("SLOT", "0"))
+ORDER = os.environ.get("ORDER", "interleaved")          # interleaved | list (the target file's own order)
+KIND_RANK = {"attn": 0, "mlp": 1, "resid": 2}
+
+
+def interleave(targets, slot):
+    """Daniel's shallow/deep pairing (production seed_order="interleaved", discovery_window.py), per shard: sort by
+    depth, zip the shallow half with the reversed deep half (L0 with L11, L1 with L10, ...), and rotate by one on odd
+    co-tenant slots so processes sharing a GPU sit out of phase (half on a deep target while half are on a shallow
+    one) instead of hitting their deep, memory-heavy targets together. Keyed on the GPU slot, not the shard index:
+    co-tenants are shards g, g+K, g+2K, ..., which all share one parity when K is even."""
+    ts = sorted(targets, key=lambda k: (int(k.split(".")[0]), KIND_RANK.get(k.split(".")[1], 3), k))
+    h = (len(ts) + 1) // 2
+    a, b = ts[:h], ts[h:][::-1]
+    out = [x for i in range(h) for x in ([a[i]] + ([b[i]] if i < len(b) else []))]
+    return out[1:] + out[:1] if slot % 2 == 1 and len(out) > 1 else out
 
 
 def log(s):
@@ -314,9 +333,11 @@ def sweep_mode(R, targets):
 
 def main():
     targets = [t for t in TARGETS.read_text().split() if t][SHARD_I::SHARD_K]
+    if ORDER == "interleaved":
+        targets = interleave(targets, SLOT)
     if LIMIT:
         targets = targets[:LIMIT]
-    log("MODE %s | %d targets | out %s" % (MODE, len(targets), OUT))
+    log("MODE %s | %d targets | order %s (slot %d) | out %s" % (MODE, len(targets), ORDER, SLOT, OUT))
     R = Runner()
     (main_mode if MODE == "main" else sweep_mode)(R, targets)
     log("DONE")

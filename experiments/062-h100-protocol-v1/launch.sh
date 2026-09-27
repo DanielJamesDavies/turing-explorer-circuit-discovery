@@ -15,6 +15,12 @@ K=${K:-8}             # GPUs
 P=${P:-1}             # driver processes per GPU (small fits leave an H100 mostly idle; P=2 roughly doubles throughput)
 MODE=${MODE:-main}
 N=$((K * P))          # total shards; shard i runs on GPU i % K
+# CPU threads per process: PyTorch defaults to ~one per core, so N processes oversubscribe the CPU N-fold (measured
+# 2026-09-27 on 8xH100 / 224 vCPU: CPU pinned at 99% with GPUs idle). Default: an even share of the cores, capped at 8.
+THREADS=${THREADS:-$(( $(nproc) / N ))}
+[ "$THREADS" -gt 8 ] && THREADS=8
+[ "$THREADS" -lt 1 ] && THREADS=1
+export OMP_NUM_THREADS=$THREADS MKL_NUM_THREADS=$THREADS OPENBLAS_NUM_THREADS=$THREADS
 D=experiments/062-h100-protocol-v1
 PY=${PY:-./.venv/bin/python}
 mkdir -p "$D/logs"
@@ -24,7 +30,7 @@ run_mode() {
   for i in $(seq 0 $((N - 1))); do
     (
       tries=0
-      until CUDA_VISIBLE_DEVICES=$((i % K)) SHARD=$i/$N MODE=$mode \
+      until CUDA_VISIBLE_DEVICES=$((i % K)) SLOT=$((i / K)) SHARD=$i/$N MODE=$mode \
           PYTHONPATH=src PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
           $PY -X utf8 $D/driver.py >> "$D/logs/$mode.shard$i.log" 2>&1; do
         tries=$((tries + 1))
@@ -37,7 +43,7 @@ run_mode() {
     sleep 20          # stagger start-up (model + store loading) so the shards don't all hit the disk at once
   done
   wait
-  echo "$mode: all $N shards returned ($K GPUs x $P per GPU)"
+  echo "$mode: all $N shards returned ($K GPUs x $P per GPU, $THREADS CPU threads each)"
 }
 
 if [ "$MODE" = "both" ]; then
