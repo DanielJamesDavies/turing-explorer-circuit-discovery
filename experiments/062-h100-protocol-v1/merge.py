@@ -4,8 +4,8 @@ Main run (out/main):
   - bookkeeping: targets done / skipped / failed, thin targets, per-stage timings and a throughput projection
     for the full 15,046-target run (DAN-75)
   - circuits: size distribution (share inside 10^2-10^3), faithfulness under Z / A / C on held-out strongest and
-    mid-band contexts, necessity, sufficiency to induce, the illustrative band [0.8, 1.25] (the pass rule is DAN-8),
-    by layer and by site kind
+    mid-band contexts, necessity, sufficiency to induce, and the DAN-8 pass rule (Z, A, C all in [0.8, 1.5] AND
+    necessity >= 0.9; vacuous denominators excluded and counted), by layer and by site kind
   - specificity (056): amplifier rate, sibling vs target faithfulness; near-threshold targets (clean rank >= K/2)
 Sweep (out/sweep): per method x lambda medians, per-target natural-scale cost (unweighted / WCM nodes at a
     worst-of-3 deviation <= 0.3) by depth band, and the faithfulness-vs-size figure.
@@ -26,7 +26,8 @@ HERE = Path(__file__).parent
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 GPUS = int(os.environ.get("GPUS", 8))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
-BAND = (0.8, 1.25)
+BAND = (0.8, 1.5)          # DAN-8 pass rule (2026-09-27): Z, A, C all in BAND and necessity >= NEC_MIN
+NEC_MIN = 0.9
 N_FULL = 15046
 K_TOPK = 128
 
@@ -46,16 +47,33 @@ def depth_band(layer):
     return "L0-4" if layer <= 4 else ("L5-7" if layer <= 7 else "L8-11")
 
 
+def passes(df):
+    """The DAN-8 pass rule on the activation read: Z, A, C all in BAND and necessity >= NEC_MIN. A missing score
+    fails. Apply to rows with vacuous denominators already excluded (vacuous())."""
+    inb = ((df[HEAD] >= BAND[0]) & (df[HEAD] <= BAND[1])).all(axis=1)
+    return inb & (df.phi_sup_blind_tk >= NEC_MIN)
+
+
+def vacuous(df):
+    return df.get("vacuous_tk", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+
+
 def headline(df, lines, title):
     if df.empty:
         return
-    inb = ((df[HEAD] >= BAND[0]) & (df[HEAD] <= BAND[1])).all(axis=1)
+    vac = vacuous(df)
+    ok = df[~vac]
+    worst = (ok[HEAD] - 1).abs().max(axis=1)
     n = df["n"]
     lines.append("\n### %s (%d circuits)\n" % (title, len(df)))
     lines.append("- nodes: median %d (p10 %d, p90 %d); inside 10^2-10^3: %.1f%%" % (
         n.median(), n.quantile(.1), n.quantile(.9), 100 * ((n >= 100) & (n <= 1000)).mean()))
-    lines.append("- faithfulness medians Z / A / C: %.3f / %.3f / %.3f; all three in [%.2f, %.2f]: %.1f%%" % (
-        df.free0_tk.median(), df.freeM_topk_tk.median(), df.freeN_topk_tk.median(), BAND[0], BAND[1], 100 * inb.mean()))
+    lines.append("- faithfulness medians Z / A / C: %.3f / %.3f / %.3f" % (
+        df.free0_tk.median(), df.freeM_topk_tk.median(), df.freeN_topk_tk.median()))
+    lines.append("- PASS (Z, A, C in [%.2f, %.2f] and necessity >= %.1f): %.1f%% of %d; vacuous denominators excluded: %d"
+                 % (BAND[0], BAND[1], NEC_MIN, 100 * passes(ok).mean(), len(ok), int(vac.sum())))
+    lines.append("- largest deviation max|faith - 1|: median %.3f (p25 %.3f, p75 %.3f)" % (
+        worst.median(), worst.quantile(.25), worst.quantile(.75)))
     lines.append("- necessity median %.3f; sufficiency to induce median %.3f" % (
         df.phi_sup_blind_tk.median(), df.phi_cf_alpha_blind_tk.median()))
 
@@ -63,11 +81,11 @@ def headline(df, lines, title):
 def table_by(df, col, lines):
     if df.empty:
         return
-    d = df.copy()
-    d["in_band"] = ((d[HEAD] >= BAND[0]) & (d[HEAD] <= BAND[1])).all(axis=1)
+    d = df[~vacuous(df)].copy()
+    d["passes"] = passes(d)
     t = d.groupby(col).agg(circuits=("seed", "count"), nodes=("n", "median"), free0=("free0_tk", "median"),
                            freeM=("freeM_topk_tk", "median"), freeN=("freeN_topk_tk", "median"),
-                           in_band=("in_band", "mean"), necessity=("phi_sup_blind_tk", "median"),
+                           passes=("passes", "mean"), necessity=("phi_sup_blind_tk", "median"),
                            induce=("phi_cf_alpha_blind_tk", "median")).round(3)
     lines.append("\n" + t.to_string())
 
@@ -119,14 +137,14 @@ def main_summary(lines):
                                      rank_clean=("rank_clean", "median"), lifted_C=("switched_on_circuit", "median"))
         tgt = tgt.join(per, how="left")
         tgt["near_threshold"] = tgt.rank_clean >= K_TOPK / 2
-        inb = ((tgt[HEAD] >= BAND[0]) & (tgt[HEAD] <= BAND[1])).all(axis=1)
+        inb = passes(tgt)
         lines.append("\n### Specificity and near-threshold targets (held-out strongest)\n")
         lines.append("- amplifier flag under any ablation method: %.1f%% of circuits (%d / %d)" % (
             100 * tgt.amp_any.mean(), int(tgt.amp_any.sum()), int(tgt.amp_any.notna().sum())))
         for lab, sub in (("near-threshold (clean rank >= %d)" % (K_TOPK // 2), tgt[tgt.near_threshold == True]),  # noqa: E712
                          ("other targets", tgt[tgt.near_threshold == False])):  # noqa: E712
             if len(sub):
-                lines.append("- %s: %d targets, in band %.1f%%, amplifier rate %.1f%%" % (
+                lines.append("- %s: %d targets, pass %.1f%%, amplifier rate %.1f%%" % (
                     lab, len(sub), 100 * inb[sub.index].mean(), 100 * sub.amp_any.mean()))
         lines.append("\nAmplifier rate by site kind: %s" % tgt.groupby("kind").amp_any.mean().round(3).to_dict())
     tgt.to_csv(OUT / "targets.csv")
@@ -143,12 +161,13 @@ def sweep_summary(lines):
     sw["depth"] = sw.layer.map(depth_band)
     sw["dev"] = (sw[HEAD] - 1).abs().max(axis=1)
     sw["in_band"] = ((sw[HEAD] >= BAND[0]) & (sw[HEAD] <= BAND[1])).all(axis=1)
+    sw["passes"] = passes(sw) & ~vacuous(sw)
     sw.to_csv(OUT / "sweep_rows.csv", index=False)
     lines.append("\n## Sweep: WCM vs unweighted circuit masking (held-out strongest)\n")
     t = sw.groupby(["weighted", "lam"]).agg(targets=("seed", "nunique"), nodes=("n", "median"),
                                              free0=("free0_tk", "median"), freeM=("freeM_topk_tk", "median"),
                                              freeN=("freeN_topk_tk", "median"), worst_dev=("dev", "median"),
-                                             in_band=("in_band", "mean"), induce=("phi_cf_alpha_blind_tk", "median"))
+                                             passes=("passes", "mean"), induce=("phi_cf_alpha_blind_tk", "median"))
     lines.append(t.round(3).to_string())
     # per-target natural-scale cost
     cost = []

@@ -48,7 +48,14 @@ GAMMA, LAM = 0.25, 1e-3
 W_LAMS = (2.5e-4, 5e-4, 1e-3, 2e-3, 4e-3)
 U_LAMS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3)
 SWEEP = [("W_%g" % l, True, l) for l in W_LAMS] + [("U_%g" % l, False, l) for l in U_LAMS]
-WANT = [a for a in os.environ.get("SWEEP_ARMS", "").split(",") if a]
+# SWEEP_ARMS picks arms by name, W_<lambda> (WCM) or U_<lambda> (unweighted), and may name prices outside the
+# default grids (e.g. W_1e-4 extends WCM beyond ~1k nodes). Names are normalised to the "%g" form used on disk.
+WANT = []
+for a in (x for x in os.environ.get("SWEEP_ARMS", "").split(",") if x):
+    w, lam = a[0] == "W", float(a[2:])
+    WANT.append("%s_%g" % (a[0], lam))
+    if not any(ww == w and abs(ll - lam) <= 1e-12 for _, ww, ll in SWEEP):
+        SWEEP.append((WANT[-1], w, lam))
 SWEEP = [a for a in SWEEP if not WANT or a[0] in WANT]
 TAG = "shard%d" % SHARD_I
 # Co-tenant slot on this process's GPU (launch.sh: shard i runs on GPU i % K, so SLOT = i // K). Drives the

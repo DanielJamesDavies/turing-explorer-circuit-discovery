@@ -64,14 +64,18 @@
 
 \maketitle
 
-% Headline numbers wait on the protocol-v1 production runs (DAN-14/19/40/41).
+% TuringLLM headline: the protocol-v1 full run (DAN-75, 2026-09-27), numbers from
+% experiments/062-h100-protocol-v1/paper_main.py. Pythia-70m and GPT-2 small wait on DAN-40/41.
 \begin{abstract}
 Circuit discovery typically explains an output: a logit, a probability, a behavioural metric.
 We ask instead what makes an internal latent fire.
 For a target sparse autoencoder (SAE) latent, \emph{weighted circuit masking} (WCM) learns which upstream latents belong to its circuit and a scaling coefficient for each, trained so that the circuit alone reproduces the target under zero ablation and under mean ablation over activating and contrast contexts at once.
-\pending{headline pass rates across ${\sim}15$k targets per model on TuringLLM, Pythia-70m, and GPT-2 small}
+On $15{,}046$ sampled TuringLLM latents, $46\%$ of weighted circuits pass one pre-stated criterion on held-out contexts, most often for shallow and residual-stream targets and least often for attention outputs \pending{Pythia-70m and GPT-2 small, DAN-40/41}.
 The resulting weighted circuits hold $10^{2}$--$10^{3}$ upstream latents and, where they pass, reproduce their target on held-out contexts, while the same nodes at their natural scale reproduce almost nothing and random circuits given the same coefficient fitting fail.
-The coefficients therefore locate a redundancy that, for deep targets, costs $10^{4}$--$10^{5}$ latents at natural scale.
+% 062 sweep (DAN-76, 190 targets, protocol v1, 2026-09-27): smallest circuit with worst-of-3 |faith - 1| <= 0.3,
+% unweighted circuit masking (alpha = 1) vs WCM, median nodes: L8-11 9,989 vs 789 (14.1x); L5-7 3,862 vs 447 (9.8x);
+% L0-4 502 vs 128 (3.7x). The 10^4-10^5 figure belongs to ATTRIBUTION at natural scale (sec:weighted, drivers-closure).
+The coefficients therefore locate a redundancy that, for deep targets, costs ${\sim}10^{4}$ latents at natural scale, about $14\times$ the weighted circuit.
 Node sets are not identifiable: refits that leave faithfulness unchanged share only $40$--$85\%$ of their nodes, so node sets are reported as equivalence classes.
 The procedure needs no behavioural task and applies to any latent in an SAE bank.
 \end{abstract}
@@ -108,13 +112,13 @@ The result is a \emph{weighted circuit for a target latent}: a node set with one
 We score it on held-out contexts by three tests: \emph{faithfulness} (the circuit alone reproduces the target where it fires), \emph{necessity} (removing the circuit removes the target), and \emph{sufficiency to induce} (setting the circuit's values switches the target on in contrast contexts), each against random circuits given the identical coefficient-fitting budget.
 
 The main result is how often such circuits exist and how small they are.
-\pending{headline from the production runs, DAN-19/40/41: the share of ${\sim}15$k targets per model on TuringLLM, Pythia-70m, and GPT-2 small whose weighted circuit passes, at $10^{2}$--$10^{3}$ upstream latents}
-The coefficients are what make the circuits small: the same nodes at their natural scale reproduce almost nothing, faithfulness at natural scale needs $10^{4}$--$10^{5}$ latents for deep targets, and random circuits of the same size with fitted coefficients fail.
+On $15{,}046$ sampled TuringLLM latents, $46\%$ of weighted circuits pass ($65\%$ of residual-stream, $52\%$ of MLP, and $14\%$ of attention-output targets), with a median of $494$ upstream latents and $91\%$ within $10^{2}$--$10^{3}$ \pending{Pythia-70m and GPT-2 small, DAN-40/41}.
+The coefficients are what make the circuits small: the same nodes at their natural scale reproduce almost nothing, faithfulness at natural scale needs ${\sim}10^{4}$ latents for deep targets, about $14\times$ more, and random circuits of the same size with fitted coefficients fail.
 No behavioural task enters at any point, so the procedure applies to any latent in an SAE bank.
 We contribute:
 \begin{itemize}
 \item \textbf{Weighted circuit masking} for latent-targeted circuit discovery (\cref{sec:ablmask}): a learned node set with fitted scaling coefficients, trained jointly under three ablation methods, with a pre-activation objective that keeps a gradient where Top-K censors the target.
-\item \textbf{Weighted circuits at scale} (\cref{sec:main-result}): ${\sim}15$k sampled targets per model, with circuits of $10^{2}$--$10^{3}$ upstream latents tested for faithfulness, necessity, and sufficiency to induce on held-out contexts; \pending{production runs on TuringLLM, Pythia-70m, and GPT-2 small, DAN-19/40/41}.
+\item \textbf{Weighted circuits at scale} (\cref{sec:main-result}): $15{,}046$ sampled TuringLLM targets, with circuits of $10^{2}$--$10^{3}$ upstream latents tested for faithfulness, necessity, and sufficiency to induce on held-out contexts, $46\%$ of which pass one pre-stated criterion; \pending{Pythia-70m and GPT-2 small, DAN-40/41}.
 \item \textbf{An evaluation protocol for latent targets} (\cref{sec:eval,app:protocol}): every score names its ablation method and reads the target one way, random-circuit baselines receive the same coefficient fitting, and each method is shown to win the scores it was trained on.
 \item \textbf{Measurements of the circuits themselves} (\cref{sec:weighted,sec:secondary,sec:underdetermination}): the scaling coefficients index the faithfulness cost of natural scale; node sets are identifiable only up to a large equivalence class; and output-targeted and latent-targeted circuits fail each other's objectives.
 \end{itemize}
@@ -174,7 +178,8 @@ For a latent $f$ and a sequence--position pair $(x, t)$, write $a_f(x, t) \geq 0
 
 \paragraph{Targets and contexts.}
 Fix a target latent $f$ and let $U_f$ be the latents at every SAE site that causally precedes $f$'s site.
-Each target has 64 \emph{activating contexts}, its stored strongest-activating sequences together with a reservoir drawn from the middle of its activation distribution, each with an anchor at the target's peak and split into 48 for training and 16 held out (\cref{app:stores,app:protocol}).
+Each target has \emph{activating contexts} from two stores, its 64 strongest-activating sequences and 64 drawn from the middle of its activation distribution, each with an anchor at the target's peak (\cref{app:stores}).
+It trains on 32 strongest and 16 mid-band contexts and is scored on 16 held-out strongest contexts (primary) and 16 held-out mid-band contexts (reported); the split is stratified by activation and always trains on the two strongest (\cref{app:protocol}).
 It also has 64 \emph{contrast contexts}: corpus sequences ranked by their highest cosine similarity to any of its activating contexts in pooled final-layer representation space, excluding those contexts, and kept only if the target stays out of its site's Top-K on them, so that they are close to the target's contexts but verified silent (\cref{app:stores}).
 For the running example they are passages semantically adjacent to thermodynamics \pending{running-example contrast contexts under the v1 selection}.
 % PROTOCOL v1 (2026-09-24, DAN-64 / DAN-7): NegContextSelector("close"), silence =
@@ -347,7 +352,13 @@ We therefore read the full code at the target's site under the circuit and repor
 
 \paragraph{Near-threshold targets.}
 A target that only just enters its site's Top-K in the unmodified model has an ill-conditioned activation read: a circuit can reproduce its pre-activation while small shifts near the cut push it out, so its activation-read scores are near zero whatever the circuit.
-Such targets are identified from the unmodified model alone, before any circuit is fitted, and reported separately on the pre-activation read; \pending{cutoff, e.g.\ clean rank $\geq K/2$, DAN-8}.
+Such targets, those whose median clean rank at the anchor is at least $K/2$, are identified from the unmodified model alone, before any circuit is fitted; they stay in the headline pass rate and are also reported as a separate stratum on both reads.
+
+\paragraph{Pass criterion.}
+% DAN-8, 2026-09-27. experiments/062-h100-protocol-v1/pass_rule.py applies it.
+A circuit passes if, on the held-out strongest contexts and the activation read, its faithfulness under all three ablation methods (Z, sparsity-preserving A, and C) lies in $[0.8, 1.5]$ and its necessity is at least $0.9$.
+The band is asymmetric by design: below $0.8$ the circuit fails to drive its target, while an overshoot up to $1.5$ still drives it, and whether that overshoot is specific to the target is measured for every circuit (above).
+Each circuit's largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ is reported alongside the binary rule; sufficiency to induce, specificity, and the random-circuit baseline are reported rather than required; targets whose ratio denominator is vacuous are excluded and counted.
 
 \section{Experiments and Results}
 \label{sec:results}
@@ -361,15 +372,35 @@ Such targets are identified from the unmodified model alone, before any circuit 
 
 \paragraph{Setup.}
 Results come from three sources.
-The \emph{production run} fits WCM[Z+C+A] to ${\sim}15$k sampled targets per model under protocol v1 (\cref{app:protocol}); \pending{production runs under v1, DAN-14/40/41}.
+The \emph{production run} fits WCM[Z+C+A] to $15{,}046$ sampled TuringLLM targets under protocol v1 (\cref{app:protocol}); \pending{Pythia-70m and GPT-2 small, DAN-40/41}.
 A depth-stratified \emph{panel} of 22 TuringLLM targets carries the matched-size comparisons against other discovery methods; its current numbers predate protocol v1 and are marked as such.
 A 128-target \emph{grid} of an earlier form of the gradient attribution methods grounds the contrast-context and co-activation findings (\cref{app:grid}).
 
 \subsection{Weighted Circuits at Scale}
 \label{sec:main-result}
-% BUDGET 1.5 pp, one figure. Pre-v1 15k sizes for orientation only: median 321
-% nodes (p10 101, p90 593), 89.8% within 10^2-10^3.
-\pending{main result from the production runs, DAN-14, DAN-19, DAN-40, DAN-41: circuit size and pass rates by depth and site kind on TuringLLM, Pythia-70m, and GPT-2 small; the size distribution against the $10^{2}$--$10^{3}$ range; one figure}
+% BUDGET 1.5 pp, one figure. DAN-75 full run (2026-09-27): every number below is printed by
+% experiments/062-h100-protocol-v1/paper_main.py; layer 0 explained in DAN-126.
+\Cref{fig:main-result} summarises the production run: $15{,}004$ fitted circuits ($42$ targets had too few activating or silence-checked contrast contexts, and $10$ circuits with a vacuous denominator are excluded).
+Under the pass criterion (\cref{sec:eval}), $46\%$ of circuits pass.
+They hold a median of $494$ upstream latents ($386$ for passing circuits), and $91\%$ lie within $10^{2}$--$10^{3}$.
+The pass rate depends on the target's site and depth: $65\%$ of residual-stream, $52\%$ of MLP, and $14\%$ of attention-output targets pass, and the rate falls from $85\%$ at layer 1 to $15\%$ at layer 11.
+Zero ablation holds almost everywhere (median faithfulness $0.94$); the failures lie under the two mean ablations, where deep and attention targets fall short (medians $0.64$ and $0.48$ at layer 11, and $0.28$ and $0.24$ for attention outputs).
+Layer 0 departs from the trend ($55\%$): its circuits are faithful ($90\%$), but a third fail necessity, because the token embedding reaches layer-0 targets directly and is never ablated.
+Near-threshold targets are almost all attention outputs ($1{,}142$ targets, $7.6\%$; $0.8\%$ pass), and the remaining targets pass at $50\%$.
+On the held-out mid-band contexts, where targets fire more weakly, $12\%$ pass (median largest deviation $0.77$, against $0.32$ on the strongest contexts), so circuits fitted mostly to strong contexts transfer only in part to weak ones.
+Specificity is measured rather than required: $30\%$ of circuits ($44\%$ at MLP targets) also restore co-firing sibling latents to at least $80\%$ of the target's faithfulness (\cref{app:specificity}).
+Sufficiency to induce, which no circuit is trained on, is reported separately (\cref{fig:induce}): its median is $0.98$ among passing circuits, $1.19$ at residual-stream and $0.20$ at attention-output targets.
+Sizes are at a fixed 400-step budget, at which most circuits are still shrinking (\cref{fig:training-curves}).
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 (DAN-75 full run); paper_main.py.
+\includegraphics[width=\linewidth]{main-result.pdf}
+\caption{Weighted circuits for $15{,}004$ TuringLLM latents under protocol v1.
+Left: the share of circuits that pass the pre-stated criterion (faithfulness under Z, A, and C in $[0.8, 1.5]$ and necessity $\geq 0.9$, on held-out contexts), by target depth band and site kind.
+Right: circuit sizes; $91\%$ lie within $10^{2}$--$10^{3}$ upstream latents (shaded).}
+\label{fig:main-result}
+\end{figure}
 
 \paragraph{Beyond TuringLLM.}
 % Skeleton for the public-model runs (DAN-40/41) through the shared engine
@@ -385,10 +416,25 @@ Only the model and dictionary adapters differ; discovery, the ablation methods, 
 % Running example: experiments/032-running-example.
 
 Three versions of each circuit separate what the nodes contribute from what the coefficients contribute: the weighted circuit as fitted, the same nodes at natural scale ($\alpha = 1$), and a random circuit of the same size given the same coefficient fitting (\cref{sec:eval}).
-\pending{the three-way comparison on the production runs, DAN-14/17/20: faithfulness and sufficiency to induce for fitted $\alpha$, $\alpha = 1$, and random circuits with fitted coefficients, by depth and model}
-At natural scale the node sets that pass are far larger: attribution needs $10^{4}$--$10^{5}$ latents before the circuit alone reproduces a deep target, a cost that grows with depth and is carried by latents each individually at the noise level (\cref{sec:drivers-closure}).
-The coefficients therefore locate most of that cost in redundancy: many latents each carry a small share of a signal that fewer, rescaled nodes carry alone.
-\pending{panel numbers from the protocol-v1 refit, DAN-16: weighted vs unweighted circuits at matched acceptance}
+\pending{the three-way comparison on the production runs, DAN-75/17/20: faithfulness and sufficiency to induce for fitted $\alpha$, $\alpha = 1$, and random circuits with fitted coefficients, by depth and model}
+At natural scale, attribution needs $10^{4}$--$10^{5}$ latents before the circuit alone reproduces a deep target (\cref{sec:drivers-closure}); the coefficients locate most of that cost in redundancy, many latents each carrying a small share of a signal that fewer, rescaled nodes carry alone.
+% 062 sweep (DAN-76, 2026-09-27), experiments/062-h100-protocol-v1/paper_sweep.py (prints every number here).
+% Body figure (Daniel, 2026-09-27): ONE fixed price, lambda = 1e-3, and the Z / A / C medians rather than a
+% pass share, so it does not depend on the pass rule (DAN-8). The multi-price sweep is fig:wcm-vs-unweighted-grid.
+Unweighted circuit masking isolates what the coefficients buy: the same objective and optimiser with $\alpha$ held at $1$.
+At the same sparsity price ($\lambda = 10^{-3}$, the production price), unweighted circuits keep a median $1.85\times$ as many latents per target and are still less faithful, and the gap grows with depth, most under the two mean ablations (\cref{fig:wcm-vs-unweighted}).
+Matching faithfulness instead of price gives the natural-scale cost: across a sweep of prices, the smallest circuit whose scores all lie within $0.3$ of $1$ is a median $3.7\times$ larger unweighted at layers 0--4, $9.8\times$ at 5--7, and $14.1\times$ at 8--11, where it holds ${\sim}10^{4}$ latents (\cref{app:weighted-details}).
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 sweep (DAN-76); paper_sweep.py on out/sweep_rows.csv.
+\includegraphics[width=\linewidth]{wcm-vs-unweighted.pdf}
+\caption{At the same price, fitted coefficients make circuits both smaller and more faithful.
+Median held-out faithfulness of weighted circuit masking (blue) and unweighted circuit masking ($\alpha = 1$, grey) at one sparsity price, $\lambda = 10^{-3}$ (the production price), under zero ablation (Z) and under mean ablation over activating (A) and over contrast (C) contexts; $1$ is perfect (dashed).
+Panels are target depth bands (190 targets, protocol v1); their titles give the median circuit size, weighted against unweighted.
+Interquartile ranges and the sweep over prices are in \cref{fig:wcm-vs-unweighted-grid}.}
+\label{fig:wcm-vs-unweighted}
+\end{figure}
 For the running example, the weighted circuit holds $192$ nodes and reconstructs the target on held-out contexts, while unweighted circuit masking on the same target needs $577$ nodes and still fails under mean ablation (pre-v1 fit; \pending{refit under protocol v1}).
 
 \paragraph{Random circuits.}
@@ -428,7 +474,7 @@ weighted circuit, $400$ steps & 369 & 0.99 & 1.08 & 0.89 & 1.00 & \textbf{17/21}
 \bottomrule
 \end{tabular}
 \caption{The cross-method matrix (pre-v1: fitted on 36 contexts and scored before the evaluation fixes of \cref{app:protocol}; to be re-scored after the refit): medians over 22 depth-stratified targets, every score on held-out contexts; weighted-circuit rows apply their scaling coefficients (the $\alpha$ rows of \cref{tab:semantics}).
-``pass'' counts targets with faithfulness under both zero and mean ablation in $[0.8, 1.25]$ and $\phisup > 0.9$, a provisional rule until the pre-stated criterion is fixed; one target's mean-ablation denominator is vacuous and excluded.
+``pass'' counts targets with faithfulness under both zero and mean ablation in $[0.8, 1.25]$ and $\phisup > 0.9$, a provisional rule that predates the pass criterion of \cref{sec:eval}; one target's mean-ablation denominator is vacuous and excluded.
 Top-$n$ rows truncate each attribution ranking to the target's weighted-circuit size; the hierarchical-attribution row replicates \citet{ge2024automatically} on our sites with its threshold bisected to the same size.}
 \label{tab:matrix}
 \end{table}
@@ -446,8 +492,7 @@ Third, a method wins the scores whose ablation method it was trained or ranked u
 % co-activation to app:coact on 2026-09-22 (DAN-24).
 
 \paragraph{Contrast contexts are a controlled variable.}
-Semantic closeness and clean causal contrast are not the same property: for the contrastive attribution baseline, random contrast contexts beat the retrieval store's unchecked ones by ${\sim}0.16$ median points of sufficiency to induce, most likely because close contexts partly activate the target's mechanism, although the store's shared default set for many targets may contribute (\cref{app:contrast-source}).
-For WCM the source appears to matter less: in a pilot, refitting under close, random, or distant silence-checked contrast contexts moved node sets about as far as an identical refit does, and each circuit was most faithful under the mean ablation it was trained with, the home-turf effect again (\cref{app:contrast-source}); \pending{train-source $\times$ evaluation-source matrix at 288 targets, DAN-64}.
+Semantic closeness and clean causal contrast are not the same property: for the contrastive attribution baseline, random contrast contexts beat the store's unchecked close ones on sufficiency to induce, while WCM circuits refitted under close, random, or distant silence-checked contexts move about as far as an identical refit does (\cref{app:contrast-source}); \pending{train-source $\times$ evaluation-source matrix at 288 targets, DAN-64}.
 % 055 pilot (2026-09-22/23, 16 targets): node Jaccard vs the old circuits 0.56-0.60
 % against 0.66 for a same-contrast refit; dense freeN on each arm's own contrast set
 % 0.89-0.92 against 0.40-0.55 on distant contexts.
@@ -472,16 +517,9 @@ The copies are one feature: consecutive decoder directions are nearest or second
 % BUDGET 0.5 pp. Data: unweighted-mask membership studies (Jul 2026; paper-updates
 % B6l/B6p), 055 leak-fix A/B, experiments/032-running-example.
 
-The masking engine is bit-deterministic at fixed settings: two identical runs agree to six decimal places with \emph{zero} node flips, so tiny perturbations are controlled experiments on the objective.
-Every perturbation we tried gives the same verdict; the first five below were measured on unweighted circuit masking before scaling coefficients were added, the last two on WCM.
-A float32 and a bfloat16 run differ only in rounding, yet exchange $16.5\%$ of nodes at layer 8 (Jaccard $0.835$) at unchanged faithfulness and size.
-Raising the sparsity price swaps nodes rather than nesting them (containment $0.49$--$0.80$ between consecutive steps); no gate ever freezes, so the stopping step is another sampling axis; $8$--$25\%$ of nodes sit within $0.05$ of the decision cut and are load-bearing; and short-budget and long-budget runs at matched size share only $0.40$--$0.53$ of their nodes.
-Recomputing the mean-ablation values without a quarter of their contexts, a change that leaves the pass rate and median faithfulness unchanged, moves node sets as far as a change of hardware (median Jaccard $0.66$).
-% 2026-09-24 leak-fix A/B (055, rkeep3e3 vs rkeep3e3fix, 16 targets): 8/16 pass in
-% both; Jaccard median 0.66 (0.10-1.00); H100 vs local same-config refit 0.66.
-Aggregates are smooth and node sets are not: size and faithfulness are stable under every perturbation, but two node sets for the same target share only $40$--$85\%$ of their latents.
+The masking engine is bit-deterministic at fixed settings (two identical runs agree to six decimal places with \emph{zero} node flips), so tiny perturbations are controlled experiments on the objective, and every one we tried gives the same verdict (\cref{app:discussion}).
+Float precision, the sparsity price, the stopping step, the training budget, and the contexts behind the mean-ablation values all leave size and faithfulness unchanged but exchange nodes: two node sets for the same target share only $40$--$85\%$ of their latents.
 A discovered node set is one sample from an equivalence class of near-optimal solutions to \labelcref{eq:p2}, so we report node sets as equivalence classes and let set-level and functional claims carry the conclusions.
-The running example's full-budget and quarter-budget circuits both reconstruct the target, yet at $192$ and $250$ nodes they overlap at only Jaccard $0.60$.
 
 \section{Discussion and Limitations}
 \label{sec:discussion}
@@ -492,7 +530,7 @@ The running example's full-budget and quarter-budget circuits both reconstruct t
 \paragraph{Circuit size is a measurement at a stated scaling convention.}
 At natural scale a latent's circuit is large for deep targets (\cref{sec:weighted}), and every one of those latents is individually removable at the noise level while bulk removal craters the target (\cref{sec:drivers-closure}).
 A latent's activation, reached through an additive residual stream, is a dense function of many small contributions, so any rule that thresholds individual contributions undercounts it however the threshold is tuned.
-Fitted coefficients show that most of that collective tail is redundancy that fewer, rescaled latents can carry; a circuit's size is therefore meaningful only alongside whether its coefficients were fitted, and weighted and unweighted sizes are never compared directly.
+Fitted coefficients show that most of that collective tail is redundancy that fewer, rescaled latents can carry; a circuit's size is therefore meaningful only alongside whether its coefficients were fitted, and weighted and unweighted sizes are compared only at matched faithfulness (\cref{fig:wcm-vs-unweighted}).
 
 \paragraph{Ablation methods are part of the method.}
 \citet{miller2024transformer} showed that faithfulness is not robust to the choice of ablation; our measurements push the point into training.
@@ -518,8 +556,6 @@ A weighted circuit is fitted as a set of upstream latents sufficient for one tar
 \textbf{Contrast contexts.}
 Contrast contexts are verified silent only in the sense that the target stays out of its Top-K; a near-miss pre-activation can remain, and closeness is measured in one pooled representation space, so ``close'' is one of several defensible constructions.
 
-\textbf{Which latents are nodes is not identifiable from a single run.}
-Per-latent claims require survival across perturbations (\cref{sec:underdetermination}), which single-run studies do not establish.
 
 \textbf{Generality.}
 TuringLLM's synthetic corpus is an asset for control but a limit on generality, which the two public models partly address; larger models and other dictionary architectures remain open.
@@ -529,7 +565,7 @@ The method is scoped to Top-K dictionaries by construction: on dense ReLU dictio
 % BUDGET 0.25 pp.
 
 We reframed circuit discovery around a target latent, asking not which latents cause an output but what makes a latent fire.
-Weighted circuit masking answers with a weighted circuit of $10^{2}$--$10^{3}$ upstream latents per target, tested on held-out contexts against random circuits given the same fitting, for ${\sim}15$k sampled latents per model; the coefficients locate a redundancy that costs $10^{4}$--$10^{5}$ latents at natural scale for deep targets.
+Weighted circuit masking answers with a weighted circuit of $10^{2}$--$10^{3}$ upstream latents per target, tested on held-out contexts against random circuits given the same fitting; $46\%$ of $15{,}046$ sampled TuringLLM latents pass one pre-stated criterion \pending{Pythia-70m and GPT-2 small, DAN-40/41}; the coefficients locate a redundancy that costs ${\sim}10^{4}$ latents at natural scale for deep targets, about $14\times$ the weighted circuit.
 Circuits for single latents are a building block: composing them into chains, with propagation tested at every link, is the path from dependencies to a map of the model's internal computation.
 % End of the main body: build.ps1 reports this label's page. Target: the main
 % body ends on page 12 or earlier (DAN-24).
@@ -725,11 +761,11 @@ Every circuit in this paper is discovered and scored under the settings in \cref
 TuringLLM-1.0-254M & Top-K, $k = 128$, $40{,}960$ latents; attention output, MLP output, residual stream at 12 layers \\
 Pythia-70m & EleutherAI Top-K, $k = 16$, $32{,}768$ latents; the same three sites at 6 layers \\
 GPT-2 small & OpenAI Top-K, $k = 32$, $32{,}768$ latents, layer-normalised input; attention output, residual stream between attention and MLP, MLP output, residual stream at 12 layers \\
-Targets per model & \pending{${\sim}15$k, one sampling frame for all models, DAN-9} \\
+Targets per model & TuringLLM: $15{,}046$, sampled across every site with an upstream SAE site (layer-0 attention has none); \pending{Pythia-70m and GPT-2 small, one sampling frame, DAN-9} \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Contexts}} \\
-Activating contexts & 64 per target (top and mid contexts, \cref{sec:evidence}); 48 train, 16 held out \pending{seeded shuffle before the split for new runs; the TuringLLM split is unshuffled, with held-out activation within 2\% of train, DAN-15} \\
-Contrast contexts & 64 per target: corpus sequences ranked by highest cosine similarity to any activating context (pooled final-layer representations), activating contexts excluded, kept only if the target is outside its Top-K (\cref{app:stores}); 48 train, 16 held out \\
+Activating contexts & 64 strongest and 64 mid-band stored contexts (\cref{sec:evidence}); train on 32 strongest and 16 mid-band; hold out 16 strongest (primary) and 16 mid-band (reported). Stratified split: contexts ranked by anchor activation in blocks of 4, block $b$ holds out position $(b + 2) \bmod 4$, so ranks 1--2 always train. Targets with no mid-band store train on 48 strongest ($665$ of $15{,}004$) \\
+Contrast contexts & 64 per target: corpus sequences ranked by highest cosine similarity to any activating context (pooled final-layer representations), activating contexts excluded, kept only if the target is outside its Top-K (\cref{app:stores}); 48 train, 16 held out, stratified by similarity \\
 Anchor & position of the target's peak activation in each context \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Weighted circuit masking, WCM[Z+C+A]}} \\
@@ -750,8 +786,8 @@ Sufficiency to induce & $\phiind$ and $\phiind^{\alpha}$ on contrast contexts \\
 Clamped faithfulness & $\phi^{\mathrm{pin}}_{\pi}$ under the same ablation methods \\
 Random-circuit baseline & size- and site-matched, drawn from live latents, coefficients fitted with the same budget; \pending{number of draws, DAN-46} \\
 Specificity (reported) & the target's rank and Top-K share; latents lifted above the unmodified Top-K cut, against the empty circuit; sibling faithfulness against the target's (\cref{app:specificity}) \\
-Near-threshold targets & identified from the unmodified model, reported separately on the pre-activation read; \pending{cutoff, DAN-8} \\
-Pass criterion & \pending{one pre-stated rule, DAN-8} \\
+Near-threshold targets & median clean rank at the anchor $\geq K/2$, identified from the unmodified model; kept in the headline pass rate and also reported as a stratum on both reads \\
+Pass criterion & faithfulness under Z, sparsity-preserving A, and C all in $[0.8, 1.5]$, and necessity $\geq 0.9$ (held-out strongest contexts, activation read); vacuous denominators excluded and counted; the largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ reported alongside \\
 \bottomrule
 \end{tabular}
 \caption{The protocol behind every reported circuit. Values marked pending are fixed before the corresponding runs are reported.}
@@ -884,10 +920,43 @@ Diamonds: \emph{weighted circuits} discovered on the same targets (\cref{sec:wei
 % Moved from the main body (sec:weighted) on 2026-09-22 (DAN-24). Panel
 % numbers: experiments/029-panel; replaced by the protocol-v1 refit (DAN-16).
 
+\paragraph{Weighted against unweighted circuits across the sparsity price.}
+% 062 sweep (DAN-76, 2026-09-27): experiments/062-h100-protocol-v1/paper_sweep.py prints every number below.
+The body comparison (\cref{fig:wcm-vs-unweighted}) uses the one price both grids share, $\lambda = 10^{-3}$; the natural-scale cost comes from the full sweep, which fits WCM at $\lambda \in \{2.5, 5, 10, 20, 40\} \times 10^{-4}$ and unweighted circuit masking at $\lambda \in \{0.1, 0.3, 1, 3, 10\} \times 10^{-4}$ to 191 targets (five per layer and site kind, plus the pilot targets; 190 with usable contexts) and scores every circuit on the held-out strongest contexts.
+Unweighted masking needs a lower price to reach comparable faithfulness, so the two grids differ.
+\Cref{fig:wcm-vs-unweighted-grid} separates the three ablation methods: the gap is smallest under zero ablation and largest under the two mean ablations, where unweighted circuits of ${\sim}10^{3}$ latents score $0.18$--$0.37$ at layers 5--11 (zero ablation $0.58$--$0.72$).
+For the natural-scale cost we take, per target, the smallest circuit whose worst score lies within $0.3$ of $1$.
+Among targets both methods reach, the medians are $128$ against $502$ latents at layers 0--4 ($3.7\times$; 66 of 76 targets reached by both), $447$ against $3{,}862$ at 5--7 ($9.8\times$; 33 of 48), and $789$ against $9{,}989$ at 8--11 ($14.1\times$; 25 of 66).
+WCM's grid stops near $10^{3}$ latents, so at depth it reaches the criterion for fewer targets (31 of 66) than unweighted masking does at up to $3 \times 10^{4}$ latents (39 of 66); \pending{WCM at $\lambda$ below $2.5 \times 10^{-4}$}.
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 sweep (DAN-76); paper_sweep.py on out/sweep_rows.csv.
+\includegraphics[width=\linewidth]{wcm-vs-unweighted-grid.pdf}
+\caption{Weighted against unweighted circuit masking by ablation method (rows: target depth band; columns: zero ablation, and mean ablation over activating and over contrast contexts).
+Median held-out faithfulness and interquartile range against median circuit size, one point per sparsity price; the grey band is $[0.8, 1.25]$.
+The gap between the methods is smallest under zero ablation, largest under the two mean ablations, and widens with depth.}
+\label{fig:wcm-vs-unweighted-grid}
+\end{figure}
+
 \paragraph{Sufficiency to induce by site kind.}
-Sufficiency to induce, unlike reconstruction, is structured by the target's site kind.
-Residual-stream targets are induced broadly (with a depth overshoot, next paragraph); MLP-output targets reconstruct perfectly but are induced weakly (best $0.88$; two below zero); attention-output targets are bimodal, with one induced at bare clean values and one that cannot be induced at all.
-Which latents \emph{can} be induced from upstream is itself a per-kind property, and characterising it is open.
+% DAN-75 full run, experiments/062-h100-protocol-v1/paper_main.py (DAN-129).
+Sufficiency to induce, unlike reconstruction, is structured by the target's site kind (\cref{fig:induce}).
+It asks a question no circuit is trained on: setting the circuit's latents to $\alpha$ times their values from the activating contexts, does the target switch on in held-out contrast contexts where it is silent?
+Across the production run the median is $0.84$ ($0.98$ among passing circuits, of which $88\%$ switch the target on to at least half its natural level).
+Residual-stream targets are induced almost everywhere ($96\%$ at half or more; median $1.19$, rising with depth to $1.35$ at layers 8--11), MLP-output targets partly ($70\%$; median $0.69$), and attention-output targets rarely beyond layer 4 ($28\%$ and $29\%$ at layers 5--7 and 8--11; median $0.20$ overall).
+Which latents \emph{can} be induced from upstream is therefore itself a per-kind property, and characterising it is open.
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 (DAN-75 full run); paper_main.py.
+\includegraphics[width=\linewidth]{induce.pdf}
+\caption{Sufficiency to induce across the production run ($15{,}004$ TuringLLM circuits), on held-out contrast contexts where the target is silent.
+Left: median $\phiind^{\alpha}$ by target depth band and site kind ($1$ is the target's natural level, dashed).
+Right: the share of circuits that switch the target on to at least half its natural level.
+Reported for every circuit; not part of the pass criterion.}
+\label{fig:induce}
+\end{figure}
 
 \paragraph{The budget is part of the method.}
 Sweeping the training budget shows reconstruction faithfulness converges by $100$ steps; everything after buys sparsity.
@@ -899,6 +968,38 @@ Two further results on the training ablation methods close the loop.
 Coefficient-only training on a frozen node set does not fix the induction overshoot but does inflate the coefficients monotonically; the objective simply does not constrain sufficiency to induce.
 Removing the zero-ablation term from training explodes zero-ablation faithfulness to $36$--$1{,}681$ at depth while the trained ablation method stays in band: the sharpest demonstration of the \emph{home-turf effect} (\cref{sec:method-comparison}), now at the level of coefficients rather than node sets.
 The training schedule therefore belongs in the method statement: the protocol fixes the full budget, and a quarter of it (at a raised price) calibrates sufficiency to induce better at two to three times the circuit size.
+
+\paragraph{Training dynamics at scale.}
+% DAN-75 full run; experiments/062-h100-protocol-v1/curves.py on train.shard*.jsonl (DAN-129).
+Every production fit records its per-step curve (\cref{fig:training-curves,fig:loss-curves}).
+All gates start open, so no latent falls below the keep threshold for the first ${\sim}55$ steps; membership then collapses from $10^{5}$--$10^{6}$ candidates to a median of about $1{,}700$ by step 100, and a circuit is within twice its final size by a median step of $137$.
+It is not converged at the protocol's 400 steps: the median circuit loses $12\%$ of its members over the last 100 steps ($16$--$17\%$ at layers 10 and 11), and $88\%$ are still shrinking by more than $5\%$.
+The data loss stays nearly flat over that stretch while the penalty falls, so the late pruning costs little training fit, but at depth the circuits still shrinking pass less often: $30\%$ against $67\%$ for the settled half at layers 4--7, and $9\%$ against $36\%$ at layers 8--11, with no difference at layers 0--3.
+Reported sizes are therefore sizes at a fixed budget.
+The sparsity penalty dominates the loss throughout: its tail of nearly closed gates outweighs the members, and the data terms end at $0.3\%$ of the loss.
+Before their $0.25$ weights, the contrast-mean and activating-mean errors are about twice the zero-ablation error, the same ordering as held-out faithfulness.
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 (DAN-75 full run); curves.py.
+\includegraphics[width=\linewidth]{training-curves.pdf}
+\caption{Training dynamics of the $15{,}004$ production fits, by target depth band (median and interquartile range).
+Left: circuit size (latents above the keep threshold) per step.
+Middle: the data loss (the Z, C, and A terms, penalty excluded), averaged over each pass through the 48 training contexts (12 steps), since every step sees one batch of 4.
+Right: the share of members removed over the last 100 steps, by target layer (median and interquartile range).}
+\label{fig:training-curves}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+% Data: experiments/062-h100-protocol-v1 (DAN-75 full run); curves.py.
+\includegraphics[width=\linewidth]{loss-curves.pdf}
+\caption{The training loss of the production fits (median and interquartile range; per-pass averages as in \cref{fig:training-curves}).
+Left: the total loss, data terms plus sparsity penalty, by target depth band.
+Middle: the data terms' share of it; the rest is the penalty on open gates.
+Right: the data loss split into its ablation terms as weighted in the objective (Z, $0.25 \times$ C, $0.25 \times$ A), with the rank-keep contribution that each term contains.}
+\label{fig:loss-curves}
+\end{figure}
 
 \paragraph{Attribution-mass recovery.}
 \citet{ge2024automatically} score circuits by attribution recovery inside their linearised graph, with no intervention; our first-order analogue is \emph{attribution-mass recovery}, the share of total activation-times-gradient mass a node set captures (a surrogate: the exact leaf-sum identity exists only in their substitute model).
@@ -970,7 +1071,11 @@ A circuit whose siblings are restored as well as its target is flagged as an amp
 
 In a pilot, most circuits are specific: the target is restored near $1$ while siblings and other active latents are restored far less.
 Under mean ablation, however, circuits lift many latents above the cut that the empty circuit does not, a minority of circuits are amplifiers that pass every faithfulness score, and several deep attention targets lose their Top-K place to lifted rivals although their pre-activation is reproduced.
-The rank-keep term (\cref{sec:ablmask}) keeps the target in its Top-K more often but does not reliably remove amplifiers, so specificity is reported for every circuit rather than claimed for the method; \pending{specificity at scale, DAN-64}.
+The rank-keep term (\cref{sec:ablmask}) keeps the target in its Top-K more often but does not reliably remove amplifiers, so specificity is reported for every circuit rather than claimed for the method.
+% DAN-75 full run, spec.shard*.jsonl (2026-09-27).
+The production run confirms the pilot at scale ($15{,}004$ circuits): under Z, A, and C the target is restored to a median $0.94$, $0.99$, and $0.92$ of its pre-activation, its siblings to $0.26$, $0.46$, and $0.41$, and the site's other active latents to $0.14$, $0.28$, and $0.24$.
+Under the two mean ablations, circuits lift a median of $578$ and $517$ latents above the unmodified Top-K cut, against $5$ and $4$ for the empty circuit, and the target stays in its Top-K on $84\%$ and $80\%$ of held-out anchors.
+$30\%$ of circuits are flagged as amplifiers under at least one ablation method ($44\%$ of MLP, $30\%$ of residual-stream, and $11\%$ of attention-output targets), including $38\%$ of passing circuits; $29\%$ of all circuits pass and carry no flag.
 % 056 pilot: target 0.82-1.04 vs siblings 0.27-0.36 (medians); switch-ons under A/C
 % 366-636 vs 18 for the empty circuit; amplifier flags 0-4 across rank-keep weights
 % (3 for plain WCM), no trend.
@@ -998,6 +1103,16 @@ This conditions our claims: reconstruction residuals stay as explicit anchors, e
 \section{Extended Discussion}
 \label{app:discussion}
 % Moved from the main-body Discussion on 2026-09-22 (DAN-24).
+
+\paragraph{The non-identifiability probes.}
+% Moved from sec:underdetermination on 2026-09-27 (DAN-128, page budget).
+% 2026-09-24 leak-fix A/B (055, rkeep3e3 vs rkeep3e3fix, 16 targets): 8/16 pass in
+% both; Jaccard median 0.66 (0.10-1.00); H100 vs local same-config refit 0.66.
+The first five probes below were measured on unweighted circuit masking before scaling coefficients were added, the last two on WCM (\cref{sec:underdetermination}).
+A float32 and a bfloat16 run differ only in rounding, yet exchange $16.5\%$ of nodes at layer 8 (Jaccard $0.835$) at unchanged faithfulness and size.
+Raising the sparsity price swaps nodes rather than nesting them (containment $0.49$--$0.80$ between consecutive steps); no gate ever freezes, so the stopping step is another sampling axis; $8$--$25\%$ of nodes sit within $0.05$ of the decision cut and are load-bearing; and short-budget and long-budget runs at matched size share only $0.40$--$0.53$ of their nodes.
+Recomputing the mean-ablation values without a quarter of their contexts, a change that leaves the pass rate and median faithfulness unchanged, moves node sets as far as a change of hardware (median Jaccard $0.66$).
+A pre-v1 running example's full-budget and quarter-budget circuits both reconstruct the target, yet at $192$ and $250$ nodes they overlap at only Jaccard $0.60$.
 
 \paragraph{Report node sets as equivalence classes.}
 The non-identifiability results (\cref{sec:underdetermination}) change what a responsible node-set claim looks like.

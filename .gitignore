@@ -63,6 +63,17 @@ AGENTS.md
 # 062: run outputs come back from the pod as a tarball; logs are regenerated
 /experiments/062-h100-protocol-v1/out*/
 /experiments/062-h100-protocol-v1/logs/
+# 063: the ~2,400 per-circuit screening reports (84 MB) are regenerable with inspect_circuit.py from the 062 run
+# outputs. Track the code, README, validation results, each screen's index.csv, and the reports and member lists of
+# the case studies the paper uses. Files (not folders) are ignored, so the exceptions below can re-include them.
+/experiments/063-case-studies/results*/reports/*
+/experiments/063-case-studies/results*/members/*
+!/experiments/063-case-studies/results_full_deep/reports/8.attn.29991.md
+!/experiments/063-case-studies/results_full_deep/reports/9.resid.7640.md
+!/experiments/063-case-studies/results_full_deep/reports/10.resid.34899.md
+!/experiments/063-case-studies/results_full_deep/members/8.attn.29991.csv
+!/experiments/063-case-studies/results_full_deep/members/9.resid.7640.csv
+!/experiments/063-case-studies/results_full_deep/members/10.resid.34899.csv
 
 # Root-level scratch from local smokes and transfers (never commit)
 /*.log

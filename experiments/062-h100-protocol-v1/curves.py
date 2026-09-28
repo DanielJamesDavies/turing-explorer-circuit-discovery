@@ -14,6 +14,7 @@ held-out strongest contexts (within each depth band, so depth does not confound 
 import glob
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -27,9 +28,18 @@ from analysis.style import (CATEGORICAL, INK_MUTED, INK_SECONDARY, configure_mat
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 BANDS = (("layers 0-3", range(0, 4)), ("layers 4-7", range(4, 8)), ("layers 8-11", range(8, 12)))
 HEAD = ("free0_tk", "freeM_topk_tk", "freeN_topk_tk")
-BAND = (0.8, 1.25)
+BAND = (0.8, 1.5)          # the DAN-8 pass band (2026-09-27); "in band" below also requires necessity >= NEC_MIN
+NEC_MIN = 0.9
 LAST = 100                                                   # the "still shrinking" window, in steps
 PERIOD = 12            # batches of 4 cycle through the 48 training contexts in a fixed order: one pass = 12 steps
+# near print size (the paper's text width is 5.5 in) with smaller titles and labels, so the text lands at ~6-8 pt
+PRINT_SIZE = (9.5, 3.2)
+PRINT_RC = {"axes.titlesize": 11, "axes.labelsize": 9.5, "legend.fontsize": 8.5,
+            "xtick.labelsize": 9, "ytick.labelsize": 9}
+FIGS = HERE.parents[1] / "paper" / "figures"
+# depth is ordered: a light-to-dark blue ramp (shallow -> deep) from the theme's blue ramp, not categorical hues. Red
+# is reserved for C (contrast mean) and appears in the loss figure's term panel (Daniel's rule: no red elsewhere).
+BAND_COLORS = ("#8aa4ff", "#0044ff", "#002894")
 # data-loss terms in Figure 1's colours: Z ink grey, C (contrast mean) red, A (activating mean) green
 TERMS = {"zero": ("Z (zero)", INK_SECONDARY), "floor": ("0.25 × C (contrast mean)", CATEGORICAL[1]),
          "pos": ("0.25 × A (activating mean)", CATEGORICAL[3])}
@@ -61,8 +71,9 @@ def load():
     # pos = A (activating mean, x gamma_A); rank = the rank-keep part inside them, before the term weights
     terms = {t: np.array([fits[k]["curve"]["terms"][t] for k in keys], dtype=float) for t in TERMS}
     rank = np.array([fits[k]["curve"]["rank"] for k in keys], dtype=float)
-    # a missing score (None) counts as out of band, as in merge.py (pandas compares NaN as False)
-    in_band = np.array([all(ev[k][h] is not None and BAND[0] <= ev[k][h] <= BAND[1] for h in HEAD)
+    # the DAN-8 pass rule; a missing score (None) fails, as in merge.py (pandas compares NaN as False)
+    nec = lambda r: r.get("phi_sup_blind_tk") is not None and r["phi_sup_blind_tk"] >= NEC_MIN
+    in_band = np.array([all(ev[k][h] is not None and BAND[0] <= ev[k][h] <= BAND[1] for h in HEAD) and nec(ev[k])
                         if k in ev else np.nan for k in keys], dtype=float)
     return keys, layer, size, loss, data, terms, rank, in_band
 
@@ -82,35 +93,33 @@ def loss_figure(plt, layer, loss, data, terms, rank):
     """Second figure: the total training loss, its data share, and the data loss split into its terms."""
     steps = np.arange(loss.shape[1])
     sm = steps[PERIOD - 1:]
-    fig, axes = plt.subplots(1, 3, figsize=panel_figsize(1, 3))
+    fig, axes = plt.subplots(1, 3, figsize=PRINT_SIZE)
     share = 100 * per_pass(data) / per_pass(loss)
-    for (name, ls), color in zip(BANDS, CATEGORICAL):
+    for (name, ls), color in zip(BANDS, BAND_COLORS):
         m = np.isin(layer, list(ls))
         band_line(axes[0], steps, loss[m], color, "%s (n %d)" % (name, m.sum()))
         band_line(axes[1], sm, np.clip(share[m], 1e-4, None), color, name)
-    axes[0].set(yscale="log", xlabel="training step", ylabel="training loss (data + sparsity penalty)")
+    # explanatory notes (per-pass averaging, "the rest is the penalty") live in the paper caption, not on the axes
+    axes[0].set(yscale="log", xlabel="training step", ylabel="loss (data + penalty)")
     axes[0].set_title("Training loss")
     styled_legend(axes[0], loc="upper right")
-    axes[1].set(yscale="log", xlabel="training step", ylabel="data terms, share of the loss (%)", ylim=(2e-3, 1.5))
+    axes[1].set(yscale="log", xlabel="training step", ylabel="data share of the loss (%)", ylim=(2e-3, 1.5))
     axes[1].set_title("Data share of the loss")
-    axes[1].text(0.98, 0.04, "the rest is the sparsity penalty (λ × gates)", transform=axes[1].transAxes,
-                 ha="right", va="bottom", fontsize=9.5, color=INK_MUTED)
 
     for t, (label, color) in TERMS.items():
         band_line(axes[2], sm, np.clip(per_pass(terms[t]), 1e-5, None), color, label)
     band_line(axes[2], sm, np.clip(per_pass(rank), 1e-5, None), CATEGORICAL[6], "rank-keep (inside the terms)")
-    axes[2].set(yscale="log", xlabel="training step", ylabel="data loss term", ylim=(1e-5, 1.0))
+    axes[2].set(yscale="log", xlabel="training step", ylabel="data loss term", ylim=(1e-5, 30.0))
     axes[2].set_title("Data loss by ablation term")
-    styled_legend(axes[2], loc="lower right")
-    for ax in axes[1:]:
-        ax.text(0.02, 0.96, "all circuits; averaged per pass (%d steps)" % PERIOD if ax is axes[2] else
-                "averaged per pass (%d steps)" % PERIOD, transform=ax.transAxes, va="top", fontsize=9.5, color=INK_MUTED)
+    styled_legend(axes[2], loc="upper right", fontsize=8)          # the top right is empty above the curves
 
     final = {t: np.median(per_pass(terms[t])[:, -1]) for t in TERMS}
     print("final data-loss terms (median, last pass): " + ", ".join("%s %.4f" % (TERMS[t][0], v) for t, v in final.items())
           + ", rank-keep %.5f" % np.median(per_pass(rank)[:, -1]))
     print("data share of the loss at the end: median %.2f%%" % np.median(share[:, -1]))
-    print("figure:", save_figure(fig, OUT / "loss_curves.png"))
+    png = save_figure(fig, OUT / "loss_curves.png")
+    print("figure:", png)
+    return png
 
 
 def main():
@@ -127,7 +136,8 @@ def main():
         np.median(reach), np.percentile(reach, 10), np.percentile(reach, 90)))
     print("shrink over the last %d steps: median %.1f%%, p90 %.1f%%; still shrinking >5%%: %.0f%%, >10%%: %.0f%%" % (
         LAST, 100 * np.median(shrink), 100 * np.percentile(shrink, 90), 100 * (shrink > .05).mean(), 100 * (shrink > .10).mean()))
-    print("in band (all of Z/A/C in [0.8, 1.25], held-out strongest) by last-%d-step shrink, within depth bands:" % LAST)
+    print("pass rate (DAN-8: Z/A/C in [%.1f, %.1f], necessity >= %.1f; held-out strongest) by last-%d-step shrink, "
+          "within depth bands:" % (BAND[0], BAND[1], NEC_MIN, LAST))
     for name, ls in BANDS:
         m = np.isin(layer, list(ls)) & ~np.isnan(in_band)
         cut = np.median(shrink[m])
@@ -136,34 +146,37 @@ def main():
             name, 100 * np.nanmean(in_band[lo]), lo.sum(), 100 * np.nanmean(in_band[hi]), hi.sum()))
 
     plt = configure_matplotlib()
-    fig, axes = plt.subplots(1, 3, figsize=panel_figsize(1, 3))
+    plt.rcParams.update(PRINT_RC)
+    fig, axes = plt.subplots(1, 3, figsize=PRINT_SIZE)
     # Each step's data loss is ONE batch of 4 training contexts, and the batches cycle through the 48 in a fixed order
     # (period 12 steps), so the raw per-step curve is a sawtooth of batch difficulty. Average over each full pass.
     smooth = per_pass(data)
-    for (name, ls), color in zip(BANDS, CATEGORICAL):
+    for (name, ls), color in zip(BANDS, BAND_COLORS):
         m = np.isin(layer, list(ls))
         band_line(axes[0], steps, size[m], color, "%s (n %d)" % (name, m.sum()))
         band_line(axes[1], steps[PERIOD - 1:], np.clip(smooth[m], 1e-5, None), color, name)
     axes[0].set(yscale="log", xlabel="training step", ylabel="latents in the circuit")
     axes[0].set_title("Circuit size during training")
     styled_legend(axes[0], loc="upper right")
-    axes[1].set(yscale="log", xlabel="training step", ylabel="data loss (Z + C + A terms)", ylim=(3e-3, 1.0))
-    axes[1].set_title("Data loss during training")
-    axes[1].text(0.02, 0.04, "averaged over each pass through the\n48 training contexts (%d steps)" % PERIOD,
-                 transform=axes[1].transAxes, va="bottom", fontsize=9.5, color=INK_MUTED)
+    axes[1].set(yscale="log", xlabel="training step", ylabel="data loss (Z + C + A)", ylim=(3e-3, 1.0))
+    axes[1].set_title("Data loss during training")          # per-pass averaging is stated in the caption
 
     med = [100 * np.median(shrink[layer == L]) for L in range(12)]
     q1 = [100 * np.percentile(shrink[layer == L], 25) for L in range(12)]
     q3 = [100 * np.percentile(shrink[layer == L], 75) for L in range(12)]
     axes[2].vlines(range(12), q1, q3, color=tint(CATEGORICAL[0], 0.55), linewidth=2.2, zorder=1)
     axes[2].plot(range(12), med, "o", color=CATEGORICAL[0], markersize=7, zorder=2)
-    axes[2].set(xlabel="target layer", ylabel="members removed in the last %d steps (%%)" % LAST,
-                xticks=range(12), ylim=(0, None))
-    axes[2].set_title("Still shrinking at step %d" % size.shape[1])
-    axes[2].text(0.02, 0.96, "median and interquartile range", transform=axes[2].transAxes,
-                 va="top", fontsize=9.5, color=INK_MUTED)
-    print("figure:", save_figure(fig, OUT / "training_curves.png"))
-    loss_figure(plt, layer, loss, data, terms, rank)
+    axes[2].set(xlabel="target layer", ylabel="removed in last %d steps (%%)" % LAST,
+                xticks=range(0, 12, 2), ylim=(0, None))
+    axes[2].set_title("Still shrinking at step %d" % size.shape[1])      # median + IQR: stated in the caption
+    png = save_figure(fig, OUT / "training_curves.png")
+    print("figure:", png)
+    png2 = loss_figure(plt, layer, loss, data, terms, rank)
+    if os.environ.get("PAPER"):                                    # PAPER=1: copy the vector figures into the paper
+        FIGS.mkdir(parents=True, exist_ok=True)
+        shutil.copy(png.with_suffix(".pdf"), FIGS / "training-curves.pdf")
+        shutil.copy(png2.with_suffix(".pdf"), FIGS / "loss-curves.pdf")
+        print("copied to", FIGS)
 
 
 if __name__ == "__main__":
