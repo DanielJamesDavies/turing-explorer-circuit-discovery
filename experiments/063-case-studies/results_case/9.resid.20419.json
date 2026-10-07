@@ -1,0 +1,1139 @@
+{
+ "key": "9.resid.20419",
+ "groups": {
+  "dates / eras": {
+   "n": 4,
+   "share": 0.04248976032091255,
+   "layers": [
+    7,
+    8
+   ],
+   "members": [
+    "7.attn.24922",
+    "7.mlp.19617",
+    "8.mlp.5180",
+    "8.resid.22626"
+   ]
+  },
+  "early civilisations": {
+   "n": 7,
+   "share": 0.09406998252864218,
+   "layers": [
+    2,
+    7,
+    8
+   ],
+   "members": [
+    "7.resid.10003",
+    "8.resid.13018",
+    "7.attn.23646",
+    "7.attn.39627",
+    "2.resid.16478",
+    "7.mlp.17292",
+    "7.resid.17459"
+   ]
+  },
+  "classical Greece": {
+   "n": 10,
+   "share": 0.13134948418112338,
+   "layers": [
+    7,
+    8,
+    9
+   ],
+   "members": [
+    "7.resid.37523",
+    "8.resid.4704",
+    "9.mlp.11623",
+    "9.mlp.21754",
+    "8.resid.34691",
+    "8.mlp.3889",
+    "7.mlp.17081",
+    "8.mlp.4335",
+    "9.attn.36812",
+    "8.resid.1005"
+   ]
+  },
+  "philosophy / rhetoric": {
+   "n": 8,
+   "share": 0.05014169941950908,
+   "layers": [
+    0,
+    7,
+    8
+   ],
+   "members": [
+    "8.resid.21699",
+    "8.resid.26127",
+    "7.resid.38584",
+    "0.mlp.21906",
+    "7.attn.10587",
+    "7.attn.23071",
+    "8.attn.3327",
+    "7.attn.2593"
+   ]
+  },
+  "government / empire": {
+   "n": 4,
+   "share": 0.031295822438956226,
+   "layers": [
+    7,
+    8
+   ],
+   "members": [
+    "8.resid.42",
+    "7.resid.35780",
+    "7.resid.23336",
+    "8.resid.4747"
+   ]
+  },
+  "historical period (control)": {
+   "n": 6,
+   "share": 0.0994670956328283,
+   "layers": [
+    7,
+    8
+   ],
+   "members": [
+    "8.resid.13141",
+    "7.resid.25644",
+    "7.attn.15390",
+    "7.attn.24506",
+    "8.attn.6856",
+    "7.attn.24779"
+   ]
+  },
+  "generic core (control)": {
+   "n": 7,
+   "share": 0.041698655448086805,
+   "layers": [
+    0,
+    1,
+    5
+   ],
+   "members": [
+    "0.resid.6299",
+    "0.attn.5663",
+    "0.mlp.1349",
+    "1.attn.13899",
+    "1.attn.16130",
+    "1.mlp.621",
+    "5.attn.33630"
+   ]
+  },
+  "_rest": {
+   "n": 682,
+   "share": 0.5094875000299416
+  },
+  "_total_members": 728
+ },
+ "probes": {
+  "ref_a_pos": 29.4921875,
+  "sentences": [
+   {
+    "sentence": "In the 5th century BC, the philosopher taught in the city of",
+    "category": "classical Greece",
+    "clean": 22.5,
+    "at": "the",
+    "Z": 13.0625,
+    "Z_empty": 0.0,
+    "A": 34.0,
+    "A_empty": 13.1875,
+    "C": 6.9375,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In 450 BC, the scholar lived in the city of",
+    "category": "classical Greece",
+    "clean": 15.5625,
+    "at": "the",
+    "Z": 10.0,
+    "Z_empty": 0.0,
+    "A": 33.75,
+    "A_empty": 13.125,
+    "C": 7.25,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In ancient Greece, the scholar lived in the city of",
+    "category": "classical Greece",
+    "clean": 23.625,
+    "at": "the",
+    "Z": 32.75,
+    "Z_empty": 0.0,
+    "A": 33.25,
+    "A_empty": 13.0625,
+    "C": 27.25,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In ancient Athens, the scholar lived in the city of",
+    "category": "classical Greece",
+    "clean": 26.75,
+    "at": ",",
+    "Z": 30.25,
+    "Z_empty": 0.0,
+    "A": 31.875,
+    "A_empty": 13.3125,
+    "C": 27.375,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In 10000 BC, the scholar lived in the city of",
+    "category": "other ancient",
+    "clean": 5.5625,
+    "at": "in",
+    "Z": 8.9375,
+    "Z_empty": 0.0,
+    "A": 25.625,
+    "A_empty": 13.375,
+    "C": 5.59375,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In ancient Egypt, the scholar lived in the city of",
+    "category": "other ancient",
+    "clean": 9.5625,
+    "at": "in",
+    "Z": 8.75,
+    "Z_empty": 0.0,
+    "A": 31.125,
+    "A_empty": 13.1875,
+    "C": 6.8125,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In ancient Rome, the scholar lived in the city of",
+    "category": "other ancient",
+    "clean": 15.125,
+    "at": "the",
+    "Z": 23.875,
+    "Z_empty": 0.0,
+    "A": 38.25,
+    "A_empty": 13.1875,
+    "C": 17.875,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In ancient China, the scholar lived in the city of",
+    "category": "other ancient",
+    "clean": 7.46875,
+    "at": "in",
+    "Z": 19.625,
+    "Z_empty": 0.0,
+    "A": 38.0,
+    "A_empty": 13.125,
+    "C": 7.5,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In medieval France, the scholar lived in the city of",
+    "category": "later eras",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 6.53125,
+    "Z_empty": 0.0,
+    "A": 20.875,
+    "A_empty": 13.1875,
+    "C": 5.84375,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In the 19th century, the philosopher taught in the city of",
+    "category": "later eras",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 8.5,
+    "Z_empty": 0.0,
+    "A": 19.875,
+    "A_empty": 13.375,
+    "C": 3.78125,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "In 1950, the scholar lived in the city of",
+    "category": "later eras",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.34375,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.5625,
+    "C": 3.0625,
+    "C_empty": 0.0
+   },
+   {
+    "sentence": "The BC Lions played football in the city of",
+    "category": "lexical control",
+    "clean": 12.875,
+    "at": "the",
+    "Z": 19.75,
+    "Z_empty": 0.0,
+    "A": 39.5,
+    "A_empty": 13.125,
+    "C": 11.125,
+    "C_empty": 0.0
+   }
+  ],
+  "years": [
+   {
+    "year": -5000,
+    "sentence": "In 5000 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 8.75,
+    "at": "in",
+    "Z": 9.0625,
+    "Z_empty": 0.0,
+    "A": 27.875,
+    "A_empty": 13.3125,
+    "C": 6.125,
+    "C_empty": 0.0
+   },
+   {
+    "year": -3000,
+    "sentence": "In 3000 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 9.0,
+    "at": "in",
+    "Z": 9.9375,
+    "Z_empty": 0.0,
+    "A": 32.25,
+    "A_empty": 13.25,
+    "C": 6.5,
+    "C_empty": 0.0
+   },
+   {
+    "year": -2000,
+    "sentence": "In 2000 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 7.0,
+    "at": "the",
+    "Z": 8.75,
+    "Z_empty": 0.0,
+    "A": 26.25,
+    "A_empty": 13.125,
+    "C": 5.15625,
+    "C_empty": 0.0
+   },
+   {
+    "year": -1500,
+    "sentence": "In 1500 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 5.28125,
+    "at": "the",
+    "Z": 8.625,
+    "Z_empty": 0.0,
+    "A": 24.5,
+    "A_empty": 13.5,
+    "C": 6.03125,
+    "C_empty": 0.0
+   },
+   {
+    "year": -1000,
+    "sentence": "In 1000 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 6.5625,
+    "at": "in",
+    "Z": 9.625,
+    "Z_empty": 0.0,
+    "A": 29.5,
+    "A_empty": 13.375,
+    "C": 6.0,
+    "C_empty": 0.0
+   },
+   {
+    "year": -800,
+    "sentence": "In 800 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 13.1875,
+    "at": "the",
+    "Z": 10.0,
+    "Z_empty": 0.0,
+    "A": 35.75,
+    "A_empty": 13.1875,
+    "C": 6.09375,
+    "C_empty": 0.0
+   },
+   {
+    "year": -600,
+    "sentence": "In 600 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 12.75,
+    "at": "the",
+    "Z": 12.0,
+    "Z_empty": 0.0,
+    "A": 36.75,
+    "A_empty": 13.125,
+    "C": 6.78125,
+    "C_empty": 0.0
+   },
+   {
+    "year": -500,
+    "sentence": "In 500 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 12.25,
+    "at": "the",
+    "Z": 9.0625,
+    "Z_empty": 0.0,
+    "A": 30.875,
+    "A_empty": 13.3125,
+    "C": 6.9375,
+    "C_empty": 0.0
+   },
+   {
+    "year": -450,
+    "sentence": "In 450 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 15.5625,
+    "at": "the",
+    "Z": 10.0,
+    "Z_empty": 0.0,
+    "A": 33.75,
+    "A_empty": 13.125,
+    "C": 7.25,
+    "C_empty": 0.0
+   },
+   {
+    "year": -400,
+    "sentence": "In 400 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 13.125,
+    "at": "the",
+    "Z": 10.3125,
+    "Z_empty": 0.0,
+    "A": 36.5,
+    "A_empty": 13.125,
+    "C": 7.6875,
+    "C_empty": 0.0
+   },
+   {
+    "year": -300,
+    "sentence": "In 300 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 14.25,
+    "at": "the",
+    "Z": 12.125,
+    "Z_empty": 0.0,
+    "A": 36.25,
+    "A_empty": 13.125,
+    "C": 8.0,
+    "C_empty": 0.0
+   },
+   {
+    "year": -200,
+    "sentence": "In 200 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 12.0625,
+    "at": "the",
+    "Z": 8.25,
+    "Z_empty": 0.0,
+    "A": 29.5,
+    "A_empty": 13.1875,
+    "C": 5.1875,
+    "C_empty": 0.0
+   },
+   {
+    "year": -100,
+    "sentence": "In 100 BC, the scholar lived in the city of",
+    "category": "year",
+    "clean": 9.8125,
+    "at": "the",
+    "Z": 8.8125,
+    "Z_empty": 0.0,
+    "A": 32.75,
+    "A_empty": 13.375,
+    "C": 6.40625,
+    "C_empty": 0.0
+   },
+   {
+    "year": 100,
+    "sentence": "In 100 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.15625,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.375,
+    "C": 3.953125,
+    "C_empty": 0.0
+   },
+   {
+    "year": 300,
+    "sentence": "In 300 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 6.75,
+    "at": "the",
+    "Z": 7.15625,
+    "Z_empty": 0.0,
+    "A": 20.0,
+    "A_empty": 13.1875,
+    "C": 3.84375,
+    "C_empty": 0.0
+   },
+   {
+    "year": 500,
+    "sentence": "In 500 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 5.21875,
+    "at": "the",
+    "Z": 7.28125,
+    "Z_empty": 0.0,
+    "A": 19.25,
+    "A_empty": 13.3125,
+    "C": 4.0625,
+    "C_empty": 0.0
+   },
+   {
+    "year": 800,
+    "sentence": "In 800 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 5.1875,
+    "at": "the",
+    "Z": 7.53125,
+    "Z_empty": 0.0,
+    "A": 19.375,
+    "A_empty": 13.3125,
+    "C": 3.375,
+    "C_empty": 0.0
+   },
+   {
+    "year": 1000,
+    "sentence": "In 1000 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.625,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.375,
+    "C": 3.75,
+    "C_empty": 0.0
+   },
+   {
+    "year": 1200,
+    "sentence": "In 1200 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.0625,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.25,
+    "C": 3.5,
+    "C_empty": 0.0
+   },
+   {
+    "year": 1500,
+    "sentence": "In 1500 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.71875,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.5,
+    "C": 4.0,
+    "C_empty": 0.0
+   },
+   {
+    "year": 1800,
+    "sentence": "In 1800 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.5,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.3125,
+    "C": 3.921875,
+    "C_empty": 0.0
+   },
+   {
+    "year": 1900,
+    "sentence": "In 1900 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 0.0,
+    "at": "In",
+    "Z": 7.6875,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.25,
+    "C": 3.609375,
+    "C_empty": 0.0
+   },
+   {
+    "year": 2000,
+    "sentence": "In 2000 AD, the scholar lived in the city of",
+    "category": "year",
+    "clean": 1.796875,
+    "at": "2",
+    "Z": 7.03125,
+    "Z_empty": 0.0,
+    "A": 19.125,
+    "A_empty": 13.125,
+    "C": 3.21875,
+    "C_empty": 0.0
+   }
+  ]
+ },
+ "edges": {
+  "full_group_values": {
+   "generic core (control)": 447.71875,
+   "philosophy / rhetoric": 719.54296875,
+   "early civilisations": 883.6953125,
+   "dates / eras": 361.1015625,
+   "historical period (control)": 439.390625,
+   "classical Greece": 1513.8125,
+   "government / empire": 200.0390625
+  },
+  "target_full": 31.375,
+  "edges": {
+   "dates / eras": {
+    "early civilisations": 0.22468681760717157,
+    "classical Greece": 0.10127833285165766,
+    "philosophy / rhetoric": -0.007795747083380933,
+    "government / empire": 0.18000390548720957,
+    "historical period (control)": -0.04338394793926237,
+    "generic core (control)": 0.0
+   },
+   "early civilisations": {
+    "dates / eras": 0.07826529066874366,
+    "classical Greece": 0.13376305685149248,
+    "philosophy / rhetoric": 0.0008414629512005778,
+    "government / empire": 0.09798867408709233,
+    "historical period (control)": -0.043739554069912145,
+    "generic core (control)": 0.00020939484888671256
+   },
+   "classical Greece": {
+    "dates / eras": 0.09110577443153545,
+    "early civilisations": 0.026645920451230154,
+    "philosophy / rhetoric": 0.07389673349511139,
+    "government / empire": 0.13249365358328447,
+    "historical period (control)": -0.027986202482130684,
+    "generic core (control)": 0.0
+   },
+   "philosophy / rhetoric": {
+    "dates / eras": 0.07838428419982257,
+    "early civilisations": -0.03570765517668173,
+    "classical Greece": 0.09287137194996076,
+    "government / empire": -0.11243897676235104,
+    "historical period (control)": 0.059955193627538095,
+    "generic core (control)": 0.00010469742444341179
+   },
+   "government / empire": {
+    "dates / eras": 0.004673200493282237,
+    "early civilisations": 0.0004950801410978922,
+    "classical Greece": 0.013990958259361697,
+    "philosophy / rhetoric": 0.008995510387995842,
+    "historical period (control)": -0.00039116674371464377,
+    "generic core (control)": 0.0
+   },
+   "historical period (control)": {
+    "dates / eras": 0.09546526470651873,
+    "early civilisations": -0.026212725327769526,
+    "classical Greece": 0.10123446595929153,
+    "philosophy / rhetoric": 0.03349022545778302,
+    "government / empire": 0.17211482132396017,
+    "generic core (control)": 0.0
+   },
+   "generic core (control)": {
+    "dates / eras": 0.04221025075182272,
+    "early civilisations": 0.011926126970374762,
+    "classical Greece": 0.04192126666941909,
+    "philosophy / rhetoric": -0.0666221505621516,
+    "government / empire": -0.21146260495996883,
+    "historical period (control)": 0.020020625155577676
+   }
+  },
+  "to_target": {
+   "dates / eras": 0.10756972111553786,
+   "early civilisations": 0.11952191235059761,
+   "classical Greece": 0.4701195219123506,
+   "philosophy / rhetoric": 0.0677290836653387,
+   "government / empire": 0.01195219123505975,
+   "historical period (control)": 0.09960159362549803,
+   "generic core (control)": 0.06374501992031878
+  }
+ },
+ "knockouts": {
+  "full": {
+   "Z": 0.9785430463576159,
+   "A": 1.114746325272641,
+   "C": 0.8996026490066226,
+   "necessity": 1.0
+  },
+  "dates / eras": {
+   "n": 4,
+   "ko": {
+    "Z": 0.8145695364238411,
+    "A": 0.9094357515410147,
+    "C": 0.7335099337748344,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.7348344370860928,
+     "A": 1.1199620673304884,
+     "C": 0.8829139072847683,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.9298013245033112,
+     "A": 1.0564248458985301,
+     "C": 0.8256953642384106,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.9252980132450331,
+     "A": 1.045045045045045,
+     "C": 0.8535099337748344,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7894039735099337,
+     "A": 1.0094831673779041,
+     "C": 0.8105960264900662,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8471523178807947,
+     "A": 1.0298719772403984,
+     "C": 0.806092715231788,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8188079470198676,
+     "A": 1.0535798956851588,
+     "C": 0.7986754966887417,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8548344370860927,
+     "A": 0.9905168326220958,
+     "C": 0.8418543046357616,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8826490066225166,
+     "A": 1.0018966334755808,
+     "C": 0.8150993377483444,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "early civilisations": {
+   "n": 7,
+   "ko": {
+    "Z": 0.7034437086092715,
+    "A": 0.8885727833096254,
+    "C": 0.5941721854304636,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.8172185430463577,
+     "A": 0.9748696064485538,
+     "C": 0.7925827814569536,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8784105960264901,
+     "A": 1.0033191085822666,
+     "C": 0.7952317880794701,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8010596026490067,
+     "A": 0.979611190137506,
+     "C": 0.750728476821192,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.775364238410596,
+     "A": 1.0293978188715032,
+     "C": 0.7713907284768212,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8757615894039735,
+     "A": 1.0701754385964912,
+     "C": 0.7944370860927152,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8550993377483443,
+     "A": 0.954954954954955,
+     "C": 0.7803973509933775,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8309933774834437,
+     "A": 0.9241346609767662,
+     "C": 0.7735099337748345,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7859602649006623,
+     "A": 0.9255571360834519,
+     "C": 0.7613245033112582,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "classical Greece": {
+   "n": 10,
+   "ko": {
+    "Z": 0.29205298013245035,
+    "A": 0.21669037458511142,
+    "C": 0.3165562913907285,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.712317880794702,
+     "A": 1.0018966334755808,
+     "C": 0.7682119205298014,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5419867549668874,
+     "A": 0.9881460407776197,
+     "C": 0.7777483443708609,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5805298013245033,
+     "A": 1.0550023707918446,
+     "C": 0.8214569536423841,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.529271523178808,
+     "A": 1.0768136557610242,
+     "C": 0.8174834437086093,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7554966887417218,
+     "A": 1.0165955429113325,
+     "C": 0.7851655629139073,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7406622516556292,
+     "A": 0.9421526789947843,
+     "C": 0.7480794701986755,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7406622516556292,
+     "A": 0.9421526789947843,
+     "C": 0.7480794701986755,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7597350993377483,
+     "A": 1.0018966334755808,
+     "C": 0.7528476821192053,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "philosophy / rhetoric": {
+   "n": 8,
+   "ko": {
+    "Z": 0.8426490066225165,
+    "A": 0.9834044570886676,
+    "C": 0.743841059602649,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.7780132450331125,
+     "A": 1.0075865339023233,
+     "C": 0.7883443708609271,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.4981456953642384,
+     "A": 1.0085348506401137,
+     "C": 0.8039735099337748,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5545695364238411,
+     "A": 1.0047415836889522,
+     "C": 0.7652980132450331,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.4787086092715232,
+     "A": 1.096728307254623,
+     "C": 0.8264900662251655,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5819867549668875,
+     "A": 1.0924608819345663,
+     "C": 0.8521854304635762,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5207947019867549,
+     "A": 1.0014224751066856,
+     "C": 0.7817218543046358,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7682119205298014,
+     "A": 0.9715504978662873,
+     "C": 0.7586754966887417,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5562251655629139,
+     "A": 1.0744428639165482,
+     "C": 0.8129801324503311,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "government / empire": {
+   "n": 4,
+   "ko": {
+    "Z": 0.936158940397351,
+    "A": 1.0910384068278804,
+    "C": 0.8688741721854305,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.8381456953642384,
+     "A": 0.9943100995732574,
+     "C": 0.833112582781457,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8198675496688742,
+     "A": 1.0445708866761498,
+     "C": 0.7925827814569536,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8368211920529801,
+     "A": 0.9397818871503082,
+     "C": 0.7809271523178808,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8601324503311258,
+     "A": 1.146040777619725,
+     "C": 0.8797350993377483,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7129801324503311,
+     "A": 1.0227596017069702,
+     "C": 0.8254304635761589,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8217218543046357,
+     "A": 1.1047889995258415,
+     "C": 0.8696688741721854,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8129801324503311,
+     "A": 1.069701280227596,
+     "C": 0.7949668874172185,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8095364238410596,
+     "A": 1.1062114746325273,
+     "C": 0.831523178807947,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "historical period (control)": {
+   "n": 6,
+   "ko": {
+    "Z": 0.6162913907284768,
+    "A": 0.9246088193456614,
+    "C": 0.7117880794701986,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.8720529801324504,
+     "A": 1.0796586059743956,
+     "C": 0.8262251655629139,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8720529801324504,
+     "A": 1.0796586059743956,
+     "C": 0.8262251655629139,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8052980132450331,
+     "A": 1.1109530583214793,
+     "C": 0.8280794701986754,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8617218543046358,
+     "A": 1.062588904694168,
+     "C": 0.7811920529801325,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8617218543046358,
+     "A": 1.062588904694168,
+     "C": 0.7811920529801325,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8052980132450331,
+     "A": 1.1109530583214793,
+     "C": 0.8280794701986754,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8347019867549669,
+     "A": 1.0464675201517306,
+     "C": 0.8193377483443709,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8052980132450331,
+     "A": 1.1109530583214793,
+     "C": 0.8280794701986754,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "generic core (control)": {
+   "n": 7,
+   "ko": {
+    "Z": 0.0,
+    "A": 0.9895685158843054,
+    "C": 0.882384105960265,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.8556291390728477,
+     "A": 1.0322427690848743,
+     "C": 0.7962913907284768,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8029139072847682,
+     "A": 0.9516358463726885,
+     "C": 0.736158940397351,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.8026490066225166,
+     "A": 1.0303461356092936,
+     "C": 0.7909933774834437,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.5817218543046357,
+     "A": 1.1024182076813656,
+     "C": 0.8458278145695364,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.507682119205298,
+     "A": 0.9255571360834519,
+     "C": 0.7766887417218543,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.816158940397351,
+     "A": 0.9724988146040777,
+     "C": 0.7305960264900663,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7822516556291391,
+     "A": 1.0222854433380748,
+     "C": 0.8058278145695364,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.7074172185430464,
+     "A": 1.0085348506401137,
+     "C": 0.7904635761589404,
+     "necessity": 1.0
+    }
+   ]
+  },
+  "all story groups": {
+   "n": 21,
+   "ko": {
+    "Z": 0.20397350993377483,
+    "A": 0.20388809862494073,
+    "C": 0.18920529801324504,
+    "necessity": 1.0
+   },
+   "random": [
+    {
+     "Z": 0.4566887417218543,
+     "A": 1.0440967283072546,
+     "C": 0.7666225165562914,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.4439735099337748,
+     "A": 0.9445234708392604,
+     "C": 0.729271523178808,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.37231788079470196,
+     "A": 0.9924134660976767,
+     "C": 0.7623841059602648,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.6256953642384105,
+     "A": 0.9772403982930299,
+     "C": 0.7491390728476821,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.6022516556291391,
+     "A": 0.9516358463726885,
+     "C": 0.7189403973509934,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.3151324503311258,
+     "A": 0.975343764817449,
+     "C": 0.7695364238410596,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.607682119205298,
+     "A": 0.9834044570886676,
+     "C": 0.7427814569536424,
+     "necessity": 1.0
+    },
+    {
+     "Z": 0.49198675496688743,
+     "A": 0.9871977240398293,
+     "C": 0.7080794701986755,
+     "necessity": 1.0
+    }
+   ]
+  }
+ }
+}

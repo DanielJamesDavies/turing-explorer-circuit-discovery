@@ -1,0 +1,2 @@
+seed,layer,kind,n,passes,amp_any,near,worst_dev,free0_tk,freeM_topk_tk,freeN_topk_tk
+9.resid.20419,9,resid,728,True,True,False,0.13516718046004272,0.9957615894039735,1.1351671804600427,0.9067549668874172

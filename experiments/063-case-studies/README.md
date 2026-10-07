@@ -140,8 +140,51 @@ Verdict: nothing in the full run beats 8.attn.29991 on validation evidence. **10
 full-run candidate worth validating.** It is clean (not an amplifier, worst dev 0.08), and its members split into
 shared-with-contrast (art, story) and discriminative (motion, CG, performance) groups.
 
+## Knowledge / logic / calculation hunt (2026-09-28): `survey.py`, `lab_server.py`, `lab.py`
+
+**Tools:**
+- `survey.py` catalogues all 2,238 passing, non-near-threshold circuits at layers ≥ 6 (no consistency filter) into
+  `results_lab/catalogue.jsonl` and 10 round-robin subsets.
+- `lab_server.py` is one GPU process. It answers `lab.py` requests through `lab_queue/`: report, probe, ingredients
+  (members active or silent at the target's peak on custom text), top, and contexts. While idle it fills in the
+  missing reports.
+- 10 agents each read one subset, shortlisted candidates, and tested them with probes that included minimal pairs
+  and lexical controls.
+
+The headline contrasts below were re-run by hand.
+
+| Rank | Target | What it computes | Key contrast (target max) | Caveats |
+|---|---|---|---|---|
+| 1 | **10.resid.15497** (AMP) | Eponymous-law knowledge: on the "'s" after a name, it predicts that a law or equation follows, before the word "law" appears | Snell's 32, Ohm's 27; Rutherford's, Darwin's, Picasso's all 0; made-up "In electromagnetism, Zorbel's" 25.8 vs "In the history of painting, Zorbel's" 0 | amplifier flag; much of the discrimination is already present in 9.resid.2782 (name → law); the largest shares are generic possessive-s members; misses Boyle, Charles and Hubble |
+| 2 | **9.resid.20419** (AMP) | Date or place → classical Greek antiquity (logits Arist/Spart/Ath/Greek) | 5th century BC 22.5 vs 19th century 0; 450 BC 15.6 > 10000 BC 5.6; ancient Greece 23.6 > Egypt 9.6 > medieval France 0 | "BC" is partly a lexical trigger ("BC Lions" 12.9); members split into generic "ancient" and classical-Greek groups |
+| 3 | **9.resid.17596** (AMP) | Second "as" of a comparison, only when the dimension is importance | "as important for health as" 28.6; "as fast as" 0; "This important river is as wide … as" 0 | "as"-grammar members plus importance members; transfers to "vital", "matters as much" and "than" |
+| 4 | **8.resid.31095** (not AMP) | "but also / but rather" only when the sentence attributes causes | "influenced not only by memory but also" 19.1 vs "involves not only memory but also" 0 | causal-frame, correlative and "also" members; no negation needed |
+
+**Downgraded after re-check:**
+- 11.resid.11552 (∀ integer): the contrast holds only at the noun; later tokens fire either way.
+- 8.mlp.39707 (conservation law): activations are about 3, and the can/cannot pair is not robust to rephrasing.
+
+**Weaker (5–6/10):**
+- 9.resid.15376: the event category at a date slot, before the digits (discovered 24 vs war ended 2).
+- 9.resid.103: Bose statistics.
+- 7.resid.22438: "15th and __16th".
+- 8.resid.28109: origin-of-idea "and".
+- 8.resid.12523: "(" expecting a date after a historical entity.
+- 11.resid.7771: supply-side economics.
+
+**Negative finding.** No latent checks whether numbers or facts are correct, whatever its form:
+- year digits: "Berlin Wall fell in 1939" > 1989, and "In 2947" fires;
+- oxidation "gain" fires like "loss";
+- wrong secondary colours fire;
+- wrong unit conversions fire;
+- "X and Y are two" fires with three items.
+
+Knowledge in this model shows up in entity and era latents (names → laws, dates → era), not in checking numbers.
+
 ## Next
 
+- Validate the top 4 of the hunt with `validate.py` knockouts (story groups vs rank-matched random) and
+  specificity, then choose a knowledge case for the paper.
 - Validate 10.resid.34899 with `validate.py` (story knockouts: CG/rendering, performance, motion; shared: narrative,
   painting) if it is wanted as a third case or a swap.
 - Position-resolved member activations; 057 wiring on the chosen circuits.

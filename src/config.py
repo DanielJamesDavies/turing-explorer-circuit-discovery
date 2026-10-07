@@ -1451,6 +1451,47 @@ class SeedFilterConfig(BaseModel):
         return v
 
 
+class ContextProtocolV1Config(BaseModel):
+    """Protocol-v1 context settings (DAN-75 spec; circuit/protocol_contexts.py). The defaults are the 062 run's:
+    the 64 strongest stored contexts and up to 64 mid-band ones, each split 48 / 16 (stratified, ranks 1-2 always
+    train); training on 32 strongest + 16 mid-band (48 strongest when there is no mid-band pool); 64 close contrast
+    contexts, 48 train / 16 held out."""
+    model_config = ConfigDict(extra='forbid')
+    pool_size: int = 64           # contexts kept per pool (strongest from the top store, mid-band from the mid store)
+    min_pool: int = 8             # a pool with fewer stored contexts is absent (no strongest pool -> target skipped)
+    holdout_frac: float = 0.25    # stratified held-out fraction of each pool and of the contrast set
+    keep_top: int = 2             # the strongest contexts always train
+    # Strongest training contexts out of a full pool's strongest-train (48); a smaller pool keeps the same fraction.
+    train_strong: int = 32
+    train_mid: int = 16           # mid-band training contexts, spread over mid-train
+    contrast_count: int = 64      # close contrast contexts (verified silent)
+    min_contrast: int = 4         # fewer -> target skipped (no_contrast)
+    # One <L.kind.i>.pt per target ({key: record}, the run's out/ctx format): read when present, written when built.
+    # Records are keyed by target only, so a cache must come from the same settings.
+    cache_dir: Optional[str] = None
+
+    @field_validator("holdout_frac")
+    @classmethod
+    def validate_holdout_frac(cls, v: float) -> float:
+        if not 0.0 < v < 1.0:
+            raise ValueError(f"context_v1.holdout_frac must be in (0, 1), got {v}")
+        return v
+
+    @field_validator("pool_size", "min_pool", "train_strong", "contrast_count", "min_contrast")
+    @classmethod
+    def validate_positive_counts(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"context_v1 counts must be >= 1, got {v}")
+        return v
+
+    @field_validator("keep_top", "train_mid")
+    @classmethod
+    def validate_nonnegative_counts(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f"context_v1 counts must be >= 0, got {v}")
+        return v
+
+
 class DiscoveryConfig(BaseModel):
     # Seed sharding for multi-GPU discovery (2026-08-31): "i/k" means this
     # process takes candidates where enumeration_index % k == i. Each shard
@@ -1534,6 +1575,14 @@ class DiscoveryConfig(BaseModel):
     # activating training count under the same split rule (2026-09-24, 059). Only the C mean depends on it:
     # every ablation term runs on the activating contexts.
     contrast_context_count: Optional[Union[int, str]] = None
+    # Where a target's activating and contrast contexts come from (DAN-78). "legacy" = ProbeDatasetBuilder.
+    # build_for_latent (top + mid store, first 64, list split) with floors per floor_negctx_mode. "v1" = protocol v1,
+    # the 062 run's contexts (circuit/protocol_contexts.py, settings in context_v1): build_probe_dataset returns the
+    # training set padded so the engine's [:n_train] slice is exactly it, and _floor_negatives returns its stratified
+    # close contrast set (floor_negctx_mode and contrast_context_count are then inert). Needs probe_sequence_count
+    # and eval_sequence_count >= the padded length (64 at the defaults); the run used 128.
+    context_protocol: str = "legacy"   # "legacy" | "v1"
+    context_v1: ContextProtocolV1Config = Field(default_factory=ContextProtocolV1Config)
     # Position-aware allowed-set selection (orthogonal to attribution_mode).
     # When true, discovery keeps the token-position axis of the gradient
     # attribution and selects the allowed set as the union, over each seed's
@@ -1648,6 +1697,13 @@ class DiscoveryConfig(BaseModel):
         if isinstance(v, int) and v >= 1:
             return v
         raise ValueError(f"contrast_context_count must be None, 'match' or an int >= 1, got {v!r}")
+
+    @field_validator("context_protocol")
+    @classmethod
+    def validate_context_protocol(cls, v: str) -> str:
+        if v not in ("legacy", "v1"):
+            raise ValueError(f"context_protocol must be 'legacy' or 'v1', got {v!r}")
+        return v
 
     @field_validator("position_aware_top_n")
     @classmethod

@@ -1,8 +1,10 @@
 """PAPER FIGURES for the WCM-vs-unweighted sweep (DAN-76), from merge.py's OUT/sweep_rows.csv.
 
-  body      paper/figures/wcm-vs-unweighted.pdf       one row, a panel per depth band: share of targets with all of
-                                                       Z / A / C in [0.8, 1.25] against median circuit size, per lambda
-  appendix  paper/figures/wcm-vs-unweighted-grid.pdf  depth band x ablation method: median faithfulness + IQR
+  body      paper/figures/wcm-vs-unweighted.pdf           pass rate at lambda = 1e-3 by depth band (bars), and pass rate
+                                                           vs circuit size across the sweep for layers 8-11
+  appendix  paper/figures/wcm-vs-unweighted-frontier.pdf  the pass-rate / size frontier for every depth band
+            paper/figures/wcm-vs-unweighted-zac.pdf       Z / A / C medians at lambda = 1e-3 (the old body figure)
+            paper/figures/wcm-vs-unweighted-grid.pdf      depth band x ablation method: median faithfulness + IQR
 PNG previews go to OUT. Also prints every number the paper text quotes, so the text can be checked against it.
 
   OUT=experiments/062-h100-protocol-v1/out PYTHONPATH=src python experiments/062-h100-protocol-v1/paper_sweep.py
@@ -46,8 +48,83 @@ def curve(rows, weighted):
     return g.agg(**agg).reset_index().sort_values("n")
 
 
+def pass_curve(rows, weighted):
+    """One point per lambda: median circuit size and the share of targets that pass the DAN-8 rule."""
+    g = rows[rows.weighted == weighted].groupby("lam")
+    return g.agg(n=("n", "median"), passes=("passes", "mean"), targets=("seed", "nunique")).reset_index().sort_values("n")
+
+
 def body(plt, sw):
-    """Both methods at ONE sparsity price, the production lambda = 1e-3 (the only price the two grids share).
+    """BODY FIGURE (2026-09-28, replaces the Z / A / C bars, which now live in the appendix as zac_bars()).
+    Left: the share of targets that PASS the paper's criterion (DAN-8: Z, A, C in [0.8, 1.5] and necessity >= 0.9),
+    WCM vs unweighted at the production price lambda = 1e-3, grouped bars per depth band, value on every bar and the
+    ratio above each pair. The criterion is conjunctive, which is where unweighted circuits fail: their per-score
+    medians look only somewhat lower, but they almost never hold all of them at once past layer 4.
+    Right: the cost of passing, layers 8-11. Pass rate against median circuit size (log) across the sweep of prices,
+    one line per method; an arrow marks the size gap at a matched pass rate."""
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(9.0, 3.2), gridspec_kw={"width_ratios": [1.0, 1.15], "wspace": 0.3})
+    f = sw[np.isclose(sw.lam, PROD_LAM)]
+    width, offsets = grouped_bar_geometry(len(ARMS))
+    x = np.arange(len(BANDS))
+    vals = {}
+    for (weighted, color, name), off in zip(ARMS, offsets):
+        v = [100 * f[(f.depth == b) & (f.weighted == weighted)].passes.mean() for b, _ in BANDS]
+        vals[weighted] = v
+        bars = ax.bar(x + off, v, width, color=color, label=name, zorder=2)
+        for bar in bars:                                   # one decimal below 10%, so 2.1 and 1.5 do not both read "2"
+            h = bar.get_height()
+            ax.annotate(("%.0f" if h >= 10 else "%.1f") % h, (bar.get_x() + bar.get_width() / 2, h),
+                        xytext=(0, 2), textcoords="offset points", ha="center", va="bottom", fontsize=8.5, color=INK)
+    for j in range(len(BANDS)):                                   # the ratio over each pair, where it is dramatic
+        w, u = vals[True][j], vals[False][j]
+        if u > 0 and w / u >= 2:
+            ax.annotate("%.0f×" % (w / u), (x[j], max(w, u) + 9), ha="center", va="bottom", fontsize=9.5,
+                        color=INK, fontweight="bold")
+    ax.set(xticks=x, xticklabels=["layers " + t.split(" ")[1] for _, t in BANDS], ylim=(0, 100),
+           ylabel="targets that pass (%)")
+    ax.set_title("Pass rate at the same sparsity penalty (λ = $10^{-3}$)", fontsize=11)
+    styled_legend(ax, loc="upper right", fontsize=8.5)
+    round_bars(ax)
+
+    rows = sw[sw.depth == "L8-11"]
+    curves = {}
+    for weighted, color, name in ARMS:
+        c = pass_curve(rows, weighted)
+        curves[weighted] = c
+        bx.plot(c.n, 100 * c.passes, marker="o", color=color, label=name, zorder=3)
+    # the size gap at a matched pass rate: WCM's best point against the unweighted point nearest in pass rate
+    w_best = curves[True].sort_values("passes").iloc[-1]
+    u = curves[False]
+    u_match = u.iloc[(u.passes - w_best.passes).abs().argsort().iloc[0]]
+    y = 100 * (w_best.passes + u_match.passes) / 2
+    bx.annotate("", xy=(u_match.n, y), xytext=(w_best.n, y),
+                arrowprops=dict(arrowstyle="<->", color=INK_MUTED, lw=1.2), zorder=2)
+    bx.text(np.sqrt(w_best.n * u_match.n), y + 3, "%.0f× more latents" % (u_match.n / w_best.n), ha="center",
+            va="bottom", fontsize=9, color=INK)
+    bx.set(xscale="log", xlabel="circuit size (median latents)", ylabel="targets that pass (%)", ylim=(0, 60))
+    bx.set_title("The cost of passing, layers 8–11", fontsize=11)
+    bx.grid(axis="x", visible=False)
+    return fig
+
+
+def frontier(plt, sw):
+    """APPENDIX: the pass-rate / size frontier for every depth band (the body shows layers 8-11)."""
+    fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.9), sharey=True)
+    for ax, (band, title) in zip(axes, BANDS):
+        rows = sw[sw.depth == band]
+        for weighted, color, name in ARMS:
+            c = pass_curve(rows, weighted)
+            ax.plot(c.n, 100 * c.passes, marker="o", color=color, label=name, zorder=3)
+        ax.set(xscale="log", xlabel="circuit size (median latents)", ylim=(0, 100))
+        ax.set_title("%s (%d targets)" % (title, rows.seed.nunique()), fontsize=10.5)
+        ax.grid(axis="x", visible=False)
+    axes[0].set_ylabel("targets that pass (%)")
+    styled_legend(axes[0], loc="upper left", fontsize=8.5)
+    return fig
+
+
+def zac_bars(plt, sw):
+    """APPENDIX (the body figure until 2026-09-28): both methods at ONE sparsity price, the production lambda = 1e-3.
     Daniel, 2026-09-27: a fixed price, the Z / A / C scores themselves (not a pass share), and grouped bars (the
     dot-and-IQR version was hard to read). One panel per depth band, x = Z / A / C, one bar per method: the median,
     printed on the bar; median circuit sizes in the panel titles. The spread is in the appendix grid.
@@ -126,6 +203,25 @@ def numbers(sw):
     c = curve(sw, True), curve(sw, False)
     print("== all bands: WCM", [(r.lam, int(r.n), round(100 * r.in_band)) for r in c[0].itertuples()])
     print("   unweighted   ", [(r.lam, int(r.n), round(100 * r.in_band)) for r in c[1].itertuples()])
+    print("== pass rate (DAN-8) per arm and depth band (the body figure)")
+    for band, title in BANDS:
+        rows = sw[sw.depth == band]
+        for weighted, _, name in ARMS:
+            c = pass_curve(rows, weighted)
+            print("  %-12s %-26s " % (title, name) + " | ".join(
+                "λ %g: %5.0f nodes %3.0f%%" % (r.lam, r.n, 100 * r.passes) for r in c.itertuples()))
+    print("== cost of passing: smallest PASSING circuit per target, per method (targets where both pass)")
+    for band, title in BANDS:
+        rows = sw[sw.depth == band]
+        cost = []
+        for s, g in rows.groupby("seed"):
+            pick = lambda w: g[(g.weighted == w) & g.passes].n.min()
+            cost.append((pick(True), pick(False)))
+        cost = pd.DataFrame(cost, columns=["wcm", "unw"])
+        both = cost.dropna()
+        print("  %-12s %d targets | WCM passes %d, unweighted %d, both %d | median WCM %.0f, unweighted %.0f, "
+              "ratio %.1fx" % (title, len(cost), cost.wcm.notna().sum(), cost.unw.notna().sum(), len(both),
+                               both.wcm.median(), both.unw.median(), (both.unw / both.wcm).median()))
     print("== natural-scale cost: smallest circuit with worst-of-3 |faith - 1| <= 0.3, per target")
     for band, title in BANDS:
         rows = sw[sw.depth == band]
@@ -145,7 +241,8 @@ def main():
     numbers(sw)
     plt = configure_matplotlib()
     FIGS.mkdir(parents=True, exist_ok=True)
-    for fig, name in ((body(plt, sw), "wcm-vs-unweighted"), (grid(plt, sw), "wcm-vs-unweighted-grid")):
+    for fig, name in ((body(plt, sw), "wcm-vs-unweighted"), (grid(plt, sw), "wcm-vs-unweighted-grid"),
+                      (frontier(plt, sw), "wcm-vs-unweighted-frontier"), (zac_bars(plt, sw), "wcm-vs-unweighted-zac")):
         png = save_figure(fig, OUT / ("%s.png" % name))
         shutil.copy(png.with_suffix(".pdf"), FIGS / ("%s.pdf" % name))
         print("figure:", png, "->", FIGS / ("%s.pdf" % name))

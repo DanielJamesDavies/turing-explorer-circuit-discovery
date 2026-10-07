@@ -34,6 +34,8 @@ os.environ["OUT"] = str(OUT)
 for d in ("062-h100-protocol-v1", "059-context-pool", "049-circuit-graph", "056-specificity"):
     sys.path.insert(0, str(EXP / d))
 RESULTS = HERE / "results_validate"
+# members tables (contribution rank) from inspect_circuit.py; the full-run reports live in results_full_deep
+MEMBERS = Path(os.environ.get("MEMBERS", str(HERE / "results_deep" / "members")))
 N_DRAWS = int(os.environ.get("N_DRAWS", 8))
 RANK_WIN = int(os.environ.get("RANK_WIN", 15))
 FAITH = [("Z", "free0_tk"), ("A", "freeM_topk_tk"), ("C", "freeN_topk_tk"), ("necessity", "phi_sup_blind_tk")]
@@ -104,6 +106,100 @@ CASES = {
                 "The results were not significant, which surprised the authors.",
             ],
         }),
+    # ---- the 2026-09-28 knowledge / logic hunt (DAN-138), full-run circuits: OUT=out_full/out,
+    # MEMBERS=results_full_deep/members. Story groups from the hunt agents' ingredients reports.
+    "10.resid.15497": dict(
+        title="eponymous laws: the possessive after a name that carries a law",
+        groups={
+            "name -> law": ["9.resid.2782", "7.resid.10515", "8.resid.26248"],
+            "physics context": ["9.resid.3607", "9.resid.24799"],
+            "generic possessive (control group)": ["8.resid.30890", "7.resid.33102", "5.resid.20846", "8.resid.786"],
+        },
+        all_story=["name -> law", "physics context"],
+        probes={
+            "names with a law": [
+                "Ohm's law relates voltage, current and resistance.",
+                "Snell's law describes how light bends at a boundary.",
+                "Coulomb's law gives the force between two charges.",
+                "Hooke's law says the extension is proportional to the force.",
+            ],
+            "scientists without an eponymous law": [
+                "Darwin's theory changed biology.",
+                "Rutherford's model placed the charge in a nucleus.",
+                "Turing's machine is a model of computation.",
+            ],
+            "not scientists": [
+                "Picasso's painting hangs in the gallery.",
+                "Mozart's symphony was played last night.",
+                "Mary's book is on the table.",
+            ],
+            "invented name, two contexts": [
+                "In electromagnetism, Zorbel's",
+                "In the history of painting, Zorbel's",
+            ],
+        }),
+    "9.resid.20419": dict(
+        title="a date or place read as classical Greek antiquity",
+        groups={
+            "ancient / early times": ["7.resid.10003", "8.resid.13018", "7.attn.24922"],
+            "classical Greek": ["7.resid.37523", "8.resid.4704", "9.mlp.11623", "9.mlp.21754", "8.resid.13141",
+                                "7.resid.25644", "8.resid.34691"],
+        },
+        all_story=["ancient / early times", "classical Greek"],
+        probes={
+            "classical dates and places": [
+                "In the 5th century BC, the philosopher taught in the city of",
+                "In 450 BC, the scholar lived in the city of",
+                "In ancient Greece, the scholar lived in the city of",
+            ],
+            "other eras and places": [
+                "In the 19th century, the philosopher taught in the city of",
+                "In 1950, the scholar lived in the city of",
+                "In 10000 BC, the scholar lived in the city of",
+                "In ancient Egypt, the scholar lived in the city of",
+                "In medieval France, the scholar lived in the city of",
+            ],
+            "lexical control": ["The BC Lions played football in the city of"],
+        }),
+    "9.resid.17596": dict(
+        title="the second 'as' of a comparison about importance",
+        groups={
+            "second-'as' grammar": ["8.resid.38828", "7.resid.14122", "6.resid.20997", "5.resid.19845", "8.resid.19249"],
+            "importance": ["8.mlp.24811", "6.resid.31689", "9.mlp.21926", "8.resid.38563"],
+        },
+        all_story=["second-'as' grammar", "importance"],
+        probes={
+            "importance comparisons": [
+                "Sleep is as important for health as exercise.",
+                "Sleep is as crucial for recovery as exercise.",
+                "Grammar matters as much to a writer as vocabulary.",
+            ],
+            "other comparisons": [
+                "She runs as fast as her brother.",
+                "The river is as wide in summer as in winter.",
+                "This important river is as wide in summer as in winter.",
+            ],
+        }),
+    "8.resid.31095": dict(
+        title="'but also / but rather' when a sentence attributes causes",
+        groups={
+            "not only ... but (structure)": ["7.resid.40373"],
+            "causal frame": ["5.resid.35439", "6.resid.3388", "6.attn.6201"],
+            "lexical also / rather (control group)": ["3.resid.13601", "7.mlp.14090", "6.resid.15456"],
+        },
+        all_story=["not only ... but (structure)", "causal frame"],
+        probes={
+            "causes": [
+                "Rust is caused not by water alone but also by oxygen.",
+                "Language learning is influenced not only by memory but also by motivation.",
+                "The price is not set by the baker, but rather by the market.",
+            ],
+            "same structure, no causal frame": [
+                "Language learning involves not only memory but also motivation.",
+                "She travelled not only to Paris but also to Rome.",
+                "He likes apples, but also pears.",
+            ],
+        }),
 }
 
 
@@ -145,7 +241,7 @@ class Validator:
         rec = self.R.contexts(key)
         base = alpha_map(c)
         present = {"%d.%s.%d" % (l, k, i) for (l, k), d in base.items() for i in d}
-        mem = pd.read_csv(HERE / "results_deep" / "members" / ("%s.csv" % key))
+        mem = pd.read_csv(MEMBERS / ("%s.csv" % key))
         rank = {n: r for r, n in enumerate(mem.node)}
         named = {m for g in case["groups"].values() for m in g}
         pool = [n for n in mem.node if n not in named and n not in GENERIC]

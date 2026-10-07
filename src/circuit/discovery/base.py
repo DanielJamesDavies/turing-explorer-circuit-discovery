@@ -50,7 +50,14 @@ class DiscoveryMethod(ABC):
         n_pos: int = 64,
         n_neg: int = 64
     ) -> ProbeDataset:
-        """Helper to build a probe dataset for a latent using the injected builder."""
+        """Helper to build a probe dataset for a latent using the injected builder. Under
+        config.discovery.context_protocol == "v1" it is the protocol's training ProbeDataset instead
+        (circuit/protocol_contexts.py; n_pos / n_neg are then set by config.discovery.context_v1)."""
+        from config import config
+        if config.discovery.context_protocol == "v1":
+            from circuit.protocol_contexts import training_probe
+            rec = self.probe_builder.protocol_contexts().record(comp_idx, latent_idx)
+            return training_probe(rec, self.sae_bank.device)
         from store.context import top_ctx, mid_ctx, neg_ctx
         return self.probe_builder.build_for_latent(
             comp_idx, latent_idx, top_ctx, mid_ctx, neg_ctx, 

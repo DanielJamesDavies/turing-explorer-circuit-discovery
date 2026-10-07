@@ -1,0 +1,222 @@
+{
+ "rms_typ": {
+  "rms_typ": 4.530943870544434,
+  "q10": 3.876694917678833,
+  "q90": 5.5595784187316895,
+  "n_positions": 4032,
+  "n_seq": 64
+ },
+ "targets": {
+  "writer": 2390,
+  "pred_like": 1293,
+  "focused": 140
+ },
+ "targets_pass": {
+  "writer": 1246,
+  "pred_like": 675,
+  "focused": 74
+ },
+ "n_targets": 15004,
+ "n_pass": 6953,
+ "pass_rate": {
+  "writer": 0.5213389121338912,
+  "pred_like": 0.5220417633410673,
+  "focused": 0.5285714285714286
+ },
+ "pass_rate_all": 0.4634097573980272,
+ "ctx_z_ge1": {
+  "targets": 0.31051719541455614,
+  "targets_shuffled": 0.19301519594774727,
+  "null": 0.2945149739583333,
+  "null_shuffled": 0.18397352430555555
+ },
+ "top_boost_peak_quantiles": {
+  "0.5": 0.29389213293325156,
+  "0.9": 1.4648509448394182,
+  "0.99": 4.479477375615386
+ },
+ "inference": {
+  "n_positions": 1258,
+  "by_src": {
+   "corpus": 1013,
+   "prompt": 245
+  },
+  "median_fired": 45.0,
+  "median_active": 4608.0,
+  "active_target_frac": 0.009765625,
+  "best_fired_dla_quantiles": {
+   "0.1": 0.0013863946311175825,
+   "0.25": 0.016009423416107893,
+   "0.5": 0.04100357927381992,
+   "0.75": 0.08529695868492126,
+   "0.9": 0.1779832199215889
+  },
+  "frac_pos_best_fired_dla_ge": {
+   "0.1": 0.21065182829888712,
+   "0.25": 0.05564387917329094,
+   "0.5": 0.0047694753577106515,
+   "1.0": 0.000794912559618442
+  },
+  "best_all_dla_quantiles": {
+   "0.25": 0.214084230363369,
+   "0.5": 0.4811910539865494,
+   "0.75": 0.885474219918251
+  },
+  "frac_pos_best_all_dla_ge": {
+   "0.1": 0.829093799682035,
+   "0.25": 0.7313195548489666,
+   "0.5": 0.4825119236883943,
+   "1.0": 0.20270270270270271
+  },
+  "best_all_is_target": 0.007154213036565978,
+  "top10_all_target_frac": 0.011287758346581878,
+  "best_target_rank_among_all_median": 66.0,
+  "share_pos_dla_from_targets_median": 0.008527960945737899,
+  "best_dla_layer_mean": 8.05564387917329,
+  "best_score_layer_mean": 5.022257551669316,
+  "best_dla_kind": {
+   "resid": 0.7957074721780604,
+   "mlp": 0.16057233704292528,
+   "attn": 0.04372019077901431
+  },
+  "best_score_kind": {
+   "resid": 0.5643879173290938,
+   "mlp": 0.30127186009538953,
+   "attn": 0.1343402225755167
+  },
+  "best_score_circuit_dla_median": 1.0657377060852014e-05,
+  "spearman_score_dla_median": 0.013183915622940016,
+  "rank_of_top_dla_under_score": {
+   "count": 1258.0,
+   "mean": 12.82670906200318,
+   "std": 12.41121924817807,
+   "min": 0.0,
+   "25%": 1.0,
+   "50%": 9.0,
+   "75%": 22.0,
+   "max": 52.0
+  },
+  "top5_overlap_mean": 1.0906200317965025,
+  "best_dla_pass_frac": 0.38394276629570745,
+  "fired_pass_frac": 0.35525136621624,
+  "fired_pred_like_frac": 0.06341703421251471,
+  "best_dla_pred_like_frac": 0.29252782193958665,
+  "dla_median_pred_like_fired": 9.101718023885041e-05,
+  "absdla_median_pred_like_fired": 0.010609718970954418,
+  "absdla_median_other_fired": 0.0020048985024914145,
+  "dla_true_best_quantiles": {
+   "0.5": 0.05601361393928528,
+   "0.9": 0.19782532006502151
+  }
+ },
+ "causal": {
+  "table": [
+   {
+    "set": "dla",
+    "pred. DLA (single)": 0.03247263468801975,
+    "act": 3.0751559734344482,
+    "d logit top1": -0.04688405990600586,
+    "d logp top1": -0.019420862197875977,
+    "95% CI": "[-0.0301, -0.0136]",
+    "KL": 0.0010334700345993042,
+    "top1 flips %": 8.333333333333332,
+    "joint d logp": -0.11738914251327515,
+    "joint KL": 0.01605652365833521,
+    "joint flips %": 22.916666666666664
+   },
+   {
+    "set": "score",
+    "pred. DLA (single)": 0.00044545951823238283,
+    "act": 2.676289200782776,
+    "d logit top1": -0.00810098648071289,
+    "d logp top1": -0.0031102150678634644,
+    "95% CI": "[-0.0054, -0.0005]",
+    "KL": 0.0015879179700277746,
+    "top1 flips %": 4.861111111111112,
+    "joint d logp": -0.02059537172317505,
+    "joint KL": 0.02008807845413685,
+    "joint flips %": 12.5
+   },
+   {
+    "set": "act",
+    "pred. DLA (single)": 0.003418782609514892,
+    "act": 5.3458545207977295,
+    "d logit top1": -0.027881622314453125,
+    "d logp top1": -0.004746977239847183,
+    "95% CI": "[-0.0182, -0.0000]",
+    "KL": 0.004110471112653613,
+    "top1 flips %": 9.722222222222223,
+    "joint d logp": -0.036026448011398315,
+    "joint KL": 0.027197379618883133,
+    "joint flips %": 12.5
+   },
+   {
+    "set": "random",
+    "pred. DLA (single)": 0.00019954697927460074,
+    "act": 0.6855518817901611,
+    "d logit top1": -0.0012798309326171875,
+    "d logp top1": -0.000642135739326477,
+    "95% CI": "[-0.0015, 0.0000]",
+    "KL": 6.755192225682549e-05,
+    "top1 flips %": 2.083333333333333,
+    "joint d logp": -0.0003143679350614548,
+    "joint KL": 0.0006082381005398929,
+    "joint flips %": 6.25
+   }
+  ],
+  "paired_per_position": {
+   "score": {
+    "median_diff_dlogp": -0.014283945163091024,
+    "frac_dla_more_negative": 0.7291666666666666,
+    "wilcoxon_p": 0.001749990164235271,
+    "kl_frac_dla_larger": 0.4375,
+    "kl_wilcoxon_p": 0.029950257407890035
+   },
+   "act": {
+    "median_diff_dlogp": -0.010124097267786663,
+    "frac_dla_more_negative": 0.75,
+    "wilcoxon_p": 0.00044261629520507334,
+    "kl_frac_dla_larger": 0.20833333333333334,
+    "kl_wilcoxon_p": 1.637184568052671e-06
+   },
+   "random": {
+    "median_diff_dlogp": -0.026702856024106346,
+    "frac_dla_more_negative": 0.8958333333333334,
+    "wilcoxon_p": 3.6288838600739837e-10,
+    "kl_frac_dla_larger": 0.9791666666666666,
+    "kl_wilcoxon_p": 5.4143356464919634e-12
+   }
+  },
+  "dla_score_set_overlap": 33
+ },
+ "direct_path_fidelity": [
+  {
+   "layers": "L1-4",
+   "n": 96,
+   "pearson": 0.7415479128255391,
+   "spearman": 0.35051420508506764,
+   "slope measured/predicted": 3.783492918537825
+  },
+  {
+   "layers": "L5-8",
+   "n": 162,
+   "pearson": 0.5745468254334495,
+   "spearman": 0.47046237226895504,
+   "slope measured/predicted": 2.2369289367395715
+  },
+  {
+   "layers": "L9-12",
+   "n": 318,
+   "pearson": 0.7185874022203398,
+   "spearman": 0.7098835321732576,
+   "slope measured/predicted": 0.6129318261041026
+  },
+  {
+   "layers": "all",
+   "n": 576,
+   "pearson": 0.5001784705493962,
+   "spearman": 0.5999705119887352,
+   "slope measured/predicted": 1.1039093191219012
+  }
+ ]
+}

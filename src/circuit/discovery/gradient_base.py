@@ -871,7 +871,12 @@ class GradientDiscoveryBase(DiscoveryMethod):
         self.neg_mode, which governs ig_negctx / phi_cf and never the floor.
         Those modes cost a retrieval, so they are skipped entirely unless a
         negctx floor will actually read them.
+
+        context_protocol "v1": the protocol ProbeDataset already carries its
+        stratified close contrast set (train first), which is the floor's.
         """
+        if str(config.discovery.context_protocol) == "v1":
+            return probe_data.neg_tokens
         mode = str(config.discovery.floor_negctx_mode)
         if mode == "store":
             return probe_data.neg_tokens[: self.probe_sequence_count]

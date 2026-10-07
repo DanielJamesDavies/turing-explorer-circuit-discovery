@@ -3,6 +3,8 @@
 Reuses pool_test.py's context cache, probe construction and train sets without editing pool_test.py (a running
 job re-imports it per stage). Everything goes through the same injection as 059: the discovery method's
 build_probe_dataset / _floor_negatives and the eval-side M0 probe builder / contrast selector are replaced per target.
+The protocol's own contexts now live in src/circuit/protocol_contexts.py (DAN-78); patch_eval_contexts reads them
+from there, while fit_arm keeps pool_test's train sets (it serves 059's experimental arms too).
 
   fit_arm(G, ctx, targets, out_dir, train_arm="B", gamma=1.0, lam=2e-3, free_amp=True, steps=400)
   patch_eval_contexts(G, rec, held="strong")        -> M0 now returns strongest-train 48 + the chosen held-out 16
@@ -80,12 +82,13 @@ def fit_arm(G, ctx, targets, out_dir, train_arm="B", gamma=1.0, lam=2e-3, free_a
 def patch_eval_contexts(G, rec, held="strong"):
     """Make G['M0'] hand every consumer (eval pass, 056, 057) the protocol contexts for this target: the 48
     strongest-train contexts (the common evaluation reference) followed by the chosen 16 held-out ones, and the
-    stratified close contrast set."""
-    dev = G["device"]
+    stratified close contrast set. The contexts come from src (circuit/protocol_contexts.eval_contexts, DAN-78;
+    identical to the earlier pool_test.probe construction, checked by 062/check_protocol_contexts.py)."""
+    from circuit.protocol_contexts import eval_contexts
     M0 = G["M0"]
-    pd_ = P.probe(rec, P.pick(rec, "strong", rec["strong"]["train"]), [P.pick(rec, held, rec[held]["held"])], dev)
+    pd_, sel = eval_contexts(rec, held, G["device"])
     M0.build_probe_dataset = lambda comp, i, _p=pd_: _p
-    M0._neg_context_selector = lambda _t=rec["neg"].to(dev): P.FixedSelector(_t)
+    M0._neg_context_selector = lambda _s=sel: _s
     return pd_
 
 

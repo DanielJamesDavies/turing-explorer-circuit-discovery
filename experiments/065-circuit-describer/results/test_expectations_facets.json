@@ -1,0 +1,36 @@
+{
+  "_note": "Expected trigger + condition facets (prompt v5+), written by the PM from the reports BEFORE running v5. Same 29 circuits as test_expectations.json. 'alt' lists also-acceptable values per facet.",
+  "original14": {
+    "11.attn.16685": {"trigger": "one_token", "condition": "within_word", "alt_condition": [], "why": "'ay' of Faraday"},
+    "11.mlp.3588": {"trigger": "one_token", "condition": "within_word", "alt_condition": ["construction"], "why": "' make' only in 'makeup'"},
+    "11.resid.14375": {"trigger": "word_family", "alt_trigger": ["one_token"], "condition": "none", "alt_condition": ["within_word", "subject_area"], "why": "Pale-/Mes-/Ne- era prefixes"},
+    "11.mlp.36265": {"trigger": "one_token", "condition": "subject_area", "alt_condition": [], "why": "full stop in cooking text"},
+    "11.resid.11442": {"trigger": "one_token", "condition": "construction", "alt_condition": ["subject_area"], "why": "'BI' closing 'Business Intelligence ('"},
+    "11.resid.14508": {"trigger": "word_family", "condition": "construction", "alt_condition": ["subject_area"], "why": "protection / welfare / safety / security after 'social'"},
+    "11.resid.16733": {"trigger": "one_token", "condition": "construction", "alt_condition": [], "why": "'rather than', not 'but rather'"},
+    "11.resid.22678": {"trigger": "one_token", "condition": "construction", "alt_condition": [], "why": "'is both A and B', not 'both sides'"},
+    "11.mlp.20822": {"trigger": "one_token", "condition": "subject_area", "alt_condition": ["within_word"], "why": "'ic' of therapeutic in music therapy"},
+    "11.resid.15958": {"trigger": "word_family", "alt_trigger": ["one_token"], "condition": "within_word", "alt_condition": ["none"], "why": "multi- / tri- prefixes"},
+    "9.resid.17596": {"trigger": "one_token", "condition": "construction", "alt_condition": [], "why": "second 'as' of 'as important ... as' (relation only by probing)"},
+    "8.attn.29991": {"trigger": "varied", "alt_trigger": ["word_family"], "condition": "subject_area", "alt_condition": [], "why": "acid-base text (composition only by knockout)"},
+    "10.resid.15497": {"trigger": "one_token", "condition": "entity_kind", "alt_condition": [], "why": "'s after a person's name, not 'theory's'"},
+    "11.mlp.30743": {"trigger": "one_token", "condition": "within_word", "alt_condition": [], "why": "'iv' only in pivotal"}
+  },
+  "holdout15": {
+    "6.resid.21971": {"trigger": "one_token", "condition": "subject_area", "alt_condition": ["within_word", "construction"], "why": "' health' in 'financial health'; silent on 'healthcare'"},
+    "6.resid.26762": {"trigger": "one_token", "condition": "construction", "alt_condition": ["none"], "why": "'serves as'"},
+    "6.mlp.12612": {"trigger": "one_token", "condition": "none", "alt_condition": ["within_word"], "why": "' diplom' relay"},
+    "7.mlp.28759": {"trigger": "one_token", "condition": "construction", "alt_condition": ["subject_area"], "why": "'in English.' titles; silent on 'English grammar'"},
+    "7.resid.15349": {"trigger": "one_token", "condition": "construction", "alt_condition": ["none"], "why": "' data' as head noun; silent on 'big data', 'data-driven'"},
+    "7.resid.13895": {"trigger": "one_token", "alt_trigger": ["word_family"], "condition": "none", "alt_condition": ["subject_area"], "why": "festival / Festival / festiv (+ event)"},
+    "8.resid.14831": {"trigger": "one_token", "condition": "within_word", "alt_condition": ["none"], "why": "' Gen' of Genetic"},
+    "8.mlp.4209": {"trigger": "one_token", "condition": "construction", "alt_condition": ["none"], "why": "' through' meaning 'by means of'"},
+    "8.resid.210": {"trigger": "one_token", "condition": "within_word", "alt_condition": [], "why": "'ic' of 'quantum mechan-ic'; silent on organic"},
+    "9.resid.21288": {"trigger": "one_token", "condition": "within_word", "alt_condition": [], "why": "emer-ged / -ges"},
+    "9.resid.6452": {"trigger": "one_token", "condition": "subject_area", "alt_condition": ["none"], "why": "' space' in spacecraft / aerospace"},
+    "9.resid.10798": {"trigger": "one_token", "alt_trigger": ["unclear"], "condition": "within_word", "alt_condition": ["unclear"], "why": "'om' inside bi-om-es etc., plus 'ver' of Adverbs"},
+    "10.resid.8766": {"trigger": "word_family", "condition": "construction", "alt_condition": [], "why": "period / years / time after 'In the' / 'During the'"},
+    "10.mlp.9566": {"trigger": "one_token", "condition": "within_word", "alt_condition": [], "why": "'unn' of tunneling"},
+    "10.resid.24029": {"trigger": "varied", "alt_trigger": ["unclear", "word_family"], "condition": "subject_area", "alt_condition": ["unclear"], "why": "Buddhist 'teach'ings plus unrelated peaks"}
+  }
+}

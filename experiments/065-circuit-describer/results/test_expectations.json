@@ -1,0 +1,36 @@
+{
+  "_note": "Expected types for prompt tests, written by the PM from the reports BEFORE running each prompt version. 'expect' = first choice, 'alt' = also acceptable. original14 were chosen from v1's inconsistencies (written 2026-09-30 before v2); holdout15 = pick_holdout.py --layers 6,7,8,9,10 --per-layer 3 --seed 0 (written before v4, never seen by any prompt).",
+  "original14": {
+    "11.attn.16685": {"expect": "string", "alt": [], "why": "'ay' piece of Faraday"},
+    "11.mlp.3588": {"expect": "string", "alt": [], "why": "' make' -> 'up'"},
+    "11.resid.14375": {"expect": "string", "alt": ["format", "synonyms"], "why": "Pale-/Mes-/Ne- era prefixes"},
+    "11.mlp.36265": {"expect": "gated_word", "alt": [], "why": "period, only in cooking text"},
+    "11.resid.11442": {"expect": "gated_word", "alt": ["string"], "why": "'BI' after 'Business Intelligence ('"},
+    "11.resid.14508": {"expect": "syntax", "alt": ["gated_word"], "why": "head of 'social ___'"},
+    "11.resid.16733": {"expect": "string", "alt": ["syntax"], "why": "' rather' -> ' than'"},
+    "11.resid.22678": {"expect": "string", "alt": ["syntax"], "why": "' both' in 'X is both A and B'"},
+    "11.mlp.20822": {"expect": "gated_word", "alt": [], "why": "'ic' of therapeutic in music therapy"},
+    "11.resid.15958": {"expect": "synonyms", "alt": ["string"], "why": "multi-/tri- prefixes"},
+    "9.resid.17596": {"expect": "relation", "alt": [], "why": "importance comparison (063 case study)"},
+    "8.attn.29991": {"expect": "composition", "alt": [], "why": "acid-base (063 case study)"},
+    "10.resid.15497": {"expect": "knowledge", "alt": [], "why": "eponymous laws (063 case study)"},
+    "11.mlp.30743": {"expect": "string", "alt": [], "why": "'iv' of pivotal relay (063)"}
+  },
+  "holdout15": {
+    "6.resid.21971": {"expect": "gated_word", "alt": ["string"], "why": "' health' in 'financial health'; silent on healthcare"},
+    "6.resid.26762": {"expect": "string", "alt": ["synonyms"], "why": "' serves' (members include act/serving)"},
+    "6.mlp.12612": {"expect": "string", "alt": [], "why": "' diplom' relay"},
+    "7.mlp.28759": {"expect": "string", "alt": ["syntax", "synonyms"], "why": "' English' (also French/Spanish) ending 'X in English.' titles; silent on 'English grammar'"},
+    "7.resid.15349": {"expect": "string", "alt": ["syntax"], "why": "' data' as processed object; silent on 'big data', 'data-driven'"},
+    "7.resid.13895": {"expect": "synonyms", "alt": ["string"], "why": "festival / Festival / event"},
+    "8.resid.14831": {"expect": "string", "alt": [], "why": "' Gen' of Genetic"},
+    "8.mlp.4209": {"expect": "string", "alt": ["syntax"], "why": "' through' (means sense)"},
+    "8.resid.210": {"expect": "string", "alt": [], "why": "'ic' of 'quantum mechan-ic'; silent on organic/microscopic"},
+    "9.resid.21288": {"expect": "string", "alt": [], "why": "emer-ged/-ges"},
+    "9.resid.6452": {"expect": "gated_word", "alt": ["string"], "why": "' space' in spacecraft / space engineering"},
+    "9.resid.10798": {"expect": "unclear", "alt": ["string"], "why": "mixed: 'om' of biomes, 'ver' of Adverbs, 'ing'"},
+    "10.resid.8766": {"expect": "synonyms", "alt": ["syntax"], "why": "period / years / time after 'In the' / 'During the'"},
+    "10.mlp.9566": {"expect": "string", "alt": [], "why": "'unn' of tunneling relay"},
+    "10.resid.24029": {"expect": "unclear", "alt": ["gated_word", "topic"], "why": "Buddhist 'teach'ings plus unrelated peaks, 45% consistency"}
+  }
+}

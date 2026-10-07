@@ -64,6 +64,10 @@ discovery:
   probe_batch_size: 4 # Max sequences through ONE grad-enabled instrumented forward pass (lower = less VRAM)
   eval_sequence_count: 64 # Pos sequences used by the faithfulness evals
   eval_batch_size: 16 # Sequences per no-grad eval forward pass
+  # Activating / contrast contexts: "legacy" (top + mid store, first 64, list split) or "v1" (the protocol-v1
+  # contexts of the 062 run: stratified 32 strongest + 16 mid-band, 64 close contrast; settings under
+  # context_v1, see ContextProtocolV1Config). v1 needs probe/eval_sequence_count >= 64.
+  context_protocol: "legacy"
   # Position-aware allowed sets (union over the seed's causal prefix instead of
   # position-collapse). When on, the admission rule below replaces top-k:
   # "abs_pctl" computes the cut in-run as the threshold-th percentile of the

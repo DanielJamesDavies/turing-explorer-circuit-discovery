@@ -198,6 +198,18 @@ def validate(bundle: Bundle, conn, outputs_dir: str, run: RunSource, run_name: s
             n_u = np.load(os.path.join(stage_search.search_dir(bundle), "seq_ids.npy"), mmap_mode="r").shape[0]
             ck("search index matches its stage marker", k == search["k"] and n_u == search["n_sequences"],
                f"k {k}, {n_u} sequences")
+
+    # circuit reading data (stage 8), when present: consistency at whatever coverage it has
+    from export.explorer import stage_reading
+    stage_reading.validate(bundle, conn, ck)
+
+    # circuit descriptions (stage 9), when present: consistency at whatever coverage they have
+    from export.explorer import stage_descriptions
+    stage_descriptions.validate(bundle, conn, ck)
+
+    # target output effect + decoder rows (stage 10), when present
+    from export.explorer import stage_prediction
+    stage_prediction.validate(bundle, conn, ck)
     return ck
 
 
@@ -234,11 +246,25 @@ def build(bundle: Bundle, bundle_id: str, outputs_dir: str, run: RunSource, run_
         has_train_curves=bool(q("SELECT COUNT(*) FROM train_curve")),
         has_search=bool(stage_infos.get("7")),
     )
+    from export.explorer import stage_reading, stage_search
+    reading = stage_reading.coverage(bundle, conn)
+    features["has_reading"] = bool(reading and reading["circuits"])
+    from export.explorer import stage_descriptions
+    descriptions = stage_descriptions.coverage(bundle, conn)
+    features["has_descriptions"] = bool(descriptions and descriptions["circuits"])
+    from export.explorer import stage_prediction
+    prediction = stage_prediction.coverage(bundle)
+    features["has_prediction"] = bool(prediction and prediction["targets"])
     conn.close()
-    from export.explorer import stage_search
     files = ["explorer.sqlite"] + [f"arrays/{f}" for f in sorted(os.listdir(bundle.arrays))] + ["tokens/tokens.npy"]
     if features["has_search"]:
         files += stage_search.search_files(bundle)
+    if reading:
+        files.append(stage_reading.READING_FILE)
+    if descriptions:
+        files.append(stage_descriptions.DESCRIPTIONS_FILE)
+    if prediction:
+        files += [stage_prediction.PREDICTION_FILE, stage_prediction.DIRS_FILE, stage_prediction.DIRS_GID_FILE]
     manifest = dict(
         schema_version=SCHEMA_VERSION,
         bundle_id=bundle_id,
@@ -249,6 +275,9 @@ def build(bundle: Bundle, bundle_id: str, outputs_dir: str, run: RunSource, run_
         counts=counts,
         features=features,
         search=stage_search.manifest_fields(stage_infos["7"]) if features["has_search"] else None,
+        reading=reading,
+        descriptions=descriptions,
+        prediction=prediction,
         conventions=dict(
             gid="(layer * 3 + kind_idx) * 40960 + latent, kinds attn, mlp, resid",
             seq_id="1-based; tokens row = seq_id - 1; 0 = empty context slot",

@@ -3,12 +3,14 @@
 Protocol v1 (DAN-75 spec, 2026-09-25):
   - contexts   32 strongest + 16 mid-band training contexts, stratified rotating split (ranks 1-2 always train),
                held-out 16 strongest (primary) + 16 mid-band (reported); 64 close contrast contexts, verified
-               silent, stratified by similarity (48 train / 16 held-out). Built per target with 059's builder.
+               silent, stratified by similarity (48 train / 16 held-out). Built per target with 059's builder
+               (the run); now src/circuit/protocol_contexts.py, which reproduces it exactly (DAN-78).
                Thin targets (no mid-band pool) fall back to the 48 strongest, flagged thin.
   - method     WCM[Z+C+A], gamma_C = gamma_A = 0.25, lambda = 1e-3, rank-keep 3e-3, ablation values from the
                training contexts, AdamW lr 0.05 / wd 0.05, 400 steps, batch 4.
 The contexts reach the production engine through the same injection as 059 / 061 (protocol_harness), which
-reproduced 059 arm B exactly; DAN-78 will move this into the production path.
+reproduced 059 arm B exactly. Production discovery can now take them without injection:
+config.discovery.context_protocol = "v1" (DAN-78; check_protocol_contexts.py verifies the equivalence).
 
 MODE=main   per target: contexts -> fit -> eval pass (held-out strongest and mid-band) -> specificity (056)
 MODE=sweep  the Figure 4 / DAN-76 data: per arm (WCM and unweighted masking over a lambda grid, gamma 0.25)
@@ -47,15 +49,24 @@ SKIP_SPEC = os.environ.get("SKIP_SPEC") == "1"
 GAMMA, LAM = 0.25, 1e-3
 W_LAMS = (2.5e-4, 5e-4, 1e-3, 2e-3, 4e-3)
 U_LAMS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3)
-SWEEP = [("W_%g" % l, True, l) for l in W_LAMS] + [("U_%g" % l, False, l) for l in U_LAMS]
-# SWEEP_ARMS picks arms by name, W_<lambda> (WCM) or U_<lambda> (unweighted), and may name prices outside the
-# default grids (e.g. W_1e-4 extends WCM beyond ~1k nodes). Names are normalised to the "%g" form used on disk.
+STEPS = 400                                                          # the protocol's training budget
+RANK = 3e-3                                                          # the protocol's rank-keep weight
+SWEEP = ([("W_%g" % l, True, l, STEPS, GAMMA, RANK) for l in W_LAMS]
+         + [("U_%g" % l, False, l, STEPS, GAMMA, RANK) for l in U_LAMS])
+# SWEEP_ARMS picks arms by name, W_<lambda> (WCM) or U_<lambda> (unweighted), and may name sparsity penalties outside
+# the default grids (e.g. W_1e-4 extends WCM beyond ~1k nodes). Optional suffixes change one setting from the protocol:
+# _s<steps> the training budget (W_0.001_s800, the DAN-131 depth test), _g<gamma> the A / C term weight, _r<weight>
+# the rank-keep weight (W_0.001_g1_r0.03, the attention test). Names are normalised to the "%g" form used on disk.
 WANT = []
 for a in (x for x in os.environ.get("SWEEP_ARMS", "").split(",") if x):
-    w, lam = a[0] == "W", float(a[2:])
-    WANT.append("%s_%g" % (a[0], lam))
-    if not any(ww == w and abs(ll - lam) <= 1e-12 for _, ww, ll in SWEEP):
-        SWEEP.append((WANT[-1], w, lam))
+    parts = a.split("_")
+    w, lam = parts[0] == "W", float(parts[1])
+    opt = {p[0]: p[1:] for p in parts[2:]}
+    steps, gamma, rank = int(opt.get("s", STEPS)), float(opt.get("g", GAMMA)), float(opt.get("r", RANK))
+    WANT.append("%s_%g" % (parts[0], lam) + ("_s%d" % steps if steps != STEPS else "")
+                + ("_g%g" % gamma if gamma != GAMMA else "") + ("_r%g" % rank if rank != RANK else ""))
+    if not any(a_[0] == WANT[-1] for a_ in SWEEP):
+        SWEEP.append((WANT[-1], w, lam, steps, gamma, rank))
 SWEEP = [a for a in SWEEP if not WANT or a[0] in WANT]
 TAG = "shard%d" % SHARD_I
 # Co-tenant slot on this process's GPU (launch.sh: shard i runs on GPU i % K, so SLOT = i // K). Drives the
@@ -105,34 +116,35 @@ class Runner:
         import protocol_harness as H
         self.V, self.H, self.P = V, H, H.P
         self.G = V.setup()
-        M0 = self.G["M0"]
-        # the eval / 056 injection replaces these per target; the context builder must always get the originals
-        self._orig_sel = M0._neg_context_selector
-        self._orig_pd = M0.build_probe_dataset
         self.ctx_dir = OUT / "ctx"; self.ctx_dir.mkdir(parents=True, exist_ok=True)
         self.dev = self.G["device"]
 
     # ---------------------------------------------------------------------------------------------- contexts
     def contexts(self, key):
+        """The target's context record (src circuit/protocol_contexts.build_record, which reproduces 059's
+        pool_test.build exactly; DAN-78), cached as ctx/<key>.pt = {key: rec}."""
+        from circuit.protocol_contexts import build_record
+        from pipeline.component_index import component_idx
         path = self.ctx_dir / ("%s.pt" % key)
         if path.exists():
             return torch.load(path, weights_only=False)[key]
-        M0 = self.G["M0"]
-        M0._neg_context_selector = self._orig_sel
-        M0.build_probe_dataset = self._orig_pd
-        self.P.seeds = lambda: [key]
-        self.P.CTX = path
-        self.P.build(self.G)
-        return torch.load(path, weights_only=False)[key]
+        l, k, i = self.H.parse(key)
+        G = self.G
+        rec = build_record(G["inference"], G["bank"], G["M0"].probe_builder.loader,
+                           component_idx(l, G["KINDS"].index(k), G["NK"]), i)
+        torch.save({key: rec}, path)
+        return rec
 
     def train_arm(self, rec):
         """32 + 16 (arm B); thin targets without a mid-band pool fall back to the 48 strongest (arm A)."""
-        return ("B", False) if rec.get("mid") is not None else ("A", True)
+        from circuit.protocol_contexts import training_arm
+        return training_arm(rec)
 
     # ---------------------------------------------------------------------------------------------- fitting
-    def method(self, gamma, lam, free_amp):
+    def method(self, gamma, lam, free_amp, steps=STEPS, rank=RANK):
         from analysis.circuits.gradient_size_sweep_runner import _build_mode_method
-        self.H.configure(gamma, lam, free_amp)
+        cfg = self.H.configure(gamma, lam, free_amp, steps)
+        cfg.discovery.learned_mask.rank_weight = float(rank)      # configure() fixes it at the protocol's 3e-3
         return _build_mode_method("ablation_gradient", "mask", self.G["inference"], self.G["bank"], self.G["avg_acts"],
                                   self.G["M0"].probe_builder)
 
@@ -141,10 +153,9 @@ class Runner:
         train_fh before the circuit is saved, so a kill in between refits and repeats the row (merge keeps the last)."""
         if path.exists():
             return torch.load(path, weights_only=False), 0.0
-        P, KINDS = self.P, self.G["KINDS"]
-        tr = P.train_set(rec, arm)
-        held = [P.pick(rec, "strong", rec["strong"]["held"])] + ([P.pick(rec, "mid", rec["mid"]["held"])] if rec["mid"] else [])
-        pdset = P.probe(rec, tr, held, self.dev)
+        from circuit.protocol_contexts import training_probe
+        KINDS = self.G["KINDS"]
+        pdset = training_probe(rec, self.dev, arm)
         M.build_probe_dataset = lambda comp, i, _p=pdset: _p
         M._floor_negatives = lambda probe_data, comp, i, logger: probe_data.neg_tokens
         l, k, i = self.H.parse(key)
@@ -304,9 +315,9 @@ def sweep_mode(R, targets):
     ev_path = d / ("eval.%s.jsonl" % TAG)
     ev_done = jsonl_keys(ev_path, ("seed", "arm"))
     fe, fr = open(ev_path, "a"), open(d / ("train.%s.jsonl" % TAG), "a")
-    for name, weighted, lam in SWEEP:
-        M = R.method(GAMMA, lam, weighted)
-        log("arm %s (weighted=%s, lambda %g)" % (name, weighted, lam))
+    for name, weighted, lam, steps, gamma, rank in SWEEP:
+        M = R.method(gamma, lam, weighted, steps, rank)
+        log("arm %s (weighted=%s, lambda %g, %d steps, gamma %g, rank-keep %g)" % (name, weighted, lam, steps, gamma, rank))
         for key in targets:
             if (key, name) in ev_done:
                 continue
@@ -317,17 +328,19 @@ def sweep_mode(R, targets):
                 arm, thin = R.train_arm(rec)
                 main_c = OUT / "main" / "circuits" / ("%s.pt" % key)
                 path = d / "circuits" / name / ("%s.pt" % key)
-                if weighted and abs(lam - LAM) < 1e-12 and main_c.exists() and not path.exists():
+                if (weighted and abs(lam - LAM) < 1e-12 and steps == STEPS and gamma == GAMMA and rank == RANK
+                        and main_c.exists() and not path.exists()):
                     path.parent.mkdir(parents=True, exist_ok=True)
                     torch.save(torch.load(main_c, weights_only=False), path)        # identical config: reuse
                 t = time.time()
                 c, t_fit = R.fit(M, rec, key, arm, path, train_fh=fr,
-                                 label=dict(arm=name, weighted=weighted, lam=lam))
+                                 label=dict(arm=name, weighted=weighted, lam=lam, steps=steps, gamma=gamma, rank=rank))
                 if c is None:
                     row = dict(seed=key, arm=name, skip="rejected")
                 else:
                     row = R.score(c, rec, "strong")
-                    row.update(held="strong", arm=name, weighted=weighted, lam=lam, train_arm=arm, thin=thin,
+                    row.update(held="strong", arm=name, weighted=weighted, lam=lam, steps=steps, gamma=gamma, rank=rank,
+                               train_arm=arm, thin=thin,
                                t_fit=round(t_fit, 1), t_total=round(time.time() - t, 1), shard=TAG)
             except Exception as e:  # noqa: BLE001
                 row = dict(seed=key, arm=name, error="%s: %s" % (type(e).__name__, str(e)[:300]))

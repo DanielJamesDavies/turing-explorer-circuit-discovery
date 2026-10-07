@@ -29,6 +29,15 @@ class ProbeDatasetBuilder:
         self.inference = inference
         self.bank = bank
         self.loader = loader
+        self._protocol = None
+
+    def protocol_contexts(self):
+        """Protocol-v1 context records for this engine (circuit/protocol_contexts.py). One cache per builder, so
+        every discovery method and the eval pass sharing it see the same records."""
+        if getattr(self, "_protocol", None) is None:
+            from circuit.protocol_contexts import ProtocolContexts
+            self._protocol = ProtocolContexts(self.inference, self.bank, self.loader)
+        return self._protocol
 
     def build_for_latent(
         self, 

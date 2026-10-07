@@ -23,7 +23,8 @@ def main() -> int:
     pf.add_argument("--skip-stores", action="store_true", help="skip the outputs/ store checks")
     pf.add_argument("--report", default="", help="write the report as JSON here")
 
-    b = sub.add_parser("build", help="build (or update) a bundle: stages 1-4, 6 and 7 (search index)")
+    b = sub.add_parser("build", help="build (or update) a bundle: stages 1-4, 6, 7 (search index), 8 (reading data), "
+                                     "9 (circuit descriptions), 10 (target output effect + decoder rows)")
     b.add_argument("--outputs", default=os.path.join(REPO_ROOT, "outputs"), help="store directory")
     b.add_argument("--data", default=os.path.join(REPO_ROOT, "data"), help="token shard directory")
     b.add_argument("--run", default=RUN_062, help="062 run output dir (holding ctx/ and main/)")
@@ -36,6 +37,15 @@ def main() -> int:
     b.add_argument("--limit-targets", type=int, default=0, help="only the first N targets (quick test builds)")
     b.add_argument("--no-checksums", action="store_true", help="skip sha256 of bundle files in the manifest")
     b.add_argument("--search-k", type=int, default=16, help="top contexts per latent in the search index (stage 7)")
+    b.add_argument("--layers", default="", help="stage 8: comma list of 0-based circuit.layer values ('' = all)")
+    b.add_argument("--reading-keys", default="", help="stage 8: comma list of target keys (e.g. 8.attn.29991)")
+    b.add_argument("--reading-limit", type=int, default=0, help="stage 8: at most N new circuits this run (benchmarks)")
+    b.add_argument("--reading-batch", type=int, default=32, help="stage 8: sequences per forward, circuit pass")
+    b.add_argument("--reading-ctx-batch", type=int, default=64, help="stage 8: sequences per forward, latent contexts")
+    b.add_argument("--reading-chunk", type=int, default=200, help="stage 8: circuits between latent passes")
+    b.add_argument("--device", default="cuda", help="stage 8: torch device")
+    b.add_argument("--descriptions", default="", help="stage 9: descriptions jsonl (default: the 065 results file)")
+    b.add_argument("--prediction", default="", help="stage 10: 064 results directory (default: the 064 results)")
 
     args = parser.parse_args()
     if args.stage == "preflight":
@@ -93,7 +103,7 @@ def build(args) -> int:
             print(f"   done: {info}")
     if "6" in stages:
         from export.explorer import stage_finalize
-        infos = {s: bundle.stage_info(s) for s in ("1", "2", "3", "4", "4-wiring", "5", "7")}
+        infos = {s: bundle.stage_info(s) for s in ("1", "2", "3", "4", "4-wiring", "5", "7", "8", "9", "10")}
         missing = [s for s in ("1", "2", "3", "4") if not infos[s]]
         if missing:
             print(f"stage 6 needs stages {missing} first")
@@ -111,6 +121,42 @@ def build(args) -> int:
             print(f"stage 7 needs stages {missing} first")
             return 1
         stage("7", lambda: stage_search.build(bundle, args.search_k))
+    if "8" in stages:
+        # incremental: never skipped by its marker; covered circuits and latents are skipped inside the stage
+        from export.explorer import stage_reading
+        missing = [s for s in ("1", "2", "3", "4") if not bundle.stage_info(s)]
+        if missing:
+            print(f"stage 8 needs stages {missing} first")
+            return 1
+        print("\n== stage 8 (circuit reading data, incremental)")
+        info = stage_reading.build(
+            bundle, REPO_ROOT, layers=[int(x) for x in args.layers.split(",") if x.strip()] or None,
+            keys=[k.strip() for k in args.reading_keys.split(",") if k.strip()] or None, limit=args.reading_limit,
+            device=args.device, batch=args.reading_batch, ctx_batch=args.reading_ctx_batch, chunk=args.reading_chunk)
+        bundle.mark("8", info)
+        print(f"   done: {info}")
+    if "9" in stages:
+        # rebuilt from the 065 jsonl on every run: never skipped by its marker
+        from export.explorer import stage_descriptions
+        missing = [s for s in ("1", "3", "4") if not bundle.stage_info(s)]
+        if missing:
+            print(f"stage 9 needs stages {missing} first")
+            return 1
+        print("\n== stage 9 (circuit descriptions, rebuilt from the 065 jsonl)")
+        info = stage_descriptions.build(bundle, REPO_ROOT, args.descriptions)
+        bundle.mark("9", info)
+        print(f"   done: {info}")
+    if "10" in stages:
+        # rebuilt from the 064 results on every run: never skipped by its marker
+        from export.explorer import stage_prediction
+        missing = [s for s in ("1", "3", "4") if not bundle.stage_info(s)]
+        if missing:
+            print(f"stage 10 needs stages {missing} first")
+            return 1
+        print("\n== stage 10 (target direct output effect + decoder rows, rebuilt from the 064 results)")
+        info = stage_prediction.build(bundle, REPO_ROOT, args.prediction)
+        bundle.mark("10", info)
+        print(f"   done: {info}")
     return 0
 
 
