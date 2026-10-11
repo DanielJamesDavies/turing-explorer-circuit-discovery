@@ -193,27 +193,32 @@ class TestPatch:
         _, mlp_out, _ = block_outputs[0]
         assert torch.allclose(mlp_out, value)
 
-    def test_resid_kind_replaces_norm2_input_via_prehook(self, mock_model):
+    def test_resid_kind_replaces_block_output_residual(self, mock_model):
         """
-        patch(model, 0, 'resid', value) installs a pre-hook on block.norm_2
-        that injects `value` as its input.  Since MockNorm2 is identity,
-        norm_2 then returns `value`, and the MLP receives `value`.
-        We verify by adding a second pre-hook that records norm_2's received input.
+        patch(model, 0, 'resid', value) replaces the block's OUTPUT residual
+        (o[2]) — the site multi_patch / capture_activations call "resid" — so
+        the next block receives `value`, and the same block's MLP input is
+        untouched. (It used to pre-hook norm_2, which changed only the MLP's
+        input: the DAN-68 bug class.)
         """
         value = torch.ones(B, T, N) * 7.0
         x = torch.randn(B, T, N)
-        norm2_received = []
+        norm2_received, layer1_inputs = [], []
 
         with torch.no_grad():
             with patch(mock_model, 0, "resid", value):
-                # Second pre-hook sees whatever the first hook passed in.
-                handle = mock_model.transformer.h[0].norm_2.register_forward_pre_hook(
+                h_n = mock_model.transformer.h[0].norm_2.register_forward_pre_hook(
                     lambda m, i: norm2_received.append(i[0].clone())
                 )
+                h_1 = mock_model.transformer.h[1].register_forward_pre_hook(
+                    lambda m, i: layer1_inputs.append(i[0].clone())
+                )
                 mock_model(x)
-                handle.remove()
+                h_n.remove()
+                h_1.remove()
 
-        assert torch.allclose(norm2_received[0], value)
+        assert torch.allclose(layer1_inputs[0], value)
+        assert torch.allclose(norm2_received[0], x)
 
     def test_patch_only_affects_specified_layer(self, mock_model):
         """A patch at layer 0 must not directly alter layer 1's attn output."""

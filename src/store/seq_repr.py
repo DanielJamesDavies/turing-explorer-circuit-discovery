@@ -33,6 +33,7 @@ from typing import Optional, cast
 import torch
 
 from config import config
+from model.families import public_store_grid
 from model.turingllm import TuringLLMConfig
 
 
@@ -52,7 +53,11 @@ class SeqRepr:
                     Sequence IDs are 1-indexed; index 0 is an unused sentinel.
         """
         self.llm_config = TuringLLMConfig()
-        self.repr_dim   = self.llm_config.n_embd   # 1024
+        # Public model families (DAN-37): the family's d_model; None on TuringLLM.
+        grid = public_store_grid()
+        if grid is not None:
+            self.llm_config = grid.llm_config
+        self.repr_dim   = self.llm_config.n_embd   # 1024 on TuringLLM
         self.n_seqs     = n_seqs
         self.repr_mode  = cast(str, config.latents.neg_ctx.repr_mode or "mean_pool")
 

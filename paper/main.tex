@@ -196,14 +196,14 @@ For a latent $f$ and a sequence--position pair $(x, t)$, write $a_f(x, t) \geq 0
 
 \paragraph{Targets and contexts.}
 Fix a target latent $f$ and let $U_f$ be the latents at every SAE site that causally precedes $f$'s site.
-Each target has \emph{activating contexts} from two stores, its 64 strongest-activating sequences and 64 drawn from the middle of its activation distribution, each with an anchor at the target's peak (\cref{app:stores}).
-It trains on 32 strongest and 16 mid-band contexts and is scored on 16 held-out strongest contexts (primary) and 16 held-out mid-band contexts (reported); the split is stratified by activation and always trains on the two strongest (\cref{app:protocol}).
-It also has 64 \emph{contrast contexts}: corpus sequences ranked by their highest cosine similarity to any of its activating contexts in pooled final-layer representation space, excluding those contexts, and kept only if the target stays out of its site's Top-K on them, so that they are close to the target's contexts but verified silent (\cref{app:stores}).
+Each target has \emph{activating contexts} from two stores, up to 64 of its strongest-activating sequences and up to 64 drawn from the middle of its activation distribution, each with an anchor at the target's peak (\cref{app:stores}).
+With full stores it trains on 32 strongest and 16 mid-band contexts and is scored on 16 held-out strongest contexts (primary) and 16 held-out mid-band contexts (reported); the split is stratified by activation and always trains on the two strongest (\cref{app:protocol}).
+It also has 64 \emph{contrast contexts}: corpus sequences ranked by their highest cosine similarity to any of its strongest-activating contexts in pooled final-layer representation space, excluding its activating contexts, and kept only if the target stays out of its site's Top-K on them, so that they are close to the target's contexts but verified silent (\cref{app:stores}).
 For the running example they are history passages about other periods, such as the Enlightenment, Renaissance music, or the pre-Columbian era.
 % PROTOCOL v1 (2026-09-24, DAN-64 / DAN-7): NegContextSelector("close"), silence =
 % post-Top-K activation 0. The earlier pre-built kNN store gave 38% of targets one
 % shared fallback list (seq_repr capped at 200k of 24.8M sequences); WCM no longer uses it.
-Targets are sampled at random, stratified across sites, with no prioritisation heuristic.
+Targets are drawn uniformly at random, the same number per site, with no prioritisation heuristic (\cref{app:protocol}).
 
 \paragraph{Circuit-only execution.}
 A \emph{weighted circuit} is a node set $C \subseteq U_f$ with a scaling coefficient $\alpha_{s,i} > 0$ for each node.
@@ -223,7 +223,7 @@ Writing $a_C$ for the target's mean activation at the anchors under this interve
 \[
     \phi^{\mathrm{free}}_{\pi}(C) = \frac{a_C - a_{\varnothing}}{a_{\mathrm{pos}} - a_{\varnothing}},
 \]
-and \emph{clamped faithfulness} $\phi^{\mathrm{pin}}_{\pi}(C)$ is the same ratio with nodes clamped to their clean-run values.
+and \emph{clamped faithfulness} $\phi^{\mathrm{pin}}_{\pi}(C)$ is the same ratio with nodes clamped to their clean-run values (times $\alpha$).
 
 \paragraph{The problem.}
 Faithfulness depends on the ablation method~\citep{miller2024transformer, mueller2024missed}, and a node set trained under one method can be exactly infeasible under another (\cref{sec:ablmask}), so one weighted circuit is asked to serve all three:
@@ -256,13 +256,13 @@ A latent is kept at $\alpha$ times its live value when its gate is open and sent
 \[
     x \;\leftarrow\; x + W_{\mathrm{dec}}^{s}\!\left[\, m_s \odot \alpha_s \odot c^{s} + (1 - m_s) \odot c^{s}_{\mathrm{abl}} - c^{s} \,\right],
 \]
-where $c^{s}$ is the site's dense Top-K code and $c^{s}_{\mathrm{abl}}$ its ablation value; editing only the decoded difference leaves the SAE error untouched, as in evaluation.
+where $c^{s}$ is the site's dense Top-K code and $c^{s}_{\mathrm{abl}}$ its ablation value, a dense mean in training (the sparsity-preserving variant is used only in evaluation); editing only the decoded difference leaves the SAE error untouched, as in evaluation.
 
 \paragraph{Objective.}
 The circuit is trained to \emph{reproduce} the target's pre-activation at the anchors of the training contexts, by mean squared error against its value on the unmodified stream.
 The pre-activation is forced by Top-K: the activation is censored at zero, so a loss on it carries no gradient exactly where the mask must learn.
 Reproducing the pre-activation does not, however, keep the target in its site's Top-K: the loss constrains the site's stream along one direction of $d_{\mathrm{model}}$, and a circuit can restore that projection while other latents at the site rise past the target.
-A \emph{rank-keep} term therefore asks the target to hold its natural rank: with $r$ the target's rank among its site's other latents at an anchor in the unmodified model, and $\tau^{(r)}_{\pi}$ the $r$-th largest of their pre-activations under the circuit,
+A \emph{rank-keep} term therefore asks the target to hold its natural rank: with $r$ the target's rank among its site's other latents at an anchor in the unmodified model, capped at $K$, and $\tau^{(r)}_{\pi}$ the $r$-th largest of their pre-activations under the circuit,
 \[
     \mathcal{R}_{\pi} = \operatorname{mean}\Bigl[\operatorname{relu}\bigl(\tau^{(r)}_{\pi} - \preact\bigr)^{2}\Bigr],
 \]
@@ -280,7 +280,7 @@ WCM therefore scores one mask under all three ablation methods at once, with gra
     \qquad
     \nu = \operatorname{mean}\bigl(\text{target}^2\bigr),
 \]
-summed over $\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}$, with $\gamma_{\mathrm{Z}} = 1$, $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$ at every layer, and $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; the ablation means are computed on the training contexts only.
+summed over $\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}$, with $\gamma_{\mathrm{Z}} = 1$, $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$ at every layer, and $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; the ablation means are computed on training-split contexts only (\cref{app:protocol}).
 % PROTOCOL v1 (2026-09-24, DAN-7): rank-keep gamma_R = 3e-3. Local sweep on 16 targets
 % (experiments/055, 056): 3e-3 to 1e-1 all give 7-8/16 passing faithfulness under
 % Z, A and C (plain WCM 6/16) at ~330-350 nodes (plain 398). It does NOT reliably
@@ -297,7 +297,7 @@ The ablation method matters more than one might expect: on four layer-2 targets,
 
 \paragraph{Scaling coefficients.}
 Coefficients start at $\alpha = 1$, so training starts exactly at unweighted behaviour; \emph{unweighted circuit masking} keeps them there.
-One guard is required: with coefficients free, the optimiser can hold a gate just below the keep threshold while inflating its coefficient, emptying the node set while keeping function intact, so latents with closed gates are charged $\lambda\,(1 - m)\,|\alpha - 1|$.
+One guard is required: with coefficients free, the optimiser can hold a gate just below the keep threshold while inflating its coefficient, emptying the node set while keeping function intact, so latents with closed gates are charged $\lambda\,(1 - \sigma(\theta))\,|\alpha - 1|$.
 The zero-ablation term anchors the coefficients: trained without it, they calibrate against the mean ablation's background and overshoot by one to three orders of magnitude once that background is removed (\cref{app:weighted-details}).
 
 \paragraph{Binarisation.}
@@ -310,7 +310,7 @@ Training runs 400 AdamW steps; all settings are in \cref{app:protocol}, and the 
 % BUDGET 0.75 pp; settings live in app:protocol.
 \label{sec:eval-abl}
 
-\Cref{tab:semantics} names the evaluation family; every reported number carries its row, is read on the 16 held-out activating contexts (or held-out contrast contexts), and reads the target's activation in every term of its ratio (\cref{app:protocol}).
+\Cref{tab:semantics} names the evaluation family; every reported number carries its row, is read on the held-out activating contexts (or held-out contrast contexts), and reads the target's activation in every term of its ratio (\cref{app:protocol}).
 
 \begin{table}
 \centering
@@ -321,18 +321,18 @@ Training runs 400 AdamW steps; all settings are in \cref{app:protocol}, and the 
 \textbf{Score} & \textbf{Contexts} & \textbf{Circuit latents} & \textbf{Other latents} \\
 \midrule
 $\phiind$             & contrast   & set                        & untouched \\
-$\phisup$             & activating & ablated per $\pi$          & recomputed \\
-$\phi^{\mathrm{pin}}$ & activating & clamped to clean values    & ablated per $\pi$ \\
+$\phisup$             & activating & zero                       & recomputed \\
+$\phi^{\mathrm{pin}}$ & activating & clamped to $\alpha \times$ clean values & zero / activating means \\
 $\phi^{\mathrm{free}}_{\mathrm{Z}}$ & activating & recomputed (permitted) & zero \\
 $\phi^{\mathrm{free}}_{\mathrm{A}}$ & activating & recomputed & activating means, dense \\
 $\phi^{\mathrm{free}}_{\mathrm{A},\mathrm{sp}}$ & activating & recomputed & activating means, sp \\
 $\phi^{\mathrm{free}}_{\mathrm{C},\mathrm{sp}}$ & activating & recomputed & contrast means, sp \\
 $\phi^{\mathrm{free}}_{\mathrm{Z},\alpha}$ / $\phi^{\mathrm{free}}_{\mathrm{A},\alpha}$ & activating & recomputed, $\times\,\alpha$ & zero / activating means \\
-$\phiind^{\alpha}$    & contrast   & set to $\alpha \times$ clean values & untouched \\
+$\phiind^{\alpha}$    & contrast   & set to $\alpha \times$ anchor means & untouched \\
 \bottomrule
 \end{tabular}
 \caption{The evaluation family.
-Intervention scores: $\phiind$ sufficiency to induce, $\phisup$ necessity; ``set'' means set to activating-context values.
+Intervention scores: $\phiind$ sufficiency to induce, $\phisup$ necessity; ``set'' means set, at every position, to the node's mean value at the anchors of the activating contexts.
 Faithfulness $\phi^{\mathrm{free}}_{\pi}$ measures whether the circuit reproduces the target alone with its nodes recomputed, clamped faithfulness $\phi^{\mathrm{pin}}$ whether it contains the right latents, and each variant names its ablation method $\pi$ (Z zero, A mean over activating contexts, C mean over contrast contexts; sp sparsity-preserving; \cref{sec:problem}).
 The $\alpha$ rows score weighted circuits with their scaling coefficients applied (\cref{sec:weighted}).
 SAE errors are preserved in every row, and every ratio reads the target the same way in all of its terms (\cref{app:protocol}).}
@@ -345,12 +345,12 @@ SAE errors are preserved in every row, and every ratio reads the target the same
 % Under a post-Top-K read a_empty is usually 0 and the ratio reduces to
 % 1 - a/a_pos, which reconciles the engine and the standalone ports (DAN-65).
 Let $A^{+}$ and $A^{-}$ be the target's mean activation on activating and contrast contexts.
-\textbf{Sufficiency to induce}, $\phiind = (A^{-}_{\mathrm{int}} - A^{-})/(A^{+} - A^{-})$, sets the circuit's nodes to their activating-context means in contrast contexts: near 1, the circuit switches the target on.
-\textbf{Necessity} is one minus the completeness score of \citet{marks2025sparse}: with $a_{M \setminus C}$ the target's activation on activating contexts when the circuit's nodes are ablated per $\pi$ and every other latent is recomputed,
+\textbf{Sufficiency to induce}, $\phiind = (A^{-}_{\mathrm{int}} - A^{-})/(A^{+} - A^{-})$, sets the circuit's nodes in contrast contexts to their mean values at the anchors of the activating contexts, times $\alpha$ for a weighted circuit ($\phiind^{\alpha}$, the form reported throughout): near 1, the circuit switches the target on.
+\textbf{Necessity} is one minus the completeness score of \citet{marks2025sparse}: with $a_{M \setminus C}$ the target's activation on activating contexts when the circuit's nodes are set to zero and every other latent is recomputed, and $a_{\varnothing}$ the zero-ablation empty circuit,
 \[
-    \phisup(C; \pi) = \frac{a_{\mathrm{pos}} - a_{M \setminus C}}{a_{\mathrm{pos}} - a_{\varnothing}}.
+    \phisup(C) = \frac{a_{\mathrm{pos}} - a_{M \setminus C}}{a_{\mathrm{pos}} - a_{\varnothing}}.
 \]
-Two details differ from their definition: SAE errors are always preserved here, where they ablate the circuit's error nodes, and our ablation means do not depend on position, since the contexts are not templated.
+Two details differ from their definition: SAE errors are always preserved here, where they ablate the circuit's error nodes, and the nodes are zero-ablated rather than mean-ablated, so the score needs no reference distribution.
 % 2026-09-22 (DAN-72): no per-node role labels in WCM. Leave-one-out effects are
 % strongly non-additive and no signed subset passes a set-level test, so
 % necessity and sufficiency to induce treat the circuit as one set.
@@ -364,7 +364,7 @@ Mean ablation over activating contexts leaks target signal into the ablation val
 Dense mean ablation puts the model on streams a Top-K SAE can never emit, so the sparsity-preserving variant re-imposes the per-position Top-K after the means are applied (\cref{app:respect-topk}).
 
 \paragraph{Random-circuit baseline.}
-Fitted coefficients could make any set look faithful, so each random circuit, of the same size and drawn from live latents at the same sites, receives the \emph{same coefficient-fitting budget} on its own nodes before scoring; faithfulness then reflects selection rather than the fitting capacity of the coefficients.
+Fitted coefficients could make any set look faithful, so each random circuit, of the same size and drawn from latents active on the target's strongest training contexts at the same sites, receives the \emph{same coefficient-fitting budget} on its own nodes before scoring; faithfulness then reflects selection rather than the fitting capacity of the coefficients.
 
 \paragraph{Specificity.}
 Every score above reads the target alone, so a circuit that restores the target by lifting its whole neighbourhood at the site passes them all.
@@ -372,13 +372,13 @@ We therefore read the full code at the target's site under the circuit and repor
 
 \paragraph{Near-threshold targets.}
 A target that only just enters its site's Top-K in the unmodified model has an ill-conditioned activation read: a circuit can reproduce its pre-activation while small shifts near the cut push it out, so its activation-read scores are near zero whatever the circuit.
-Such targets, those whose median clean rank at the anchor is at least $K/2$, are identified from the unmodified model alone, before any circuit is fitted; they stay in the headline pass rate and are also reported as a separate stratum on both reads.
+Such targets, those whose median rank among all their site's latents at the held-out anchors is at least $K/2$, are identified from the unmodified model alone, before any circuit is fitted; they stay in the headline pass rate and are also reported as a separate stratum on both reads.
 
 \paragraph{Pass criterion.}
 % DAN-8, 2026-09-27. experiments/062-h100-protocol-v1/pass_rule.py applies it.
 A circuit passes if, on the held-out strongest contexts and the activation read, its faithfulness under all three ablation methods (Z, sparsity-preserving A, and C) lies in $[0.8, 1.5]$ and its necessity is at least $0.9$.
 The band is asymmetric by design: below $0.8$ the circuit fails to drive its target, while an overshoot up to $1.5$ still drives it, and whether that overshoot is specific to the target is measured for every circuit (above).
-Each circuit's largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ is reported alongside the binary rule; sufficiency to induce, specificity, and the random-circuit baseline are reported rather than required; targets whose ratio denominator is vacuous are excluded and counted.
+Each circuit's largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ is reported alongside the binary rule; sufficiency to induce, specificity, and the random-circuit baseline are reported rather than required; targets whose zero-ablation denominator is vacuous ($|a_{\mathrm{pos}} - a_{\varnothing}| < 0.05\,a_{\mathrm{pos}}$) are excluded and counted, and an undefined A or C ratio counts as a fail.
 
 \section{Experiments and Results}
 \label{sec:results}
@@ -411,9 +411,12 @@ The figure shows where the fall comes from.
 Zero ablation and necessity both hold for about four circuits in five at every depth ($79\%$, $80\%$, and $76\%$ at layers 0--4, 5--7, and 8--11); what grows with depth is the share that fail only under the two mean ablations, from $10\%$ of circuits at layers 0--4 to $53\%$ at 8--11 (median faithfulness $0.64$ and $0.48$ at layer 11), and these make up $59\%$ of all failing circuits.
 Attention outputs are the exception: $40\%$ of their circuits fail even zero ablation, and $63\%$ of those belong to near-threshold targets, which barely enter their site's Top-K in the unmodified model and read $0$ once they slip out of it ($1{,}142$ targets, $7.6\%$ of the run, almost all attention outputs; $0.8\%$ pass, against $50\%$ for the remaining targets).
 Layer 0 departs from the trend ($55\%$): its circuits are faithful ($90\%$), but a third fail necessity, because the token embedding reaches layer-0 targets directly and is never ablated.
+% 2026-10-09 (protocol-v1.md §3.6): the 58 padded mid-band rows were re-scored with the explicit split
+% (062 rescore_mid.py, out_rescore_mid/). One row flips fail -> pass: 12.09% -> 12.10%, median worst-of-3 0.774
+% unchanged, so the 12% and 0.77 below stand.
 On the held-out mid-band contexts, where targets fire more weakly, $12\%$ pass (median largest deviation $0.77$, against $0.31$ on the strongest contexts), so circuits fitted mostly to strong contexts transfer only in part to weak ones.
-Specificity is measured rather than required: $30\%$ of circuits ($44\%$ at MLP targets) also restore co-firing sibling latents to at least $80\%$ of the target's faithfulness (\cref{app:specificity}).
-Sufficiency to induce, which no circuit is trained on, is reported separately (\cref{fig:induce}): its median is $0.98$ among passing circuits, and over all circuits $1.19$ at residual-stream and $0.20$ at attention-output targets.
+Specificity is measured rather than required: $30\%$ of circuits ($44\%$ at MLP targets) are flagged as amplifiers, restoring co-firing sibling latents to at least $80\%$ of the target's faithfulness under some ablation method (\cref{app:specificity}).
+Sufficiency to induce with coefficients, $\phiind^{\alpha}$, which no circuit is trained on, is reported separately (\cref{fig:induce}): its median is $0.98$ among passing circuits, and over all circuits $1.19$ at residual-stream and $0.20$ at attention-output targets.
 Sizes are at a fixed 400-step budget, at which most circuits are still shrinking (\cref{fig:training-curves}).
 
 \begin{figure}[t]
@@ -504,7 +507,7 @@ Not drawn: a generic core of $7$ latents and $682$ further latents, together $55
 % objective (support-restricted, lambda 0). Fitted circuits on the same targets: 43.1% (L0-4 61, L5-7 45, L8-11 23).
 % Random: Z/A/C medians 0.00 in every band; 1 of 747 has any single score in [0.8, 1.5]; max A 0.81, max C 0.37,
 % max induce 0.50.
-Random circuits of the same size as each target's circuit, drawn from latents active on its contexts and given the same coefficient fitting, failed on all $747$ targets of a stratified sample, against $43\%$ for the fitted circuits on the same targets.
+Random circuits of the same size as each target's circuit, drawn from latents active on its strongest training contexts and given the same coefficient fitting, failed on all $747$ targets of a stratified sample, against $43\%$ for the fitted circuits on the same targets.
 Their median faithfulness is $0.00$ under every ablation method at every depth, only one has even a single score in the pass band, and none induces the target to half its level in contrast contexts, so faithfulness and sufficiency to induce are properties of the selected node set, not of the fitting capacity of the coefficients.
 \pending{the same baseline on Pythia-70m and GPT-2 small, DAN-40/41}
 
@@ -829,7 +832,7 @@ Continuations are topical and grammatical, supporting the use of the model as an
 \section{Protocol}
 \label{app:protocol}
 % PROTOCOL v1 — the single place every reported number's settings are stated.
-% Mirrors protocol-v1.md / Linear DAN-7 (updated 2026-09-24). v1 = the existing
+% Mirrors paper/protocol-v1.md (DAN-7; table brought in line with the code 2026-10-07, protocol-v1.md §11). v1 = the existing
 % 15k settings (config.py defaults + config-h100-triamp.yaml) PLUS the
 % silence-checked "close" contrast contexts, the rank-keep term (gamma_R 3e-3) and
 % ablation means from the training split only. The existing 15k circuits are
@@ -850,33 +853,34 @@ Every circuit in this paper is discovered and scored under the settings in \cref
 TuringLLM-1.0-254M & Top-K, $k = 128$, $40{,}960$ latents; attention output, MLP output, residual stream at 12 layers \\
 Pythia-70m & EleutherAI Top-K, $k = 16$, $32{,}768$ latents; the same three sites at 6 layers \\
 GPT-2 small & OpenAI Top-K, $k = 32$, $32{,}768$ latents, layer-normalised input; attention output, residual stream between attention and MLP, MLP output, residual stream at 12 layers \\
-Targets per model & TuringLLM: $15{,}046$, sampled across every site with an upstream SAE site (layer-0 attention has none); \pending{Pythia-70m and GPT-2 small, one sampling frame, DAN-9} \\
+Targets per model & TuringLLM: $455$ drawn uniformly at random at every site with an upstream SAE site (layer-0 attention has none), $15{,}925$ in all, restricted to the $15{,}046$ that an earlier run of the pipeline could fit; this drops $879$ attention-output targets that were dead or had fewer than 8 activating contexts, so attention sites hold $134$--$450$ targets. $42$ more are skipped for fewer than 8 strongest or 4 contrast contexts, leaving $15{,}004$ circuits. \pending{Pythia-70m and GPT-2 small: 1,024 targets each, one sampling frame, DAN-9} \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Contexts}} \\
-Activating contexts & 64 strongest and 64 mid-band stored contexts (\cref{sec:evidence}); train on 32 strongest and 16 mid-band; hold out 16 strongest (primary) and 16 mid-band (reported). Stratified split: contexts ranked by anchor activation in blocks of 4, block $b$ holds out position $(b + 2) \bmod 4$, so ranks 1--2 always train. Targets with no mid-band store train on 48 strongest ($665$ of $15{,}004$) \\
-Contrast contexts & 64 per target: corpus sequences ranked by highest cosine similarity to any activating context (pooled final-layer representations), activating contexts excluded, kept only if the target is outside its Top-K (\cref{app:stores}); 48 train, 16 held out, stratified by similarity \\
+Activating contexts & up to 64 strongest and up to 64 mid-band stored contexts, deduplicated (\cref{sec:evidence}); a store with fewer than 8 is treated as absent. Each pool is split $3{:}1$ into training and held-out contexts: ranked by anchor activation in blocks of 4, block $b$ holds out position $(b + 2) \bmod 4$, so ranks 1--2 always train. With full pools the target trains on 32 strongest (a stratified two-thirds of the 48 strongest training contexts) and 16 mid-band, and holds out 16 strongest (primary) and 16 mid-band (reported). Targets with fewer than 8 mid-band contexts train on all their strongest training contexts ($665$ of $15{,}004$: 48 for $187$, 6--47 for $478$); in all, $502$ targets train on fewer than 48 contexts and $478$ have fewer than 16 held-out strongest contexts \\
+Contrast contexts & 64 per target: candidates ranked by highest cosine similarity to any of the target's strongest stored contexts (pooled final-layer representations), its activating contexts excluded; the $8{,}192$ most similar are scanned in order and kept only if the target is outside its Top-K at every position, until 64 are kept (\cref{app:stores}); 48 train, 16 held out, stratified by similarity. Targets with fewer than 4 are skipped; 10 have fewer than 64 \\
 Anchor & position of the target's peak activation in each context \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Weighted circuit masking, WCM[Z+C+A]}} \\
-Ablation methods & Z zero ablation (weight 1); C mean over contrast contexts ($\gamma_{\mathrm{C}} = 0.25$); A mean over activating contexts ($\gamma_{\mathrm{A}} = 0.25$), at every layer; both means computed on the 48 training contexts only \\
+Ablation methods & Z zero ablation (weight 1); C mean over contrast contexts ($\gamma_{\mathrm{C}} = 0.25$); A mean over activating contexts ($\gamma_{\mathrm{A}} = 0.25$), at every layer; both are dense means over the training contexts (no Top-K re-imposed in training) \\
 Objective & MSE to the target's natural pre-activation at the anchors, each term divided by one shared $\nu = \operatorname{mean}(\text{target}^2)$ \\
-Rank-keep & $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$ on $\operatorname{relu}(\tau^{(r)} - \preact)^2$ inside every ablation term, $r$ the target's rank in the unmodified model at the anchor \\
+Rank-keep & $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$ on $\operatorname{relu}(\tau^{(r)} - \preact)^2$ inside every ablation term, $r$ the target's rank among its site's other latents at the training anchor in the unmodified model, capped at $K$ \\
 Gates & $m = \sigma(\theta / T)$, $\theta_0 = 4$; $T$ annealed geometrically from $1$ to $0.05$; nodes are $\{m > \tfrac{1}{2}\}$ \\
-Scaling coefficients & $\alpha = \mathrm{softplus}(\psi)$, $\alpha_0 = 1$; closed gates charged $\lambda (1 - m)\,|\alpha - 1|$ \\
+Scaling coefficients & $\alpha = \mathrm{softplus}(\psi)$, $\alpha_0 = 1$; closed gates charged $\lambda (1 - \sigma(\theta))\,|\alpha - 1|$ (no temperature) \\
 Sparsity penalty & $\lambda = 10^{-3}$, flat per latent \\
 Optimiser & AdamW, learning rate $0.05$ (constant), weight decay $0.05$, 400 steps, batch 4 \\
 Execution & nodes recomputed from the edited stream; SAE errors preserved; every upstream site edited \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Evaluation (\cref{sec:eval}), on the 16 held-out contexts}} \\
+\multicolumn{2}{@{}l}{\emph{Evaluation (\cref{sec:eval}), on the held-out contexts}} \\
+Reference contexts & the evaluation's A means, the anchor means set by sufficiency to induce, the specificity siblings, and the random-circuit pool are computed on the strongest training contexts (48 with a full pool) for every target, one reference whether or not the target trains on mid-band contexts; C means use the 48 training contrast contexts, as in training \\
 Read & every pass/fail score reads the target's activation (after Top-K), in every term of the ratio; the same scores on the pre-activation are reported as a diagnostic; training uses the pre-activation, which keeps a gradient where Top-K censors the activation \\
 Faithfulness & $\phi^{\mathrm{free}}_{\pi}$ under Z, dense A, sparsity-preserving A and C \\
-Necessity & $\phisup(C; \pi) = (a_{\mathrm{pos}} - a_{M \setminus C}) / (a_{\mathrm{pos}} - a_{\varnothing})$, the circuit as one set \\
-Sufficiency to induce & $\phiind$ and $\phiind^{\alpha}$ on contrast contexts \\
-Clamped faithfulness & $\phi^{\mathrm{pin}}_{\pi}$ under the same ablation methods \\
-Random-circuit baseline & size- and site-matched, drawn from live latents, coefficients fitted with the same budget; \pending{number of draws, DAN-46} \\
+Necessity & $\phisup(C) = (a_{\mathrm{pos}} - a_{M \setminus C}) / (a_{\mathrm{pos}} - a_{\varnothing})$, the circuit as one set, its nodes set to zero; $a_{\varnothing}$ the zero-ablation empty circuit \\
+Sufficiency to induce & $\phiind$ and $\phiind^{\alpha}$ on the held-out contrast contexts, nodes set at every position to ($\alpha$ times) their mean at the anchors; $\phiind^{\alpha}$ is the one reported \\
+Clamped faithfulness & $\phi^{\mathrm{pin}}_{\pi}$, nodes clamped to $\alpha$ times their clean position-wise values, under Z, dense A, and sparsity-preserving A (recorded in the production run, not reported) \\
+Random-circuit baseline & size-matched site by site, drawn from latents active on the target's strongest training contexts; coefficients fitted with the production objective for 400 steps, gates started fully open on the random nodes ($\theta_0 = 40$) and held closed elsewhere, no sparsity penalty; one draw on each of $747$ targets, stratified by depth and site kind \\
 Specificity (reported) & the target's rank and Top-K share; latents lifted above the unmodified Top-K cut, against the empty circuit; sibling faithfulness against the target's (\cref{app:specificity}) \\
-Near-threshold targets & median clean rank at the anchor $\geq K/2$, identified from the unmodified model; kept in the headline pass rate and also reported as a stratum on both reads \\
-Pass criterion & faithfulness under Z, sparsity-preserving A, and C all in $[0.8, 1.5]$, and necessity $\geq 0.9$ (held-out strongest contexts, activation read); vacuous denominators excluded and counted; the largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ reported alongside \\
+Near-threshold targets & median rank among all the site's latents at the held-out strongest anchors $\geq K/2$ (uncapped, unlike the rank-keep $r$), identified from the unmodified model; kept in the headline pass rate and also reported as a stratum on both reads \\
+Pass criterion & faithfulness under Z, sparsity-preserving A, and C all in $[0.8, 1.5]$, and necessity $\geq 0.9$ (held-out strongest contexts, activation read); targets with a vacuous zero-ablation denominator, $|a_{\mathrm{pos}} - a_{\varnothing}| < 0.05\,a_{\mathrm{pos}}$, excluded and counted; an undefined A or C ratio is a fail; the largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ reported alongside \\
 \bottomrule
 \end{tabular}
 \caption{The protocol behind every reported circuit. Values marked pending are fixed before the corresponding runs are reported.}
@@ -1124,7 +1128,7 @@ The gap between the methods is smallest under zero ablation, largest under the t
 \paragraph{Sufficiency to induce by site kind.}
 % DAN-75 full run, experiments/062-h100-protocol-v1/paper_main.py (DAN-129).
 Sufficiency to induce, unlike reconstruction, is structured by the target's site kind (\cref{fig:induce}).
-It asks a question no circuit is trained on: setting the circuit's latents to $\alpha$ times their values from the activating contexts, does the target switch on in held-out contrast contexts where it is silent?
+It asks a question no circuit is trained on: setting the circuit's latents to $\alpha$ times their mean values at the anchors of the activating contexts, does the target switch on in held-out contrast contexts where it is silent?
 Across the production run the median is $0.84$ ($0.98$ among passing circuits, of which $88\%$ switch the target on to at least half its natural level).
 Residual-stream targets are induced almost everywhere ($96\%$ at half or more; median $1.19$, rising with depth to $1.35$ at layers 8--11), MLP-output targets partly ($70\%$; median $0.69$), and attention-output targets rarely beyond layer 4 ($28\%$ and $29\%$ at layers 5--7 and 8--11; median $0.20$ overall).
 Which latents \emph{can} be induced from upstream is therefore itself a per-kind property, and characterising it is open.
@@ -1248,8 +1252,8 @@ A circuit can therefore restore its target by lifting the target's whole neighbo
 The loss permits it, since reproducing the target's pre-activation constrains the site's stream along one direction of $d_{\mathrm{model}}$, and it leaks into the activation read only when the lifted latents overtake the target in its site's Top-K.
 
 The diagnostic reads the whole code at the target's site, every latent's pre-activation and the SAE's Top-K set at the anchor, in the unmodified model, the empty circuit, and the fitted circuit under each ablation method, on the held-out contexts.
-It reports the target's rank and Top-K membership; the number of latents lifted above the unmodified model's Top-K cut, against the empty circuit; the overlap of the circuit's Top-K set with the unmodified one; and the faithfulness of \emph{siblings}, latents in the unmodified Top-K at the anchor on at least half of the training contexts, computed exactly as the target's, against a control group of the site's other active latents.
-A circuit whose siblings are restored as well as its target is flagged as an amplifier.
+It reports the target's rank and Top-K membership; the number of latents lifted above the unmodified model's Top-K cut, against the empty circuit; the overlap of the circuit's Top-K set with the unmodified one; and the faithfulness of \emph{siblings}, latents in the unmodified Top-K at the anchor on at least half of the target's strongest training contexts, computed exactly as the target's, against a control group of the site's other active latents.
+A circuit is flagged as an amplifier when, under at least one ablation method and on the pre-activation read, its target is restored to at least $0.5$ and its median sibling to at least $80\%$ of the target's faithfulness.
 
 In a pilot, most circuits are specific: the target is restored near $1$ while siblings and other active latents are restored far less.
 Under mean ablation, however, circuits lift many latents above the cut that the empty circuit does not, a minority of circuits are amplifiers that pass every faithfulness score, and several deep attention targets lose their Top-K place to lifted rivals although their pre-activation is reproduced.
@@ -1466,18 +1470,18 @@ Hybrid fusion (\cref{alg:hybrid}) unions the two circuits by latent identity, $\
 \caption{Weighted circuit masking, WCM[Z+C+A] with rank-keep (one target $f$; protocol v1, \cref{tab:protocol})}
 \label{alg:ablmask}
 \begin{algorithmic}[1]
-\Require target $f$; activating contexts $\posset$ and contrast contexts $\negset$, each split 48 train / 16 held out; $\lambda = 10^{-3}$; $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$; $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; steps $S = 400$
+\Require target $f$; activating contexts $\posset$ (train on 32 strongest + 16 mid-band; hold out 16 + 16) and contrast contexts $\negset$ (48 train / 16 held out); $\lambda = 10^{-3}$; $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$; $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; steps $S = 400$
 \State target $\gets$ natural pre-activation of $f$ at the training anchors (no-grad forward);\quad $\nu \gets \operatorname{mean}(\text{target}^2)$
-\State $r \gets$ rank of $f$ among its site's other latents at each training anchor, unmodified model
-\State ablation values: C $\gets$ site means over the \emph{training} contrast contexts; A $\gets$ over the \emph{training} activating contexts
+\State $r \gets \min(K,\ $rank of $f$ among its site's other latents$)$ at each training anchor, unmodified model
+\State ablation values: C $\gets$ dense site means over the \emph{training} contrast contexts; A $\gets$ over the \emph{training} activating contexts
 \State initialise $\theta_s = 4$, $\psi_s = \mathrm{softplus}^{-1}(1)$ for every upstream site $s$
-\For{step $= 1, \ldots, S$}
-    \State $T \gets 0.05^{\,\text{step}/S}$; \quad gates $m_s \gets \sigma(\theta_s / T)$; \quad coefficients $\alpha_s \gets \mathrm{softplus}(\psi_s)$ \Comment{geometric anneal $1 \rightarrow 0.05$}
+\For{step $= 0, \ldots, S - 1$}
+    \State $T \gets 0.05^{\,\text{step}/(S - 1)}$; \quad gates $m_s \gets \sigma(\theta_s / T)$; \quad coefficients $\alpha_s \gets \mathrm{softplus}(\psi_s)$ \Comment{geometric anneal $1 \rightarrow 0.05$}
     \For{$\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}$} \Comment{same $\theta, \psi$ under all three ablation methods}
         \State forward with kept latents at $\alpha \times$ live value, closed latents at their $\pi$ ablation value
         \State $\mathcal{L}_{\pi} \gets$ MSE of $f$'s pre-activation against target; \quad $\mathcal{R}_{\pi} \gets \operatorname{mean}\,\operatorname{relu}(\tau^{(r)}_{\pi} - \preact)^2$
     \EndFor
-    \State AdamW step on $\sum_{\pi} \gamma_{\pi}(\mathcal{L}_{\pi} + \gamma_{\mathrm{R}}\mathcal{R}_{\pi})/\nu + \lambda \sum_{s,i} \bigl[\sigma(\theta_{s,i}) + (1 - m_{s,i})\,|\alpha_{s,i} - 1|\bigr]$
+    \State AdamW step on $\sum_{\pi} \gamma_{\pi}(\mathcal{L}_{\pi} + \gamma_{\mathrm{R}}\mathcal{R}_{\pi})/\nu + \lambda \sum_{s,i} \bigl[\sigma(\theta_{s,i}) + (1 - \sigma(\theta_{s,i}))\,|\alpha_{s,i} - 1|\bigr]$ \Comment{penalties use $\sigma(\theta)$, not $\sigma(\theta / T)$}
 \EndFor
 \State circuit $\gets \{\,(i, \alpha_i) : m_i > \tfrac{1}{2}\,\}$; evaluate on the held-out contexts under \cref{sec:eval-abl}
 \State \Return circuit
@@ -1533,7 +1537,8 @@ Its representation index is a sample of $2 \times 10^{5}$ sequences, so for targ
 
 \paragraph{Contrast contexts for WCM.}
 Weighted circuit masking and its evaluation instead select contrast contexts per target at fit time.
-Every activating context is represented, read from the index when present and otherwise computed by a forward pass; candidates from the sampled corpus are ranked by their highest cosine similarity to any activating context, $\max_{x_p \in \posset} \langle r(x_p), r(x) \rangle$, with the activating contexts excluded; and each candidate is run through the model and kept only if the target is outside its site's Top-K at every position, until 64 are selected.
+Each of the target's strongest stored contexts $\posset^{\mathrm{top}}$ is represented, read from the index when present and otherwise computed by a forward pass; candidates from the sampled corpus are ranked by their highest cosine similarity to any of them, $\max_{x_p \in \posset^{\mathrm{top}}} \langle r(x_p), r(x) \rangle$, with all of the target's stored activating contexts (strongest and mid-band) excluded; the $8{,}192$ most similar are then run through the model in rank order, and each is kept only if the target is outside its site's Top-K at every position, until 64 are kept.
+A target with fewer than 4 kept is skipped ($19$ TuringLLM targets), and one with 4 to 63 uses what it has ($10$ targets).
 The silence check rejects between 14\% and 51\% of the closest candidates on the targets we inspected, so unchecked retrieval would place many contrast contexts where the target fires.
 The same selector with random or maximally dissimilar ranking gives the \emph{random} and \emph{distant} sources of \cref{app:contrast-source}.
 % 2026-09-22/23 (DAN-64): the 15k production circuits were fitted with the store

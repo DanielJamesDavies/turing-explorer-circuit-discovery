@@ -271,7 +271,12 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
         from circuit.instrument.learned_mask import run_learned_mask
         from eval.ablation_faithfulness import upstream_sites
 
-        sites = sorted(upstream_sites(self.sae_bank, seed_layer, seed_kind))
+        # Forward (causal) order. The bank's kinds are in forward order; a plain
+        # sort is alphabetical, which coincides for attn/mlp/resid but would put
+        # GPT-2's resid_mid after resid.
+        _kinds = list(self.sae_bank.kinds)
+        sites = sorted(upstream_sites(self.sae_bank, seed_layer, seed_kind),
+                       key=lambda s: (s[0], _kinds.index(s[1])))
         if not sites:
             logger.note("mask: seed has no upstream sites")
             return {}, 0.0, 0.0

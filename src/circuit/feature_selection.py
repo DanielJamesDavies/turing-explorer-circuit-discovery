@@ -13,6 +13,14 @@ _N_KINDS = 3  # attn / mlp / resid
 _KINDS = ["attn", "mlp", "resid"]
 
 
+def _store_kinds() -> List[str]:
+    """Site kinds of the store grid: the public family's (3 or 4, DAN-37), else
+    TuringLLM's attn / mlp / resid."""
+    from model.families import public_store_grid
+    grid = public_store_grid()
+    return list(grid.kinds) if grid is not None else _KINDS
+
+
 def _seed_passes_filter(
     candidate: Dict[str, Any],
     filter_layers: "set[int]",
@@ -23,10 +31,11 @@ def _seed_passes_filter(
     An empty set means "no constraint" for that dimension, so a candidate only
     needs to be rejected when it falls outside a *non-empty* allowlist.
     """
-    layer_idx, kind_idx = split_component_idx(candidate["comp_idx"], _N_KINDS)
+    kinds = _store_kinds()
+    layer_idx, kind_idx = split_component_idx(candidate["comp_idx"], len(kinds))
     if filter_layers and layer_idx not in filter_layers:
         return False
-    if filter_kinds and _KINDS[kind_idx] not in filter_kinds:
+    if filter_kinds and kinds[kind_idx] not in filter_kinds:
         return False
     return True
 
@@ -170,11 +179,12 @@ class CandidateSelector:
             ci  = top_coactivation.top_indices.to(self.device)  # [C, D, K]
             cv  = top_coactivation.top_values.to(self.device)   # [C, D, K]
             C_x, D_x, K_x = ci.shape
+            n_kinds_x     = len(_store_kinds())
             valid_x       = cv > 0
             partner_comp  = ci.long() // D_x            # component idx of each partner
-            partner_layer = partner_comp // _N_KINDS
-            partner_kind  = partner_comp % _N_KINDS
-            n_layers_x    = C_x // _N_KINDS
+            partner_layer = partner_comp // n_kinds_x
+            partner_kind  = partner_comp % n_kinds_x
+            n_layers_x    = C_x // n_kinds_x
 
             if "cross_layer_reach" in active:
                 reach = torch.zeros(C_x, D_x, device=self.device)
@@ -184,7 +194,7 @@ class CandidateSelector:
 
             if "cross_component_breadth" in active:
                 breadth = torch.zeros(C_x, D_x, device=self.device)
-                for kind in range(_N_KINDS):
+                for kind in range(n_kinds_x):
                     breadth += ((partner_kind == kind) & valid_x).any(dim=-1).float()
                 all_seeds.append(self._top_k(breadth, "cross_component_breadth"))
 
@@ -476,14 +486,17 @@ class CandidateSelector:
 
     def get_summary_stats(self, candidates: List[Dict[str, Any]]) -> None:
         """Prints a breakdown of selected candidates by layer and kind."""
+        from model.families import public_store_grid
         from model.turingllm import TuringLLMConfig
-        n_layers = TuringLLMConfig().n_layer
+        grid = public_store_grid()
+        n_layers = grid.n_layer if grid is not None else TuringLLMConfig().n_layer
+        kinds = _store_kinds()
         layer_counts = [0] * n_layers
-        kind_counts  = {k: 0 for k in _KINDS}
+        kind_counts  = {k: 0 for k in kinds}
         for c in candidates:
-            layer_idx, kind_idx = split_component_idx(c["comp_idx"], _N_KINDS)
+            layer_idx, kind_idx = split_component_idx(c["comp_idx"], len(kinds))
             layer_counts[layer_idx] += 1
-            kind_counts[_KINDS[kind_idx]] += 1
+            kind_counts[kinds[kind_idx]] += 1
 
         sf = config.discovery.seed_filter
         filter_layers: set = set(sf.layers)

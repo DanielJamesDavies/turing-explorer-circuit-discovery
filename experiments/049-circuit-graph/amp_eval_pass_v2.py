@@ -99,6 +99,12 @@ CTR_SOURCE = os.environ.get("CTR_SOURCE", "store")
 N_SEQ, EVAL_BS, ROLE_BS = 64, 16, 8
 HOLDOUT_FRAC = 0.25          # engine split (learned_mask.split): n_hold = round(n * 0.25), train = the first n - n_hold
 MIN_POS = 8
+# Activating train / held-out split. "as_run" (default, the 15k run): split_n(n_pos) from the 3:1 rule. When a probe's
+# held-out set is shorter than the padding the rule expects (mid-band with < 16 held out), that rule moves part of the
+# strongest-train reference into the held-out slice (58 mid-band rows of the 15k run; protocol-v1.md §3.6).
+# "explicit": take the train count from the probe's metadata["n_train"] (set by protocol_contexts.probe_from), so the
+# held-out slice is exactly the held-out set. Use "explicit" for every new run.
+EVAL_SPLIT = os.environ.get("EVAL_SPLIT", "as_run")
 
 G = {}                       # engine handles, filled by setup()
 
@@ -378,6 +384,11 @@ def score_circuit(c, live_pool, override_alphas=None, skip_roles=False):
     if n_neg < 2:
         return dict(seed=key, skip="no_negatives", n=n_mem, n_pos=n_pos, n_neg=n_neg)
     n_tr = split_n(n_pos); n_ntr = split_n(n_neg)
+    if EVAL_SPLIT == "explicit" and (pd_.metadata or {}).get("n_train"):
+        n_tr = int(pd_.metadata["n_train"])
+        assert 0 < n_tr < n_pos, "explicit split needs both a train and a held-out slice (n_train %d, n %d)" % (n_tr, n_pos)
+    elif EVAL_SPLIT not in ("as_run", "explicit"):
+        raise ValueError("EVAL_SPLIT must be 'as_run' or 'explicit', got %r" % EVAL_SPLIT)
     pt_tr, pa_tr, pt_ho, pa_ho = pt[:n_tr], pa[:n_tr], pt[n_tr:], pa[n_tr:]
     nt_tr, nt_ho = nt[:n_ntr], nt[n_ntr:]
     sae = bank.saes[kind][layer]; w_seed = sae.encoder.weight[sl].detach(); b_seed = sae._get_bias_eff()[sl].detach()

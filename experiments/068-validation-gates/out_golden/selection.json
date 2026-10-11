@@ -1,0 +1,209 @@
+{
+ "seed": 74,
+ "n": 32,
+ "keys": [
+  "0.mlp.7357",
+  "0.resid.23442",
+  "1.attn.18303",
+  "1.mlp.9498",
+  "2.attn.6976",
+  "2.mlp.18100",
+  "2.resid.2330",
+  "3.attn.18125",
+  "3.mlp.27278",
+  "3.resid.654",
+  "4.attn.32494",
+  "4.mlp.32078",
+  "4.resid.21395",
+  "5.mlp.27573",
+  "5.resid.18594",
+  "6.attn.2557",
+  "6.mlp.20793",
+  "6.resid.30675",
+  "7.attn.10250",
+  "7.mlp.38546",
+  "7.resid.31336",
+  "8.attn.11721",
+  "8.resid.15479",
+  "9.mlp.7789",
+  "9.resid.1841",
+  "10.attn.33695",
+  "10.mlp.1713",
+  "10.resid.34222",
+  "11.attn.2940",
+  "11.mlp.20886",
+  "11.resid.20555",
+  "1.resid.210"
+ ],
+ "picked_from": {
+  "0.mlp.7357": {
+   "cell": "0.mlp",
+   "pool": 446,
+   "thin": false
+  },
+  "0.resid.23442": {
+   "cell": "0.resid",
+   "pool": 451,
+   "thin": false
+  },
+  "1.attn.18303": {
+   "cell": "1.attn",
+   "pool": 125,
+   "thin": false
+  },
+  "1.mlp.9498": {
+   "cell": "1.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "2.attn.6976": {
+   "cell": "2.attn",
+   "pool": 240,
+   "thin": false
+  },
+  "2.mlp.18100": {
+   "cell": "2.mlp",
+   "pool": 454,
+   "thin": false
+  },
+  "2.resid.2330": {
+   "cell": "2.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "3.attn.18125": {
+   "cell": "3.attn",
+   "pool": 310,
+   "thin": false
+  },
+  "3.mlp.27278": {
+   "cell": "3.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "3.resid.654": {
+   "cell": "3.resid",
+   "pool": 453,
+   "thin": false
+  },
+  "4.attn.32494": {
+   "cell": "4.attn",
+   "pool": 425,
+   "thin": false
+  },
+  "4.mlp.32078": {
+   "cell": "4.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "4.resid.21395": {
+   "cell": "4.resid",
+   "pool": 453,
+   "thin": false
+  },
+  "5.mlp.27573": {
+   "cell": "5.mlp",
+   "pool": 454,
+   "thin": false
+  },
+  "5.resid.18594": {
+   "cell": "5.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "6.attn.2557": {
+   "cell": "6.attn",
+   "pool": 349,
+   "thin": false
+  },
+  "6.mlp.20793": {
+   "cell": "6.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "6.resid.30675": {
+   "cell": "6.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "7.attn.10250": {
+   "cell": "7.attn",
+   "pool": 268,
+   "thin": false
+  },
+  "7.mlp.38546": {
+   "cell": "7.mlp",
+   "pool": 454,
+   "thin": false
+  },
+  "7.resid.31336": {
+   "cell": "7.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "8.attn.11721": {
+   "cell": "8.attn",
+   "pool": 249,
+   "thin": false
+  },
+  "8.resid.15479": {
+   "cell": "8.resid",
+   "pool": 454,
+   "thin": false
+  },
+  "9.mlp.7789": {
+   "cell": "9.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "9.resid.1841": {
+   "cell": "9.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "10.attn.33695": {
+   "cell": "10.attn",
+   "pool": 341,
+   "thin": false
+  },
+  "10.mlp.1713": {
+   "cell": "10.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "10.resid.34222": {
+   "cell": "10.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "11.attn.2940": {
+   "cell": "11.attn",
+   "pool": 430,
+   "thin": false
+  },
+  "11.mlp.20886": {
+   "cell": "11.mlp",
+   "pool": 455,
+   "thin": false
+  },
+  "11.resid.20555": {
+   "cell": "11.resid",
+   "pool": 455,
+   "thin": false
+  },
+  "1.resid.210": {
+   "cell": "1.resid",
+   "pool": 454
+  }
+ },
+ "dropped_cells": [
+  "5.attn",
+  "8.mlp",
+  "9.attn"
+ ],
+ "empty_cells": [
+  "0.attn"
+ ],
+ "rule": "fitted, non-vacuous (strong), non-thin where possible; one per (layer, kind) cell minus 4 dropped cells (4 distinct layers, rotating kinds); random.Random(74)",
+ "pinned_commit": "538cbed"
+}

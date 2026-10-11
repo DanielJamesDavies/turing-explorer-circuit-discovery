@@ -643,6 +643,18 @@ def test_fused_quota_remainder_goes_to_close(monkeypatch):
     assert selection.metadata["fused_quotas"] == {"close": 3, "distant": 1, "random": 1}
 
 
+def test_fused_forwards_the_preact_reference(monkeypatch):
+    """fused + preact_filter: select() must hand preact_max_frac and posctx_reference on to _select_fused, whose
+    per-mode sub-selections re-check them (without them every sub-select raises "needs posctx_reference")."""
+    selector = _selector({99: [1.0, 0.0, 0.0]}, top_rows={(0, 2): [99]})
+    seen = {}
+    monkeypatch.setattr(selector, "_select_fused", lambda *a, **kw: seen.update(kw))
+    selector.select(0, 2, "fused", max_sequences=4, batch_size=2, preact_filter=True, preact_max_frac=0.25,
+                    posctx_reference=2.0)
+    assert seen["preact_max_frac"] == 0.25 and seen["posctx_reference"] == 2.0
+    assert seen["non_activation_threshold"] == 0.5          # resolved once to the absolute bar, 0.25 x 2.0
+
+
 # ---------------------------------------------------------------------------
 # Pre-top-k negative filtering
 #

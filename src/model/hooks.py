@@ -9,12 +9,26 @@ class Activations:
         self.tensor: Optional[torch.Tensor] = None
 
 
+def _is_site_model(model) -> bool:
+    """True for adapter-managed models (model.hf_adapters.HFSiteModel), which
+    own their site hooks: their SAE sites are not TuringLLM's three
+    block-tuple slots (Pythia's parallel residual, GPT-2's resid_mid)."""
+    return hasattr(model, "patch_sites") and hasattr(model, "capture_sites")
+
+
 @contextmanager
 def capture_activations(model, callback=None, capture=True):
     """
     Captures activations in shape: [B, L, K, T, N]
     B=Batch, L=Layer, K=Kind (0=attn, 1=mlp, 2=resid), T=Token, N=Neuron
+
+    Adapter-managed models deliver one tensor per kind in their own kind
+    order (the bank's ``kinds``), each in SAE input space.
     """
+    if _is_site_model(model):
+        with model.capture_sites(callback=callback, capture=capture) as out:
+            yield out
+        return
     storage = []
     
     def make_hook(layer_idx):
@@ -42,12 +56,22 @@ def capture_activations(model, callback=None, capture=True):
 
 @contextmanager
 def patch(model, layer_idx: int, kind: str, value: torch.Tensor):
-    """kind: attn, mlp, resid"""
+    """Replace one site's activation with ``value``. kind: attn, mlp, resid.
+
+    "resid" is the block OUTPUT, the same site multi_patch and
+    capture_activations call "resid". (Until 2026-10-09 it was a pre-hook on
+    norm_2, which replaced only the MLP's input while the block kept its own
+    residual — the DAN-68 bug class. It had no callers.)"""
+    if _is_site_model(model):
+        with model.patch_sites(
+                lambda l, k, x: value if (l, k) == (layer_idx, kind) else None):
+            yield
+        return
     block = model.transformer.h[layer_idx]
     conf = {
         "attn": (block.attn.register_forward_hook, lambda m, i, o: value),
         "mlp": (block.mlp.register_forward_hook, lambda m, i, o: value),
-        "resid": (block.norm_2.register_forward_pre_hook, lambda m, i: (value,))
+        "resid": (block.register_forward_hook, lambda m, i, o: (o[0], o[1], value))
     }
     register, hook = conf[kind]
     handle = register(hook)
@@ -62,7 +86,15 @@ def multi_patch(model, transform):
     """
     transform: (layer_idx, kind, tensor) -> tensor (or None to skip)
     kind: attn, mlp, resid
+
+    Adapter-managed models call ``transform`` at each of their own sites in
+    forward order, with ``x`` in SAE input space (model/hf_adapters.py).
     """
+    if _is_site_model(model):
+        with model.patch_sites(transform):
+            yield
+        return
+
     def wrap(l, k, x):
         out = transform(l, k, x)
         return out if out is not None else x
@@ -85,6 +117,8 @@ def stop_grad_at(model, layer_idx: int, kind: str):
     Zeros gradients flowing back through a specific submodule during backward.
     Used for intermediate stop-grads in edge attribution.
     """
+    if _is_site_model(model):
+        raise NotImplementedError("stop_grad_at: not implemented for adapter-managed models")
     block = model.transformer.h[layer_idx]
     target = {
         "attn": block.attn,
@@ -108,6 +142,8 @@ def multi_stop_grad(model, stop_grads: list[tuple[int, str]]):
     Context manager to stop gradients at multiple locations simultaneously.
     stop_grads: list of (layer_idx, kind)
     """
+    if _is_site_model(model):
+        raise NotImplementedError("multi_stop_grad: not implemented for adapter-managed models")
     handles = []
     for layer_idx, kind in stop_grads:
         block = model.transformer.h[layer_idx]

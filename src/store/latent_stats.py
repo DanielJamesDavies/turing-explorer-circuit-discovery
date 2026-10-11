@@ -4,6 +4,7 @@ import torch
 from collections import defaultdict
 from typing import Optional
 
+from model.families import public_store_grid
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
 from store.utils import _AutoAllocTensor
@@ -51,6 +52,11 @@ class LatentStats:
         self.llm_config = TuringLLMConfig()
         self.sae_config = SAEConfig()
         self.num_components = self.llm_config.n_layer * 3
+        # Public model families (DAN-37): the family's grid; None on TuringLLM.
+        grid = public_store_grid()
+        if grid is not None:
+            self.llm_config, self.sae_config = grid.llm_config, grid.sae_config
+            self.num_components = grid.n_components
         self.component_steps: dict[int, int] = defaultdict(int)
         
         self._allocated = False

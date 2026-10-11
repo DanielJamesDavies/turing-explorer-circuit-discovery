@@ -1,0 +1,34 @@
+0.mlp.7357       n   25 /   25  J 1.0000  max|dalpha| 0  IDENTICAL
+0.resid.23442    n  138 /  138  J 1.0000  max|dalpha| 0  IDENTICAL
+1.attn.18303     n  109 /  109  J 1.0000  max|dalpha| 0  IDENTICAL
+1.mlp.9498       n  176 /  176  J 1.0000  max|dalpha| 0  IDENTICAL
+1.resid.210      n  116 /  116  J 1.0000  max|dalpha| 0  IDENTICAL
+10.attn.33695    n  584 /  584  J 1.0000  max|dalpha| 0  IDENTICAL
+10.mlp.1713      n  803 /  803  J 1.0000  max|dalpha| 0  IDENTICAL
+10.resid.34222   n  790 /  790  J 1.0000  max|dalpha| 0  IDENTICAL
+11.attn.2940     n  906 /  906  J 1.0000  max|dalpha| 0  IDENTICAL
+11.mlp.20886     n  622 /  622  J 1.0000  max|dalpha| 0  IDENTICAL
+11.resid.20555   n 1458 / 1458  J 1.0000  max|dalpha| 0  IDENTICAL
+2.attn.6976      n  162 /  162  J 1.0000  max|dalpha| 0  IDENTICAL
+2.mlp.18100      n  284 /  284  J 1.0000  max|dalpha| 0  IDENTICAL
+2.resid.2330     n  233 /  233  J 1.0000  max|dalpha| 0  IDENTICAL
+3.attn.18125     n  321 /  321  J 1.0000  max|dalpha| 0  IDENTICAL
+3.mlp.27278      n  277 /  277  J 1.0000  max|dalpha| 0  IDENTICAL
+3.resid.654      n  376 /  376  J 1.0000  max|dalpha| 0  IDENTICAL
+4.attn.32494     n  347 /  347  J 1.0000  max|dalpha| 0  IDENTICAL
+4.mlp.32078      n  462 /  462  J 1.0000  max|dalpha| 0  IDENTICAL
+4.resid.21395    n  450 /  450  J 1.0000  max|dalpha| 0  IDENTICAL
+5.mlp.27573      n  614 /  614  J 1.0000  max|dalpha| 0  IDENTICAL
+5.resid.18594    n  389 /  389  J 1.0000  max|dalpha| 0  IDENTICAL
+6.attn.2557      n  501 /  501  J 1.0000  max|dalpha| 0  IDENTICAL
+6.mlp.20793      n  726 /  726  J 1.0000  max|dalpha| 0  IDENTICAL
+6.resid.30675    n  459 /  459  J 1.0000  max|dalpha| 0  IDENTICAL
+7.attn.10250     n  677 /  677  J 1.0000  max|dalpha| 0  IDENTICAL
+7.mlp.38546      n  568 /  568  J 1.0000  max|dalpha| 0  IDENTICAL
+7.resid.31336    n  374 /  374  J 1.0000  max|dalpha| 0  IDENTICAL
+8.attn.11721     n  445 /  445  J 1.0000  max|dalpha| 0  IDENTICAL
+8.resid.15479    n 1100 / 1100  J 1.0000  max|dalpha| 0  IDENTICAL
+9.mlp.7789       n  765 /  765  J 1.0000  max|dalpha| 0  IDENTICAL
+9.resid.1841     n  779 /  779  J 1.0000  max|dalpha| 0  IDENTICAL
+
+r0 vs r_old: 32 / 32 targets identical (memberships and alpha bitwise)

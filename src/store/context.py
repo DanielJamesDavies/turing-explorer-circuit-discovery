@@ -4,6 +4,7 @@ import torch
 from typing import cast, Optional, Dict, List, Tuple
 
 from config import config
+from model.families import public_store_grid
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
 from store.utils import _AutoAllocTensor
@@ -70,6 +71,11 @@ class Context:
         self.llm_config = TuringLLMConfig()
         self.sae_config = SAEConfig()
         self.num_components = self.llm_config.n_layer * 3
+        # Public model families (DAN-37): the family's grid; None on TuringLLM.
+        grid = public_store_grid()
+        if grid is not None:
+            self.llm_config, self.sae_config = grid.llm_config, grid.sae_config
+            self.num_components = grid.n_components
         self.d_sae = self.sae_config.d_sae
 
         if ctx_type == "mid":
@@ -213,6 +219,12 @@ class Context:
             scores = compute_seq_scores(top_acts, top_indices, self.d_sae)  # [d_sae, B]
 
             new_indices = sequence_indices.unsqueeze(0).expand(self.d_sae, -1).to(self.device)
+            # A sequence where the latent did not fire (score 0) is stored as the empty slot (id 0, value 0), so
+            # "id > 0" always means "a firing context" (DAN-37). Without this, a row with fewer than
+            # n_sequences firing contexts was padded with whichever zero-score ids torch.topk's tie-break kept:
+            # the empty slots on the CUDA runs (TuringLLM's stores hold no id with value 0), but non-firing
+            # sequence ids on CPU. For every store whose zero-score slots already held id 0 this is a no-op.
+            new_indices = torch.where(scores.to(self.device) > 0, new_indices, torch.zeros_like(new_indices))
 
             ctx_seq_idx_temp = torch.cat([self.ctx_seq_idx[component_idx], new_indices], dim=1)
             ctx_seq_val_temp = torch.cat(

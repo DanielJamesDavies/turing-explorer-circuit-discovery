@@ -21,6 +21,11 @@ src/native/build/
 # Data & outputs
 /data/
 /outputs/
+# Public-model corpora and data-pass artefacts (DAN-37, experiments/069-public-data-pass)
+/data_public/
+/outputs_public/
+# Files staged for deletion by hand (never committed)
+/_delete/
 profile_trace/
 /paper/resources/*
 /paper-backups/*

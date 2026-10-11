@@ -1828,9 +1828,44 @@ class AnalysisConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     methods: List[str] = Field(default_factory=lambda: ["coactivation_overlap"])
 
+class ModelSelectionConfig(BaseModel):
+    """Which model + SAE family Inference() and SAEBank() build (DAN-34/35).
+    "turingllm" (default) is the historical path, unchanged; the public families
+    are defined in src/model/families.py."""
+    model_config = ConfigDict(extra='forbid')
+    family: str = "turingllm"           # turingllm | pythia-70m | gpt2-small
+    # Public families only (TuringLLM keeps its own rule: bf16 on CUDA). None =
+    # float32, the precision the standalone references (033, 053) ran at.
+    dtype: Optional[str] = None         # None | float32 | bfloat16 | float16
+    # Public families only: load every SAE at bank construction (fail fast on a
+    # missing dictionary). False loads each (kind, layer) on first use.
+    sae_preload: bool = True
+    # Public families only (DAN-37): a dictionary that cannot be loaded (e.g.
+    # GPT-2 layer 10, not in the local HF cache) becomes a MISSING site
+    # (bank.missing_sites) instead of an error; the data passes skip it and its
+    # store rows stay empty. False (default) fails on any missing dictionary.
+    skip_missing_saes: bool = False
+
+    @field_validator("family")
+    @classmethod
+    def validate_family(cls, v: str) -> str:
+        allowed = ["turingllm", "pythia-70m", "gpt2-small"]
+        if v not in allowed:
+            raise ValueError(f"model.family must be one of {allowed}, got {v!r}")
+        return v
+
+    @field_validator("dtype")
+    @classmethod
+    def validate_dtype(cls, v: Optional[str]) -> Optional[str]:
+        allowed = [None, "float32", "bfloat16", "float16"]
+        if v not in allowed:
+            raise ValueError(f"model.dtype must be one of {allowed}, got {v!r}")
+        return v
+
 class RootConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     weights: WeightsConfig
+    model: ModelSelectionConfig = Field(default_factory=ModelSelectionConfig)
     data: DataConfig = Field(default_factory=DataConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
     sae: SaeRuntimeConfig = Field(default_factory=SaeRuntimeConfig)

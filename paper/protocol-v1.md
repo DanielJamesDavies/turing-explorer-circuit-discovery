@@ -13,9 +13,12 @@ bootstrap copies it over `config.yaml` (`scripts/pod_bootstrap_global.sh:28`).
 
 **The as-run path.** The contexts are built and injected by experiment code, not by the production pipeline:
 `experiments/059-context-pool/pool_test.py` and `experiments/059-context-pool/protocol_harness.py`, driven by
-`experiments/062-h100-protocol-v1/driver.py`. A port into `src/circuit/protocol_contexts.py`
-(`config.discovery.context_protocol = "v1"`) is in progress (DAN-78) and was **not** used by the run. The scorer is
-`experiments/049-circuit-graph/amp_eval_pass_v2.py`; moving it into `src/` is DAN-73 (not started).
+`experiments/062-h100-protocol-v1/driver.py`. The run did **not** use the later `src` ports, but both reproduce it:
+- **Contexts:** `src/circuit/protocol_contexts.py` (`config.discovery.context_protocol = "v1"`, DAN-78). The 40-target
+  rebuild is bit-identical locally.
+- **Scorer:** the run used `experiments/049-circuit-graph/amp_eval_pass_v2.py`. The port is `src/eval/wcm_eval.py` +
+  `wcm_specificity.py` (DAN-73), identical to the experiment scorer field for field on the same GPU
+  (`experiments/067-src-scorer-equivalence/`).
 
 ---
 
@@ -26,8 +29,9 @@ bootstrap copies it over `config.yaml` (`scripts/pod_bootstrap_global.sh:28`).
 | TuringLLM targets, contexts, fit, evaluation, pass rule, diagnostics (§2–§8) | **Frozen**: this is what the full run did |
 | Random-circuit baseline, α = 1 re-scoring, unweighted sweep, λ grid (§8) | **Frozen as run**: separate runs, same engine and scorer |
 | Pythia-70m and GPT-2 small adaptation (§9) | **OPEN**: DAN-9, DAN-34/35/36, DAN-40/41, DAN-42 |
-| Production location of contexts (DAN-78) and scorer (DAN-73) | **Pending**: the code moves; the definitions must not change |
-| Mid-band evaluation padding defect (§3.6, §10) | **Open**: 58 of 14,339 mid-band rows affected; decide whether to rescore |
+| Production location of contexts (DAN-78) and scorer (DAN-73) | **Done** (2026-10-07 / 2026-10-09): both in `src/`, verified identical to the as-run code |
+| Mid-band evaluation padding defect (§3.6, §10) | **Fixed and re-scored** (2026-10-09): 58 of 14,339 mid-band rows; the reported mid-band numbers are unchanged |
+| Exact-duplicate contexts across the train / held-out split (§3.7) | **Measured** (2026-10-09): 25% of held-out strongest rows; effect on the pass rate −0.6 points on a paired 1,800-target re-score |
 
 The run's order of operations per target is contexts, then fit, then eval on held-out strongest, then eval on
 held-out mid-band, then specificity (`driver.py:255-308`). Each step resumes from per-target files. Targets are
@@ -69,7 +73,7 @@ All contexts are built once per target by `pool_test.build` (`pool_test.py:75-16
 | Strongest pool | Sequence ids from the top-context store row (the 64 strongest stored activating sequences). Ids ≤ 0 are dropped and ids are deduplicated; the pool is capped at the first 64 | `pool_test.py:118-121, 127` |
 | Mid-band pool | Sequence ids from the mid-context store (a reservoir sample in μ + [0.5, 1.5] σ), deduplicated against the strongest pool; the pool is capped at 64 | `pool_test.py:122-127` |
 | Thin rule | A pool with **fewer than 8** ids is absent (`None`). No strongest pool means the target is skipped. No mid-band pool means the target is "thin" and uses training arm A | `pool_test.py:128-130`; `driver.py:137-139` |
-| Tokens | 65 tokens are loaded; the first 64 are the context | `pool_test.py:85-95` |
+| Tokens | 64 corpus tokens per context. The shards store each sequence as 65 elements, [source-file index, 64 tokens], between −1 separators; the loader's shard index skips the first element (`skip_first_token=True`, the default, and the only index built: `data/.shard_indices/*_sft1.idx.npy`), so the file index never reaches the model. The ids are read into a 65-wide buffer (`max_length=65`) whose last column is zero padding. The context is columns 0-63, all 64 real tokens. The next-token targets (columns 1-64) are tokens 2-64 plus one padding zero; only the `logit` objective reads them, never the WCM fit (`objective="pos"`) or the scorer | `pool_test.py:85-95`; `src/data/loader.py:65-99, 554-571`; verified on `shard_0.npy` 2026-10-10 |
 | Anchor | The argmax over the 64 positions of the target's post-Top-K activation, from a fresh forward pass | `pool_test.py:97-113, 132` |
 | Peak | The max of the same quantity. It ranks the contexts for the split | `pool_test.py:104` |
 
@@ -136,7 +140,7 @@ non_activation_threshold=0.0, filter_batch_size=32, load_window_size=256)` (`poo
 - **Manifest.** The corpus ids and anchors of every set are written to `main/contexts.shard*.jsonl`
   (`driver.py:218-252`).
 
-### 3.6 Known defect: mid-band padding
+### 3.6 Known defect: mid-band padding (fixed 2026-10-09)
 
 When the mid-band held-out set has fewer contexts than the strongest-train set needs as padding, the probe has fewer
 than 64 rows. The scorer's `split_n` then moves part of strongest-train into the "held-out" slice
@@ -144,6 +148,37 @@ than 64 rows. The scorer's `split_n` then moves part of strongest-train into the
 held-out slice holds 1 to 11 strongest-train contexts, and the A mean and pins use fewer than 48. A further 53
 mid-band rows have fewer than 16 held-out contexts. Held-out strongest rows are unaffected (the pad always matches
 by construction).
+
+**Fix.** The scorer takes `EVAL_SPLIT` = `as_run` (default; reproduces the 15k run) or `explicit`. `explicit` takes
+the train count from the probe's `metadata["n_train"]`, so the held-out slice is exactly the held-out set. The src
+scorer (`src/eval/wcm_eval.py`, DAN-73) defaults to `explicit`. **Every new run uses `explicit`.**
+
+**Re-score.** The 58 rows were re-scored with `explicit` (`062/rescore_mid.py` → `out_rescore_mid/eval_mid.jsonl`; `out_full`
+untouched). All 58 now train on 48 and hold out exactly the mid-band held set. One row flips fail → pass. Over all
+mid-band rows the pass rate goes 12.09% → 12.10% and the median worst-of-3 stays 0.774, so the reported 12% and 0.77
+stand.
+
+### 3.7 Exact-duplicate contexts across the split (measured 2026-10-09)
+
+The corpus repeats boilerplate windows. 26.5% of corpus windows are exact duplicates; in the strongest-context
+pools, 22.9% of rows duplicate another row of the same pool (97.8% of pools contain one). The mid-band store is
+almost free of them (0.2%). The split does not deduplicate (§3.2), so identical token windows can fall on both
+sides (`062/dup_leakage.py`, `out_dup_leakage/leakage.csv`, all 14,994 records):
+
+- 25.1% of held-out strongest rows (59,063 / 235,051) are token-identical to a row the fit trained on; 92.2% of
+  targets have at least one (median 4 of 16).
+- 35.6% are identical to a row of the 48 strongest-train evaluation reference (A means, pins).
+
+**Effect.** Between targets, those with leaked rows pass less often (44.7% vs 65.5%; −8.3 points within band ×
+kind cells), but that compares different latents. The paired test re-scores the same circuits on held-out strongest
+with every leaked or duplicated row removed, against the unchanged reference (`062/rescore_dedup.py`,
+`out_rescore_dedup/`; 1,799 targets, 200 per band × kind cell, median 11 clean rows of 16). The pass rate goes
+41.2% → 40.6% (42 pass → fail, 31 fail → pass); the median worst-of-3 goes 0.363 → 0.370. The "all rows" side is
+the stored H100 row and the "clean" side an RTX re-score, so part of the 73 flips is hardware noise (DAN-73/74).
+
+**For new runs:** public-model corpora are deduplicated by window before the stores are built
+(`069/prepare_corpus.py`). Whether to also deduplicate each pool before the split, and how the paper words
+"held-out", are open decisions (DAN-7).
 
 ## 4. Fit: weighted circuit masking, WCM[Z+C+A]
 
@@ -310,8 +345,8 @@ Every row also records the raw reads (`*_raw_tk`, `*_raw_pre`), the per-block a_
 ### 7.2 Mid-band transfer
 
 The same scorer runs on the 16 held-out mid-band contexts, with the same 48 strongest-train reference. a_pos is then
-the mid-band mean (`driver.py:286-291`). It is reported, not used in the pass rule; run result: 12.1% pass. See §3.6
-for the 58 affected rows.
+the mid-band mean (`driver.py:286-291`). It is reported, not used in the pass rule; run result: 12.1% pass
+(unchanged after re-scoring the 58 padded rows, §3.6).
 
 ### 7.3 Training curves
 
@@ -359,7 +394,7 @@ strongest only.
 | WCM, weak penalties (paper Fig. 3) | 1e-4, 5e-5, 2.5e-5 | 190 (union of `out_bands` 32, `out_depth` 32, `out_lowlam` 128) | `run_lowlam.sh`; `queue_local.sh`; `SWEEP_ARMS` (`driver.py:58-68`) |
 | Depth test | `W_0.001_s800` (800 steps) | 32 | `out_depth/` |
 
-## 9. Per-model adaptation (Pythia-70m, GPT-2 small): OPEN
+## 9. Per-model adaptation (Pythia-70m, GPT-2 small): partly decided (§9.1)
 
 All of the following must be decided before the public-model runs (DAN-40/41) are reported.
 
@@ -386,6 +421,19 @@ All of the following must be decided before the public-model runs (DAN-40/41) ar
    the pass rule.
 7. **Code location.** The runs should go through `src/circuit/protocol_contexts.py` (DAN-78) and the `src/` scorer
    (DAN-73). Before that, verify that they reproduce 062 on TuringLLM.
+
+### 9.1 Decided (2026-10-07 to 2026-10-10)
+
+| Item | Decision | Issue |
+|---|---|---|
+| Targets per model | Pythia-70m: 64 per eligible component × 16 = 1,024. Its parallel residual leaves attn(0) and mlp(0) with no upstream site. GPT-2 small: 22 per eligible site × 47 = 1,034 (layer-0 attn-out excluded). No survival conditioning | DAN-9 |
+| λ | A one-probe calibration pilot per model (~300 fits) before the main runs | DAN-42 |
+| Corpora | `monology/pile-uncopyrighted` (Pythia; its SAEs were trained on the Pile at context 2049) and OpenWebText (GPT-2; its SAEs name `apollo-research/Skylion007-openwebtext-tokenizer-gpt2`, context 64, no BOS); 10M 64-token sequences per model; corpus windows deduplicated | DAN-37 |
+| Duplicates | Context pools deduplicated by token window before the train / held-out split (§3.7) | DAN-37, DAN-9 |
+| Precision | bf16 for the data pass (it only ranks contexts); float32 for fits and scoring (the precision the adapters and gates were validated in) | DAN-37 |
+| Engine | Unchanged from the 15k run, including σ(θ) pricing in the sparsity penalty and leak guard | DAN-36 |
+| Adapters and scorer | `src/model/hf_adapters.py`, `src/sae/public_bank.py` (DAN-34/35; GPT-2 resid-mid edited inside the attention hook); `src/eval/wcm_eval.py` with per-model K and `split="explicit"` (DAN-73) | DAN-34/35/73 |
+| Data release | Corpus sequence ids and anchors only, never corpus text | DAN-63 |
 
 ## 10. Drift log
 
@@ -431,7 +479,7 @@ All of the following must be decided before the public-model runs (DAN-40/41) ar
    - This is by design in 059 ("one evaluation reference for all arms"), but the paper says the means are "computed
      on the training contexts".
 2. **Fill mismatch.** Training uses a dense mean fill; the pass rule scores the sparsity-preserving fill.
-3. **Mid-band padding defect.** See §3.6 (58 rows).
+3. **Mid-band padding defect.** See §3.6 (58 rows; fixed behind `EVAL_SPLIT=explicit` and re-scored).
 4. **Two "clean rank" definitions.**
    - Rank-keep: rank among the *other* latents, on *training* anchors, clamped to ≤ k.
    - Near-threshold: rank among *all* latents, median over the *held-out* anchors, uncapped.

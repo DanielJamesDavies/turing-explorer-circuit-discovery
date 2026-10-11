@@ -47,7 +47,19 @@ def _fuse_mlp_projections(state_dict: dict) -> dict:
 
 
 class Inference:
-    def __init__(self, device: torch.device, compile: bool = False):
+    def __new__(cls, *args, **kwargs):
+        # Model-family dispatch (DAN-34): Inference(...) builds the HF adapter
+        # (model.hf_adapters.HFInference) when config.model.family (or
+        # family=) names a public model. The TuringLLM default constructs this
+        # class exactly as before.
+        if cls is Inference:
+            from .families import TURINGLLM, resolve_family
+            if resolve_family(kwargs.get("family")) != TURINGLLM:
+                from .hf_adapters import HFInference
+                return super().__new__(HFInference)
+        return super().__new__(cls)
+
+    def __init__(self, device: torch.device, compile: bool = False, family=None):
         self.model = TuringLLM()
         self.device = device if device is not None else ("cuda" if torch.cuda.is_available() else "cpu")
         setattr(__main__, "TuringLLMConfig", TuringLLMConfig)

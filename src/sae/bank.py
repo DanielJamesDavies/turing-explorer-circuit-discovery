@@ -11,12 +11,24 @@ from .dense import sparse_topk_to_dense
 
 class SAEBank:
 
+    def __new__(cls, *args, **kwargs):
+        # Model-family dispatch (DAN-35): SAEBank(...) builds the public-family
+        # bank when config.model.family (or family=) names one. The TuringLLM
+        # default constructs this class exactly as before.
+        if cls is SAEBank:
+            from model.families import TURINGLLM, resolve_family
+            if resolve_family(kwargs.get("family")) != TURINGLLM:
+                from .public_bank import PublicSAEBank
+                return super().__new__(PublicSAEBank)
+        return super().__new__(cls)
+
     def __init__(
         self,
         device: Optional[torch.device] = None,
         devices: Optional[List[torch.device]] = None,
         load_decoders: bool = True,
         compile: bool = False,
+        family: Optional[str] = None,
     ):
         llm_config = TuringLLMConfig()
         sae_config = SAEConfig()
@@ -182,6 +194,42 @@ class SAEBank:
         ctx = torch.no_grad() if not torch.is_grad_enabled() else nullcontext()
         with ctx, self._autocast_ctx(target_device):
             return sae.decode(latents, add_bias=add_bias)
+
+    # ── Pre-activation API (adapter-safe; DAN-35) ─────────────────────────
+    # ``x`` everywhere below is the SITE ACTIVATION as the hook protocol hands
+    # it to a patcher's transform or an activations_callback: the SAE's own
+    # input. For layer-normalised families (GPT-2 OAI) that is already x_n;
+    # callers holding a raw model-space stream convert it with site_input().
+
+    def site_input(self, x: torch.Tensor, kind: str, layer: int) -> torch.Tensor:
+        """Model-space stream -> the SAE's input at (kind, layer). Identity
+        for TuringLLM (and Pythia); the public bank overrides it."""
+        return x
+
+    def preact_vector(self, kind: str, layer: int, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        """(w, b) with pre-activation(latent idx) = x @ w + b on the site
+        activation: the encoder row and b_enc - W_enc b_dec (the engine's seed
+        tap). Detached; on the SAE's device and dtype."""
+        sae = self.saes[kind][layer]
+        if sae is None:
+            raise ValueError(f"SAE for {kind} layer {layer} is not loaded")
+        return sae.encoder.weight[idx].detach(), sae._get_bias_eff()[idx].detach()
+
+    def preact(self, x: torch.Tensor, kind: str, layer: int) -> torch.Tensor:
+        """Every latent's pre-activation [..., d_sae] at the site: the exact
+        quantity encode() applies ReLU + top-k to (same linear op, input cast
+        and autocast), so relu(preact).topk(k) reproduces encode()."""
+        sae = self.saes[kind][layer]
+        if sae is None:
+            raise ValueError(f"SAE for {kind} layer {layer} is not loaded")
+        target_device = self.layer_device_map[layer]
+        if x.device != target_device:
+            x = x.to(target_device, non_blocking=True)
+        ctx = torch.no_grad() if not torch.is_grad_enabled() else nullcontext()
+        with ctx, self._autocast_ctx(target_device):
+            if x.dtype != sae.encoder.weight.dtype:
+                x = x.to(sae.encoder.weight.dtype)
+            return torch.nn.functional.linear(x, sae.encoder.weight, sae._get_bias_eff())
 
     def full_encode(self, x: torch.Tensor, kind: str, layer: int) -> tuple[torch.Tensor, torch.Tensor]:
         """Returns (features [..., d_sae], residual [..., d_model])."""

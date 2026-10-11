@@ -1,6 +1,7 @@
 import torch
 from typing import Optional, Dict, cast
 from config import config
+from model.families import public_store_grid
 from model.turingllm import TuringLLMConfig
 from sae.topk_sae import SAEConfig
 from store.utils import _AutoAllocTensor
@@ -21,6 +22,11 @@ class LogitContext:
         self.sae_config = SAEConfig()
         
         self.num_components = self.llm_config.n_layer * 3
+        # Public model families (DAN-37): the family's grid; None on TuringLLM.
+        grid = public_store_grid()
+        if grid is not None:
+            self.llm_config, self.sae_config = grid.llm_config, grid.sae_config
+            self.num_components = grid.n_components
         self.d_sae = self.sae_config.d_sae
         self.n_tokens_per_latent = cast(int, config.latents.logit_ctx.n_tokens_per_latent)
         self.topk_output_tokens = cast(int, config.latents.logit_ctx.topk_output_tokens)

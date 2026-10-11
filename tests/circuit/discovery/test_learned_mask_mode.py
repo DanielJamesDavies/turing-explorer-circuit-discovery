@@ -88,13 +88,33 @@ class TestAblMaskHop:
                     {"loss_initial": 1.0, "loss_final": 0.1})
 
         monkeypatch.setattr(lm, "run_learned_mask", stub)
+        # The default mask floor ("dual") reads contrast contexts, which discover() sets before the hop; calling the
+        # hop directly must supply them, or it takes the per-seed skip below and never reaches the engine.
+        method._floor_neg_tokens = TOKENS
         # seed at comp (1, resid) -> comp_idx = 1*3 + 2 = 5
         scores, floor, natural = method._run_ablation_hop(
             5, 11, TOKENS, ARGMAX, MagicMock())
         assert captured["objective"] == "pos"
+        assert captured["neg_tokens"] is TOKENS
         assert scores == {FeatureID(0, "attn", 7): 0.9}
         assert method._pending_inhibitors == {}
         assert (floor, natural) == (1.0, 0.1)
+
+    def test_floor_needing_negatives_skips_seed_without_them(self, monkeypatch):
+        """A floor that scores against contrast contexts cannot run for a seed with none: the hop skips the seed
+        (empty result, logged) instead of reaching the engine or crashing the shard."""
+        method, bank = _abl(monkeypatch)
+        import circuit.instrument.learned_mask as lm
+        monkeypatch.setattr(config.discovery.learned_mask, "mask_floor_source", "triple")
+
+        def stub(inference, bank_, **kw):
+            raise AssertionError("the engine must not run without contrast contexts")
+
+        monkeypatch.setattr(lm, "run_learned_mask", stub)
+        method._floor_neg_tokens = None
+        logger = MagicMock()
+        assert method._run_ablation_hop(5, 11, TOKENS, ARGMAX, logger) == ({}, 0.0, 0.0)
+        assert logger.note.called
 
     def test_position_aware_raises_loudly(self, monkeypatch):
         method, bank = _abl(monkeypatch, position_aware=True)

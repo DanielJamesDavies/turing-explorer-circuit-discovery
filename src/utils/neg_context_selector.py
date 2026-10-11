@@ -153,6 +153,8 @@ class NegContextSelector:
                 non_activation_threshold=float(non_activation_threshold),
                 preact_filter=bool(preact_filter),
                 preact_select=str(preact_select),
+                preact_max_frac=preact_max_frac,
+                posctx_reference=posctx_reference,
                 selection_seed=selection_seed,
                 filter_batch_size=filter_batch_size,
                 load_window_size=load_window_size,
@@ -828,7 +830,7 @@ class NegContextSelector:
                 # fraction is either inert (0.25 rejected NOTHING at L2/L5/L8,
                 # measured) or rejects everything (0.10 would reject 100% of
                 # close candidates at L10). Ranking adapts automatically and
-                # cannot be infeasible — at the price that it always returns
+                # cannot be infeasible ï¿½ at the price that it always returns
                 # something, so the selected set's own contamination is
                 # reported in metadata rather than assumed away.
                 ranked_scores.extend(float(v) for v in seed_acts.tolist())

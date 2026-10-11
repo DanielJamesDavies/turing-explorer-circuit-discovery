@@ -37,7 +37,12 @@ def encode_layer_components(
                 results[component_idx(layer_idx, kind_idx, n_kinds)] = latents
             return results
 
+        # Public-family banks may carry missing sites (DAN-37, skip_missing_saes):
+        # those components are not encoded and their store rows stay empty.
+        has_site = getattr(bank, "has_site", None) if getattr(bank, "skip_missing", False) is True else None
         for kind_idx, kind in enumerate(bank.kinds):
+            if has_site is not None and not has_site(kind, layer_idx):
+                continue
             latents = bank.encode(activations[kind_idx], kind, layer_idx)
             results[component_idx(layer_idx, kind_idx, n_kinds)] = latents
         return results

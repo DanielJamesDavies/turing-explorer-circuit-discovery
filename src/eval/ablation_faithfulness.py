@@ -368,7 +368,13 @@ from eval.floors import (  # noqa: F401  (re-exports)
 
 def upstream_sites(sae_bank: Any, seed_layer: int, seed_kind: str) -> Set[Tuple[int, str]]:
     """Every (layer, kind) site feeding the seed's site: all kinds at lower
-    layers plus earlier kinds within the seed's layer (attn -> mlp -> resid)."""
+    layers plus earlier kinds within the seed's layer (attn -> mlp -> resid).
+
+    Banks for architectures where "earlier in the kind list" is not "feeds"
+    expose ``same_layer_upstream`` ({kind: same-layer kinds it reads}; see
+    model/families.py): Pythia's parallel residual (its mlp does not read its
+    own layer's attn) and GPT-2's four sites. The TuringLLM bank does not, and
+    keeps the rule above."""
 
     kinds = list(sae_bank.kinds)
     seed_kind_idx = kinds.index(seed_kind)
@@ -376,6 +382,10 @@ def upstream_sites(sae_bank: Any, seed_layer: int, seed_kind: str) -> Set[Tuple[
     for layer in range(seed_layer):
         for kind in kinds:
             sites.add((layer, kind))
+    same_layer = getattr(sae_bank, "same_layer_upstream", None)
+    if isinstance(same_layer, dict):
+        sites.update((seed_layer, kind) for kind in same_layer[seed_kind])
+        return sites
     for kind_idx in range(seed_kind_idx):
         sites.add((seed_layer, kinds[kind_idx]))
     return sites

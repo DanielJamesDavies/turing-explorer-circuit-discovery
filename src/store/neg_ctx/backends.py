@@ -10,6 +10,7 @@ import torch
 from tqdm import tqdm
 
 from config import config
+from model.families import public_store_grid
 from model.turingllm import TuringLLMConfig
 
 from .ann import (
@@ -33,6 +34,16 @@ from .validation import validate_neg_ctx_output
 if TYPE_CHECKING:
     from store.context import Context
     from store.seq_repr import SeqRepr
+
+
+def _num_components() -> int:
+    """Store components to walk: the public family's grid (DAN-37), else
+    TuringLLM's n_layer * 3 as before."""
+    grid = public_store_grid()
+    if grid is not None:
+        return grid.n_components
+    llm_cfg = TuringLLMConfig()
+    return llm_cfg.n_layer * 3
 
 
 def build_neg_ctx(
@@ -80,8 +91,7 @@ def build_neg_ctx_single_gpu_exact(
 ) -> NegCtxStats:
     """Single-device exact negative-context backend used as the correctness baseline."""
 
-    llm_cfg = TuringLLMConfig()
-    n_comp = llm_cfg.n_layer * 3
+    n_comp = _num_components()
     n_neg = neg_ctx.num_ctx_sequences
     n_neighbors = cast(int, config.latents.neg_ctx.n_neighbors or 500)
     min_pos_ctx = cast(int, config.latents.neg_ctx.min_pos_ctx or 8)
@@ -171,8 +181,7 @@ def build_neg_ctx_multi_gpu(
     of SAE components. Component writes target disjoint neg_ctx slices, so the
     final artifact shape and semantics match the single-device backend.
     """
-    llm_cfg = TuringLLMConfig()
-    n_comp = llm_cfg.n_layer * 3
+    n_comp = _num_components()
     n_neg = neg_ctx.num_ctx_sequences
     n_neighbors = cast(int, config.latents.neg_ctx.n_neighbors or 500)
     min_pos_ctx = cast(int, config.latents.neg_ctx.min_pos_ctx or 8)
@@ -301,8 +310,7 @@ def build_neg_ctx_index_sharded(
     merged into global slot IDs before applying the standard positive filter.
     """
 
-    llm_cfg = TuringLLMConfig()
-    n_comp = llm_cfg.n_layer * 3
+    n_comp = _num_components()
     n_neg = neg_ctx.num_ctx_sequences
     n_neighbors = cast(int, config.latents.neg_ctx.n_neighbors or 500)
     min_pos_ctx = cast(int, config.latents.neg_ctx.min_pos_ctx or 8)
