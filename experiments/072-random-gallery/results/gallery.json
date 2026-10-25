@@ -1,0 +1,392 @@
+{
+ "seed": 20261012,
+ "rows": [
+  {
+   "key": "3.attn.9767",
+   "band": "L0-4",
+   "kind": "attn",
+   "label": "Token following \"Capital\" in finance terms",
+   "description": "Fires on continuation tokens right after the word \"Capital\" (e.g. \" As\" in \"Capital Asset\", \" Bud\", \" and\"), mostly in title-case finance headings. Silent on \" As\" when it is not preceded by \"Capital\".",
+   "n": 257,
+   "Z": 0.9697838974947409,
+   "A": 1.0957211600988426,
+   "C": 1.1593038821954484,
+   "necessity": 1.0,
+   "induce": 0.5767833237712756,
+   "pass": true,
+   "amplifier": false,
+   "near_threshold": false,
+   "hubs_dropped": 71,
+   "members": [
+    {
+     "key": "1.resid.18903",
+     "alpha": 1.3875,
+     "specificity": 1.669575765744516,
+     "share": 0.04583510134011483,
+     "label": "Word-start fragments in Title Case (unclear)",
+     "description": "Fires on capitalized word-initial tokens (Success, Under, Know, Tem) in Title-Cased text, often where a longer word continues; the logit effect is mixed, so it is unclear."
+    },
+    {
+     "key": "0.resid.4768",
+     "alpha": 1.2436,
+     "specificity": 1.441327395619052,
+     "share": 0.03309038188676868,
+     "label": "Title-case word-start fragment (unclear)",
+     "description": "Fires on capitalized word-initial fragments (Fre, Ge, Th, Es) in Title Case headline-like text, where a word is split into pieces; logits are mixed, so unclear."
+    },
+    {
+     "key": "0.mlp.4768",
+     "alpha": 1.1438,
+     "specificity": 1.4771640774991013,
+     "share": 0.030688902843676518,
+     "label": "Title-case word-start fragments (unclear)",
+     "description": "Fires on capitalized word-start fragments (Fre, Ge, Th, Es) beginning a split word in Title Case headline-like text; peaks vary and logits are weak, so unclear."
+    }
+   ]
+  },
+  {
+   "key": "0.mlp.12557",
+   "band": "L0-4",
+   "kind": "mlp",
+   "label": "Control word detector",
+   "description": "Fires on the word \"control\" (Control, control, controls), strongest in \"Traffic Control Systems\" and as a noun or verb in technical or management text. Members are mostly token detectors for control variants.",
+   "n": 26,
+   "Z": 0.8792756539235412,
+   "A": 0.9539877300613497,
+   "C": 0.9917144678138942,
+   "necessity": 0.7230046948356808,
+   "induce": 0.38953317674691723,
+   "pass": false,
+   "amplifier": false,
+   "near_threshold": false,
+   "hubs_dropped": 5,
+   "members": [
+    {
+     "key": "0.attn.16913",
+     "alpha": 1.0068,
+     "specificity": 105.06854913616942,
+     "share": 0.08487865189393569,
+     "label": "Token \" control\"",
+     "description": "Fires only on the token \" control\" (e.g., \"control strategies\", \"control procedures\"), in technical/engineering contexts. Logits mildly boost control-related continuations like \"Control\", \"over\", \"acy\"; evidence is thin."
+    },
+    {
+     "key": "0.attn.5256",
+     "alpha": 1.1197,
+     "specificity": 695.3926086425781,
+     "share": 0.07507086776697655,
+     "label": "Token \" Control\"",
+     "description": "Fires only on the token \" Control\" (e.g., \"Control Systems\", \"Control materials\"), in technical/engineering text. Logits mildly boost \" Control\"/\" control\" variants; evidence is thin."
+    },
+    {
+     "key": "0.attn.19725",
+     "alpha": 0.8222,
+     "specificity": 3.49399275839368,
+     "share": 0.04384570517868282,
+     "label": "Title-case word starts (unclear)",
+     "description": "Fires on scattered capitalized word-start tokens (Str, Tem, Other, Our) in title-case text; peaks are mixed, and logits favor word-fragment continuations like Tw, pol, Kos. Unclear."
+    }
+   ]
+  },
+  {
+   "key": "0.resid.27712",
+   "band": "L0-4",
+   "kind": "resid",
+   "label": "Cell division terms (chrom, pol, II)",
+   "description": "Fires on word pieces in cell-division (mitosis/meiosis) text: ' chrom' in chromatids/chromosomes, ' pol' in poles, ' II' after phase names. Predicts biology word endings. Silent in physics/abstract text.",
+   "n": 102,
+   "Z": 0.8596893302775656,
+   "A": 0.6605174228574594,
+   "C": 0.8082505729564553,
+   "necessity": 1.0,
+   "induce": 1.2419149477973008,
+   "pass": false,
+   "amplifier": false,
+   "near_threshold": false,
+   "hubs_dropped": 5,
+   "members": [
+    {
+     "key": "0.mlp.205",
+     "alpha": 0.6852,
+     "specificity": 68.63684820393975,
+     "share": 0.06061072770104456,
+     "label": "' chrom' word-start token",
+     "description": "Fires only on the token \" chrom\" as a word fragment in chromatography, chromatid, chromosome, chromatin. Logits boost continuations like atin, omer, atch, ission."
+    },
+    {
+     "key": "0.mlp.4393",
+     "alpha": 1.0156,
+     "specificity": 2.236271699571645,
+     "share": 0.05775908669148374,
+     "label": "\"fect\" in \"Perfect\" tense headings",
+     "description": "Fires on the token \"fect\" in \"Per|fect\" within grammar headings like \"Past/Future/Conditional Perfect Continuous\". Logits are mixed and unclear, with weak boosts for '-' and ' ('."
+    },
+    {
+     "key": "0.mlp.21122",
+     "alpha": 1.0022,
+     "specificity": 1.5452998065764023,
+     "share": 0.05015837803377171,
+     "label": "Arabic mid-word letters (unclear)",
+     "description": "Fires on mid-word Arabic letters (ة, ن, و) and occasionally Japanese ク or repeated commas; peaks are scattered, with no clear shared meaning and weak logits."
+    }
+   ]
+  },
+  {
+   "key": "5.attn.10168",
+   "band": "L5-7",
+   "kind": "attn",
+   "label": "' men' in \"menstrual\"",
+   "description": "Fires on ' men' as the first piece of \"menstrual\" (and weakly on ' Race' in \"Arms Race\"), i.e. a word-initial fragment inside a longer word. Circuit is failed and diffuse, with only generic members.",
+   "n": 274,
+   "Z": 0.0,
+   "A": 0.0,
+   "C": 0.0,
+   "necessity": 1.0,
+   "induce": 0.0,
+   "pass": false,
+   "amplifier": false,
+   "near_threshold": true,
+   "hubs_dropped": 94,
+   "members": [
+    {
+     "key": "4.resid.19412",
+     "alpha": 1.3814,
+     "specificity": 1.2731304172545859,
+     "share": 0.09134404421072632,
+     "label": "Mid-word fragments, unclear",
+     "description": "Fires on varied mid-word or noun/adjective tokens (ative, pro, scene, balance, id, fier) in descriptive prose; peaks are inconsistent. Logits weakly favor ' of'. Unclear."
+    },
+    {
+     "key": "3.resid.12927",
+     "alpha": 0.983,
+     "specificity": 1.222293768333691,
+     "share": 0.05845473445752166,
+     "label": "Word after \"the\" (unclear)",
+     "description": "Fires on mixed tokens, often word pieces or nouns/adjectives right after \"the\" (cout, lish, ree, risk, principal, expression); peaks are inconsistent. Weakly boosts \" of\" next."
+    },
+    {
+     "key": "3.resid.18667",
+     "alpha": 1.4459,
+     "specificity": 1.1203365818056927,
+     "share": 0.03657428101142852,
+     "label": "Mixed tokens, unclear (further/later)",
+     "description": "Fires on mid-word or mixed tokens (' operation', 'aren', 'つ', ' IN') with no coherent pattern; weakly promotes adverbs like 'further', 'later', 'additional', 'moreover'."
+    }
+   ]
+  },
+  {
+   "key": "5.mlp.15947",
+   "band": "L5-7",
+   "kind": "mlp",
+   "label": "\"not limited to\" negated limitation",
+   "description": "Fires on ' limited' (also 'restricted', 'confined') right after a negation, as in \"is not limited to\", where a \"not limited to...\" construction is expected. Weaker for \"but not limited to\" and \"mostly restricted to\".",
+   "n": 543,
+   "Z": 0.9898794632704117,
+   "A": 1.1869456447577893,
+   "C": 1.1885376392995224,
+   "necessity": 1.0,
+   "induce": 0.7634750966568115,
+   "pass": true,
+   "amplifier": true,
+   "near_threshold": false,
+   "hubs_dropped": 89,
+   "members": [
+    {
+     "key": "4.resid.21357",
+     "alpha": 2.9361,
+     "specificity": 160.86519421172886,
+     "share": 0.03883432192135433,
+     "label": "Token \" limited\"",
+     "description": "Fires solely on the token \" limited\" (adjective, as in \"limited to\", \"limited allusions\"). Logits weakly favor \" access\", \" limited\", \" space\", \" edition\", but the evidence is thin and mixed."
+    },
+    {
+     "key": "4.resid.25898",
+     "alpha": 2.8421,
+     "specificity": 17.94782608695652,
+     "share": 0.03488035485715444,
+     "label": "\"not limited to\" phrase",
+     "description": "Fires on \" limited\" (occasionally \" restricted\") right after \"not\" in \"is not limited to…\" constructions; logits show no clear next-token pattern."
+    },
+    {
+     "key": "4.resid.26922",
+     "alpha": 1.8206,
+     "specificity": 1.9434825907010316,
+     "share": 0.024992802170277804,
+     "label": "Negated verb \"do not contain/have\"",
+     "description": "Fires on verbs or nouns (contain, have, elements) right after a negation (\"does not contain\", \"no particular elements\"); logits mildly favor nor/except/unless/instead, but evidence is sparse."
+    }
+   ]
+  },
+  {
+   "key": "7.resid.29770",
+   "band": "L5-7",
+   "kind": "resid",
+   "label": "food token detector",
+   "description": "Fires on the word \"food\"/\"Food\", strongest on repeated \"Food and X\" headings and on food in regulatory or sustainability phrases. Predicts follow-ons like security, service, handling. Members are mostly food-token detectors.",
+   "n": 721,
+   "Z": 0.9625700560448359,
+   "A": 0.8746451106616733,
+   "C": 1.2722177742193754,
+   "necessity": 1.0,
+   "induce": 1.2365892714171338,
+   "pass": true,
+   "amplifier": true,
+   "near_threshold": false,
+   "hubs_dropped": 103,
+   "members": [
+    {
+     "key": "6.resid.32006",
+     "alpha": 1.735,
+     "specificity": 10.588529779871898,
+     "share": 0.022509666307850437,
+     "label": "\"red\" in ingredient (food prep)",
+     "description": "Fires on the \"red\" subtoken inside \"ingredient(s)\" and once on \" plate\", in food and cooking contexts. It pushes up prep, prepared, presentation and allergen tokens. The evidence is thin, so this is somewhat unclear."
+    },
+    {
+     "key": "5.resid.3962",
+     "alpha": 2.1159,
+     "specificity": 9.369142739316459,
+     "share": 0.016961738046118054,
+     "label": "Grill/barbecue word fragments (food)",
+     "description": "Fires on mid-word subword pieces in grilling/barbecue words (gr-ill, gr-illed, barbec-ue) in food-description contexts; logits favor cooking/food continuations like cook, taste, restaurant."
+    },
+    {
+     "key": "5.resid.17590",
+     "alpha": 1.5286,
+     "specificity": 129.03498542274053,
+     "share": 0.014424276076265912,
+     "label": "Token \" food\" before noun",
+     "description": "Fires only on the token \" food\" in food safety/industry contexts. Logits favor following nouns like security, supply, trade, safety, service."
+    }
+   ]
+  },
+  {
+   "key": "9.attn.38891",
+   "band": "L8-11",
+   "kind": "attn",
+   "label": "Connectors in lists of consequences",
+   "description": "Fires on connectors and words (' and', ',', ' economic', 'ism', ' in') inside lists of negative consequences or effects (hardship, instability, unrest) in historical or social cause-and-effect text. Silent on ' and' joining ordinary nouns or topics.",
+   "n": 613,
+   "Z": 0.8817275747508305,
+   "A": null,
+   "C": 0.11184939091915837,
+   "necessity": 1.0,
+   "induce": 1.2066445182724252,
+   "pass": false,
+   "amplifier": true,
+   "near_threshold": false,
+   "hubs_dropped": 90,
+   "members": [
+    {
+     "key": "8.resid.33386",
+     "alpha": 1.053,
+     "specificity": 1.6777218705477106,
+     "share": 0.03681277834333533,
+     "label": "Predicts negative-consequence words",
+     "description": "Fires on mixed tokens (\" only\", \" can\", \",\", \" communication\") in expository text about problems, where a negative-outcome word (mis-, incorrect, errors, poor) comes next. Peaks are diverse; somewhat unclear."
+    },
+    {
+     "key": "7.resid.39521",
+     "alpha": 0.9167,
+     "specificity": 1.1535631980145364,
+     "share": 0.02410276342397877,
+     "label": "Subject before past-tense verb",
+     "description": "Fires on the end of a subject noun phrase in historical or explanatory text about a concept, where a past-tense verb like \"were developed\", \"became\", or \"was introduced\" comes next. Peak tokens are mixed."
+    },
+    {
+     "key": "7.attn.15390",
+     "alpha": 0.8844,
+     "specificity": 1.137553289083158,
+     "share": 0.02062276703733105,
+     "label": "Humanism/Renaissance context function words",
+     "description": "Fires on function words (of, for, the, comma) in passages about humanism and the Renaissance period; logits favor historical verbs like began/became/were, suppress must/provides. Peaks are mixed, so unclear."
+    }
+   ]
+  },
+  {
+   "key": "8.mlp.2453",
+   "band": "L8-11",
+   "kind": "mlp",
+   "label": "Structure nouns followed by that/can",
+   "description": "Fires on relative pronouns or modals/infinitive 'to' (that, can, could, which, to) right after a noun for built structures or buildings, in engineering text, where a verb about structural function (withstand, support, reach) comes next. Silent on 'that' in non-engineering clauses.",
+   "n": 870,
+   "Z": 0.922060164083865,
+   "A": 0.6765468692108189,
+   "C": 0.4083865086599818,
+   "necessity": 1.0,
+   "induce": 1.4567000911577028,
+   "pass": false,
+   "amplifier": true,
+   "near_threshold": false,
+   "hubs_dropped": 83,
+   "members": [
+    {
+     "key": "8.attn.4808",
+     "alpha": 1.7971,
+     "specificity": 3.692494608632263,
+     "share": 0.030093921337206474,
+     "label": "Engineering-context function words (unclear)",
+     "description": "Fires on mixed connectives (' and', ' to', ',') in engineering/structure-related text; promotes 'engineering/engine/engineer' as next token. Peaks are inconsistent, so somewhat unclear."
+    },
+    {
+     "key": "7.attn.27777",
+     "alpha": 2.585,
+     "specificity": 2.5807354291460802,
+     "share": 0.028701220539650334,
+     "label": "Composite materials engineering context (unclear)",
+     "description": "Fires on function words like \" of\", \" in\", \" remarkable\" in intros about composite/engineered materials; predicts materials-engineering words (mechanical, manufact, materials, designs). Mixed tokens, so somewhat unclear."
+    },
+    {
+     "key": "7.attn.18401",
+     "alpha": 1.8672,
+     "specificity": 1.5330554664956717,
+     "share": 0.027941650971639406,
+     "label": "Plural subject, predicts plural verb",
+     "description": "Fires on commas, \"these\", and \"),\", typically right after a plural subject noun phrase, where a plural verb or pronoun comes next; boosts \" are\", \" were\", \" they\" and suppresses singular \"its/his\"."
+    }
+   ]
+  },
+  {
+   "key": "9.resid.10786",
+   "band": "L8-11",
+   "kind": "resid",
+   "label": "\"global\" as modifier",
+   "description": "Fires on the word \"global\" (also \"Global\", \"international\", \"-wide\") used as a modifier, often before nouns like environmental, economy or issues. Predicts cooperation-type continuations. Silent on the contrast text, which has no such modifier.",
+   "n": 920,
+   "Z": 0.9222153080273802,
+   "A": 1.0054384772263767,
+   "C": 1.081207218419415,
+   "necessity": 1.0,
+   "induce": 1.2968263845675172,
+   "pass": true,
+   "amplifier": true,
+   "near_threshold": false,
+   "hubs_dropped": 97,
+   "members": [
+    {
+     "key": "8.resid.30012",
+     "alpha": 1.3787,
+     "specificity": 259.89078498293514,
+     "share": 0.014988336159661034,
+     "label": "Capitalized \" Global\" at title start",
+     "description": "Fires on the token \" Global\", seen at the start of a document or heading (e.g. \"Global Transportation Systems\"). Logits push suffixes like -ization/-ized and scale/citizens. Evidence is thin, with only 6 examples."
+    },
+    {
+     "key": "8.resid.26956",
+     "alpha": 3.3374,
+     "specificity": 2.116064362964917,
+     "share": 0.012216135327093041,
+     "label": "Growing awareness → environment",
+     "description": "Fires on \"growing\", \"of\", \"the\" in phrases like \"growing concerns/awareness of the…\" in environmental-movement text; logits boost \"Environment\"/\"environment\" next, so it predicts environmental topics."
+    },
+    {
+     "key": "7.resid.11194",
+     "alpha": 4.0505,
+     "specificity": 4.5696054238640045,
+     "share": 0.01180889182188743,
+     "label": "Pre-\"international/global\" context words",
+     "description": "Fires on function words like \" beyond\" and \" the\" in globalization/international-relations text, where the next word is likely \"international\", \"global\", or \"abroad\"; evidence is thin and mixed."
+    }
+   ]
+  }
+ ]
+}

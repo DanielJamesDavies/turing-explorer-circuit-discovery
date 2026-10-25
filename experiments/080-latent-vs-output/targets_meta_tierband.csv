@@ -1,0 +1,163 @@
+seed,layer,kind,tier,dp_tier,band,pair,cell,boost_peak,z1,lat_n,lat_pass,role,sampling
+4.resid.40444,4,resid,dp_high,dp_high,L0-4,,,1.5500139286741614,6.515316009521484,378,True,main,tierband
+0.resid.7210,0,resid,dp_mid,dp_mid,L0-4,,,0.14864941663108766,5.282925128936768,102,True,main,tierband
+2.attn.7809,2,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.09196487488225102,4.755316734313965,214,False,main,tierband
+6.resid.27968,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.9527056869119406,8.835095405578613,501,True,main,tierband
+5.resid.12424,5,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.5209110570140183,5.3041911125183105,497,True,main,tierband
+5.attn.17185,5,attn,dp_low,dp_low,L5-7,,,0.05060663050971925,4.20335578918457,343,False,main,tierband
+8.resid.27814,8,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.4535362888127565,5.550414562225342,723,True,main,tierband
+11.attn.30177,11,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.13813858438516036,4.45841121673584,251,False,main,tierband
+10.attn.2689,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.0320787109376397,4.756704330444336,613,False,main,tierband
+4.resid.38485,4,resid,dp_high,dp_high,L0-4,,,1.1147654196247458,6.381393909454346,267,True,main,tierband
+0.resid.15977,0,resid,dp_mid,dp_mid,L0-4,,,0.5315907597541809,4.807437419891357,30,True,main,tierband
+3.attn.29061,3,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.028862703271443024,4.759730815887451,319,False,main,tierband
+7.resid.4303,7,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.3369987905025482,5.234673976898193,686,True,main,tierband
+7.mlp.28649,7,mlp,dp_mid,dp_mid,L5-7,,,0.7382689928635955,4.108847618103027,533,True,main,tierband
+6.attn.40640,6,attn,dp_low,dp_low,L5-7,,,0.03724318646709435,4.74431848526001,397,True,main,tierband
+10.resid.20408,10,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,2.477677896618843,5.819923400878906,922,True,main,tierband
+9.attn.20421,9,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.23795547080226243,5.203330039978027,785,False,main,tierband
+8.attn.12463,8,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.033333751634927467,5.190293312072754,590,False,main,tierband
+3.resid.11497,3,resid,dp_high,dp_high,L0-4,,,2.0135442707687616,6.534249305725098,144,True,main,tierband
+0.resid.31236,0,resid,dp_mid,dp_mid,L0-4,,,0.23597105965018272,4.330992698669434,79,False,main,tierband
+3.attn.9718,3,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.0425334538158495,5.557918548583984,314,True,main,tierband
+7.resid.37879,7,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,2.0149291455745697,5.016735076904297,594,False,main,tierband
+5.mlp.6449,5,mlp,dp_mid,dp_mid,L5-7,,,0.787703207693994,6.286106586456299,576,True,main,tierband
+6.attn.8984,6,attn,dp_low,dp_low,L5-7,,,0.06947456148918718,4.741916179656982,430,False,main,tierband
+9.resid.14243,9,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.2312757894396782,4.5287394523620605,1083,False,main,tierband
+9.mlp.35482,9,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.4909132921602577,4.6006083488464355,881,False,main,tierband
+10.attn.6231,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.05345987665350549,4.738132476806641,454,False,main,tierband
+3.resid.33753,3,resid,dp_high,dp_high,L0-4,,,1.0022967271506786,6.37137508392334,245,True,main,tierband
+4.mlp.24967,4,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.2743882436770946,4.995091438293457,447,False,main,tierband
+3.attn.17149,3,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.013578722340753302,4.692849636077881,341,False,main,tierband
+5.resid.30085,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,2.4729809816926718,8.550745964050293,474,True,main,tierband
+6.mlp.26829,6,mlp,dp_mid,dp_mid,L5-7,,,0.14282740466296673,4.461984634399414,661,False,main,tierband
+6.attn.25810,6,attn,dp_low,dp_low,L5-7,,,0.043026152648963034,3.7367095947265625,371,False,main,tierband
+10.resid.33756,10,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,2.563393084332347,6.601851940155029,1040,True,main,tierband
+10.mlp.23216,10,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.21840205416083336,5.1049065589904785,549,False,main,tierband
+10.attn.33835,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.03917230230581481,4.029427528381348,535,False,main,tierband
+4.resid.37737,4,resid,dp_high,dp_high,L0-4,,,1.17952236905694,5.308300971984863,364,True,main,tierband
+4.resid.27325,4,resid,dp_mid,dp_mid,L0-4,,,0.545902457088232,6.529346466064453,481,True,main,tierband
+1.attn.36850,1,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.03209024510579184,4.6769914627075195,115,True,main,tierband
+6.resid.38497,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,2.0118440268561244,6.179492950439453,555,True,main,tierband
+6.resid.34214,6,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.6622484270483255,5.590222358703613,478,False,main,tierband
+6.attn.8285,6,attn,dp_low,dp_low,L5-7,,,0.048571290099062026,4.456419944763184,289,False,main,tierband
+9.resid.33981,9,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.5898990854620934,6.054474353790283,809,False,main,tierband
+9.attn.30659,9,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.2131451170425862,4.992156028747559,591,False,main,tierband
+10.attn.36603,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.05018500195001252,3.658046245574951,532,False,main,tierband
+1.resid.19685,1,resid,dp_high,dp_high,L0-4,,,1.0217599850147963,6.347043037414551,32,True,main,tierband
+2.mlp.26851,2,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.48273138888180256,5.488957405090332,184,True,main,tierband
+0.resid.18112,0,resid,dp_low,dp_low,L0-4,,,0.05366842291550711,4.695389270782471,158,False,main,tierband
+6.resid.14285,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.1076404326595366,7.067840099334717,687,False,main,tierband
+5.resid.4191,5,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.47628435865044594,4.533081531524658,521,True,main,tierband
+7.mlp.11909,7,mlp,dp_low,dp_low,L5-7,,,0.08403914311202243,3.708343505859375,447,False,main,tierband
+10.resid.18513,10,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.247372955083847,5.532299995422363,742,True,main,tierband
+8.attn.8022,8,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.10457219945965335,4.966668128967285,513,False,main,tierband
+9.attn.40888,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.02320048075489467,4.3509840965271,379,False,main,tierband
+4.resid.13823,4,resid,dp_high,dp_high,L0-4,,,1.8199378112331033,6.304103374481201,515,True,main,tierband
+4.mlp.34249,4,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.17557371116708964,4.653424263000488,606,True,main,tierband
+2.attn.3746,2,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.0884509589523077,4.03250789642334,280,False,main,tierband
+6.resid.12069,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.1296608578413725,7.506370544433594,456,False,main,tierband
+5.mlp.14035,5,mlp,dp_mid,dp_mid,L5-7,,,0.4187870043097064,5.146265983581543,649,True,main,tierband
+6.attn.26951,6,attn,dp_low,dp_low,L5-7,,,0.034958581207320094,4.537715911865234,416,False,main,tierband
+8.resid.6463,8,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.2287258971482515,6.172421455383301,706,False,main,tierband
+9.mlp.19134,9,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.8716798739042133,5.038071155548096,691,False,main,tierband
+9.attn.11899,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.047337640877231024,4.778558254241943,582,False,main,tierband
+4.resid.16394,4,resid,dp_high,dp_high,L0-4,,,1.1169705837965012,5.612782001495361,301,True,main,tierband
+4.mlp.9417,4,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.46010047011077404,5.128875732421875,485,True,main,tierband
+2.attn.38404,2,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.030559709470253438,3.6999828815460205,166,False,main,tierband
+5.resid.38169,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.056889358907938,5.687737464904785,487,True,main,tierband
+5.attn.20091,5,attn,dp_mid,dp_mid,L5-7,,,0.12561484501929954,5.042441368103027,203,True,main,tierband
+6.attn.23340,6,attn,dp_low,dp_low,L5-7,,,0.08295989097678103,4.561695575714111,548,False,main,tierband
+8.resid.33718,8,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.9023888744413853,6.1230010986328125,653,False,main,tierband
+11.mlp.10665,11,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.6939545273780823,3.252854108810425,839,False,main,tierband
+10.attn.15911,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.032744120399001986,5.642490863800049,552,False,main,tierband
+4.resid.19952,4,resid,dp_high,dp_high,L0-4,,,1.0576442498713732,6.830729007720947,362,True,main,tierband
+4.resid.23750,4,resid,dp_mid,dp_mid,L0-4,,,0.7582944482564926,5.2588605880737305,266,True,main,tierband
+1.attn.16628,1,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.045182644797023386,5.053229331970215,90,True,main,tierband
+6.resid.36142,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.3519083615392447,6.502630233764648,569,True,main,tierband
+6.resid.18843,6,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.9088693857192993,5.791909217834473,479,False,main,tierband
+6.attn.4406,6,attn,dp_low,dp_low,L5-7,,,0.08135300152935088,5.2452712059021,419,False,main,tierband
+10.mlp.5000,10,mlp,dp_high,dp_high,L8-11,mlp L8-11,mlp L8-11 dp_high,1.0411795945838094,6.035703659057617,918,False,main,tierband
+8.mlp.27487,8,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.7011938304640353,4.67636251449585,844,True,main,tierband
+9.attn.8863,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.02737727753992658,4.499002933502197,778,False,main,tierband
+2.resid.27783,2,resid,dp_high,dp_high,L0-4,,,1.1446839752607048,5.928047180175781,155,True,main,tierband
+4.attn.32928,4,attn,dp_mid,dp_mid,L0-4,attn L0-4,attn L0-4 dp_mid,0.11318481748457998,4.238494873046875,415,False,main,tierband
+4.attn.18377,4,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.08734649966936558,4.84591817855835,410,False,main,tierband
+6.resid.33130,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.5640623969957232,6.609442234039307,612,False,main,tierband
+6.resid.18776,6,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.604287232272327,5.853682518005371,542,True,main,tierband
+5.attn.7266,5,attn,dp_low,dp_low,L5-7,,,0.040350350755034015,4.8846516609191895,239,False,main,tierband
+8.resid.30859,8,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,2.3662159517407417,9.16433334350586,618,False,main,tierband
+9.attn.22164,9,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.21491777384653687,5.254336833953857,636,False,main,tierband
+8.attn.941,8,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.06264345138333738,4.4937944412231445,520,False,main,tierband
+3.resid.2061,3,resid,dp_high,dp_high,L0-4,,,1.162660852074623,5.733180046081543,228,True,main,tierband
+4.resid.27846,4,resid,dp_mid,dp_mid,L0-4,,,0.7894677263684571,6.440399646759033,449,True,main,tierband
+4.attn.35271,4,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.03528097516391426,4.739648342132568,274,False,main,tierband
+7.resid.4887,7,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.8091635927557945,6.119443893432617,633,True,main,tierband
+7.attn.2528,7,attn,dp_mid,dp_mid,L5-7,,,0.18889256892725825,4.287667274475098,746,False,main,tierband
+6.attn.19432,6,attn,dp_low,dp_low,L5-7,,,0.057524698349880055,5.746507167816162,532,False,main,tierband
+9.resid.5197,9,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,2.681838307529688,6.0980706214904785,816,True,main,tierband
+8.mlp.23967,8,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.600013853982091,5.177707195281982,739,False,main,tierband
+10.attn.18220,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.05008796746551525,4.722782611846924,380,False,main,tierband
+0.resid.38616,0,resid,dp_high,dp_high,L0-4,,,1.0707127284258604,6.87135124206543,15,False,main,tierband
+1.resid.6403,1,resid,dp_mid,dp_mid,L0-4,,,0.10029289464000612,4.424980640411377,241,False,main,tierband
+4.attn.29324,4,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.026175642968155444,4.346449851989746,267,False,main,tierband
+7.resid.37384,7,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.5783261684700847,4.822768688201904,835,True,main,tierband
+5.resid.5290,5,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.637357690371573,5.562025547027588,441,False,main,tierband
+5.attn.26739,5,attn,dp_low,dp_low,L5-7,,,0.05109244375489652,3.93904709815979,395,False,main,tierband
+10.mlp.34894,10,mlp,dp_high,dp_high,L8-11,mlp L8-11,mlp L8-11 dp_high,1.2355758203193545,5.041054725646973,840,False,main,tierband
+11.attn.2400,11,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.1384988520294428,4.655671119689941,445,False,main,tierband
+9.attn.10450,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.051699905772693455,5.051427364349365,599,False,main,tierband
+4.resid.23496,4,resid,dp_high,dp_high,L0-4,,,1.145502439700067,5.530153751373291,354,True,main,tierband
+0.mlp.32928,0,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.3666661762399599,4.5748677253723145,14,False,main,tierband
+3.attn.17429,3,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.09367238113190979,5.1989521980285645,255,False,main,tierband
+5.resid.34426,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.259547489695251,5.751377105712891,341,True,main,tierband
+5.mlp.5802,5,mlp,dp_mid,dp_mid,L5-7,,,0.39291205117478967,4.11991548538208,460,True,main,tierband
+6.mlp.74,6,mlp,dp_low,dp_low,L5-7,,,0.07652804168174043,3.6848013401031494,578,False,main,tierband
+11.resid.24825,11,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.1278385072946548,5.75061559677124,591,True,main,tierband
+9.mlp.28913,9,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.6092767436057329,3.2890686988830566,682,False,main,tierband
+9.attn.3057,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.05088455296936445,5.951404571533203,323,False,main,tierband
+3.resid.26166,3,resid,dp_high,dp_high,L0-4,,,1.2476466037333012,6.719742298126221,199,True,main,tierband
+4.resid.13152,4,resid,dp_mid,dp_mid,L0-4,,,0.4396703280508518,5.239461898803711,321,True,main,tierband
+1.resid.31759,1,resid,dp_low,dp_low,L0-4,,,0.049664312886307016,5.131000995635986,217,False,main,tierband
+5.resid.853,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.6211496549658477,8.749773979187012,610,True,main,tierband
+7.resid.22372,7,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.8287094458937645,5.230248928070068,660,False,main,tierband
+6.attn.33004,6,attn,dp_low,dp_low,L5-7,,,0.02031655458267778,4.2973313331604,281,False,main,tierband
+8.resid.26258,8,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.7682232111692429,8.274761199951172,620,True,main,tierband
+8.mlp.686,8,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.810090433806181,5.286472797393799,734,False,main,tierband
+11.attn.7313,11,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.052423449960770085,5.431320667266846,396,False,main,tierband
+3.resid.25570,3,resid,dp_high,dp_high,L0-4,,,1.2295905137434602,7.071342468261719,293,True,main,tierband
+1.resid.8049,1,resid,dp_mid,dp_mid,L0-4,,,0.5007754419930279,5.956545829772949,161,False,main,tierband
+2.mlp.15458,2,mlp,dp_low,dp_low,L0-4,mlp L0-4,mlp L0-4 dp_low,0.09021073905751109,4.6183648109436035,349,False,main,tierband
+7.resid.34790,7,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.6048924550414085,5.869970321655273,730,True,main,tierband
+5.mlp.2787,5,mlp,dp_mid,dp_mid,L5-7,,,0.11155265383422375,4.33945369720459,443,False,main,tierband
+5.attn.5862,5,attn,dp_low,dp_low,L5-7,,,0.030722909257747233,5.03001070022583,308,False,main,tierband
+9.resid.17605,9,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,4.1016945242881775,8.647308349609375,874,False,main,tierband
+8.mlp.40671,8,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.6474533933214843,5.210958480834961,641,True,main,tierband
+10.attn.36348,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.03612492873799056,4.492249011993408,734,False,main,tierband
+4.resid.21520,4,resid,dp_high,dp_high,L0-4,,,1.3550919257104397,5.5270161628723145,300,True,main,tierband
+0.mlp.26489,0,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.11396967933978885,5.27554178237915,68,False,main,tierband
+3.attn.29509,3,attn,dp_low,dp_low,L0-4,attn L0-4,attn L0-4 dp_low,0.01261658943258226,4.460423469543457,429,False,main,tierband
+5.resid.10096,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.304622981697321,5.953595161437988,575,True,main,tierband
+6.attn.26220,6,attn,dp_mid,dp_mid,L5-7,,,0.10498127527534962,4.709962368011475,586,False,main,tierband
+5.attn.34661,5,attn,dp_low,dp_low,L5-7,,,0.08932490076404065,4.968689441680908,471,False,main,tierband
+10.resid.23134,10,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,2.7613741531968117,6.037581443786621,901,False,main,tierband
+11.attn.29889,11,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.1297928811982274,4.158100128173828,556,False,main,tierband
+11.attn.20989,11,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.046694819087861106,4.838104248046875,626,False,main,tierband
+5.resid.3907,5,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.9671296775341034,7.564114093780518,446,True,main,tierband
+5.resid.2027,5,resid,dp_mid,dp_mid,L5-7,resid L5-7,resid L5-7 dp_mid,0.44633566751144826,4.185312747955322,515,True,main,tierband
+5.attn.32000,5,attn,dp_low,dp_low,L5-7,,,0.013282732019433752,3.7486722469329834,366,False,main,tierband
+11.resid.15144,11,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.4015386560931802,6.51182746887207,518,True,main,tierband
+9.mlp.12525,9,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.136496324907057,4.175766944885254,799,False,main,tierband
+9.attn.12940,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.040197866823291406,3.8247058391571045,604,False,main,tierband
+4.resid.39221,4,resid,dp_high,dp_high,L0-4,,,1.2029087841510773,7.056014537811279,330,True,calib,tierband
+3.mlp.16489,3,mlp,dp_mid,dp_mid,L0-4,mlp L0-4,mlp L0-4 dp_mid,0.24719138746149838,5.020776271820068,252,True,calib,tierband
+1.mlp.35042,1,mlp,dp_low,dp_low,L0-4,mlp L0-4,mlp L0-4 dp_low,0.09539394872263074,4.983250141143799,221,True,calib,tierband
+6.resid.3618,6,resid,dp_high,dp_high,L5-7,resid L5-7,resid L5-7 dp_high,1.1554590528830886,5.6172709465026855,626,True,calib,tierband
+7.mlp.12129,7,mlp,dp_mid,dp_mid,L5-7,,,0.8979064263403416,4.829013824462891,708,True,calib,tierband
+7.attn.11531,7,attn,dp_low,dp_low,L5-7,,,0.04947297996841371,4.699451923370361,470,False,calib,tierband
+11.resid.15522,11,resid,dp_high,dp_high,L8-11,resid L8-11,resid L8-11 dp_high,1.3803282212466002,6.05172872543335,941,False,calib,tierband
+11.mlp.30196,11,mlp,dp_mid,dp_mid,L8-11,mlp L8-11,mlp L8-11 dp_mid,0.7494757575914264,4.617037296295166,829,False,calib,tierband
+9.attn.32992,9,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.03615372272906825,4.856558322906494,576,False,calib,tierband
+10.mlp.31941,10,mlp,dp_high,dp_high,L8-11,mlp L8-11,mlp L8-11 dp_high,1.0777779864147305,4.564805030822754,850,False,calib,tierband
+8.attn.36185,8,attn,dp_mid,dp_mid,L8-11,attn L8-11,attn L8-11 dp_mid,0.18582916539162397,4.936837196350098,734,False,calib,tierband
+10.attn.3299,10,attn,dp_low,dp_low,L8-11,attn L8-11,attn L8-11 dp_low,0.07811243640026078,4.436959743499756,690,False,calib,tierband

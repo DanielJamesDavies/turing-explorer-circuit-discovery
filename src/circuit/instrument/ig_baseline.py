@@ -32,6 +32,7 @@ error-preservation).
 from __future__ import annotations
 
 import sys
+from dataclasses import replace as dataclass_replace
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -385,7 +386,12 @@ def integrated_baseline_scores(
                 # on one scale, then merge unions. abs_pctl resolves its cut
                 # from the pooled |attr| of ALL sites in this pass.
                 scaled = {site: accum * w for site, accum in c_pa_accum.items()}
-                spec = position_aware.resolved_for(scaled.values())
+                # The spec carries the anchors of ALL sequences; cut this
+                # chunk's causal prefixes at THIS chunk's anchors (selection
+                # indexes peaks from 0 per chunk; bug fixed 2026-10-23).
+                chunk_spec = dataclass_replace(
+                    position_aware, peaks=position_aware.peaks[start:start + bs])
+                spec = chunk_spec.resolved_for(scaled.values())
                 for site, attr in scaled.items():
                     merged = pa_members[site]
                     for latent, value in spec.select_from(attr).items():

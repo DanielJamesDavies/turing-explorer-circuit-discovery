@@ -89,12 +89,16 @@ def collect_site_anchors(
     sites: Set[Site],
     argmax: Optional[torch.Tensor] = None,
     pin_position_specific: bool = False,
+    valid: Optional[torch.Tensor] = None,
 ) -> Tuple[Dict[Site, torch.Tensor], Dict[Site, torch.Tensor]]:
     """One clean forward pass returning, per site, both anchors:
 
     - means [d_sae]: mean dense latent vector over all (batch, position)
       slots, zeros included — the "average value over data from D" of SFC's
-      mean ablation.
+      mean ablation. With ``valid`` ([B, T], bool or 0/1; experiment 081's
+      right-padded task prompts) the mean is over the valid slots only, so
+      padding positions never enter an ablation value. None (default) = every
+      slot, unchanged.
     - pins: the clean-run values used to pin kept latents. Two shapes:
       * collapsed (default) — [d_sae], the mean dense vector at the probe
         positions (phi_cf injection semantics; falls back to the position
@@ -119,7 +123,10 @@ def collect_site_anchors(
             act = activations[kind_to_idx[kind]]
             ta, ti = sae_bank.encode(act, kind, layer_idx)
             dense = sparse_topk_to_dense(ta, ti, sae_bank.d_sae, dtype=torch.float32)
-            means[(layer_idx, kind)] = dense.mean(dim=(0, 1)).detach()
+            if valid is None:
+                means[(layer_idx, kind)] = dense.mean(dim=(0, 1)).detach()
+            else:
+                means[(layer_idx, kind)] = _valid_mean(dense, valid)
             if pin_position_specific:
                 # full [B, T, d_sae] clean stream (CPU-resident to bound memory);
                 # the patcher moves each site to device as it runs.
@@ -153,16 +160,32 @@ def collect_site_anchors(
     return means, pins
 
 
+def _valid_mean(dense: torch.Tensor, valid: torch.Tensor) -> torch.Tensor:
+    """Mean of dense [B, T, d] over the slots where valid [B, T] is set (one matvec, no [B, T, d] copy). Refuses a
+    mask with no valid slot: an ablation value averaged over nothing is not a zero."""
+    B, T = int(dense.shape[0]), int(dense.shape[1])
+    v = valid[:B, :T].to(device=dense.device, dtype=dense.dtype).reshape(-1)
+    n = float(v.sum())
+    if n <= 0:
+        raise ValueError("valid mask selects no position: cannot average an ablation value over nothing")
+    return (v @ dense.reshape(B * T, -1) / n).detach()
+
+
 @torch.no_grad()
 def collect_site_means(
     inference: Any,
     sae_bank: Any,
     tokens: torch.Tensor,
     sites: Set[Site],
+    valid: Optional[torch.Tensor] = None,
 ) -> Dict[Site, torch.Tensor]:
-    """Mean dense latent vector [d_sae] per site over a clean forward pass."""
+    """Mean dense latent vector [d_sae] per site over a clean forward pass (over the ``valid`` [B, T] positions only
+    when given; see collect_site_anchors)."""
 
-    means, _ = collect_site_anchors(inference, sae_bank, tokens, sites)
+    if valid is None:
+        means, _ = collect_site_anchors(inference, sae_bank, tokens, sites)
+    else:
+        means, _ = collect_site_anchors(inference, sae_bank, tokens, sites, valid=valid)
     return means
 
 

@@ -1,0 +1,35 @@
+{
+ "what": "frozen stratified subset for the as-run re-score (paired leakage effect, DAN-157)",
+ "n": 1000,
+ "seed": 20261024,
+ "strata": "band (L0-4 / L5-7 / L8-11) x kind",
+ "counts": {
+  "L0-4/attn": 112,
+  "L0-4/mlp": 111,
+  "L0-4/resid": 111,
+  "L5-7/attn": 111,
+  "L5-7/mlp": 111,
+  "L5-7/resid": 111,
+  "L8-11/attn": 111,
+  "L8-11/mlp": 111,
+  "L8-11/resid": 111
+ },
+ "eligible": "targets_full.txt with a main circuit file and an ok last status row (062 out_full/out/main)",
+ "n_targets": 15046,
+ "n_eligible": 15004,
+ "eligible_per_cell": {
+  "L0-4/attn": 1279,
+  "L0-4/mlp": 2274,
+  "L0-4/resid": 2269,
+  "L5-7/attn": 1158,
+  "L5-7/mlp": 1363,
+  "L5-7/resid": 1365,
+  "L8-11/attn": 1657,
+  "L8-11/mlp": 1820,
+  "L8-11/resid": 1819
+ },
+ "source": "targets_full.txt",
+ "source_md5": "cdb4858033da6fb8e8552c6c1f77818c",
+ "list": "targets_asrun1000.txt",
+ "md5": "61527386733df1ab4f89a0f5581f6d97"
+}

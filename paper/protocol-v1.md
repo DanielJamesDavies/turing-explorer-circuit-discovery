@@ -394,7 +394,7 @@ strongest only.
 | WCM, weak penalties (paper Fig. 3) | 1e-4, 5e-5, 2.5e-5 | 190 (union of `out_bands` 32, `out_depth` 32, `out_lowlam` 128) | `run_lowlam.sh`; `queue_local.sh`; `SWEEP_ARMS` (`driver.py:58-68`) |
 | Depth test | `W_0.001_s800` (800 steps) | 32 | `out_depth/` |
 
-## 9. Per-model adaptation (Pythia-70m, GPT-2 small): partly decided (§9.1)
+## 9. Per-model adaptation (Pythia-70m, GPT-2 small): decided (§9.1, superseded where they overlap by §9.2)
 
 All of the following must be decided before the public-model runs (DAN-40/41) are reported.
 
@@ -432,8 +432,26 @@ All of the following must be decided before the public-model runs (DAN-40/41) ar
 | Duplicates | Context pools deduplicated by token window before the train / held-out split (§3.7) | DAN-37, DAN-9 |
 | Precision | bf16 for the data pass (it only ranks contexts); float32 for fits and scoring (the precision the adapters and gates were validated in) | DAN-37 |
 | Engine | Unchanged from the 15k run, including σ(θ) pricing in the sparsity penalty and leak guard | DAN-36 |
+| Contrast contexts | **close, post-Top-K silent**, as in the 15k run, so the model is the only change in the cross-model comparison. The DAN-64 sweep found random or distant contrast sets give more robust circuits (+0.10 pass on distant backgrounds); this is reported as a finding, not adopted | DAN-64 |
 | Adapters and scorer | `src/model/hf_adapters.py`, `src/sae/public_bank.py` (DAN-34/35; GPT-2 resid-mid edited inside the attention hook); `src/eval/wcm_eval.py` with per-model K and `split="explicit"` (DAN-73) | DAN-34/35/73 |
 | Data release | Corpus sequence ids and anchors only, never corpus text | DAN-63 |
+
+### 9.2 Decided 2026-10-23 to 2026-10-24 (supersedes the matching §9.1 rows)
+
+Fixed before any public-model fit. The run is planned for 2026-10-25; the code is in `experiments/082-public-runs/`
+(chain.sh, make_targets_public.py, pilot_lambda.py), `084-harder-nulls/` and `086-heldout-rebuild/`.
+
+| Item | Decision | Issue |
+|---|---|---|
+| Targets per model | **512**: Pythia-70m 32 per eligible component × 16; GPT-2 small ~11 per eligible site over 47 (layer-0 attn-out excluded). Seeded draw, seed `20261024`; lists md5-frozen before any fit | DAN-9 |
+| Eligibility (the frame rule) | Uniform over latents with **≥ 200 distinct firing 64-token windows** in the scanned corpus, and a **hub cap**: latents firing in **> 50% of windows** are excluded. Counts excluded by each rule are reported per component. For comparison, 263 of TuringLLM's 15,046 targets (1.75%) sit above the same cap and 640 (4.25%) have fewer than 200 firing windows | DAN-9 |
+| Subsets | Pilot 30 (disjoint from main); nulls 128 (inside main; the first 32 get a 2nd draw); stable core 32; unweighted 128 (Pythia-70m only) | DAN-9 |
+| Corpora | Fixed at **4M 64-token windows per model**, pinned revisions: one file of `monology/pile-uncopyrighted` (Pythia-70m); apollo pre-tokenised OpenWebText parquet files 0–2 (GPT-2 small). Exact duplicate windows removed at preparation. Pass 2 (co-activation stores) not built; nothing in the protocol reads it | DAN-37 |
+| λ | Pilot of 30 targets × 3 λ (Pythia-70m {3e-4, 1e-3, 3e-3}; GPT-2 small {1e-3, 3e-3, 1e-2}). Pre-stated size-only rule: keep 1e-3 unless the pooled median circuit size leaves [100, 1000], else the grid λ nearest 494 on a log scale. Pass rates are reported, never used to choose. A local preliminary (5 targets) kept 1e-3 for both (median sizes 172 and 333) | DAN-42 |
+| Held-out split | Group-aware: exact, anchor-prefix and near-duplicate copies (shared run ≥ 32 tokens, or ≥ 50% shared 8-grams) are grouped, and a group goes wholly to train or to held-out. **No document or source-file rule.** The held-out rule of §3.7 / DAN-157 is then applied as a final check. Contrast rows: exact + near-duplicate only (no anchor) | DAN-157 |
+| Random nulls | The DAN-181 harder nulls replace DAN-17: an anchor-active null (WIN = 8, matched per site and by frequency decile, production members included) and a contribution-matched null (production members excluded), each fitted exactly as WCM, plus α = 1 scoring. No DAN-17 refits on the public models | DAN-181 |
+| Precision | Fits and scores in float32 with TF32 matrix multiplies (as the DAN-36 gates ran); the data pass in bf16. TuringLLM stays bf16, its validated precision | DAN-37 |
+| Unweighted | Pythia-70m only, 128 targets, at the λ adopted for WCM | DAN-40 |
 
 ## 10. Drift log
 
@@ -497,7 +515,7 @@ All of the following must be decided before the public-model runs (DAN-40/41) ar
 |---|---|---|---|---|
 | 1 | 283, 861, 1472 | The ablation means are computed on the (48) training contexts only | True for the **fit**. The **evaluation** A mean (Z/A/C scores), the φ_ind pins and the specificity reference use the 48 **strongest-train** contexts, which for arm B (14,339 targets) is not the training set (32 strongest + 16 mid) | `protocol_harness.py:86`; `amp_eval_pass_v2.py:420`; `pool_test.py:234-235` |
 | 2 | 349-351, 873, 324 | Necessity: the circuit's nodes "ablated per π", φ_sup(C; π) | **Zero ablation only**: members set to 0 in the live stream; a_∅ = the zero-ablation empty circuit `e0`. One necessity number, which the pass rule uses | `amp_eval_pass_v2.py:542-553` |
-| 3 | 199-200, 856 | Each target has 64 strongest + 64 mid-band contexts, trains on 32 + 16, and is scored on 16 + 16 held out | Pools are capped at 64 and used as they are down to 8. **502** targets train on 6–47 contexts; **478** have fewer than 16 held-out strongest; 53 mid-band rows have fewer than 16 held out | `pool_test.py:118-130`; `main/contexts.shard*.jsonl` |
+| 3 | 199-200, 856 | Each target has 64 strongest + 64 mid-band contexts, trains on 32 + 16, and is scored on 16 + 16 held out | Pools are capped at 64 and used as they are down to 8. **502** targets train on 6–47 contexts; **472** have fewer than 16 held-out strongest (478 have fewer than 64 stored strongest; six of those with 62–63 still hold out 16; corrected 2026-10-12, DAN-161 audit); 53 mid-band rows have fewer than 16 held out | `pool_test.py:118-130`; `main/contexts.shard*.jsonl` |
 | 4 | 313 (also 200) | Every score is read on the 16 held-out contexts | On **58** mid-band rows the "held-out" slice contains 1–11 strongest-**train** contexts (padding defect) | `pool_test.py:257-259`; `amp_eval_pass_v2.py:380-381` |
 | 5 | 856 | "Targets with no mid-band store train on 48 strongest (665 of 15,004)" | The rule is "fewer than 8 deduplicated mid-band contexts". Of the 665, **187** train on 48; **478** train on 6–47 | `pool_test.py:128`; `driver.py:137-139` |
 | 6 | 206, 853 | 15,046 targets "sampled at random, stratified across sites … every site with an upstream SAE site" | 455 per component (uniform), layer-0 attention dropped (15,925), **then restricted to the 15,046 that produced a circuit in the pre-v1 run** (879 attention targets dropped). Attention cells hold 134–450 rather than 455 | `feature_selection.py:342-358`; `make_targets.py:26-43` |

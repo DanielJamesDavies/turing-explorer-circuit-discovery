@@ -1,0 +1,9 @@
+{
+ "note": "SMOKE ONLY (smoke.sh timing pass): the same fits at 40 steps, so estimate.py can separate the per-step cost from the per-fit overhead.",
+ "arms": {
+  "OUT_W": {"lams": [0.001], "lr": 0.5},
+  "OUT_U": {"lams": [0.0001], "lr": 0.5}
+ },
+ "logit_norm": "gap",
+ "steps": 40
+}

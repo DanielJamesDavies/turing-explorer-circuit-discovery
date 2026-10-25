@@ -10,7 +10,8 @@ the specificity diagnostic and near-threshold stratum in eval/wcm_specificity.py
 
 Contexts. ``probe.pos_tokens`` = the reference (train) contexts followed by the held-out ones, ``pos_argmax`` their
 anchors; protocol v1: the 48 strongest-train contexts then the 16 held-out strongest or mid-band ones
-(circuit/protocol_contexts.eval_probe). Contrast rows: first split_n(n) train, the rest held out.
+(circuit/protocol_contexts.eval_probe). Contrast rows: first split_n(n) train, the rest held out; a probe from a
+record whose contrast held-out set was rebuilt (086) carries metadata["n_neg_train"], used instead (contrast_split).
 
   split="explicit"  (default, every new run) the train count is ``probe.metadata["n_train"]``, so the held-out slice
                     is exactly the held-out set.
@@ -115,6 +116,21 @@ def split_n(n: int, holdout_frac: float = HOLDOUT_FRAC) -> int:
     """Train count of the engine's 3:1 rule: n - round(n * holdout_frac), at least 1 (Python's round: half to even)."""
     n_hold = int(round(n * holdout_frac))
     return max(1, n - n_hold)
+
+
+def contrast_split(n_neg: int, metadata: Optional[Mapping[str, Any]], holdout_frac: float = HOLDOUT_FRAC,
+                   own: bool = True) -> int:
+    """The contrast-train count. A probe built from a record whose contrast held-out set was rebuilt (086;
+    protocol_contexts.eval_contrast) carries metadata["n_neg_train"] (the run's 48 contrast-train rows, then a held-out
+    set that may hold fewer than 16): that count, in either split mode. Otherwise (every as-run record, and contrast
+    rows that are not the probe's own, own=False) split_n(n_neg), unchanged."""
+    v = (metadata or {}).get("n_neg_train") if own else None
+    if v is None:
+        return split_n(n_neg, holdout_frac)
+    v = int(v)
+    if not 0 < v < n_neg:
+        raise ValueError("n_neg_train %d needs a contrast train and held-out slice (n_neg %d)" % (v, n_neg))
+    return v
 
 
 def eval_split(n_pos: int, metadata: Optional[Mapping[str, Any]], split: str = "explicit",
@@ -360,7 +376,7 @@ def score_circuit(
     if n_neg < 2:
         return dict(seed=key, skip="no_negatives", n=n_mem, n_pos=n_pos, n_neg=n_neg)
     n_tr = eval_split(n_pos, probe.metadata, split, holdout_frac)
-    n_ntr = split_n(n_neg, holdout_frac)
+    n_ntr = contrast_split(n_neg, probe.metadata, holdout_frac, own=contrast_tokens is None)
     pt_tr, pa_tr, pt_ho, pa_ho = pt[:n_tr], pa[:n_tr], pt[n_tr:], pa[n_tr:]
     nt_tr, nt_ho = nt[:n_ntr], nt[n_ntr:]
     if seed_vector is None:
@@ -570,6 +586,529 @@ def score_circuit(
     return row
 
 
+# ----------------------------------------------------------------------------------------------- output endpoint
+# Experiment 080 (2026-10-18): the same circuit-only runs as score_circuit, read at the model's OUTPUT instead of at the
+# target latent. m = mean over the held-out contexts of log p(the actual next token x_{t+1} | x_<=t) at each context's
+# target anchor t. Additive: nothing above changes.
+OUT_FAITH = ("out_free0", "out_freeM_topk", "out_freeN_topk")   # Z, A (sparsity-preserving), C (sparsity-preserving)
+OUT_NECESSITY = "out_phi_sup_blind"
+OUT_VACUOUS_NATS = 0.1           # vacuous output denominator: |m(full) - m(empty, Z)| < 0.1 nats
+OUT_SCOPES = ("upstream", "all")
+
+
+def output_vacuous(m_full: float, m_e0: float, nats: float = OUT_VACUOUS_NATS) -> bool:
+    """A vacuous output denominator: ablating the scope (zero) moves the mean log-prob by less than `nats`. Absolute,
+    in nats: a log-prob has no natural zero to be relative to (the latent rule, vacuous(), is relative to a_pos)."""
+    return bool(abs(m_full - m_e0) < nats)
+
+
+def next_tokens_at(probe: Any, anchors: torch.Tensor, n: int) -> torch.Tensor:
+    """The actual next token at each context's anchor: probe.target_tokens [N, T] (shifted, target_tokens[i, t] is
+    token t + 1) gathered at the anchors, or a [N] tensor used as is."""
+    tt = probe.target_tokens[:n]
+    if tt.dim() == 1:
+        return tt
+    rr = torch.arange(int(tt.shape[0]), device=tt.device)
+    return tt[rr, anchors[:n].to(tt.device).clamp(0, tt.shape[1] - 1)]
+
+
+def scope_sites(bank: Any, layer: int, kind: str, scope: str = "upstream") -> Set[Site]:
+    """The sites a circuit's ablation covers. "upstream": the sites causally upstream of the target's site (the latent
+    circuit's scope; the target's site and every later site run live). "all": every site of the model."""
+    if scope == "upstream":
+        return set(upstream_sites(bank, layer, kind))
+    if scope == "all":
+        return {(l, k) for l in range(int(bank.n_layer)) for k in bank.kinds if bank.saes[k][l] is not None}
+    raise ValueError("scope must be one of %s, got %r" % (OUT_SCOPES, scope))
+
+
+class EditTrackingCircuitOnly(CircuitOnlyPatcher):
+    """The engine's CircuitOnlyPatcher, recording which sites it ablated (the scope check: must equal the scope).
+    Built with seed_layer=-1, so it reads no latent."""
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self.edited: Set[Site] = set()
+
+    def transform(self, layer_idx: int, kind: str, x: torch.Tensor) -> torch.Tensor:
+        if (layer_idx, kind) in self.in_scope:
+            self.edited.add((layer_idx, kind))
+        return super().transform(layer_idx, kind, x)
+
+
+def read_logprob(inference: Any, make_patcher: Optional[Callable[[int, int], Any]], tokens: torch.Tensor,
+                 anchors: torch.Tensor, next_tokens: torch.Tensor, batch_size: int = EVAL_BATCH,
+                 per_seq: bool = False):
+    """Run ``tokens`` in batch_size chunks under make_patcher(start, stop) (None = the unedited model) and read
+    log p(next_tokens) at ``anchors`` from the output logits. Returns {"m": mean log-prob, "edited": sites ablated},
+    or the per-sequence tensor."""
+    vals = []
+    edited: Set[Site] = set()
+    inference.disable_compile()
+    try:
+        with torch.no_grad(), contextlib.redirect_stdout(io.StringIO()):
+            for s0 in range(0, int(tokens.shape[0]), batch_size):
+                tk = tokens[s0:s0 + batch_size]
+                B = int(tk.shape[0])
+                p = make_patcher(s0, s0 + B) if make_patcher is not None else None
+                out = inference.forward(tk, patcher=p, grad_enabled=False, all_logits=True, return_activations=False,
+                                        tokenize_final=False)
+                lg = out[1] if isinstance(out, (tuple, list)) else out
+                rr = torch.arange(B, device=lg.device)
+                anc = anchors[s0:s0 + B].to(lg.device).clamp(0, lg.shape[1] - 1)
+                lp = torch.log_softmax(lg[rr, anc].float(), dim=-1)
+                vals.append(lp[rr, next_tokens[s0:s0 + B].to(lg.device).long()].float())
+                edited |= getattr(p, "edited", set())
+    finally:
+        inference.enable_compile()
+    vals = torch.cat(vals)
+    if per_seq:
+        return vals
+    return {"m": float(vals.mean()), "edited": edited}
+
+
+@torch.no_grad()
+def score_output(
+    inference: Any,
+    bank: Any,
+    circuit: Any,
+    probe: Any,
+    contrast_tokens: Optional[torch.Tensor] = None,
+    *,
+    split: str = "explicit",
+    batch_size: int = EVAL_BATCH,
+    n_seq: int = N_SEQ,
+    min_pos: int = MIN_POS,
+    topk: Optional[int] = None,
+    alphas: Optional[Alphas] = None,
+    scope: str = "upstream",
+    holdout_frac: float = HOLDOUT_FRAC,
+) -> Dict[str, Any]:
+    """Score one circuit on the OUTPUT endpoint (experiment 080); same contexts, split, ablation values, fills and
+    patchers as score_circuit, read as m = mean log p(actual next token) at the held-out anchors.
+
+      out_<pi>         output faithfulness (m(C) - m(empty)) / (m(full) - m(empty)), unclipped, for pi in Z (zero fill),
+                       A (sparsity-preserving mean over the reference contexts), C (sparsity-preserving mean over the
+                       training contrast contexts): out_free0 / out_freeM_topk / out_freeN_topk. Members at alpha x
+                       their live value, every other latent at every in-scope site at the fill, SAE errors preserved;
+                       sites outside the scope (scope="upstream": the target's site and everything after it) run live.
+                       None unless m(empty) < m(full) (the latent scorer's guard).
+      out_free0_a1     Z with every member at alpha = 1
+      out_phi_sup_blind  output necessity (m(full) - m(full without the members)) / (m(full) - m(empty, Z)): the
+                       members SET to 0 in the otherwise-live model
+      out_vacuous      |m(full) - m(empty, Z)| < OUT_VACUOUS_NATS (exclude from pass rates, as is_vacuous)
+    Raw means are out_full / out_e0 / out_eM_topk / out_eN_topk and out_<name>_raw. Members at sites outside the scope
+    are dropped (counted in out_n_out_of_scope). Returns a skip row {seed, skip, ...} like score_circuit."""
+    ts = time.time()
+    seed = seed_of(circuit)
+    sf = seed.metadata["feature_id"]
+    layer, kind = sf.layer, sf.kind
+    key = "%d.%s.%d" % (layer, kind, sf.index)
+    K = int(bank.k) if topk is None else int(topk)
+    UPS = scope_sites(bank, layer, kind, scope)
+    alphas_all = circuit_alphas(circuit) if alphas is None else alphas
+    alphas = {s: d for s, d in alphas_all.items() if s in UPS and d}
+    n_mem = sum(len(d) for d in alphas.values())
+    n_oos = sum(len(d) for s, d in alphas_all.items() if s not in UPS)
+    n_pos = 0 if probe is None else int(probe.pos_tokens.shape[0])
+    if n_pos < min_pos:
+        return dict(seed=key, skip="thin_probes", n=n_mem, n_pos=n_pos)
+    pt, pa = probe.pos_tokens[:n_seq], probe.pos_argmax[:n_seq]
+    nt = (probe.neg_tokens if contrast_tokens is None else contrast_tokens)[:n_seq]
+    n_pos, n_neg = int(pt.shape[0]), int(nt.shape[0])
+    if n_neg < 2:
+        return dict(seed=key, skip="no_negatives", n=n_mem, n_pos=n_pos, n_neg=n_neg)
+    nx = next_tokens_at(probe, pa, n_pos)
+    n_tr = eval_split(n_pos, probe.metadata, split, holdout_frac)
+    n_ntr = contrast_split(n_neg, probe.metadata, holdout_frac, own=contrast_tokens is None)
+    pt_tr, pa_tr, pt_ho, pa_ho, nx_ho = pt[:n_tr], pa[:n_tr], pt[n_tr:], pa[n_tr:], nx[n_tr:]
+    nt_tr = nt[:n_ntr]
+    dev = pt.device
+    D = int(bank.d_sae)
+    msets = {s: torch.tensor(sorted(d), device=dev, dtype=torch.long) for s, d in alphas.items()}
+    keep = {s: set(d) for s, d in alphas.items()}
+    scales = {}
+    for s, v in msets.items():
+        sv = torch.ones(D, device=dev, dtype=torch.float32)
+        sv[v] = torch.tensor([alphas[s][int(i)] for i in v.tolist()], device=dev, dtype=torch.float32)
+        scales[s] = sv
+
+    def co(keep_, means=None, fill_topk=False, use_scales=True):
+        """Circuit-only run on the held-out contexts, read at the output (see score_circuit's co)."""
+        kt = {s: msets[s] for s in keep_}
+        ks = scales if (use_scales and keep_) else None
+        return read_logprob(inference, lambda a, b: EditTrackingCircuitOnly(
+            bank=bank, keep_indices=keep_, in_scope=UPS, seed_layer=-1, seed_kind="", seed_latent_idx=0,
+            pos_argmax=pa_ho[a:b], site_means=means, respect_topk=fill_topk, topk=K, keep_tensors=kt,
+            keep_scales=ks), pt_ho, pa_ho, nx_ho, batch_size)
+
+    # ablation values exactly as score_circuit: A means over the reference (train) activating rows, C means over the
+    # training contrast rows
+    means_tr, _ = collect_site_anchors(inference, bank, pt_tr, UPS, pa_tr, pin_position_specific=False)
+    means_neg = collect_site_means(inference, bank, nt_tr, UPS) if UPS else {}
+    full = read_logprob(inference, None, pt_ho, pa_ho, nx_ho, batch_size)["m"]
+    e0_run = co({})
+    E = {"e0": e0_run["m"], "eM_topk": co({}, means_tr, True)["m"], "eN_topk": co({}, means_neg, True)["m"]}
+
+    row: Dict[str, Any] = dict(seed=key, layer=layer, kind=kind, n=n_mem, out_scope=scope, out_full=full,
+                               out_den=full - E["e0"], out_vacuous=output_vacuous(full, E["e0"]))
+    for k_, v in E.items():
+        row["out_" + k_] = v
+    for name, mm, tk_, ek in (("out_free0", None, False, "e0"), ("out_freeM_topk", means_tr, True, "eM_topk"),
+                              ("out_freeN_topk", means_neg, True, "eN_topk")):
+        r = co(keep, mm, tk_) if keep else {"m": E[ek], "edited": e0_run["edited"]}
+        row[name + "_raw"] = r["m"]
+        row[name] = ratio(r["m"], E[ek], full)
+        if name == "out_free0":
+            row["out_all_sites_ablated"] = bool(r["edited"] == UPS)
+    r = co(keep, use_scales=False)["m"] if keep else E["e0"]
+    row["out_free0_a1_raw"] = r
+    row["out_free0_a1"] = ratio(r, E["e0"], full)
+    # necessity: every member SET to 0 in the otherwise-live model (CounterfactualInterventionPatcher, SAE error kept)
+    if keep:
+        r = read_logprob(inference, lambda a, b: CounterfactualInterventionPatcher(
+            bank=bank, activator_targets={}, inhibitor_indices=keep, seed_layer=-1, seed_kind="",
+            seed_latent_idx=0, pos_argmax=pa_ho[a:b]), pt_ho, pa_ho, nx_ho, batch_size)["m"]
+    else:
+        r = full
+    row["out_phi_sup_blind_raw"] = r
+    row["out_phi_sup_blind"] = necessity(r, full, E["e0"])
+    row.update(out_n_out_of_scope=n_oos, out_n_scope_sites=len(UPS), out_n_train=n_tr, out_n_ho=n_pos - n_tr,
+               out_n_neg_train=n_ntr, out_secs=round(time.time() - ts, 1), out_v=1)
+    return row
+
+
+def passes_output(row: Mapping[str, Any], band: Tuple[float, float] = BAND, nec_min: float = NEC_MIN) -> bool:
+    """The DAN-8 rule on the output endpoint: output Z, A, C all in ``band`` AND output necessity >= nec_min; a missing
+    score fails. Apply to rows with out_vacuous excluded."""
+    for f in OUT_FAITH:
+        v = _num(row.get(f))
+        if v is None or not band[0] <= v <= band[1]:
+            return False
+    nec = _num(row.get(OUT_NECESSITY))
+    return nec is not None and nec >= nec_min
+
+
+# ----------------------------------------------------------------------------------------------- task endpoint
+# Experiment 081 (2026-10-19): the output-endpoint scorer for TASK circuits (greater-than, agreement, IOI, ...), whose
+# endpoint is a task METRIC read at each prompt's anchor rather than log p of one next token, and whose circuits have
+# no target latent (every SAE site is in scope by default). Same patchers, fills and ratio forms as score_output;
+# additive: nothing above changes.
+#   metric kinds (higher = more correct; good / bad are [N] token ids or [N, K] sets padded with -1)
+#     logit_diff     logit(good) - logit(bad) (= log p(good) - log p(bad); SFC / IOI / agreement)
+#     logprob        log p(good) (bad unused)
+#     set_logmass    log P(good set) - log P(bad set) (the engine's logit_metric="set" endpoint)
+#     set_probdiff   P(good set) - P(bad set) (greater-than's probability difference, Hanna et al. 2023)
+#     seq_diff       (2026-10-21) MULTI-TOKEN answers, teacher-forced: rows come in (good, bad) pairs, each row =
+#                    prompt + its answer[:-1], good = the row's answer tokens [N, L] (-1 padded), anchor = the prompt's
+#                    last position; per pair log p(good seq) - log p(bad seq), log p(seq) = sum_k log p(a_k | prompt,
+#                    a_<k) (the engine's logit_metric="seq"). Values, accuracies and ratios are per PAIR (item).
+TASK_METRICS = ("logit_diff", "logprob", "set_logmass", "set_probdiff", "seq_diff")
+TASK_FAITH = ("free0", "freeM_topk", "freeN_topk")              # Z, A (sparsity-preserving), C (sparsity-preserving)
+TASK_NECESSITY = "nec"
+
+
+def _token_sets(tok: torch.Tensor) -> torch.Tensor:
+    """[N] ids -> [N, 1]; [N, K] sets (padded with -1) unchanged."""
+    tok = torch.as_tensor(tok).long()
+    return tok[:, None] if tok.dim() == 1 else tok
+
+
+def _logmass(lp: torch.Tensor, tok: torch.Tensor) -> torch.Tensor:
+    t = _token_sets(tok).to(lp.device)
+    g = lp.gather(1, t.clamp(min=0))
+    return torch.logsumexp(g.masked_fill(t < 0, float("-inf")), dim=1)
+
+
+def task_metric(lp: torch.Tensor, kind: str, good: torch.Tensor, bad: Optional[torch.Tensor] = None) -> torch.Tensor:
+    """Per-row task metric [N] from log-probs at the anchor, lp [N, V] (log_softmax of the anchor logits)."""
+    if kind not in TASK_METRICS:
+        raise ValueError("metric kind must be one of %s, got %r" % (TASK_METRICS, kind))
+    if kind == "seq_diff":
+        raise ValueError("seq_diff is read from teacher-forced answer positions, not from anchor log-probs: use "
+                         "read_rows(..., answers) and pair_diff")
+    lp = lp.float()
+    if kind == "logprob":
+        return _logmass(lp, good)
+    if bad is None:
+        raise ValueError("metric %r needs the bad (contrast) tokens" % kind)
+    if kind in ("logit_diff", "set_logmass"):
+        return _logmass(lp, good) - _logmass(lp, bad)
+    return _logmass(lp, good).exp() - _logmass(lp, bad).exp()          # set_probdiff
+
+
+def task_correct(lp: torch.Tensor, kind: str, good: torch.Tensor, bad: Optional[torch.Tensor] = None) -> torch.Tensor:
+    """Per-row correctness [N] bool: the metric is > 0 for the contrastive kinds; for "logprob", the argmax token is in
+    the good set."""
+    if kind == "logprob":
+        g = _token_sets(good).to(lp.device)
+        return (g == lp.argmax(dim=1, keepdim=True)).any(dim=1)
+    return task_metric(lp, kind, good, bad) > 0
+
+
+def task_top1(lp: torch.Tensor, good: torch.Tensor) -> torch.Tensor:
+    """Per-row: the model's argmax token is in the good set."""
+    g = _token_sets(good).to(lp.device)
+    return (g == lp.argmax(dim=1, keepdim=True)).any(dim=1)
+
+
+def answer_logprob(logits: torch.Tensor, anchors: torch.Tensor, answers: torch.Tensor) -> torch.Tensor:
+    """Teacher-forced log p(answer) per row: sum_k log p(a_k | prompt, a_<k) read at positions anchor + k of rows
+    whose tokens are prompt + answer[:-1]; answers [B, L] padded with -1 -> [B] (float32)."""
+    B, T = int(logits.shape[0]), int(logits.shape[1])
+    a = torch.as_tensor(answers)[:B].to(logits.device).long()
+    L = int(a.shape[1])
+    pos = anchors[:B].to(logits.device).long()[:, None] + torch.arange(L, device=logits.device)[None, :]
+    ok = (a >= 0) & (pos < T)
+    lg = logits[torch.arange(B, device=logits.device)[:, None], pos.clamp(max=T - 1)].float()
+    lp = torch.log_softmax(lg, dim=-1).gather(2, a.clamp(min=0)[..., None])[..., 0]
+    return (lp * ok).sum(dim=1)
+
+
+def pair_diff(v: torch.Tensor) -> torch.Tensor:
+    """Per-row values of (good, bad) row pairs -> per-pair good - bad."""
+    if int(v.shape[0]) % 2:
+        raise ValueError("pair_diff needs (good, bad) row pairs (an even number of rows)")
+    return v[0::2] - v[1::2]
+
+
+def read_rows(inference: Any, make_patcher: Optional[Callable[[int, int], Any]], tokens: torch.Tensor,
+              anchors: torch.Tensor, answers: Optional[torch.Tensor] = None,
+              batch_size: int = EVAL_BATCH) -> Tuple[torch.Tensor, Optional[torch.Tensor], Set[Site]]:
+    """read_anchor_logprobs plus, when ``answers`` [N, L] are given, each row's teacher-forced answer log-prob [N]
+    from the SAME forward (answer_logprob). Returns (anchor log-probs [N, V], answer log-probs or None, edited)."""
+    out, seqs = [], []
+    edited: Set[Site] = set()
+    inference.disable_compile()
+    try:
+        with torch.no_grad(), contextlib.redirect_stdout(io.StringIO()):
+            for s0 in range(0, int(tokens.shape[0]), batch_size):
+                tk = tokens[s0:s0 + batch_size]
+                B = int(tk.shape[0])
+                p = make_patcher(s0, s0 + B) if make_patcher is not None else None
+                o = inference.forward(tk, patcher=p, grad_enabled=False, all_logits=True, return_activations=False,
+                                      tokenize_final=False)
+                lg = o[1] if isinstance(o, (tuple, list)) else o
+                rr = torch.arange(B, device=lg.device)
+                anc = anchors[s0:s0 + B].to(lg.device).clamp(0, lg.shape[1] - 1)
+                out.append(torch.log_softmax(lg[rr, anc].float(), dim=-1).cpu())
+                if answers is not None:
+                    seqs.append(answer_logprob(lg, anchors[s0:s0 + B], answers[s0:s0 + B]).cpu())
+                edited |= getattr(p, "edited", set())
+    finally:
+        inference.enable_compile()
+    return torch.cat(out, 0), (torch.cat(seqs, 0) if answers is not None else None), edited
+
+
+def read_anchor_logprobs(inference: Any, make_patcher: Optional[Callable[[int, int], Any]], tokens: torch.Tensor,
+                         anchors: torch.Tensor, batch_size: int = EVAL_BATCH) -> Tuple[torch.Tensor, Set[Site]]:
+    """Run ``tokens`` in batch_size chunks under make_patcher(start, stop) (None = the unedited model); return the
+    log-probs at each row's anchor [N, V] (float32, CPU) and the sites the patchers ablated."""
+    out = []
+    edited: Set[Site] = set()
+    inference.disable_compile()
+    try:
+        with torch.no_grad(), contextlib.redirect_stdout(io.StringIO()):
+            for s0 in range(0, int(tokens.shape[0]), batch_size):
+                tk = tokens[s0:s0 + batch_size]
+                B = int(tk.shape[0])
+                p = make_patcher(s0, s0 + B) if make_patcher is not None else None
+                o = inference.forward(tk, patcher=p, grad_enabled=False, all_logits=True, return_activations=False,
+                                      tokenize_final=False)
+                lg = o[1] if isinstance(o, (tuple, list)) else o
+                rr = torch.arange(B, device=lg.device)
+                anc = anchors[s0:s0 + B].to(lg.device).clamp(0, lg.shape[1] - 1)
+                out.append(torch.log_softmax(lg[rr, anc].float(), dim=-1).cpu())
+                edited |= getattr(p, "edited", set())
+    finally:
+        inference.enable_compile()
+    return torch.cat(out, 0), edited
+
+
+@torch.no_grad()
+def score_task(
+    inference: Any,
+    bank: Any,
+    alphas: Alphas,
+    tokens: torch.Tensor,
+    anchors: torch.Tensor,
+    n_train: int,
+    cf_tokens: torch.Tensor,
+    metrics: Mapping[str, Tuple[str, torch.Tensor, Optional[torch.Tensor]]],
+    *,
+    valid: Optional[torch.Tensor] = None,
+    cf_valid: Optional[torch.Tensor] = None,
+    sites: Optional[Set[Site]] = None,
+    batch_size: int = EVAL_BATCH,
+    topk: Optional[int] = None,
+    vacuous_abs: Optional[Mapping[str, float]] = None,
+    means_A: Optional[Dict[Site, torch.Tensor]] = None,
+    means_C: Optional[Dict[Site, torch.Tensor]] = None,
+) -> Dict[str, Any]:
+    """Score one task circuit (experiment 081) on the held-out prompts, ALWAYS with its coefficients applied.
+
+      alphas     {site: {latent: alpha}} (alpha 1 everywhere for an unweighted circuit)
+      tokens     [N, T] right-padded prompts, the first n_train rows the training (reference) prompts, the rest held
+                 out; anchors [N] = each prompt's prediction position (its last real token)
+      cf_tokens  the counterfactual prompts of the TRAINING rows: the C ablation value is their mean
+      metrics    {name: (kind, good [N] or [N, K], bad or None)} over all N rows (sliced to the held-out rows here);
+                 every name's fields are written with that prefix
+      valid, cf_valid   [N, T] / [N_cf, T] masks of real tokens: the A and C means average over them only (None = every
+                 position)
+      sites      the ablation scope (default every SAE site: the output is the endpoint, as in SFC)
+      vacuous_abs  {name: threshold}: <name>_vacuous when |m(full) - m(empty, Z)| is below it (default
+                 OUT_VACUOUS_NATS, 0.1; give probability-unit metrics their own)
+      means_A, means_C  {site: [d_sae]} precomputed A / C ablation values (2026-10-21: 081 averages them over a whole
+                 training / contrast pool once per task); None (default) = collected here from the first n_train rows
+                 / cf_tokens, unchanged
+    Each frame's [n_ho, V] log-probs are reduced to per-item values as soon as they are read, so memory holds one
+    frame, not nine, for large held-out sets; the numbers are unchanged.
+    Per metric name m: m_full, m_e0, m_eM_topk, m_eN_topk, m_den, m_vacuous; faithfulness m_free0 / m_freeM_topk /
+    m_freeN_topk ((m(C) - m(empty)) / (m(full) - m(empty)), unclipped, None unless m(empty) < m(full)) with _raw
+    means; m_free0_a1 (Z with every member at alpha = 1); m_nec = (m(full) - m(members set to 0, live)) /
+    (m(full) - m(empty, Z)); accuracies m_acc_<frame> (share of held-out prompts with metric > 0) for full, e0 and the
+    three circuit runs. Top level: n, per_site, n_ho, n_train, n_cf, all_sites_ablated, secs."""
+    ts = time.time()
+    K = int(bank.k) if topk is None else int(topk)
+    if sites is None:
+        sites = scope_sites(bank, 0, list(bank.kinds)[0], "all")
+    UPS = set(sites)
+    alphas = {s: d for s, d in alphas.items() if d}
+    n_oos = sum(len(d) for s, d in alphas.items() if s not in UPS)
+    alphas = {s: d for s, d in alphas.items() if s in UPS}
+    n_mem = sum(len(d) for d in alphas.values())
+    N = int(tokens.shape[0])
+    if not 0 < int(n_train) < N:
+        raise ValueError("score_task needs both training and held-out rows (n_train %d, N %d)" % (n_train, N))
+    if int(cf_tokens.shape[0]) < 1:
+        raise ValueError("score_task needs counterfactual prompts for the C ablation")
+    n_tr = int(n_train)
+    pt_tr, pa_tr, pt_ho, pa_ho = tokens[:n_tr], anchors[:n_tr], tokens[n_tr:], anchors[n_tr:]
+    # multi-token answers (seq_diff): every seq metric reads the same teacher-forced rows
+    seq_ans = [torch.as_tensor(g).long() for k_, g, _ in metrics.values() if k_ == "seq_diff"]
+    if seq_ans:
+        if n_tr % 2 or N % 2:
+            raise ValueError("seq_diff metrics need (good, bad) row pairs: even n_train and N (got %d, %d)"
+                             % (n_tr, N))
+        if any(not torch.equal(a, seq_ans[0]) for a in seq_ans[1:]):
+            raise ValueError("every seq_diff metric must use the same answer rows")
+    ans_ho = seq_ans[0][n_tr:] if seq_ans else None
+    dev = tokens.device
+    D = int(bank.d_sae)
+    msets = {s: torch.tensor(sorted(d), device=dev, dtype=torch.long) for s, d in alphas.items()}
+    keep = {s: set(d) for s, d in alphas.items()}
+    scales = {}
+    for s, v in msets.items():
+        sv = torch.ones(D, device=dev, dtype=torch.float32)
+        sv[v] = torch.tensor([alphas[s][int(i)] for i in v.tolist()], device=dev, dtype=torch.float32)
+        scales[s] = sv
+
+    sets_ho = {m: (k_, _token_sets(g)[n_tr:], None if b is None else _token_sets(b)[n_tr:])
+               for m, (k_, g, b) in metrics.items()}
+
+    def reduce(lp_, sq_):
+        """One frame's per-item (metric values, correctness, top-1 or None) per metric name; the [n_ho, V] log-probs
+        are dropped after this."""
+        out = {}
+        for m, (k_, g_ho, b_ho) in sets_ho.items():
+            if k_ == "seq_diff":
+                d = pair_diff(sq_)
+                out[m] = (d, d > 0, None)
+            else:
+                out[m] = (task_metric(lp_, k_, g_ho, b_ho), task_correct(lp_, k_, g_ho, b_ho), task_top1(lp_, g_ho))
+        return out
+
+    def rd(make):
+        """One frame on the held-out rows, reduced (see reduce), and the sites edited."""
+        lp_, sq_, ed_ = read_rows(inference, make, pt_ho, pa_ho, ans_ho, batch_size)
+        return reduce(lp_, sq_), ed_
+
+    def co(keep_, means=None, fill_topk=False, use_scales=True):
+        kt = {s: msets[s] for s in keep_}
+        ks = scales if (use_scales and keep_) else None
+        return rd(lambda a, b: EditTrackingCircuitOnly(
+            bank=bank, keep_indices=keep_, in_scope=UPS, seed_layer=-1, seed_kind="", seed_latent_idx=0,
+            pos_argmax=pa_ho[a:b], site_means=means, respect_topk=fill_topk, topk=K, keep_tensors=kt,
+            keep_scales=ks))
+
+    # ablation values: A = mean over the training (reference) prompts, C = mean over the counterfactual prompts, each
+    # over the real-token positions only when masks are given
+    va = {} if valid is None else dict(valid=valid[:n_tr])
+    vc = {} if cf_valid is None else dict(valid=cf_valid)
+    means_tr = collect_site_means(inference, bank, pt_tr, UPS, **va) if means_A is None else means_A
+    means_cf = collect_site_means(inference, bank, cf_tokens, UPS, **vc) if means_C is None else means_C
+    for nm_, mm_ in (("means_A", means_tr), ("means_C", means_cf)):
+        if UPS - set(mm_):
+            raise ValueError("%s lacks sites %s" % (nm_, sorted(UPS - set(mm_))))
+    lp = {"full": rd(None)[0]}
+    lp["e0"], edited_e0 = co({})
+    lp["eM_topk"] = co({}, means_tr, True)[0]
+    lp["eN_topk"] = co({}, means_cf, True)[0]
+    edited = edited_e0
+    for name, mm, tk_ in (("free0", None, False), ("freeM_topk", means_tr, True), ("freeN_topk", means_cf, True)):
+        if keep:
+            lp[name], ed = co(keep, mm, tk_)
+            if name == "free0":
+                edited = ed
+        else:
+            lp[name] = lp[{"free0": "e0", "freeM_topk": "eM_topk", "freeN_topk": "eN_topk"}[name]]
+    lp["free0_a1"] = co(keep, use_scales=False)[0] if keep else lp["e0"]
+    if keep:
+        lp["nec"] = rd(lambda a, b: CounterfactualInterventionPatcher(
+            bank=bank, activator_targets={}, inhibitor_indices=keep, seed_layer=-1, seed_kind="", seed_latent_idx=0,
+            pos_argmax=pa_ho[a:b]))[0]
+    else:
+        lp["nec"] = lp["full"]
+
+    per_kind: Dict[str, int] = defaultdict(int)
+    for s, d in alphas.items():
+        per_kind[s[1]] += len(d)
+    amps = np.array([a for d in alphas.values() for a in d.values()]) if n_mem else np.array([1.0])
+    row: Dict[str, Any] = dict(n=n_mem, n_out_of_scope=n_oos, n_sites_scope=len(UPS), n_member_sites=len(msets),
+                               per_kind=dict(per_kind), n_train=n_tr, n_ho=N - n_tr, n_cf=int(cf_tokens.shape[0]),
+                               all_sites_ablated=bool(edited == UPS), alpha_median=float(np.median(amps)),
+                               alpha_p10=float(np.percentile(amps, 10)), alpha_p90=float(np.percentile(amps, 90)))
+    for mname, (kind, g_ho, b_ho) in sets_ho.items():
+        vc_ = {f: v[mname] for f, v in lp.items()}
+        val = {f: float(v[0].mean()) for f, v in vc_.items()}
+        acc = {f: float(v[1].float().mean()) for f, v in vc_.items()}
+        full, e0 = val["full"], val["e0"]
+        thr = (vacuous_abs or {}).get(mname, OUT_VACUOUS_NATS)
+        row.update({"%s_kind" % mname: kind, "%s_full" % mname: full, "%s_e0" % mname: e0,
+                    "%s_eM_topk" % mname: val["eM_topk"], "%s_eN_topk" % mname: val["eN_topk"],
+                    "%s_den" % mname: full - e0, "%s_vacuous" % mname: bool(abs(full - e0) < thr)})
+        for f, ek in (("free0", "e0"), ("freeM_topk", "eM_topk"), ("freeN_topk", "eN_topk")):
+            row["%s_%s_raw" % (mname, f)] = val[f]
+            row["%s_%s" % (mname, f)] = ratio(val[f], val[ek], full)
+        row["%s_free0_a1_raw" % mname] = val["free0_a1"]
+        row["%s_free0_a1" % mname] = ratio(val["free0_a1"], e0, full)
+        row["%s_nec_raw" % mname] = val["nec"]
+        row["%s_nec" % mname] = necessity(val["nec"], full, e0)
+        for f in ("full", "e0", "free0", "freeM_topk", "freeN_topk", "free0_a1"):
+            row["%s_acc_%s" % (mname, f)] = acc[f]
+        if kind == "seq_diff":                    # no single next token to be top-1 for a multi-token answer
+            row["%s_top1_full" % mname] = row["%s_top1_free0" % mname] = None
+            row["%s_n_items" % mname] = int(g_ho.shape[0]) // 2
+        else:
+            row["%s_top1_full" % mname] = float(vc_["full"][2].float().mean())
+            row["%s_top1_free0" % mname] = float(vc_["free0"][2].float().mean())
+        row["%s_pass" % mname] = passes_task(row, mname)
+    row["secs"] = round(time.time() - ts, 1)
+    return row
+
+
+def passes_task(row: Mapping[str, Any], prefix: str = "task", band: Tuple[float, float] = BAND,
+                nec_min: float = NEC_MIN) -> bool:
+    """The DAN-8 rule on a task metric: <prefix>_free0 / _freeM_topk / _freeN_topk all in ``band`` AND <prefix>_nec
+    >= nec_min; a missing score fails. Apply to rows with <prefix>_vacuous excluded."""
+    for f in TASK_FAITH:
+        v = _num(row.get("%s_%s" % (prefix, f)))
+        if v is None or not band[0] <= v <= band[1]:
+            return False
+    nec = _num(row.get("%s_%s" % (prefix, TASK_NECESSITY)))
+    return nec is not None and nec >= nec_min
+
+
 def neg_ctx_store_fallback(neg_ctx: Any, comp: int, latent: int) -> bool:
     """True when the target's neg_ctx store row is the shared zero-similarity fallback list (DAN-64): the run's
     ``ctr_fallback`` provenance field."""
@@ -635,4 +1174,11 @@ def pass_summary(rows: Iterable[Mapping[str, Any]], read: str = "tk", **rule: An
 __all__ = ["score_circuit", "read_target", "eval_split", "split_n", "frac", "ratio", "necessity", "vacuous",
            "circuit_alphas", "circuit_key", "seed_of", "site_encoder", "neg_ctx_store_fallback", "passes",
            "is_vacuous", "worst_deviation", "pass_summary", "faith_fields", "BAND", "NEC_MIN", "FAITH", "NECESSITY",
-           "INDUCE", "READS", "SPLITS", "TIMING_FIELDS"]
+           "INDUCE", "READS", "SPLITS", "TIMING_FIELDS",
+           # output endpoint (experiment 080)
+           "score_output", "passes_output", "read_logprob", "output_vacuous", "next_tokens_at", "scope_sites",
+           "OUT_FAITH", "OUT_NECESSITY", "OUT_VACUOUS_NATS", "OUT_SCOPES",
+           # task endpoint (experiment 081)
+           "score_task", "passes_task", "task_metric", "task_correct", "task_top1", "read_anchor_logprobs",
+           "read_rows", "answer_logprob", "pair_diff",
+           "TASK_METRICS", "TASK_FAITH", "TASK_NECESSITY"]

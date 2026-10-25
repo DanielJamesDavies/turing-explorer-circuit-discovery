@@ -1,0 +1,5 @@
+2.attn.34021 2.attn.37184 2.attn.12054 2.attn.26643 2.mlp.31672 2.mlp.30287 2.mlp.26898 2.mlp.4441
+2.resid.7349 2.resid.21495 2.resid.29259 2.resid.23742 6.attn.35411 6.attn.18903 6.attn.31790 6.attn.1562
+6.mlp.209 6.mlp.15496 6.mlp.40351 6.mlp.1366 6.resid.35910 6.resid.6209 6.resid.20376 6.resid.32168
+10.attn.39376 10.attn.7776 10.attn.34849 10.attn.16498 10.mlp.23465 10.mlp.14251 10.mlp.40539 10.mlp.13054
+10.resid.8194 10.resid.38616 10.resid.23761 10.resid.28967 5.resid.15883 5.resid.34074 5.resid.38375 5.resid.37507

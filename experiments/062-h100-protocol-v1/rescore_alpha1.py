@@ -6,7 +6,10 @@ Sample: stratified, N_PER (50) targets per (layer, site kind), drawn with a fixe
 circuit. Resumable: one jsonl row per target in OUT_A1/alpha1.jsonl.
 
   OUT=experiments/062-h100-protocol-v1/out_full/out PYTHONPATH=src python experiments/062-h100-protocol-v1/rescore_alpha1.py
-  env: N_PER (50)  OUT_A1 (default experiments/062-h100-protocol-v1/out_alpha1)
+  env: N_PER (50)  OUT_A1 (default experiments/062-h100-protocol-v1/out_alpha1)  REPORT=1 (summary; no GPU)
+       A1_TARGETS (a target list used as given instead of the stratified sample; those without a circuit are skipped)
+       SHARD=i/k (keys[i::k]; rows to alpha1.shard<i>.jsonl when k > 1)
+       FAMILY / DATA / STORES as driver.py (scored through driver.Runner.score with alphas = 1)
 """
 import json
 import os
@@ -26,10 +29,14 @@ import driver  # noqa: E402  (reads OUT at import)
 
 N_PER = int(os.environ.get("N_PER", 50))
 OUT_A1 = Path(os.environ.get("OUT_A1", str(HERE / "out_alpha1")))
+A1_TARGETS = os.environ.get("A1_TARGETS")
 
 
 def sample():
     have = sorted(p.stem for p in (driver.OUT / "main" / "circuits").glob("*.pt"))
+    if A1_TARGETS:
+        hs = set(have)
+        return [k for k in Path(A1_TARGETS).read_text().split() if k in hs]
     cells = defaultdict(list)
     for k in have:
         l, kind, _ = k.split(".")
@@ -56,16 +63,16 @@ def ones(c):
 
 def main():
     OUT_A1.mkdir(parents=True, exist_ok=True)
-    path = OUT_A1 / "alpha1.jsonl"
+    path = driver.shard_jsonl(OUT_A1, "alpha1")
     done = set()
-    if path.exists():
-        for line in open(path):
-            try:
-                done.add(json.loads(line)["seed"])
-            except Exception:  # noqa: BLE001
-                pass
-    keys = [k for k in sample() if k not in done]
-    print("alpha = 1 re-scoring: %d targets to do (%d done)" % (len(keys), len(done)), flush=True)
+    for r in driver.read_jsonl_all(OUT_A1, "alpha1"):
+        try:
+            done.add(r["seed"])
+        except Exception:  # noqa: BLE001
+            pass
+    keys = [k for k in sample()[driver.SHARD_I::driver.SHARD_K] if k not in done]
+    print("alpha = 1 re-scoring: %d targets to do (%d done; shard %d/%d)" % (
+        len(keys), len(done), driver.SHARD_I, driver.SHARD_K), flush=True)
     R = driver.Runner()
     fh = open(path, "a")
     t0 = time.time()
@@ -77,8 +84,7 @@ def main():
                 row["skip"] = "rejected"
             else:
                 rec = R.contexts(key)
-                R.H.patch_eval_contexts(R.G, rec, "strong")
-                r = R.V.score_circuit(c, {}, override_alphas=ones(c), skip_roles=True)
+                r = R.score(c, rec, "strong", alphas=ones(c))
                 row.update({k: v for k, v in r.items() if isinstance(v, (int, float, str, bool)) or v is None})
                 row["held"] = "strong"
         except Exception as e:  # noqa: BLE001
@@ -105,7 +111,7 @@ def report():
         inb = ((df[HEAD] >= 0.8) & (df[HEAD] <= 1.5)).all(axis=1)
         return inb & (df.phi_sup_blind_tk >= 0.9)
 
-    a1 = pd.DataFrame([json.loads(l) for l in open(OUT_A1 / "alpha1.jsonl")])
+    a1 = pd.DataFrame(driver.read_jsonl_all(OUT_A1, "alpha1"))
     a1 = a1[a1.get("error", pd.Series(index=a1.index, dtype=object)).isna()]
     a1 = a1[a1.get("skip", pd.Series(index=a1.index, dtype=object)).isna()].drop_duplicates("seed", keep="last")
     ev = []

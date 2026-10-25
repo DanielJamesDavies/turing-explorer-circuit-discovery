@@ -1,0 +1,10 @@
+{
+ "note": "SMOKE ONLY (smoke.sh): 12 steps at lr 0.5 so that something prunes in a few steps, 2 random draws. Not a calibrated setting; the main run reads config_main.json, written by calibrate.py ADOPT=1.",
+ "arms": {
+  "W": {"lams": [0.001, 0.01], "lr": 0.5},
+  "U": {"lams": [0.0001, 0.001], "lr": 0.5}
+ },
+ "logit_norm": "gap",
+ "steps": 12,
+ "n_draws": 2
+}

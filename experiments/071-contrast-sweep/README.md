@@ -255,9 +255,12 @@ wsl -e bash -lc 'cd "/mnt/x/Projects/AIs/Turing/Publication/3 Implementation/2" 
 
    ```bash
    cd /root/turing && D=experiments/071-contrast-sweep && mkdir -p $D/src_out && tar xzf /workspace/results/062-full-20260927-1924.tgz -C $D/src_out -T $D/members.txt && ls $D/src_out/out/ctx | wc -l && ls $D/src_out/out/main/circuits | wc -l
+   tar xzf /workspace/results/062-full-20260927-1924.tgz -C $D/src_out --wildcards 'out/main/eval.shard*.jsonl' && ls $D/src_out/out/main/eval.shard*.jsonl | wc -l
    ```
 
-   Expect 280 and 280. This decompresses the whole 1.9 GB tarball once.
+   Expect 280 and 280, then 48. Each command decompresses the whole 1.9 GB tarball once. The second extracts the
+   15k run's eval rows. The pod smoke's production re-score check needs them, and without them it is skipped
+   silently (2026-10-11 pod: it then matched bitwise, 0.0000 on every score).
 4. **Pod smoke** (1 GPU, ~12 min): 2 targets, all 4 arms, λ 1e-3, the full 3-set battery and the random baseline
    (all 4 arms) on 2.mlp.10238. This is where the production re-score check is binding (H100), and it gives the
    H100 timings for section 5.

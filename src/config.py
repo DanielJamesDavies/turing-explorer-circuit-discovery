@@ -876,6 +876,44 @@ class LearnedMaskConfig(BaseModel):
     # quiets it most. Requires keep_threshold=0.5 (hardens at theta=0; the
     # engine raises loudly otherwise).
     binarize: str = "anneal"          # none | ste | anneal
+    # OUTPUT ENDPOINT (2026-10-18, experiment 080; all three default-off).
+    # mask_objective: what the abl-mask hop reproduces. "pos" = the target
+    # latent's pre-activation (production, unchanged). "logit" = log p(the
+    # actual next token) at each anchor, against the full model's (engine
+    # objective "logit"); the hop reads the probe's target_tokens. rank_weight
+    # must be 0 for "logit" (rank-keep concerns the target's rank; the engine
+    # raises otherwise).
+    mask_objective: str = "pos"       # pos | logit
+    # logit only: which sites are maskable. "upstream" = the sites causally
+    # upstream of the target's site, exactly the latent circuit's scope; the
+    # target's site and everything after it run live. "all" = every site of
+    # the model, the target's own included (experiment 025's whole-model scope).
+    logit_scope: str = "upstream"     # upstream | all
+    # logit only: the data terms' shared scale (engine logit_norm). "none" =
+    # raw nats^2 (025); "gap" = mean (log p_full - log p_zero-empty)^2 over the
+    # training contexts, the analogue of pos's mean(target^2).
+    logit_norm: str = "none"          # none | gap
+
+    @field_validator("mask_objective")
+    @classmethod
+    def validate_mask_objective(cls, v: str) -> str:
+        if v not in ("pos", "logit"):
+            raise ValueError(f"mask_objective must be 'pos' or 'logit', got {v!r}")
+        return v
+
+    @field_validator("logit_scope")
+    @classmethod
+    def validate_logit_scope(cls, v: str) -> str:
+        if v not in ("upstream", "all"):
+            raise ValueError(f"logit_scope must be 'upstream' or 'all', got {v!r}")
+        return v
+
+    @field_validator("logit_norm")
+    @classmethod
+    def validate_logit_norm(cls, v: str) -> str:
+        if v not in ("none", "gap"):
+            raise ValueError(f"logit_norm must be 'none' or 'gap', got {v!r}")
+        return v
 
     @field_validator("steps")
     @classmethod

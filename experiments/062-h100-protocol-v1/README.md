@@ -17,6 +17,17 @@ The sweep reuses main's contexts, and main's circuits for its WCM λ = 1e-3 arm,
 - `merge.py`: summary, safe to run any time.
 - `make_targets.py`: target lists (already generated and committed).
 
+**Public models (DAN-40/41, 2026-10-23).** `driver.py` and its companions (`random_null.py`, `rescore_alpha1.py`,
+`stable_core.py`, `../073-strict-eval/strict_eval.py`) take `FAMILY=pythia-70m | gpt2-small` with `DATA` / `STORES`
+(the 069 data pass's shards and artefacts; default `data_public/<FAMILY>`, `outputs_public/<FAMILY>`). The default
+`FAMILY=turingllm` is the 15k run's path, unchanged (bitwise on 2 golden targets, fit + score + specificity + α = 1).
+A public family fits through the same `Runner.method` / `Runner.fit`, scores with `src/eval/wcm_eval.score_circuit`
+(`split="explicit"`, K = `bank.k`) and `src/eval/wcm_specificity`, TF32 on. `LAM` sets the main fit's λ (default 1e-3);
+`STEPS` the budget (smoke tests only). The companions shard like the driver (`SHARD=i/k`, per-shard row files when
+k > 1) and take pre-drawn lists as given: `random_null.py PRESELECTED=1 TARGETS=…`, `rescore_alpha1.py A1_TARGETS=…`,
+`stable_core.py SC_TARGETS=…`, `strict_eval.py TARGETS=… RAND_DIR=<random_null's OUT_RN>/circuits`. Tests:
+`test_062_family.py` (`RUN_062_E2E=1` adds the CPU end-to-end run on the local smoke stores).
+
 ## Timings (local smoke test, RTX 5070 Ti)
 
 Per target: contexts ~2 s (a one-off ~90 s cache warm-up on the first target), fit 23–43 s, eval 3–6 s,

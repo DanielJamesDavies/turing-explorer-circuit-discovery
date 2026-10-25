@@ -11,6 +11,7 @@ Writes OUT/geometry/contexts.csv (one row per context), OUT/geometry/summary.csv
   OUT=experiments/071-contrast-sweep/out_smoke2 PYTHONPATH=src python experiments/071-contrast-sweep/set_geometry.py
   env: PLOT=1 (figure only, from contexts.csv; no GPU)
 """
+import json
 import os
 import sys
 from pathlib import Path
@@ -37,8 +38,12 @@ def measure():
     sel = make_selector(G["inference"], G["bank"], G["M0"].probe_builder.loader)
     dev = sel._ranking_device()
     keys = sorted(p.stem for p in (OUT / "sets" / "close_silent").glob("*.pt"))
-    rows, summ = [], []
+    per = GEO / "per_target"                      # one json per target, so a stopped run resumes where it left off
+    per.mkdir(parents=True, exist_ok=True)
     for key in keys:
+        if (per / ("%s.json" % key)).exists():
+            continue
+        rows, summ = [], []
         l, k, i = key.split(".")
         comp = component_idx(int(l), G["KINDS"].index(k), G["NK"])
         ref, _ = sel.topctx_reference_reprs(comp, int(i))
@@ -67,8 +72,15 @@ def measure():
                              sim_p10=np.quantile(s_ok, .1), sim_p90=np.quantile(s_ok, .9), sim_min=s_ok.min(),
                              sim_max=s_ok.max(), sim_iqr=np.quantile(s_ok, .75) - np.quantile(s_ok, .25),
                              within_cos=div))
+        tmp = per / ("%s.json.tmp" % key)
+        tmp.write_text(json.dumps(dict(rows=rows, summ=summ), default=float))
+        tmp.replace(per / ("%s.json" % key))
         print("%-16s done" % key, flush=True)
-    GEO.mkdir(parents=True, exist_ok=True)
+    rows, summ = [], []
+    for p in sorted(per.glob("*.json")):
+        d = json.loads(p.read_text())
+        rows += d["rows"]
+        summ += d["summ"]
     pd.DataFrame(rows).to_csv(GEO / "contexts.csv", index=False)
     pd.DataFrame(summ).to_csv(GEO / "summary.csv", index=False)
 
@@ -112,7 +124,7 @@ def report_and_plot():
         a1.plot([x + 0.28, x + 0.38], [np.median(dv)] * 2, color=S.INK, lw=1.5)
     a1.set_xticks(range(len(order)), order)
     a1.set_ylabel("similarity to the target's top contexts")
-    a1.set_title("Each contrast context (8 targets, 64 per set)")
+    a1.set_title("Each contrast context (%d targets, 64 per set)" % c.seed.nunique())
     for x, name in enumerate(order):
         v = s[s.set == name].within_cos.values
         a2.scatter(np.full(len(v), x) + rng.uniform(-0.12, 0.12, len(v)), v, s=22, color=colors[name],

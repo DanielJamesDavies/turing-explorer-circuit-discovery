@@ -6,9 +6,10 @@ Where every irreplaceable artefact lives (DAN-6). Update this file whenever a ba
 
 | What | Primary | Second copy |
 |---|---|---|
-| Code, tracked experiment scripts and small results, `paper/` | this repo (`X:`) | GitHub `origin/multi-device` (NOT `main`, which is stale); last push `0b18c6e`, 2026-09-28 |
+| Code, tracked experiment scripts and small results, `paper/` | this repo (`X:`) | GitHub `origin/multi-device` (NOT `main`, which is stale); last push `505a9c1`, 2026-10-11 |
 | Everything below, snapshot of 2026-10-07 | `X:\Projects\AIs\Turing\Publication\3 Implementation\` | `G:\Paper Backup Files\2026-10-07\` (robocopy logs beside each folder) |
 | 15k protocol-v1 run (`experiments/062-h100-protocol-v1/out_full`) | `X:` | `G:` snapshot; also a tgz on the RunPod network volume, if that volume still exists |
+| DAN-64 contrast sweep (`experiments/071-contrast-sweep/out`, `logs`, `out_podsmoke`; 2026-10-11) | `X:` (extracted, plus the tgz beside it) | RunPod global volume `inland_copper_crab`: `/workspace/results/071-out-20261011-2044.tgz` (227 MB, md5 `77171b0b50286353a2f98eba10f10197`, verified on the volume and locally). Not yet on `G:` |
 
 ## The 2026-10-07 snapshot on G: (121 GB, 0 failed files)
 

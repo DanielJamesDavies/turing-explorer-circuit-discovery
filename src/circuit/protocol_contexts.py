@@ -14,8 +14,12 @@ One record per target, the value the run cached in out/ctx/<L.kind.i>.pt:
   B_mid    the mid-band training contexts: train_mid spread over mid-train (stratified_subset)
   neg      contrast_count close contrast contexts (verified silent), similarity-stratified: train first, held last
   neg_ids  their corpus ids, row-aligned (None when the selector did not return one id per row)
+  neg_held_v2 / neg_held_v2_ids   (086 rebuilt records only) the deduplicated contrast held-out rows; eval_probe then
+           scores on rec["neg"]'s contrast-train slice + these (eval_contrast); rec["neg"] and the fit are unchanged
 Skip records have strong = None: fewer than min_pool stored top contexts, or (no_contrast = True) fewer than
 min_contrast contrast contexts.
+build_record(..., group_split=GroupSplit(...)) (DAN-157, opt-in; the public-model path) replaces the per-row split with
+the group-aware one and applies the held-out rule (circuit/heldout_rule.py); without it the record is the 062 run's.
 
 Training set (arm B): D_train + B_mid. A thin target (no mid-band pool) falls back to all of strongest-train (arm A).
 Evaluation: strongest-train (the common A-ablation reference) followed by the chosen held-out set ("strong" | "mid").
@@ -27,10 +31,11 @@ slice is exactly the training set.
 
 from __future__ import annotations
 
-from collections import OrderedDict
+from collections import Counter, OrderedDict
+from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import torch
 
@@ -89,6 +94,28 @@ def _load(loader, ids: List[int]):
     return pos, tgt, got
 
 
+def target_activations(inference, bank, layer: int, kind_idx: int, kind: str, latent: int,
+                       tokens: torch.Tensor) -> torch.Tensor:
+    """The target's post-Top-K activation at every position, [n, 64] float on CPU: _peak's forward (same batch size
+    and ops), keeping the whole row (the held-out rebuild needs the value at a given anchor and the window mean)."""
+    from sae.dense import target_latent_activations
+    out = []
+
+    def hook(layer_idx, activations):
+        if layer_idx == layer:
+            ta, ti = bank.encode(activations[kind_idx], kind, layer_idx)
+            out.append(target_latent_activations(ta, ti, latent).float().cpu())
+    inference.disable_compile()
+    try:
+        with torch.no_grad():
+            for s0 in range(0, int(tokens.shape[0]), FORWARD_BATCH):
+                inference.forward(tokens[s0:s0 + FORWARD_BATCH], activations_callback=hook, return_activations=False,
+                                  tokenize_final=False)
+    finally:
+        inference.enable_compile()
+    return torch.cat(out) if out else torch.zeros(0, int(tokens.shape[1]))
+
+
 def _peak(inference, bank, layer: int, kind_idx: int, kind: str, latent: int, tokens: torch.Tensor):
     """The target's peak post-Top-K activation per context and its position."""
     from sae.dense import target_latent_activations
@@ -123,10 +150,143 @@ def store_ids(top_ctx, mid_ctx, comp: int, latent: int) -> Tuple[List[int], List
     return top_ids, mid_ids
 
 
+@dataclass
+class GroupSplit:
+    """Opt-in group-aware split for build_record (DAN-157; the public-model path). Rows are grouped by DUPLICATES ONLY
+    (exact, anchor-prefix, near: heldout_rule.dup_groups), the same rule as TuringLLM's: same-document grouping and
+    the contrast document skip were dropped (Daniel, 2026-10-24). `docs(ids)` (optional) maps corpus sequence ids to
+    their source document ids (-1 = unknown; doc_lookup reads 069's provenance/shard_<N>.docs.npy); it is recorded
+    per row (`doc`, provenance) and never used to group, split or exclude."""
+    docs: Optional[Callable[[Sequence[int]], Any]] = None
+
+
+class DocIndex:
+    """ids -> document ids (call), over a positional array (index 0 = no id). Provenance only."""
+
+    def __init__(self, arr):
+        import numpy as np
+        self.arr = np.asarray(arr, dtype=np.int64)
+
+    def __call__(self, ids):
+        import numpy as np
+        ix = np.asarray([int(i) for i in ids], dtype=np.int64)
+        out = np.full(len(ix), -1, dtype=np.int64)
+        ok = (ix > 0) & (ix < len(self.arr))
+        out[ok] = self.arr[ix[ok]]
+        return out
+
+
+def group_split_for(data_dir, loader) -> GroupSplit:
+    """The public path's GroupSplit: duplicates-only grouping; documents from <data_dir>/provenance are recorded per
+    row when the provenance files exist (never used by the split or the contrast selection)."""
+    try:
+        return GroupSplit(docs=doc_lookup(data_dir, loader))
+    except (FileNotFoundError, OSError, ValueError):
+        return GroupSplit()
+
+
+def doc_lookup(data_dir, loader) -> "DocIndex":
+    """ids -> document ids from <data_dir>/provenance/shard_<N>.docs.npy (prepare_corpus), aligned with the loader's
+    positional ids (1-based over its sorted, n_shards-capped shard list)."""
+    import os
+    import numpy as np
+    parts = [np.full(1, -1, dtype=np.int64)]
+    for f, n in zip(loader.shard_files, loader._shard_sequence_counts):
+        p = os.path.join(str(data_dir), "provenance", f.replace(".npy", ".docs.npy"))
+        d = np.load(p).astype(np.int64)
+        if len(d) != int(n):
+            raise ValueError("%s holds %d document ids for %d sequences" % (p, len(d), n))
+        parts.append(d)
+    return DocIndex(np.concatenate(parts))
+
+
+def _group_split_pools(rec: dict, group_split: GroupSplit, cfg) -> None:
+    """The group-aware split of both pools, in place. Groups are formed JOINTLY over the strongest and mid-band rows
+    (heldout_rule.dup_groups: exact / anchor-prefix / near duplicates only), so a duplicate never trains in one pool
+    while it is held out in the other: the strongest pool is split first (group_split_ex); in the mid-band pool its
+    training groups must train and its held-out groups may not (held out while they fit, else unused).
+    Each pool gains group (joint labels), doc (provenance, -1 when unknown), and unused (rows on neither side)."""
+    from circuit.heldout_rule import dup_groups, group_split_ex
+    names = [n for n in ("strong", "mid") if rec.get(n) is not None]
+    if not names:
+        return
+    docs = {n: ([int(x) for x in group_split.docs(rec[n]["ids"])] if group_split.docs is not None
+                else [-1] * len(rec[n]["ids"])) for n in names}
+    lab = dup_groups(torch.cat([rec[n]["pos"] for n in names]), torch.cat([rec[n]["arg"] for n in names]))
+    off, forced_tr, forced_ho = 0, set(), set()
+    for n in names:
+        d = rec[n]
+        k = int(d["pos"].shape[0])
+        g = lab[off:off + k]; off += k
+        tr, ho, un = group_split_ex(d["peak"], g, holdout_frac=cfg.holdout_frac, keep_top=cfg.keep_top,
+                                    force_train=forced_tr, force_held=forced_ho)
+        d.update(train=tr, held=ho, unused=un, group=g, doc=docs[n])
+        forced_tr |= {g[j] for j in tr}; forced_ho |= {g[j] for j in ho + un}
+
+
+def _group_heldout_filter(rec: dict, group_split: GroupSplit, final_acts=None) -> None:
+    """The held-out rule (circuit/heldout_rule.py) on a group-split record, in place: each held-out set keeps the rows
+    that fire and are not exact / anchor-prefix / near duplicates of any training-side row (strongest-train, mid-band
+    train, every contrast row), nor of an earlier kept held-out row (visited in pool order, the top store's ranking).
+    Rows are only removed: this path has no top-up source. No document clause (dropped 2026-10-24), as in the
+    TuringLLM rebuild."""
+    from circuit import heldout_rule as HR
+    s, m = rec["strong"], rec.get("mid")
+    f_rows = [s["pos"][s["train"]]] + ([m["pos"][m["train"]]] if m is not None else []) + [rec["neg"]]
+    f_ids = [s["ids"][j] for j in s["train"]] + ([m["ids"][j] for j in m["train"]] if m is not None else [])
+    f_ids += list(rec.get("neg_ids") or [])
+    F = torch.cat([t.long().cpu() for t in f_rows], 0)
+    mid_ids = set(int(x) for x in m["ids"]) if m is not None else set()
+    mid_h = set(int(x) for x in HR.window_hash(m["pos"])) if m is not None else set()
+    forbid = HR.Forbidden(tokens=F, ids=set(int(x) for x in f_ids), hashes=set(int(x) for x in HR.window_hash(F)),
+                          mid_ids=mid_ids, mid_hashes=mid_h)
+    info = dict(rule=HR.RULE_VERSION, split="group", n_forbidden=int(F.shape[0]))
+    for name in ("strong", "mid"):
+        d = rec.get(name)
+        if d is None:
+            continue
+        order = sorted(int(j) for j in d["held"])                   # pool order = the store's ranking
+        cands = [HR.Candidate(tokens=d["pos"][j].long().cpu(), id=int(d["ids"][j]), origin="original",
+                              anchor=int(d["arg"][j]), info=dict(pool_index=j)) for j in order]
+        fire = lambda cs, _d=d: [dict(act_at_anchor=float(_d["peak"][c.info["pool_index"]]),
+                                      anchor=int(_d["arg"][c.info["pool_index"]]),
+                                      peak=float(_d["peak"][c.info["pool_index"]]), mean=None) for c in cs]
+        acc, examined = HR.select_heldout(cands, forbid, fire, n_held=len(cands), exclude_mid=(name == "strong"))
+        keep = {cands[i].info["pool_index"] for i in acc}
+        n_split = len(d["held"])
+        d["unused"] = sorted(list(d["unused"]) + [j for j in d["held"] if j not in keep])   # dropped rows: neither side
+        d["held"] = [j for j in d["held"] if j in keep]
+        # firing once more on the final set, forwarded as the scorer sees it (one batch, record order): a row near
+        # the Top-K cut can fire in the pool's batch and not here; such rows are dropped (no top-up source here)
+        unstable = []
+        for _ in range(5):
+            if final_acts is None or not d["held"]:
+                break
+            A = final_acts(d["pos"][d["held"]])
+            bad = [j for j, a in zip(d["held"], A) if not float(a[int(d["arg"][j])]) > 0]
+            if not bad:
+                break
+            unstable += bad
+            d["held"] = [j for j in d["held"] if j not in set(bad)]
+            d["unused"] = sorted(d["unused"] + bad)
+        info[name] = dict(n_held_split=n_split, n_held=len(d["held"]), below_floor=len(d["held"]) < HR.FLOOR,
+                          n_groups=len(set(d["group"])), max_group=max(Counter(d["group"]).values()),
+                          dropped=dict({cands[i].info["pool_index"]: v["reason"] for i, v in examined.items()
+                                        if v["reason"] is not None}, **{j: "unstable_fire" for j in unstable}),
+                          unstable_fire=unstable,
+                          reasons=HR.reason_counts(examined))
+    rec["heldout"] = info
+
+
 def build_record(inference, bank, loader, comp: int, latent: int, selector=None, cfg=None,
-                 top_ctx=None, mid_ctx=None) -> dict:
+                 top_ctx=None, mid_ctx=None, group_split: Optional[GroupSplit] = None) -> dict:
     """One target's context record (see the module docstring). `selector` defaults to a fresh close-contrast
-    selector, as the run built one per target."""
+    selector, as the run built one per target.
+
+    group_split (default None: the 062 run's record, unchanged) switches each pool to the group-aware split
+    (circuit/heldout_rule.py: exact / anchor-prefix / near duplicates go wholly to train or to held-out; each pool
+    gains `group` and `doc` (provenance) lists) and then applies the held-out rule to both held-out sets
+    (rec["heldout"] holds the counts, the dropped rows and their reasons)."""
     from pipeline.component_index import split_component_idx
     cfg = _cfg(cfg)
     if top_ctx is None or mid_ctx is None:
@@ -144,9 +304,15 @@ def build_record(inference, bank, loader, comp: int, latent: int, selector=None,
             rec[name] = None
             continue
         pos, tgt, got = _load(loader, ids)
+        pos_device = pos.device
         v, a = _peak(inference, bank, layer, kind_idx, kind, latent, pos)
-        tr, ho = stratified_split(v, holdout_frac=cfg.holdout_frac, keep_top=cfg.keep_top)
-        rec[name] = dict(pos=pos.cpu(), tgt=tgt.cpu(), arg=a, peak=v, train=tr, held=ho, ids=got)
+        if group_split is None:
+            tr, ho = stratified_split(v, holdout_frac=cfg.holdout_frac, keep_top=cfg.keep_top)
+            rec[name] = dict(pos=pos.cpu(), tgt=tgt.cpu(), arg=a, peak=v, train=tr, held=ho, ids=got)
+        else:
+            rec[name] = dict(pos=pos.cpu(), tgt=tgt.cpu(), arg=a, peak=v, ids=got)
+    if group_split is not None:
+        _group_split_pools(rec, group_split, cfg)
     s = rec["strong"]
     if s is None:                                       # too few stored contexts (thin target): skip record
         return rec
@@ -168,6 +334,9 @@ def build_record(inference, bank, loader, comp: int, latent: int, selector=None,
     rec["neg"] = nt[order]
     nids = [int(x) for x in list(cs.sequence_ids)[:nt.shape[0]]]
     rec["neg_ids"] = [nids[j] for j in order] if len(nids) == nt.shape[0] else None
+    if group_split is not None:
+        _group_heldout_filter(rec, group_split, final_acts=lambda t: target_activations(
+            inference, bank, layer, kind_idx, kind, latent, t.to(pos_device)))
     return rec
 
 
@@ -212,17 +381,37 @@ def padded_length(n_train: int, holdout_frac: float = 0.25) -> int:
     return n
 
 
-def probe_from(rec: dict, train: Parts, held_parts: Sequence[Parts], device, holdout_frac: float = 0.25) -> ProbeDataset:
+def probe_from(rec: dict, train: Parts, held_parts: Sequence[Parts], device, holdout_frac: float = 0.25,
+               neg: Optional[torch.Tensor] = None, n_neg_train: Optional[int] = None) -> ProbeDataset:
     """A ProbeDataset whose first n_train contexts are `train`, padded with held-out contexts so the engine's
-    [:n_train] slice is exactly the training set; contrast = rec["neg"]."""
+    [:n_train] slice is exactly the training set; contrast = rec["neg"] (or `neg`). n_neg_train (eval_contrast) goes
+    into the metadata only when given: the scorers then take it as the contrast-train count instead of split_n."""
     n_tr = int(train[0].shape[0])
     n = padded_length(n_tr, holdout_frac)
     filler = cat(held_parts) if held_parts else None
     need = n - n_tr
     parts = [train] + ([tuple(x[:need] for x in filler)] if need and filler is not None else [])
     pos, tgt, arg = cat(parts)
-    return ProbeDataset(pos_tokens=pos.to(device), target_tokens=tgt.to(device), neg_tokens=rec["neg"].to(device),
-                        pos_argmax=arg.to(device), metadata=dict(n_train=n_tr, n=int(pos.shape[0])))
+    md = dict(n_train=n_tr, n=int(pos.shape[0]))
+    if n_neg_train is not None:
+        md["n_neg_train"] = int(n_neg_train)
+    return ProbeDataset(pos_tokens=pos.to(device), target_tokens=tgt.to(device),
+                        neg_tokens=(rec["neg"] if neg is None else neg).to(device),
+                        pos_argmax=arg.to(device), metadata=md)
+
+
+def eval_contrast(rec: dict, holdout_frac: float = 0.25) -> Tuple[torch.Tensor, Optional[int]]:
+    """(contrast rows, n_neg_train) for scoring. Default (no rebuilt contrast): (rec["neg"], None), the run's 64 rows
+    split by the scorer's 3:1 rule. A record rebuilt by 086 carries neg_held_v2 (the deduplicated contrast held-out
+    rows, possibly fewer than 16): then rec["neg"]'s contrast-train slice (the first n - round(n * holdout_frac), the
+    run's 48 rows, unchanged) followed by neg_held_v2, with n_neg_train = that train count. rec["neg"] itself is never
+    changed, so the fit (training_probe) and every reader of rec["neg"] see the run's 64 rows."""
+    v2 = rec.get("neg_held_v2")
+    if v2 is None:
+        return rec["neg"], None
+    n = int(rec["neg"].shape[0])
+    n_ntr = max(1, n - int(round(n * holdout_frac)))
+    return torch.cat([rec["neg"][:n_ntr], v2.to(rec["neg"].dtype)], 0), n_ntr
 
 
 def empty_probe(rec: dict, device) -> ProbeDataset:
@@ -251,13 +440,17 @@ def training_probe(rec: dict, device, arm: Optional[str] = None, holdout_frac: O
 
 def eval_probe(rec: dict, held: str, device, holdout_frac: Optional[float] = None) -> ProbeDataset:
     """The eval-side ProbeDataset: strongest-train (the common evaluation reference, whatever the training arm)
-    followed by the chosen held-out set ("strong" | "mid"); contrast = the stratified close set rec["neg"]."""
+    followed by the chosen held-out set ("strong" | "mid"); contrast = the stratified close set rec["neg"], or, on a
+    record rebuilt by 086, its contrast-train rows followed by the deduplicated contrast held-out set (eval_contrast;
+    metadata n_neg_train)."""
     if held not in ("strong", "mid"):
         raise ValueError("held must be 'strong' or 'mid', got %r" % (held,))
     if rec.get(held) is None:
         raise ValueError("record has no %r pool" % held)
+    hf = _engine_holdout(holdout_frac)
+    neg, n_ntr = eval_contrast(rec, hf)
     return probe_from(rec, pick(rec, "strong", rec["strong"]["train"]), [pick(rec, held, rec[held]["held"])], device,
-                      _engine_holdout(holdout_frac))
+                      hf, neg=neg, n_neg_train=n_ntr)
 
 
 class FixedSelector:
@@ -273,8 +466,10 @@ class FixedSelector:
 
 
 def eval_contexts(rec: dict, held: str, device) -> Tuple[ProbeDataset, FixedSelector]:
-    """(ProbeDataset, contrast selector) for scoring a circuit on held-out `held` under protocol v1."""
-    return eval_probe(rec, held, device), FixedSelector(rec["neg"].to(device))
+    """(ProbeDataset, contrast selector) for scoring a circuit on held-out `held` under protocol v1. The selector
+    returns the probe's own contrast rows (rec["neg"], or eval_contrast's on a rebuilt record)."""
+    pd_ = eval_probe(rec, held, device)
+    return pd_, FixedSelector(pd_.neg_tokens)
 
 
 # ----------------------------------------------------------------------------------------------- cache
@@ -315,4 +510,5 @@ class ProtocolContexts:
 
 
 __all__ = ["build_record", "training_arm", "training_set", "training_probe", "eval_probe", "eval_contexts",
-           "FixedSelector", "ProtocolContexts", "skip_reason", "strong_holdout_frac", "padded_length", "store_ids"]
+           "FixedSelector", "ProtocolContexts", "skip_reason", "strong_holdout_frac", "padded_length", "store_ids",
+           "GroupSplit", "DocIndex", "doc_lookup", "group_split_for", "target_activations", "eval_contrast"]

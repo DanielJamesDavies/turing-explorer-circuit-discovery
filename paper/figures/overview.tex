@@ -108,7 +108,7 @@
 \draw[wcmC, dashed, line width=0.6pt] (\px+1.7,\py-0.55) -- ++(0.2,0) node[lab, anchor=west] {circuit, Z / A / C};
 \draw[arrow] (\rx+0.05,1.85) -- (\px-0.12,1.85);                    % the edited stream reaches the target
 \draw[arrow, wcmtarget!80!black, rounded corners=4pt] (\px+1.5,\py+2.75) -- (\px+1.5,5.35) -- (\xo+4.5*\dx,5.35) -- (\xo+4.5*\dx,5.13);
-\node[font=\tiny, wcmtarget!80!black, fill=white, inner sep=1pt] at (8.3,5.35) {error $+$ sparsity price $\lambda \sum m$};
+\node[font=\tiny, wcmtarget!80!black, fill=white, inner sep=1pt] at (8.3,5.35) {error $+$ rank-keep $+$ sparsity penalty $\lambda \sum m$};
 
 % ---------------------------------------------------------------- (d) the three tests and the baseline
 \node[head, anchor=west] at (-0.1,-0.15) {(d) tested on held-out contexts};

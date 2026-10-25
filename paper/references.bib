@@ -48,6 +48,38 @@
   note    = {\url{https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html}}
 }
 
+% added 2026-10-24 for the public-model setup and protocol rows
+@inproceedings{biderman2023pythia,
+  author    = {Biderman, Stella and Schoelkopf, Hailey and Anthony, Quentin and Bradley, Herbie and O'Brien, Kyle and Hallahan, Eric and Khan, Mohammad Aflah and Purohit, Shivanshu and Prashanth, USVSN Sai and Raff, Edward and Skowron, Aviya and Sutawika, Lintang and van der Wal, Oskar},
+  title     = {Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+  year      = {2023}
+}
+
+@misc{gao2020pile,
+  author = {Gao, Leo and Biderman, Stella and Black, Sid and Golding, Laurence and Hoppe, Travis and Foster, Charles and Phang, Jason and He, Horace and Thite, Anish and Nabeshima, Noa and Presser, Shawn and Leahy, Connor},
+  title  = {The {P}ile: An 800{GB} Dataset of Diverse Text for Language Modeling},
+  year   = {2020},
+  note   = {arXiv:2101.00027}
+}
+
+@misc{gokaslan2019openwebtext,
+  author = {Gokaslan, Aaron and Cohen, Vanya},
+  title  = {{OpenWebText} Corpus},
+  year   = {2019},
+  note   = {\url{http://Skylion007.github.io/OpenWebTextCorpus}}
+}
+
+% added 2026-10-23 for app:resample; author list checked 2026-10-24 against the post's byline (Redwood Research,
+% 3 Dec 2022: LawrenceC, Adria Garriga-alonso, Nicholas Goldowsky-Dill, ryan_greenblatt, jenny, Ansh Radhakrishnan,
+% Buck, Nate Thomas) (DAN-31)
+@misc{chan2022causal,
+  author = {Chan, Lawrence and Garriga-Alonso, Adri{\`a} and Goldowsky-Dill, Nicholas and Greenblatt, Ryan and Nitishinskaya, Jenny and Radhakrishnan, Ansh and Shlegeris, Buck and Thomas, Nate},
+  title  = {Causal Scrubbing: A Method for Rigorously Testing Interpretability Hypotheses},
+  year   = {2022},
+  note   = {AI Alignment Forum. \url{https://www.alignmentforum.org/posts/JvZhhzycHu2Yd57RN}}
+}
+
 @misc{bills2023language,
   author = {Bills, Steven and Cammarata, Nick and Mossing, Dan and Tillman, Henk and Gao, Leo and Goh, Gabriel and Sutskever, Ilya and Leike, Jan and Wu, Jeff and Saunders, William},
   title  = {Language Models Can Explain Neurons in Language Models},
@@ -402,11 +434,12 @@
   year         = {2025}
 }
 
-@article{shi2024hypothesis,
-  author  = {Shi, Claudia and Beltran-Velez, Nicolas and Nazaret, Achille and Zheng, Carolina and Garriga-Alonso, Adri{\`a} and Jesson, Andrew and Makar, Maggie and Blei, David M.},
-  title   = {Hypothesis Testing the Circuit Hypothesis in {LLMs}},
-  journal = {arXiv preprint arXiv:2410.13032},
-  year    = {2024}
+% venue updated 2026-10-24 (DAN-31): NeurIPS 2024 (nips.cc poster 96582; arXiv:2410.13032)
+@inproceedings{shi2024hypothesis,
+  author    = {Shi, Claudia and Beltran-Velez, Nicolas and Nazaret, Achille and Zheng, Carolina and Garriga-Alonso, Adri{\`a} and Jesson, Andrew and Makar, Maggie and Blei, David M.},
+  title     = {Hypothesis Testing the Circuit Hypothesis in {LLMs}},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
 }
 
 @article{lepori2023uncovering,
@@ -596,5 +629,155 @@
   author  = {Rezaei Jafari, Farnoush and Eberle, Oliver and Khakzar, Ashkan and Nanda, Neel},
   title   = {{RelP}: Faithful and Efficient Circuit Discovery in Language Models via Relevance Patching},
   journal = {arXiv preprint arXiv:2508.21258},
+  year    = {2025}
+}
+
+% ---- 2026-10-24 (DAN-31): the remaining DAN-31 list. Every entry checked against its arXiv abstract page and, where a
+% venue is given, the venue's own listing (ICLR / ICML / PMLR / ACL Anthology / TMLR via mlanthology); not from memory.
+
+% Evaluation, nulls, and variance
+@article{seth2026circuitkit,
+  author  = {Seth, Pratinav and Gosalia, Hem and Kasliwal, Aditya and Sankarapu, Vinay Kumar},
+  title   = {{CircuitKIT}: Circuit Discovery, Evaluation, and Application Toolkit for Mechanistic Interpretability},
+  journal = {arXiv preprint arXiv:2607.19317},
+  year    = {2026}
+}
+
+@article{meloux2025dead,
+  author  = {M{\'e}loux, Maxime and Dirupo, Giada and Portet, Fran{\c{c}}ois and Peyrard, Maxime},
+  title   = {The Dead Salmons of {AI} Interpretability},
+  journal = {arXiv preprint arXiv:2512.18792},
+  year    = {2025}
+}
+
+@article{mahale2026explanation,
+  author  = {Mahale, Ajay Pravin},
+  title   = {Explanation Multiplicity: Circuit-Level Interpretability Evidence Does Not Survive Defensible Analytic Variation},
+  journal = {arXiv preprint arXiv:2608.13754},
+  year    = {2026}
+}
+
+@article{wu2026demystifying,
+  author  = {Wu, Frank Zhengqing and Tonin, Francesco and Cevher, Volkan},
+  title   = {Demystifying Variance in Circuit Discovery of {LLMs}},
+  journal = {arXiv preprint arXiv:2606.16920},
+  year    = {2026}
+}
+
+@inproceedings{anani2026certified,
+  author    = {Anani, Alaa and Lorenz, Tobias and Schiele, Bernt and Fritz, Mario and Fischer, Jonas},
+  title     = {Certified Circuits: Stability Guarantees for Mechanistic Circuits},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026}
+}
+
+% Non-uniqueness
+@inproceedings{meloux2025everything,
+  author    = {M{\'e}loux, Maxime and Maniu, Silviu and Portet, Fran{\c{c}}ois and Peyrard, Maxime},
+  title     = {Everything, Everywhere, All at Once: Is Mechanistic Interpretability Identifiable?},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025}
+}
+
+@inproceedings{chen2026rome,
+  author    = {Chen, Xi and Jin, Mingyu and Niu, Jingcheng and Yin, Yutong and Zhao, Jinman and Guo, Bangwei and Metaxas, Dimitris N. and Wang, Zhaoran and Yue, Yutao and Penn, Gerald},
+  title     = {All Circuits Lead to {Rome}: Rethinking Functional Anisotropy in Circuit and Sheaf Discovery for {LLMs}},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026}
+}
+
+% Inhibition and self-repair
+@article{mcgrath2023hydra,
+  author  = {McGrath, Thomas and Rahtz, Matthew and Kram{\'a}r, J{\'a}nos and Mikulik, Vladimir and Legg, Shane},
+  title   = {The Hydra Effect: Emergent Self-repair in Language Model Computations},
+  journal = {arXiv preprint arXiv:2307.15771},
+  year    = {2023}
+}
+
+@inproceedings{mcdougall2024copy,
+  author    = {McDougall, Callum Stuart and Conmy, Arthur and Rushing, Cody and McGrath, Thomas and Nanda, Neel},
+  title     = {Copy Suppression: Comprehensively Understanding a Motif in Language Model Attention Heads},
+  booktitle = {Proceedings of the 7th BlackboxNLP Workshop: Analyzing and Interpreting Neural Networks for NLP},
+  year      = {2024}
+}
+
+@inproceedings{rushing2024explorations,
+  author    = {Rushing, Cody and Nanda, Neel},
+  title     = {Explorations of Self-Repair in Language Models},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {42836--42855},
+  year      = {2024}
+}
+
+@article{gong2026conditional,
+  author  = {Gong, Zhiren and Lu, He and Wang, Tiantong and Zhang, Yichi and Wang, Yixin and Zeng, Zihao and Xiao, Ming and Yuen, Chau and Lim, Wei Yang Bryan},
+  title   = {Conditional Co-Ablation: Recovering Self-Repair Backups in Transformer Circuits},
+  journal = {arXiv preprint arXiv:2607.01940},
+  year    = {2026}
+}
+
+% Scale and latent graphs
+@article{chen2026pie,
+  author  = {Chen, Qinhao and He, Linyang and Mesgarani, Nima},
+  title   = {Prune, Interpret, Evaluate: A Cross-Layer Transcoder-Native Framework for Efficient Circuit Discovery via Feature Attribution},
+  journal = {arXiv preprint arXiv:2604.16889},
+  year    = {2026}
+}
+
+@article{kendiukhov2026causal,
+  author  = {Kendiukhov, Ihor},
+  title   = {Causal Circuit Tracing Reveals Distinct Computational Architectures in Single-Cell Foundation Models: Inhibitory Dominance, Biological Coherence, and Cross-Model Convergence},
+  journal = {arXiv preprint arXiv:2603.01752},
+  year    = {2026}
+}
+
+@article{kendiukhov2026exhaustive,
+  author  = {Kendiukhov, Ihor},
+  title   = {Exhaustive Circuit Mapping of a Single-Cell Foundation Model Reveals Massive Redundancy, Heavy-Tailed Hub Architecture, and Layer-Dependent Differentiation Control},
+  journal = {arXiv preprint arXiv:2603.11940},
+  year    = {2026}
+}
+
+@article{turner2026interference,
+  author  = {Turner, Nicholas L. and Wu, Jeffrey and Batson, Joshua},
+  title   = {Characterizing Interference Weights in a Tiny Language Model},
+  journal = {Transformer Circuits Thread},
+  year    = {2026},
+  note    = {\url{https://transformer-circuits.pub/2026/interference_effectiveness_helpfulness/index.html}}
+}
+
+% The SAE basis
+@article{engels2025dark,
+  author  = {Engels, Joshua and Smith, Logan Riggs and Tegmark, Max},
+  title   = {Decomposing the Dark Matter of Sparse Autoencoders},
+  journal = {Transactions on Machine Learning Research},
+  year    = {2025}
+}
+
+@article{cui2026sae,
+  author  = {Cui, Mingyue and Shen, Linghui and Yang, Xingyi},
+  title   = {{SAE} Interventions are Unreliable: Post-Intervention Recovery of Suppressed Behavior},
+  journal = {arXiv preprint arXiv:2606.18322},
+  year    = {2026}
+}
+
+@article{cho2026single,
+  author  = {Cho, Seonglae and Wu, Zekun and Da Costa, Kleyton and Kalra, Rishi and Wicaksono, Ilham and Koshiyama, Adriano},
+  title   = {Are Single-Token Sparse Autoencoder Features Causally Necessary? {Layer-Depth} and {SAE-Family} Effects},
+  journal = {arXiv preprint arXiv:2607.20596},
+  year    = {2026}
+}
+
+@article{poduval2026resae,
+  author  = {Poduval, Prathyush and Yeung, Calvin and Desai, Neel and Imani, Mohsen},
+  title   = {{ReSAE}: Residualized Sparse Autoencoders for Multi-Layer Transformer Interventions},
+  journal = {arXiv preprint arXiv:2605.27819},
+  year    = {2026}
+}
+
+@article{paulo2025sparse,
+  author  = {Paulo, Gon{\c{c}}alo and Belrose, Nora},
+  title   = {Sparse Autoencoders Trained on the Same Data Learn Different Features},
+  journal = {arXiv preprint arXiv:2501.16615},
   year    = {2025}
 }

@@ -371,6 +371,56 @@ class TestScorerRow:
         assert a["a_pos_tk"] == b["a_pos_tk"] and a["a_base_pre"] != b["a_base_pre"]
 
 
+def _with_contrast(probe, neg, n_neg_train):
+    md = dict(probe.metadata)
+    if n_neg_train is not None:
+        md["n_neg_train"] = n_neg_train
+    return ProbeDataset(probe.pos_tokens, probe.target_tokens, neg, probe.pos_argmax, md)
+
+
+class TestRebuiltContrast:
+    """086: a record with a rebuilt (deduplicated, possibly shorter) contrast held-out set reaches the scorers as the
+    run's contrast-train rows + the new held-out rows with metadata n_neg_train (protocol_contexts.eval_contrast).
+    Without it every scorer is unchanged; with it the contrast-train slice is the run's, whatever the held-out size."""
+
+    def test_default_path_unchanged(self, setup_scored):
+        inf, bank, latent, probe, c = setup_scored
+        assert "n_neg_train" not in probe.metadata
+        a = W.score_circuit(inf, bank, c, probe)
+        b = W.score_circuit(inf, bank, c, _with_contrast(probe, probe.neg_tokens, W.split_n(16)))
+        _assert_rows_equal(a, b)                         # a full 16-row held-out set: the same split, the same row
+
+    def test_short_contrast_held_out_set(self, monkeypatch, setup_scored):
+        inf, bank, latent, probe, c = setup_scored
+        nt = probe.neg_tokens                              # 16 rows: 12 train, 4 held out
+        short = _with_contrast(probe, torch.cat([nt[:12], nt[12:14]]), 12)
+        a, b = W.score_circuit(inf, bank, c, probe), W.score_circuit(inf, bank, c, short)
+        assert (b["n_neg_train"], b["n_neg_ho"]) == (12, 2) and (a["n_neg_train"], a["n_neg_ho"]) == (12, 4)
+        for f in ("eN_dense_pre", "eN_topk_pre", "eN_topk_tk", "a_pos_tk", "free0_tk", "freeM_topk_tk"):
+            assert a[f] == b[f], f                         # C means come from the same 12 contrast-train rows
+        naive = W.score_circuit(inf, bank, c, _with_contrast(probe, short.neg_tokens, None))
+        assert naive["n_neg_train"] == W.split_n(14) == 10  # what the metadata prevents
+        V = _experiment_scorer(monkeypatch, inf, bank, short, "explicit")
+        _assert_rows_equal(V.score_circuit(c, {}, skip_roles=True),
+                           W.score_circuit(inf, bank, c, short, split="explicit", ctr_fallback=False))
+        Sx = _load(EXP / "056-specificity" / "specificity.py", "_specificity_056")
+        CleanTap, CircuitTap = Sx.make_patchers(V.G)
+        exp = Sx.score(V.G, c, V, CleanTap, CircuitTap, "B")
+        src = S.specificity_rows(inf, bank, c, short, arm="B", split="explicit")
+        full = S.specificity_rows(inf, bank, c, probe, arm="B", split="explicit")
+        for x, y, z in zip(exp, src, full):
+            _assert_rows_equal(x, y)
+            _assert_rows_equal(y, z)                       # specificity reads only the contrast-train rows
+
+    def test_explicit_contrast_tokens_ignore_the_metadata(self, setup_scored):
+        inf, bank, latent, probe, c = setup_scored
+        short = _with_contrast(probe, probe.neg_tokens[:14], 12)
+        r = W.score_circuit(inf, bank, c, short, probe.neg_tokens)   # caller's own contrast rows: split_n, as before
+        assert (r["n_neg_train"], r["n_neg_ho"]) == (12, 4)
+        with pytest.raises(ValueError):
+            W.score_circuit(inf, bank, c, _with_contrast(probe, probe.neg_tokens[:12], 12))
+
+
 # =============================================================================================== Part 4
 class TestSpecificityFlags:
     def test_amplifier_flag(self):
@@ -401,3 +451,357 @@ class TestSpecificityFlags:
         circ = torch.tensor([[1.0, 1.0, 0.0]])
         f = S.latent_faith(circ, empty, clean)
         assert f[0] == 0.5 and math.isnan(f[1]) and f[2] == 0.0
+
+
+# =============================================================================================== Part 5
+# The output-endpoint scorer (score_output, experiment 080): the same circuit-only runs read at the model's output.
+class TinyLogitInference(TinyInference):
+    """TinyInference with an unembedding: forward returns logits = final stream @ W_U (Inference.forward's
+    (tokens, logits, acts) contract)."""
+
+    def __init__(self, n_vocab=64, seed=5):
+        super().__init__(n_vocab, seed)
+        g = torch.Generator().manual_seed(seed + 100)
+        self.W_U = torch.randn(D_MODEL, n_vocab, generator=g)
+
+    def forward(self, tokens, activations_callback=None, patcher=None, return_activations=True, **kw):
+        self.n_forward += 1
+        x = self.emb[tokens.long()]
+        with capture_activations(self.model, callback=activations_callback, capture=False), \
+                (patcher(self.model) if patcher else nullcontext()):
+            y = self.model(x)
+        return tokens, y @ self.W_U, None
+
+
+def _output_setup(per_site=3, amplitude=True):
+    """Target, contexts and a circuit as in Part 3. The probe's "next tokens" are, at every position, the token whose
+    log-prob the zero ablation of the scope lowers most (argmax of log p_full - log p_empty, which is >= 0 because
+    both distributions sum to 1), so every output denominator is positive. In this random toy the full model's own
+    top-1 is often RAISED by the ablation."""
+    inf, bank = TinyLogitInference(), EncBank()
+    latent, probe = _target_and_contexts(inf, bank)
+    pt = probe.pos_tokens
+    full = torch.log_softmax(inf.forward(pt)[1], -1)
+    empty = W.EditTrackingCircuitOnly(bank=bank, keep_indices={}, in_scope=set(W.upstream_sites(bank, *SEED_SITE)),
+                                      seed_layer=-1, seed_kind="", seed_latent_idx=0)
+    drop = full - torch.log_softmax(inf.forward(pt, patcher=empty)[1], -1)
+    probe = ProbeDataset(pt, drop.argmax(-1), probe.neg_tokens, probe.pos_argmax, dict(probe.metadata))
+    return inf, bank, latent, probe, _circuit(inf, bank, latent, probe, per_site=per_site, amplitude=amplitude)
+
+
+def _seed_only(latent):
+    c = Circuit(name="empty")
+    c.add_node(CircuitNode(metadata={"feature_id": FeatureID(SEED_SITE[0], SEED_SITE[1], latent), "role": "seed"}))
+    return c
+
+
+class TestOutputScorer:
+    def test_every_upstream_latent_at_alpha_one_is_the_full_model(self):
+        """Keeping every latent at every upstream site with alpha = 1 is the identity edit: output Z = 1; removing
+        all of them from the live model is the zero empty circuit: output necessity = 1."""
+        inf, bank, latent, probe, _ = _output_setup()
+        c = _circuit(inf, bank, latent, probe, per_site=bank.d_sae, amplitude=False)
+        r = W.score_output(inf, bank, c, probe)
+        assert r["out_e0"] < r["out_full"] and not r["out_vacuous"]
+        assert r["out_free0_raw"] == pytest.approx(r["out_full"], rel=1e-5)
+        assert r["out_free0"] == pytest.approx(1.0, rel=1e-5)
+        assert r["out_free0_a1"] == pytest.approx(1.0, rel=1e-5)
+        assert r["out_phi_sup_blind"] == pytest.approx(1.0, rel=1e-5)
+        assert r["n"] == 5 * bank.d_sae and r["out_all_sites_ablated"] is True
+
+    def test_empty_circuit_scores_exactly_zero(self):
+        inf, bank, latent, probe, _ = _output_setup()
+        r = W.score_output(inf, bank, _seed_only(latent), probe)
+        for f in W.OUT_FAITH + ("out_free0_a1", W.OUT_NECESSITY):
+            assert r[f] == 0.0, f
+        assert r["n"] == 0 and r["out_all_sites_ablated"] is True
+
+    def test_scope_is_upstream_and_the_target_site_runs_live(self, monkeypatch):
+        inf, bank, latent, probe, c = _output_setup()
+        seen = []
+        orig = W.EditTrackingCircuitOnly.transform
+
+        def spy(self, layer_idx, kind, x):
+            out = orig(self, layer_idx, kind, x)
+            seen.append(((layer_idx, kind), (layer_idx, kind) in self.in_scope))
+            return out
+        monkeypatch.setattr(W.EditTrackingCircuitOnly, "transform", spy)
+        r = W.score_output(inf, bank, c, probe)
+        assert r["out_n_scope_sites"] == 5 and r["out_all_sites_ablated"] is True
+        assert {s for s, ins in seen if ins} == set(W.upstream_sites(bank, *SEED_SITE))
+        assert (SEED_SITE, False) in seen                       # reached, not ablated: recomputed live
+
+    def test_whole_model_scope_also_ablates_the_target_site(self):
+        inf, bank, latent, probe, c = _output_setup()
+        up = W.score_output(inf, bank, c, probe)
+        al = W.score_output(inf, bank, c, probe, scope="all")
+        assert al["out_n_scope_sites"] == 6 and al["out_scope"] == "all"
+        assert al["out_full"] == up["out_full"] and al["out_e0"] != up["out_e0"]
+        with pytest.raises(ValueError, match="scope"):
+            W.score_output(inf, bank, c, probe, scope="downstream")
+
+    def test_members_outside_the_scope_are_dropped_and_counted(self):
+        inf, bank, latent, probe, c = _output_setup()
+        base = W.score_output(inf, bank, c, probe)
+        c.add_node(CircuitNode(metadata={"feature_id": FeatureID(SEED_SITE[0], SEED_SITE[1], (latent + 1) % 32),
+                                         "role": "ablation_support", "amplitude": 1.0}))
+        r = W.score_output(inf, bank, c, probe)
+        assert r["out_n_out_of_scope"] == 1 and r["n"] == base["n"]
+        assert r["out_free0"] == base["out_free0"] and r["out_phi_sup_blind"] == base["out_phi_sup_blind"]
+
+    def test_split_and_counts_mirror_the_latent_scorer(self):
+        inf, bank, latent, probe, c = _output_setup()
+        lat, out = W.score_circuit(inf, bank, c, probe), W.score_output(inf, bank, c, probe)
+        assert (out["out_n_train"], out["out_n_ho"], out["out_n_neg_train"]) == (lat["n_train"], lat["n_ho"],
+                                                                                lat["n_neg_train"])
+        assert out["n"] == lat["n"] and out["seed"] == lat["seed"]
+        r = W.score_output(inf, bank, c, probe, split="as_run")
+        assert r["out_n_train"] == W.split_n(probe.pos_tokens.shape[0])
+
+    def test_coefficients_and_override(self):
+        """Unweighted circuit: Z at the fitted gains == Z at alpha = 1. Weighted circuit scored with alphas = 1 ==
+        its own out_free0_a1."""
+        inf, bank, latent, probe, c = _output_setup(amplitude=False)
+        r = W.score_output(inf, bank, c, probe)
+        assert r["out_free0"] == r["out_free0_a1"]
+        inf, bank, latent, probe, c = _output_setup()
+        fitted = W.score_output(inf, bank, c, probe)
+        ones = {s: {i: 1.0 for i in d} for s, d in W.circuit_alphas(c).items()}
+        assert W.score_output(inf, bank, c, probe, alphas=ones)["out_free0"] == fitted["out_free0_a1"]
+        assert fitted["out_free0"] != fitted["out_free0_a1"]
+
+    def test_skip_rows(self):
+        inf, bank, latent, probe, c = _output_setup()
+        thin = ProbeDataset(probe.pos_tokens[:7], probe.target_tokens[:7], probe.neg_tokens, probe.pos_argmax[:7],
+                            dict(n_train=5))
+        assert W.score_output(inf, bank, c, thin)["skip"] == "thin_probes"
+        assert W.score_output(inf, bank, c, probe, probe.neg_tokens[:1])["skip"] == "no_negatives"
+
+    def test_next_tokens_are_gathered_at_the_anchor(self):
+        tt = torch.arange(12).reshape(3, 4)
+        assert W.next_tokens_at(SimpleNamespace(target_tokens=tt), torch.tensor([0, 3, 9]), 3).tolist() == [0, 7, 11]
+        flat = torch.tensor([5, 6, 7])
+        assert W.next_tokens_at(SimpleNamespace(target_tokens=flat), torch.tensor([1, 1, 1]), 3).tolist() == [5, 6, 7]
+
+    def test_vacuity_ratio_guard_and_pass_rule(self):
+        assert W.output_vacuous(-1.0, -1.05) and W.output_vacuous(-1.0, -0.95)
+        assert not W.output_vacuous(-1.0, -1.2)
+        assert W.ratio(-2.0, -3.0, -1.0) == 0.5 and W.ratio(-2.0, -1.0, -1.0) is None      # the shared guard
+        row = {"out_free0": 0.8, "out_freeM_topk": 1.5, "out_freeN_topk": 1.0, "out_phi_sup_blind": 0.9}
+        assert W.passes_output(row)
+        assert not W.passes_output(dict(row, out_freeN_topk=0.79))
+        assert not W.passes_output(dict(row, out_phi_sup_blind=None))
+        assert not W.passes_output(dict(row, out_freeM_topk=float("nan")))
+
+
+# =============================================================================================== Part 6
+# The task-endpoint scorer (score_task, experiment 081): task metrics at each prompt's anchor, every site in scope,
+# right-padded prompts with valid-position masks.
+def _task_setup(per_site=3, amplitude=True):
+    """Prompts = Part 3's activating contexts (15 train + 5 held out), counterfactuals = its contrast contexts, anchor =
+    the target's argmax. good / bad = per row the token whose log-prob the zero ablation of every site lowers most /
+    raises most at the anchor, so the logit-diff denominator is positive on every row."""
+    inf, bank = TinyLogitInference(), EncBank()
+    latent, probe = _target_and_contexts(inf, bank)
+    pt, pa = probe.pos_tokens, probe.pos_argmax
+    allsites = W.scope_sites(bank, 0, bank.kinds[0], "all")
+    full = torch.log_softmax(inf.forward(pt)[1], -1)
+    empty = W.EditTrackingCircuitOnly(bank=bank, keep_indices={}, in_scope=allsites, seed_layer=-1, seed_kind="",
+                                      seed_latent_idx=0)
+    drop = (full - torch.log_softmax(inf.forward(pt, patcher=empty)[1], -1))[torch.arange(pt.shape[0]), pa]
+    good, bad = drop.argmax(-1), drop.argmin(-1)
+    alphas = W.circuit_alphas(_circuit(inf, bank, latent, probe, per_site=per_site, amplitude=amplitude))
+    return inf, bank, alphas, pt, pa, probe.neg_tokens, good, bad
+
+
+class TestTaskScorer:
+    def test_metric_kinds_on_hand_logits(self):
+        lp = torch.log_softmax(torch.tensor([[2.0, 1.0, 0.0, -1.0], [0.0, 0.0, 3.0, 0.0]]), -1)
+        good, bad = torch.tensor([0, 1]), torch.tensor([1, 2])
+        assert W.task_metric(lp, "logit_diff", good, bad).tolist() == pytest.approx([1.0, -3.0])
+        assert W.task_metric(lp, "logprob", good).tolist() == pytest.approx([float(lp[0, 0]), float(lp[1, 1])])
+        sg, sb = torch.tensor([[0, 1], [2, -1]]), torch.tensor([[2, 3], [0, 1]])
+        p = lp.exp()
+        assert W.task_metric(lp, "set_probdiff", sg, sb).tolist() == pytest.approx(
+            [float(p[0, :2].sum() - p[0, 2:].sum()), float(p[1, 2] - p[1, :2].sum())], rel=1e-5)
+        assert W.task_metric(lp, "set_logmass", sg, sb).tolist() == pytest.approx(
+            [math.log(float(p[0, :2].sum() / p[0, 2:].sum())), math.log(float(p[1, 2] / p[1, :2].sum()))], rel=1e-5)
+        # a one-token set is the token metric
+        assert W.task_metric(lp, "set_logmass", good[:, None], bad[:, None]).tolist() == pytest.approx(
+            W.task_metric(lp, "logit_diff", good, bad).tolist())
+        assert W.task_correct(lp, "logit_diff", good, bad).tolist() == [True, False]
+        assert W.task_correct(lp, "logprob", torch.tensor([0, 1])).tolist() == [True, False]
+        assert W.task_top1(lp, sg).tolist() == [True, True]
+        with pytest.raises(ValueError, match="kind"):
+            W.task_metric(lp, "accuracy", good, bad)
+        with pytest.raises(ValueError, match="bad"):
+            W.task_metric(lp, "logit_diff", good)
+
+    def test_every_latent_at_alpha_one_is_the_full_model_and_empty_is_zero(self):
+        inf, bank, _, pt, pa, cf, good, bad = _task_setup()
+        allsites = W.scope_sites(bank, 0, bank.kinds[0], "all")
+        everything = {s: {i: 1.0 for i in range(bank.d_sae)} for s in allsites}
+        m = {"task": ("logit_diff", good, bad)}
+        r = W.score_task(inf, bank, everything, pt, pa, 15, cf[:12], m)
+        assert r["task_e0"] < r["task_full"] and not r["task_vacuous"]
+        assert r["task_free0"] == pytest.approx(1.0, rel=1e-5) and r["task_nec"] == pytest.approx(1.0, rel=1e-5)
+        assert r["task_acc_free0"] == r["task_acc_full"] and r["all_sites_ablated"] is True
+        assert r["n"] == len(allsites) * bank.d_sae and r["n_sites_scope"] == 6 and (r["n_train"], r["n_ho"]) == (15, 5)
+        e = W.score_task(inf, bank, {}, pt, pa, 15, cf[:12], m)
+        for f in ("task_free0", "task_freeM_topk", "task_freeN_topk", "task_free0_a1", "task_nec"):
+            assert e[f] == 0.0, f
+        assert e["n"] == 0 and not e["task_pass"]
+
+    def test_coefficients_are_applied_and_alpha_one_is_recorded(self):
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        m = {"task": ("logit_diff", good, bad)}
+        fitted = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m)
+        ones = {s: {i: 1.0 for i in d} for s, d in alphas.items()}
+        a1 = W.score_task(inf, bank, ones, pt, pa, 15, cf[:12], m)
+        assert a1["task_free0"] == pytest.approx(fitted["task_free0_a1"], rel=1e-6)
+        assert fitted["task_free0"] != pytest.approx(fitted["task_free0_a1"])
+        assert a1["task_free0"] == pytest.approx(a1["task_free0_a1"], rel=1e-6)
+        # necessity does not depend on the coefficients (members are SET to 0 in the live model)
+        assert fitted["task_nec"] == pytest.approx(a1["task_nec"], rel=1e-6)
+
+    def test_several_metrics_share_the_runs(self):
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        r = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12],
+                         {"task": ("logit_diff", good, bad), "obj": ("set_logmass", good[:, None], bad[:, None])},
+                         vacuous_abs={"task": 1e9})
+        for f in ("free0", "freeM_topk", "freeN_topk", "nec", "full", "e0"):
+            assert r["task_" + f] == pytest.approx(r["obj_" + f], rel=1e-5), f
+        assert r["task_vacuous"] and not r["obj_vacuous"]           # per-metric vacuity thresholds
+
+    def test_valid_masks_make_right_padding_inert(self):
+        """Appending padding columns after every prompt changes nothing once the A / C means skip them (the toy model
+        has no cross-position mixing, so the anchor read itself is unaffected either way); without the masks the
+        padding columns enter the means."""
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        m = {"task": ("logit_diff", good, bad)}
+        base = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m)
+        pad = torch.zeros(pt.shape[0], 5, dtype=pt.dtype)
+        ptp, cfp = torch.cat([pt, pad], 1), torch.cat([cf[:12], pad[:12]], 1)
+        v = torch.zeros(ptp.shape, dtype=torch.bool)
+        v[:, :pt.shape[1]] = True
+        masked = W.score_task(inf, bank, alphas, ptp, pa, 15, cfp, m, valid=v, cf_valid=v[:12])
+        for f in ("task_freeM_topk", "task_freeN_topk", "task_eM_topk", "task_eN_topk", "task_free0"):
+            assert masked[f] == pytest.approx(base[f], rel=1e-5), f
+        unmasked = W.score_task(inf, bank, alphas, ptp, pa, 15, cfp, m)
+        assert unmasked["task_eM_topk"] != pytest.approx(base["task_eM_topk"], rel=1e-6)
+        assert unmasked["task_free0"] == pytest.approx(base["task_free0"], rel=1e-5)      # Z has no means
+
+    def test_collect_site_means_valid_is_the_masked_average(self):
+        from eval.floors import collect_site_means
+        from sae.dense import sparse_topk_to_dense
+        inf, bank, _, pt, *_ = _task_setup()
+        site = (0, "attn")
+        valid = torch.ones(pt.shape, dtype=torch.bool)
+        valid[:, 5:] = False
+        valid[3, 2:] = False
+        got = collect_site_means(inf, bank, pt, {site}, valid=valid)[site]
+        dense = []
+
+        def hook(layer_idx, acts):
+            if layer_idx == 0:
+                ta, ti = bank.encode(acts[0], "attn", 0)
+                dense.append(sparse_topk_to_dense(ta, ti, bank.d_sae, dtype=torch.float32))
+
+        inf.forward(pt, activations_callback=hook)
+        want = dense[0][valid].mean(0)
+        assert torch.allclose(got, want, atol=1e-6)
+        assert torch.allclose(collect_site_means(inf, bank, pt, {site})[site], dense[0].mean((0, 1)), atol=1e-6)
+        with pytest.raises(ValueError, match="no position"):
+            collect_site_means(inf, bank, pt, {site}, valid=torch.zeros_like(valid))
+
+    def test_precomputed_means_are_used_and_default_is_unchanged(self, monkeypatch):
+        """means_A / means_C (081, 2026-10-21): the same values give the same row without collecting anything; other
+        values move only the A / C frames; a missing site is refused."""
+        from eval.floors import collect_site_means
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        m = {"task": ("logit_diff", good, bad), "obj": ("set_logmass", good[:, None], bad[:, None])}
+        base = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m)
+        allsites = W.scope_sites(bank, 0, bank.kinds[0], "all")
+        mA = collect_site_means(inf, bank, pt[:15], allsites)
+        mC = collect_site_means(inf, bank, cf[:12], allsites)
+        monkeypatch.setattr(W, "collect_site_means", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called")))
+        got = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m, means_A=mA, means_C=mC)
+        assert {k: v for k, v in got.items() if k != "secs"} == {k: v for k, v in base.items() if k != "secs"}
+        swapped = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m, means_A=mC, means_C=mA)
+        assert swapped["task_eM_topk"] == pytest.approx(base["task_eN_topk"], rel=1e-6)
+        assert swapped["task_free0"] == base["task_free0"]                               # Z has no means
+        with pytest.raises(ValueError, match="means_A lacks"):
+            W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m, means_A={}, means_C=mC)
+
+    def test_split_and_scope_guards(self):
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        m = {"task": ("logit_diff", good, bad)}
+        with pytest.raises(ValueError, match="held-out"):
+            W.score_task(inf, bank, alphas, pt, pa, 20, cf, m)
+        with pytest.raises(ValueError, match="counterfactual"):
+            W.score_task(inf, bank, alphas, pt, pa, 15, cf[:0], m)
+        up = set(W.upstream_sites(bank, *SEED_SITE))
+        r = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], m, sites=up)
+        assert r["n_sites_scope"] == 5 and r["all_sites_ablated"] is True
+
+    def test_pass_rule(self):
+        row = {"task_free0": 0.8, "task_freeM_topk": 1.5, "task_freeN_topk": 1.0, "task_nec": 0.9}
+        assert W.passes_task(row)
+        assert not W.passes_task(dict(row, task_freeN_topk=0.79))
+        assert not W.passes_task(dict(row, task_nec=None))
+        assert not W.passes_task(dict(row, task_freeM_topk=float("nan")))
+        assert W.passes_task({k.replace("task", "obj"): v for k, v in row.items()}, "obj")
+
+
+class TestTaskScorerSeq:
+    """Multi-token answers (seq_diff, 2026-10-21): teacher-forced, summed log-probs over (good, bad) row pairs."""
+
+    def test_answer_logprob_is_the_sum_of_per_token_reads(self):
+        g = torch.Generator().manual_seed(3)
+        lg = torch.randn(2, 6, 10, generator=g)
+        anchors = torch.tensor([1, 2])
+        answers = torch.tensor([[4, 7, 2], [5, 1, -1]])
+        lp = torch.log_softmax(lg, -1)
+        want = [float(lp[0, 1, 4] + lp[0, 2, 7] + lp[0, 3, 2]), float(lp[1, 2, 5] + lp[1, 3, 1])]
+        assert W.answer_logprob(lg, anchors, answers).tolist() == pytest.approx(want, rel=1e-6)
+        assert W.pair_diff(torch.tensor([3.0, 1.0, 0.5, 2.0])).tolist() == [2.0, -1.5]
+        with pytest.raises(ValueError, match="pairs"):
+            W.pair_diff(torch.tensor([1.0, 2.0, 3.0]))
+        with pytest.raises(ValueError, match="teacher-forced"):
+            W.task_metric(lp[:, 0], "seq_diff", answers)
+
+    def test_single_token_answers_reproduce_the_token_metric(self):
+        """Every prompt duplicated into a (good, bad) pair with one-token answers: seq_diff equals logit_diff exactly,
+        under every frame."""
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        tok = W.score_task(inf, bank, alphas, pt, pa, 15, cf[:12], {"task": ("logit_diff", good, bad)})
+        rows = pt.repeat_interleave(2, 0)
+        anc = pa.repeat_interleave(2)
+        ans = torch.stack([good, bad], 1).reshape(-1, 1)
+        seq = W.score_task(inf, bank, alphas, rows, anc, 30, cf[:12], {"task": ("seq_diff", ans, None)})
+        for f in ("free0", "freeM_topk", "freeN_topk", "free0_a1", "nec", "full", "e0", "acc_free0", "acc_full"):
+            assert seq["task_" + f] == pytest.approx(tok["task_" + f], rel=1e-5, abs=1e-6), f
+        assert seq["task_n_items"] == 5 and seq["task_top1_full"] is None
+
+    def test_multi_token_answers_respect_padding(self):
+        """A two-token answer pair: appending padding columns after every row (and -1 slots after the answers)
+        changes nothing; the answer positions are anchor and anchor + 1."""
+        inf, bank, alphas, pt, pa, cf, good, bad = _task_setup()
+        pa = pa.clamp(max=pt.shape[1] - 2)                        # room for a two-token answer
+        rows = pt.repeat_interleave(2, 0).clone()
+        anc = pa.repeat_interleave(2)
+        ans = torch.stack([torch.stack([good, (good + 1) % 64], 1), torch.stack([bad, (bad + 3) % 64], 1)],
+                          1).reshape(-1, 2)
+        rows[torch.arange(40), anc + 1] = ans[:, 0]                 # teacher forcing: the first answer token
+        base = W.score_task(inf, bank, alphas, rows, anc, 30, cf[:12], {"task": ("seq_diff", ans, None)})
+        padded = torch.cat([rows, torch.zeros(40, 3, dtype=rows.dtype)], 1)
+        ans_p = torch.cat([ans, torch.full((40, 2), -1)], 1)
+        v = torch.zeros(padded.shape, dtype=torch.bool)
+        v[:, :rows.shape[1]] = True
+        cfp = torch.cat([cf[:12], torch.zeros(12, 3, dtype=cf.dtype)], 1)
+        got = W.score_task(inf, bank, alphas, padded, anc, 30, cfp, {"task": ("seq_diff", ans_p, None)}, valid=v,
+                           cf_valid=v[:12])
+        for f in ("free0", "freeM_topk", "freeN_topk", "nec", "full"):
+            assert got["task_" + f] == pytest.approx(base["task_" + f], rel=1e-5), f
+        with pytest.raises(ValueError, match="even"):
+            W.score_task(inf, bank, alphas, rows, anc, 29, cf[:12], {"task": ("seq_diff", ans, None)})

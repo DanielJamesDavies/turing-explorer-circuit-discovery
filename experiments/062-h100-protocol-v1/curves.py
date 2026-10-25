@@ -10,6 +10,7 @@ It also prints the numbers behind the figure, and whether circuits still shrinki
 held-out strongest contexts (within each depth band, so depth does not confound it).
 
   OUT=experiments/062-h100-protocol-v1/out PYTHONPATH=src python experiments/062-h100-protocol-v1/curves.py
+  env: FAMILY (turingllm | pythia-70m | gpt2-small: layers and depth bands; family_table.py)  BANDS
 """
 import glob
 import json
@@ -24,9 +25,13 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parents[1] / "src"))
 from analysis.style import (CATEGORICAL, INK_MUTED, INK_SECONDARY, configure_matplotlib, panel_figsize,  # noqa: E402
                             save_figure, styled_legend, tint)
+sys.path.insert(0, str(HERE))
+from family_table import band_label, family  # noqa: E402
 
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
-BANDS = (("layers 0-3", range(0, 4)), ("layers 4-7", range(4, 8)), ("layers 8-11", range(8, 12)))
+FAM = family()                   # TuringLLM by default: 12 layers, layers 0-3 / 4-7 / 8-11
+N_LAYER = FAM["n_layer"]
+BANDS = tuple((band_label(lo, hi, "layers %d-%d"), range(lo, hi + 1)) for lo, hi in FAM["curve_bands"])
 HEAD = ("free0_tk", "freeM_topk_tk", "freeN_topk_tk")
 BAND = (0.8, 1.5)          # the DAN-8 pass band (2026-09-27); "in band" below also requires necessity >= NEC_MIN
 NEC_MIN = 0.9
@@ -40,6 +45,10 @@ FIGS = HERE.parents[1] / "paper" / "figures"
 # depth is ordered: a light-to-dark blue ramp (shallow -> deep) from the theme's blue ramp, not categorical hues. Red
 # is reserved for C (contrast mean) and appears in the loss figure's term panel (Daniel's rule: no red elsewhere).
 BAND_COLORS = ("#8aa4ff", "#0044ff", "#002894")
+if len(BANDS) != len(BAND_COLORS):         # a BANDS override (e.g. one band per layer): the same ramp, resampled
+    from matplotlib.colors import LinearSegmentedColormap, to_hex
+    _ramp = LinearSegmentedColormap.from_list("depth", BAND_COLORS)
+    BAND_COLORS = tuple(to_hex(_ramp(i / max(len(BANDS) - 1, 1))) for i in range(len(BANDS)))
 # data-loss terms in Figure 1's colours: Z ink grey, C (contrast mean) red, A (activating mean) green
 TERMS = {"zero": ("Z (zero)", INK_SECONDARY), "floor": ("0.25 × C (contrast mean)", CATEGORICAL[1]),
          "pos": ("0.25 × A (activating mean)", CATEGORICAL[3])}
@@ -161,21 +170,22 @@ def main():
     axes[1].set(yscale="log", xlabel="training step", ylabel="data loss (Z + C + A)", ylim=(3e-3, 1.0))
     axes[1].set_title("Data loss during training")          # per-pass averaging is stated in the caption
 
-    med = [100 * np.median(shrink[layer == L]) for L in range(12)]
-    q1 = [100 * np.percentile(shrink[layer == L], 25) for L in range(12)]
-    q3 = [100 * np.percentile(shrink[layer == L], 75) for L in range(12)]
-    axes[2].vlines(range(12), q1, q3, color=tint(CATEGORICAL[0], 0.55), linewidth=2.2, zorder=1)
-    axes[2].plot(range(12), med, "o", color=CATEGORICAL[0], markersize=7, zorder=2)
+    med = [100 * np.median(shrink[layer == L]) for L in range(N_LAYER)]
+    q1 = [100 * np.percentile(shrink[layer == L], 25) for L in range(N_LAYER)]
+    q3 = [100 * np.percentile(shrink[layer == L], 75) for L in range(N_LAYER)]
+    axes[2].vlines(range(N_LAYER), q1, q3, color=tint(CATEGORICAL[0], 0.55), linewidth=2.2, zorder=1)
+    axes[2].plot(range(N_LAYER), med, "o", color=CATEGORICAL[0], markersize=7, zorder=2)
     axes[2].set(xlabel="target layer", ylabel="removed in last %d steps (%%)" % LAST,
-                xticks=range(0, 12, 2), ylim=(0, None))
+                xticks=range(0, N_LAYER, 2 if N_LAYER > 6 else 1), ylim=(0, None))
     axes[2].set_title("Still shrinking at step %d" % size.shape[1])      # median + IQR: stated in the caption
     png = save_figure(fig, OUT / "training_curves.png")
     print("figure:", png)
     png2 = loss_figure(plt, layer, loss, data, terms, rank)
     if os.environ.get("PAPER"):                                    # PAPER=1: copy the vector figures into the paper
         FIGS.mkdir(parents=True, exist_ok=True)
-        shutil.copy(png.with_suffix(".pdf"), FIGS / "training-curves.pdf")
-        shutil.copy(png2.with_suffix(".pdf"), FIGS / "loss-curves.pdf")
+        tag = "" if FAM["name"] == "turingllm" else "-" + FAM["name"]     # never overwrite TuringLLM's figures
+        shutil.copy(png.with_suffix(".pdf"), FIGS / ("training-curves%s.pdf" % tag))
+        shutil.copy(png2.with_suffix(".pdf"), FIGS / ("loss-curves%s.pdf" % tag))
         print("copied to", FIGS)
 
 

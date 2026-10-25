@@ -122,6 +122,75 @@ class TestAblMaskHop:
             method._run_ablation_hop(5, 11, TOKENS, ARGMAX, MagicMock())
 
 
+class TestAblMaskOutputEndpoint:
+    """Experiment 080 (2026-10-18): learned_mask.mask_objective="logit" sends the abl-mask hop to the engine's logit
+    objective with the probe's next-token targets; the default ("pos") call is unchanged."""
+
+    UPSTREAM = [(0, "attn"), (0, "mlp"), (0, "resid"), (1, "attn"), (1, "mlp")]      # of the seed at (1, resid)
+
+    def _stubbed(self, monkeypatch, **cfg):
+        method, bank = _abl(monkeypatch)
+        import circuit.instrument.learned_mask as lm
+        for k, v in cfg.items():
+            monkeypatch.setattr(config.discovery.learned_mask, k, v)
+        captured = {}
+
+        def stub(inference, bank_, **kw):
+            captured.update(kw)
+            return {FeatureID(0, "attn", 7): 0.9}, {"loss_initial": 1.0, "loss_final": 0.1}
+
+        monkeypatch.setattr(lm, "run_learned_mask", stub)
+        method._floor_neg_tokens = TOKENS
+        return method, captured
+
+    def test_config_defaults_and_validators(self):
+        cfg = LearnedMaskConfig()
+        assert (cfg.mask_objective, cfg.logit_scope, cfg.logit_norm) == ("pos", "upstream", "none")
+        for field, bad in (("mask_objective", "maximise"), ("logit_scope", "downstream"), ("logit_norm", "rel")):
+            with pytest.raises(ValueError, match=field):
+                LearnedMaskConfig(**{field: bad})
+
+    def test_default_call_has_no_output_arguments(self, monkeypatch):
+        method, captured = self._stubbed(monkeypatch)
+        method._mask_target_tokens = TOKENS + 3
+        method._run_ablation_hop(5, 11, TOKENS, ARGMAX, MagicMock())
+        assert captured["objective"] == "pos"
+        assert "target_tokens" not in captured and "logit_norm" not in captured
+        assert captured["sites"] == self.UPSTREAM
+
+    def test_logit_gets_target_tokens_and_the_upstream_scope(self, monkeypatch):
+        method, captured = self._stubbed(monkeypatch, mask_objective="logit", logit_norm="gap")
+        tt = torch.arange(12, dtype=torch.long).reshape(6, 2)
+        method._mask_target_tokens = tt
+        method._run_ablation_hop(5, 11, TOKENS, ARGMAX, MagicMock())
+        assert captured["objective"] == "logit"
+        assert torch.equal(captured["target_tokens"], tt[:4])                     # row-aligned with the positives
+        assert captured["logit_norm"] == "gap"
+        assert captured["sites"] == self.UPSTREAM                                 # the target's site runs live
+
+    def test_logit_scope_all_masks_every_site(self, monkeypatch):
+        method, captured = self._stubbed(monkeypatch, mask_objective="logit", logit_scope="all")
+        method._mask_target_tokens = TOKENS
+        method._run_ablation_hop(5, 11, TOKENS, ARGMAX, MagicMock())
+        assert captured["sites"] == [(l, k) for l in range(2) for k in ("attn", "mlp", "resid")]
+
+    def test_logit_without_target_tokens_raises(self, monkeypatch):
+        method, _ = self._stubbed(monkeypatch, mask_objective="logit")
+        with pytest.raises(ValueError, match="target_tokens"):
+            method._run_ablation_hop(5, 11, TOKENS, ARGMAX, MagicMock())
+
+    def test_attribution_hop_holds_the_probe_targets_for_one_hop(self, monkeypatch):
+        from types import SimpleNamespace
+        method, captured = self._stubbed(monkeypatch, mask_objective="logit")
+        tt = torch.ones(4, 2, dtype=torch.long)
+        ctx = SimpleNamespace(seed_comp_idx=5, seed_latent_idx=11, pos_tokens_probe=TOKENS, pos_argmax_probe=ARGMAX,
+                              probe_data=SimpleNamespace(target_tokens=tt))
+        hop = method._run_attribution_hop(ctx, MagicMock())
+        assert torch.equal(captured["target_tokens"], tt)
+        assert hop.positives == {FeatureID(0, "attn", 7): 0.9}
+        assert method._mask_target_tokens is None
+
+
 class TestCfMaskHops:
     def test_contrast_delivers_supports(self, monkeypatch):
         method, bank = _cf(monkeypatch, "mask_contrast")

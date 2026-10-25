@@ -15,6 +15,10 @@ part-way is still stratified. Resumable; one row per (target, stage).
 
   OUT=experiments/062-h100-protocol-v1/out_full/out PYTHONPATH=src python experiments/062-h100-protocol-v1/stable_core.py
   env: N_PER (5)  OUT_SC (default experiments/062-h100-protocol-v1/out_stable_core)  REPORT=1 (summary; no GPU)
+       SC_TARGETS (a target list used as given, e.g. a pre-drawn public list, instead of the N_PER-per-cell draw;
+       targets without a main circuit are skipped)
+       SHARD=i/k (keys[i::k]; rows to stable_core.shard<i>.jsonl / train.shard<i>.jsonl when k > 1)
+       FAMILY / DATA / STORES / LAM / STEPS as driver.py
 """
 import json
 import os
@@ -34,6 +38,7 @@ import random_null as RN  # noqa: E402
 
 N_PER = int(os.environ.get("N_PER", 5))
 OUT_SC = Path(os.environ.get("OUT_SC", str(HERE / "out_stable_core")))
+SC_TARGETS = os.environ.get("SC_TARGETS")
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
 _PERMUTE = {}                                            # key -> permutation of the training rows, set per fit
 
@@ -62,8 +67,11 @@ def install_order_wrapper():
 
 
 def pick_targets():
-    """N_PER fitted, non-vacuous targets per (layer, kind), fixed seed, cells interleaved."""
+    """N_PER fitted, non-vacuous targets per (layer, kind), fixed seed, cells interleaved (or SC_TARGETS as given)."""
     import glob
+    if SC_TARGETS:
+        circ = driver.OUT / "main" / "circuits"
+        return [k for k in Path(SC_TARGETS).read_text().split() if (circ / ("%s.pt" % k)).exists()]
     strong = {}
     for f in sorted(glob.glob(str(driver.OUT / "main" / "eval.shard*.jsonl"))):
         for line in open(f):
@@ -94,23 +102,20 @@ def member_set(c):
 def main():
     import torch
     OUT_SC.mkdir(parents=True, exist_ok=True)
-    path = OUT_SC / "stable_core.jsonl"
+    path = driver.shard_jsonl(OUT_SC, "stable_core")
     done = set()
-    if path.exists():
-        for line in open(path):
-            try:
-                r = json.loads(line)
-            except Exception:  # noqa: BLE001
-                continue
-            if "error" not in r:
-                done.add((r["seed"], r["stage"]))
-    keys = pick_targets()
-    print("stable core: %d targets (%d per cell), %d rows done" % (len(keys), N_PER, len(done)), flush=True)
+    for r in driver.read_jsonl_all(OUT_SC, "stable_core"):
+        if "error" not in r:
+            done.add((r["seed"], r["stage"]))
+    keys = pick_targets()[driver.SHARD_I::driver.SHARD_K]
+    print("stable core: %d targets (%s), %d rows done; shard %d/%d" % (
+        len(keys), "SC_TARGETS" if SC_TARGETS else "%d per cell" % N_PER, len(done), driver.SHARD_I, driver.SHARD_K),
+        flush=True)
     RN.install_support_wrapper()
     install_order_wrapper()
     R = driver.Runner()
     M = R.method(driver.GAMMA, driver.LAM, True)
-    fh, ftr = open(path, "a"), open(OUT_SC / "train.jsonl", "a")
+    fh, ftr = open(path, "a"), open(driver.shard_jsonl(OUT_SC, "train"), "a")
     t0 = time.time()
     for n_, key in enumerate(keys):
         try:
@@ -171,7 +176,7 @@ def main():
 def report():
     import glob
     import pandas as pd
-    d = pd.DataFrame([json.loads(l) for l in open(OUT_SC / "stable_core.jsonl")])
+    d = pd.DataFrame(driver.read_jsonl_all(OUT_SC, "stable_core"))
     d = d[d.stage != "error"].drop_duplicates(["seed", "stage"], keep="last")
     ev = {}
     for f in glob.glob(str(driver.OUT / "main" / "eval.shard*.jsonl")):

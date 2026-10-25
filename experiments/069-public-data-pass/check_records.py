@@ -34,12 +34,13 @@ def _comp(bank, layer: int, kind: str) -> int:
 def _auto_targets(bank, top_ctx, mid_ctx, n_auto: int, n_random: int, seed: int = 0):
     import torch
     g = torch.Generator().manual_seed(seed)
-    n_top = (top_ctx.ctx_seq_idx > 0).sum(-1)                  # [C, D]
+    n_top = (top_ctx.ctx_seq_idx > 0).sum(-1).cpu()            # [C, D]
     C = int(n_top.shape[0])
-    # mid pool as protocol_contexts.store_ids builds it: mid ids not already in the top row
+    # mid pool as protocol_contexts.store_ids builds it: mid ids not already in the top row (on the CPU: with a GPU
+    # visible the two stores can load on different devices)
     n_mid = torch.zeros_like(n_top)
     for c in range(C):
-        top, mid = top_ctx.ctx_seq_idx[c].long(), mid_ctx.ctx_seq_idx[c].long()
+        top, mid = top_ctx.ctx_seq_idx[c].long().cpu(), mid_ctx.ctx_seq_idx[c].long().cpu()
         in_top = (mid[:, :, None] == top[:, None, :]).any(-1)
         n_mid[c] = ((mid > 0) & ~in_top).sum(-1)
     sites = [c for c in range(C) if int((n_top[c] >= 8).sum()) > 0]

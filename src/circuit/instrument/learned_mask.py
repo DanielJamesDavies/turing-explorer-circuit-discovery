@@ -142,6 +142,15 @@ def _amp_of(psi):
 
 OBJECTIVES = ("pos", "contrast", "negctx", "inject", "raise", "pin", "logit",
               "maximise")
+# Shared normalisers of the logit objective's data terms (see logit_norm).
+LOGIT_NORMS = ("none", "gap")
+# "gap" floor: a 0.1-nat rms full-vs-empty gap. Below it the output barely
+# depends on the masked sites, and dividing by the gap would only inflate the
+# data terms until lambda is negligible.
+LOGIT_GAP_FLOOR = 1e-2
+# What the logit objective reproduces (see logit_metric): one token (pair), or
+# token sets.
+LOGIT_METRICS = ("token", "set", "seq")
 
 MASK_FLOOR_SOURCES = ("zero", "posctx", "negctx", "dual", "triple", "pn")
 # The floors that need negative contexts to build. EXPORTED because callers
@@ -403,19 +412,65 @@ def _forward_logits(inference: Any, patcher: LearnedMaskPatcher,
     return logits
 
 
+def _set_logmass(lp: torch.Tensor, tokens: torch.Tensor) -> torch.Tensor:
+    """log sum_{t in set} p(t) per row: lp [B, V] log-probs, tokens [B, K] token ids padded with -1."""
+    t = tokens[:lp.shape[0]].to(lp.device).long()
+    g = lp.gather(1, t.clamp(min=0))
+    return torch.logsumexp(g.masked_fill(t < 0, float("-inf")), dim=1)
+
+
+def _seq_logprob(logits: torch.Tensor, anchors: torch.Tensor, answers: torch.Tensor) -> torch.Tensor:
+    """Teacher-forced answer log-prob per row: sum_k log p(a_k | prompt, a_<k), read at positions anchor + k of a
+    row whose tokens are prompt + a[:-1]; answers [B, L] padded with -1 (the padded slots add nothing) -> [B]."""
+    B, T = int(logits.shape[0]), int(logits.shape[1])
+    a = answers[:B].to(logits.device).long()
+    L = int(a.shape[1])
+    pos = (anchors[:B].to(logits.device).long()[:, None] + torch.arange(L, device=logits.device)[None, :])
+    ok = (a >= 0) & (pos < T)
+    lg = logits[torch.arange(B, device=logits.device)[:, None], pos.clamp(max=T - 1)].float()     # [B, L, V]
+    lp = torch.log_softmax(lg, dim=-1).gather(2, a.clamp(min=0)[..., None])[..., 0]
+    return (lp * ok).sum(dim=1)
+
+
+def _pair_diff(v: torch.Tensor) -> torch.Tensor:
+    """Rows come in (good, bad) pairs: the pair's value v[good] - v[bad], written on BOTH rows of the pair, so every
+    per-row consumer (targets, squared errors, means) works unchanged and a mean over rows is the mean over items."""
+    if int(v.shape[0]) % 2:
+        raise ValueError("logit_metric='seq' needs (good, bad) row pairs: got an odd number of rows")
+    d = v[0::2] - v[1::2]
+    return d.repeat_interleave(2)
+
+
 def _target_logprob(logits: torch.Tensor, anchors: torch.Tensor,
                     targets: torch.Tensor,
-                    contrast: "Optional[torch.Tensor]" = None) -> torch.Tensor:
+                    contrast: "Optional[torch.Tensor]" = None,
+                    sets: bool = False,
+                    seq: bool = False) -> torch.Tensor:
     """log p(target token) at each sequence's anchor position -> [B].
     With `contrast` (2026-09-07): log p(target) - log p(contrast), i.e. the
     logit DIFFERENCE — the metric of contrastive tasks (IOI, agreement,
     SFC). Without it the single-token objective can reproduce the target's
     log-prob while raising the contrast token too (agreement: EF 1.00 on
-    the correct verb but the correct-minus-wrong margin fell 2.9 -> 0.1)."""
+    the correct verb but the correct-minus-wrong margin fell 2.9 -> 0.1).
+    With `sets` (2026-10-19, experiment 081, logit_metric="set"): targets and
+    contrast are [B, K] token SETS padded with -1, and the value is
+    log P(target set) - log P(contrast set) (greater-than's "digits above the
+    start year" vs "below").
+    With `seq` (2026-10-21, experiment 081, logit_metric="seq"): MULTI-TOKEN answers, teacher-forced. Rows come in
+    (good, bad) pairs, each row = prompt + its answer[:-1], targets = the row's answer tokens [B, L] (-1 padded),
+    anchors = the prompt's last position; the value is log p(good seq) - log p(bad seq), written on both rows of
+    the pair (_pair_diff). One-token answers give exactly the token metric (duplicated per pair)."""
     B = min(int(logits.shape[0]), int(anchors.shape[0]), int(targets.shape[0]))
+    if seq:
+        return _pair_diff(_seq_logprob(logits[:B], anchors[:B], targets[:B]))
     idx = torch.arange(B, device=logits.device)
     pa = anchors[:B].to(logits.device).clamp(0, logits.shape[1] - 1)
     lp = torch.log_softmax(logits[:B][idx, pa].float(), dim=-1)
+    if sets:
+        v = _set_logmass(lp, targets[:B])
+        if contrast is not None:
+            v = v - _set_logmass(lp, contrast[:B])
+        return v
     v = lp[idx, targets[:B].to(logits.device).long()]
     if contrast is not None:
         v = v - lp[idx, contrast[:B].to(logits.device).long()]
@@ -436,9 +491,12 @@ def _natural_logprob(inference: Any, bank: Any, tokens: torch.Tensor,
                      w_seed: torch.Tensor, b_seed: torch.Tensor,
                      code_dtype: str = "stream",
                      batch: int = 8,
-                     contrast: "Optional[torch.Tensor]" = None) -> torch.Tensor:
+                     contrast: "Optional[torch.Tensor]" = None,
+                     sets: bool = False,
+                     seq: bool = False) -> torch.Tensor:
     """Full-model log p(target) at each anchor -> [B]. The logit
-    objective's REPRODUCTION target, exactly as _natural is for pos."""
+    objective's REPRODUCTION target, exactly as _natural is for pos.
+    (seq: batch must be even, so no (good, bad) pair is split.)"""
     p = LearnedMaskPatcher(bank, {}, seed_layer, seed_kind, w_seed, b_seed,
                            code_dtype=code_dtype)
     out = []
@@ -446,7 +504,8 @@ def _natural_logprob(inference: Any, bank: Any, tokens: torch.Tensor,
         lg = _forward_logits(inference, p, tokens[s:s + batch], grad=False)
         out.append(_target_logprob(
             lg, anchors[s:s + batch], targets[s:s + batch],
-            None if contrast is None else contrast[s:s + batch]).detach())
+            None if contrast is None else contrast[s:s + batch],
+            sets=sets, seq=seq).detach())
     return torch.cat(out, dim=0) if out else torch.zeros(0)
 
 
@@ -606,6 +665,41 @@ def _run_learned_mask_impl(
     # every A/C ablation value the fit trained against. False = the old
     # behaviour, kept only to reproduce earlier runs.
     floors_train_only: bool = True,
+    # LOGIT NORMALISER (2026-10-18, experiment 080): the shared scale the
+    # logit objective's data terms are divided by. "none" (default) = raw
+    # nats^2, the 025 behaviour, bit-identical. "gap" = mean over the
+    # training contexts of (log p_full - log p_zero-empty)^2, the squared
+    # gap between the full model and the empty circuit under the ZERO
+    # ablation of the masked sites (= the closed-mask zero loss), floored at
+    # LOGIT_GAP_FLOOR. Under "gap" each term is ~ (1 - output faithfulness)^2,
+    # the logit analogue of pos's mean(target^2) scale, so lambda prices a
+    # latent against the same relative error for every target. Read only by
+    # objective="logit".
+    logit_norm: str = "none",
+    # LOGIT METRIC (2026-10-19, experiment 081): what the logit objective
+    # reproduces at each anchor. "token" (default, bit-identical) = log p of
+    # one target token (minus one contrast token's). "set" = target_tokens and
+    # contrast_tokens are [B, K] token SETS padded with -1, and the endpoint is
+    # log P(target set) - log P(contrast set): greater-than's P(digit > YY)
+    # against P(digit < YY), which one token pair cannot express.
+    logit_metric: str = "token",
+    # VALID POSITIONS (2026-10-19, experiment 081): [B, T] masks of the real
+    # tokens of right-padded prompts, for pos_tokens / neg_tokens. When given,
+    # the mean-ablation floors (the A and C values) average over valid
+    # positions only, so padding never enters an ablation value. None
+    # (default) = every position, unchanged.
+    pos_valid: Optional[torch.Tensor] = None,
+    neg_valid: Optional[torch.Tensor] = None,
+    # PRECOMPUTED FLOORS (2026-10-21, experiment 081): {site: [d_sae]} mean-
+    # ablation values supplied by the caller instead of collected here.
+    # floor_means replaces the floor built from mask_floor_source's own source
+    # (the negctx / C value under "triple"); pos_floor_means replaces the
+    # posctx floor of "triple" / "pn" (the A value). Lets a caller average
+    # over a pool other than the training stream it trains on (081: the
+    # whole training pool and the task's whole contrast pool, computed once
+    # per task). None (default) = collected here, unchanged.
+    floor_means: Optional[Dict[Site, torch.Tensor]] = None,
+    pos_floor_means: Optional[Dict[Site, torch.Tensor]] = None,
     binarize: str = "none",
     anneal_reach_frac: float = 1.0,
     support: Optional[Dict[Site, torch.Tensor]] = None,
@@ -686,6 +780,40 @@ def _run_learned_mask_impl(
         raise ValueError(f"rank_mode must be 'cut', 'keep' or 'top', got {rank_mode!r}")
     if (offtarget_weight > 0 or rank_weight > 0) and objective != "pos":
         raise ValueError("offtarget_weight / rank_weight need objective='pos'")
+    if logit_norm not in LOGIT_NORMS:
+        raise ValueError(f"logit_norm must be one of {LOGIT_NORMS}, got {logit_norm!r}")
+    if logit_metric not in LOGIT_METRICS:
+        raise ValueError(f"logit_metric must be one of {LOGIT_METRICS}, got {logit_metric!r}")
+    _sets = logit_metric == "set"
+    if _sets:
+        if objective != "logit":
+            raise ValueError("logit_metric='set' needs objective='logit'")
+        if target_tokens.dim() != 2 or (contrast_tokens is not None and contrast_tokens.dim() != 2):
+            raise ValueError("logit_metric='set' takes target_tokens / contrast_tokens as [B, K] token sets "
+                             "padded with -1")
+        for _nm, _tk in (("target_tokens", target_tokens), ("contrast_tokens", contrast_tokens)):
+            if _tk is not None and bool(((_tk >= 0).sum(dim=1) == 0).any()):
+                raise ValueError(f"logit_metric='set': a row of {_nm} has an empty set (log P = -inf)")
+    _seq = logit_metric == "seq"
+    if _seq:
+        # (good, bad) row pairs: every slice the engine takes must keep pairs whole, so the row count, the micro-batch
+        # and the holdout split are even (the split rounds the holdout down to an even count; see _n_hold)
+        if objective != "logit":
+            raise ValueError("logit_metric='seq' needs objective='logit'")
+        if target_tokens.dim() != 2 or contrast_tokens is not None:
+            raise ValueError("logit_metric='seq' takes target_tokens as [B, L] answer sequences (-1 padded), one "
+                             "row per (good | bad) continuation, and no contrast_tokens (the pairs carry the contrast)")
+        if int(pos_tokens.shape[0]) % 2 or int(batch_size) % 2 or (
+                deep_batch_size is not None and int(deep_batch_size) % 2):
+            raise ValueError("logit_metric='seq' needs an even number of rows, batch_size and deep_batch_size "
+                             "((good, bad) pairs must never be split)")
+        if bool(((target_tokens >= 0).sum(dim=1) == 0).any()):
+            raise ValueError("logit_metric='seq': a row has an empty answer")
+
+    def _n_hold(n: int) -> int:
+        """The engine's holdout count, round(n * holdout_frac); under 'seq' rounded down to even (whole pairs)."""
+        h = int(round(n * holdout_frac))
+        return h - (h % 2) if _seq else h
     # With margin_topk the SEED term fits the seed's lead over the site's
     # k-th pre-activation; the off-target term still reads every latent's
     # PLAIN pre-activation from the captured stream, so the two compose.
@@ -773,7 +901,12 @@ def _run_learned_mask_impl(
     # mode one would actually ship if zero were unnecessary — comparable
     # overall loss scale to dual/triple); posctx keeps triple_floor_weight;
     # dual_floor_weight is unused.
-    DUAL_OK = ("pos", "maximise")
+    # "logit" joined 2026-10-18 (experiment 080): the output endpoint scored
+    # under the SAME three ablations as the latent circuits (Z + C + A), so
+    # the two endpoints differ only in what is reproduced. Its loss lives on
+    # the positives like pos's; before this the combination raised, so no
+    # earlier run is affected.
+    DUAL_OK = ("pos", "maximise", "logit")
     triple_floor = mask_floor_source == "triple"
     pos_floor = mask_floor_source in ("triple", "pn")
     zero_term = mask_floor_source in ("dual", "triple")
@@ -791,10 +924,19 @@ def _run_learned_mask_impl(
         if not floors_train_only:
             return tokens
         n = int(tokens.shape[0])
-        return tokens[:max(1, n - int(round(n * holdout_frac)))]
+        return tokens[:max(1, n - _n_hold(n))]
+
+    def _given_floors(fm: Dict[Site, torch.Tensor], name: str) -> Dict[Site, torch.Tensor]:
+        missing = set(sites) - set(fm)
+        if missing:
+            raise ValueError(f"{name} lacks sites {sorted(missing)}")
+        dev_ = getattr(bank, "device", pos_tokens.device)
+        return {s: fm[s].to(dev_) for s in sites}
 
     floors: Optional[Dict[Site, torch.Tensor]] = None
-    if mask_floor_source != "zero":
+    if mask_floor_source != "zero" and floor_means is not None:
+        floors = _given_floors(floor_means, "floor_means")
+    elif mask_floor_source != "zero":
         from eval.floors import collect_site_means
         if mask_floor_source in FLOORS_NEEDING_NEGATIVES:
             if neg_tokens is None or int(neg_tokens.shape[0]) == 0:
@@ -804,9 +946,14 @@ def _run_learned_mask_impl(
                     f"{mask_floor_source!r} that silently used posctx is worse "
                     "than a visible failure.")
             floor_tokens = _train_part(neg_tokens)
+            floor_valid = None if neg_valid is None else _train_part(neg_valid)
         else:
             floor_tokens = _train_part(pos_tokens)
-        floors = collect_site_means(inference, bank, floor_tokens, set(sites))
+            floor_valid = None if pos_valid is None else _train_part(pos_valid)
+        if floor_valid is None:
+            floors = collect_site_means(inference, bank, floor_tokens, set(sites))
+        else:
+            floors = collect_site_means(inference, bank, floor_tokens, set(sites), valid=floor_valid)
         if logger is not None:
             logger.note(f"learned_mask: {mask_floor_source} floor over "
                         f"{int(floor_tokens.shape[0])} sequences, "
@@ -814,10 +961,16 @@ def _run_learned_mask_impl(
     # triple's/pn's posctx floor: collected separately because the shared
     # `floors` slot is already carrying negctx.
     floors_pos: Optional[Dict[Site, torch.Tensor]] = None
-    if pos_floor:
+    if pos_floor and pos_floor_means is not None:
+        floors_pos = _given_floors(pos_floor_means, "pos_floor_means")
+    elif pos_floor:
         from eval.floors import collect_site_means as _csm
         _pos_floor_tokens = _train_part(pos_tokens)
-        floors_pos = _csm(inference, bank, _pos_floor_tokens, set(sites))
+        if pos_valid is None:
+            floors_pos = _csm(inference, bank, _pos_floor_tokens, set(sites))
+        else:
+            floors_pos = _csm(inference, bank, _pos_floor_tokens, set(sites),
+                              valid=_train_part(pos_valid))
         if logger is not None:
             logger.note(f"learned_mask: {mask_floor_source} posctx floor over "
                         f"{int(_pos_floor_tokens.shape[0])} sequences")
@@ -1087,7 +1240,7 @@ def _run_learned_mask_impl(
 
     def split(tokens, anchors):
         n = int(tokens.shape[0])
-        n_hold = int(round(n * holdout_frac))
+        n_hold = _n_hold(n)
         n_train = max(1, n - n_hold)
         return (tokens[:n_train], anchors[:n_train],
                 tokens[n_train:], anchors[n_train:])
@@ -1118,7 +1271,7 @@ def _run_learned_mask_impl(
     if objective == "logit":
         # accept [B] (already gathered at the anchor) or [B, T] (gather here)
         tt = target_tokens
-        if tt.dim() > 1:
+        if tt.dim() > 1 and not (_sets or _seq):   # "set" / "seq": [B, K] per row, not [B, T]
             bidx = torch.arange(min(tt.shape[0], pos_argmax.shape[0]))
             tt = tt[bidx, pos_argmax[:tt.shape[0]].clamp(0, tt.shape[1] - 1)]
         logit_tok = tt[:pos_tokens.shape[0]]
@@ -1131,7 +1284,7 @@ def _run_learned_mask_impl(
                                       logit_tok, seed_layer, seed_kind,
                                       w_seed, b_seed, code_dtype=code_dtype,
                                       batch=max(1, int(micro_bs)),
-                                      contrast=contrast_tok)
+                                      contrast=contrast_tok, sets=_sets, seq=_seq)
         ptgt_tr = lp_nat_all[:pt_tr.shape[0]]
         ptgt_ho = lp_nat_all[pt_tr.shape[0]:]
         logit_tok_tr = logit_tok[:pt_tr.shape[0]]
@@ -1176,18 +1329,22 @@ def _run_learned_mask_impl(
     # negative baseline, never a sufficient set. The zero-floored mask has the
     # mirror problem: sufficient, but never asked what distinguishes firing
     # from a near-identical non-firing context.
+    # tap_seed follows the objective (True for every pre-activation objective,
+    # the default, so those patchers are unchanged; False for logit, whose
+    # endpoint is the output).
     patcher_zero = (
         LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
                            deltas=deltas, amps=amps, code_dtype=code_dtype,
                            floors=None,
-                           binarize=binarize, bin_threshold=keep_threshold)
+                           binarize=binarize, bin_threshold=keep_threshold,
+                           tap_seed=_tap)
         if zero_term else None)
     # triple's/pn's posctx patcher: same thetas again, posctx floor.
     patcher_pos = (
         LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
                            deltas=deltas, amps=amps, code_dtype=code_dtype,
                            floors=floors_pos, binarize=binarize,
-                           bin_threshold=keep_threshold)
+                           bin_threshold=keep_threshold, tap_seed=_tap)
         if pos_floor else None)
 
     def mask_mean() -> torch.Tensor:
@@ -1253,7 +1410,8 @@ def _run_learned_mask_impl(
             lg = _forward_logits(inference, pat, tk, grad=True)
             lp = _target_logprob(lg, an, tokid,
                                  None if contrast_tr is None
-                                 else contrast_tr[s:s + tk.shape[0]])
+                                 else contrast_tr[s:s + tk.shape[0]],
+                                 sets=_sets, seq=_seq)
             return ((lp - tg[:lp.shape[0]].to(lp.device, lp.dtype)) ** 2).mean()
         pre = _forward_preact(inference, pat, tk, grad=True)
         vals = _at(pre, an)
@@ -1337,7 +1495,51 @@ def _run_learned_mask_impl(
     # They simply no longer set the scale.
     norm_zero = norm_floor = 1.0
     dual_norm = 1.0
-    if dual_floor:
+    # logit objective: the shared scale of its data terms (logit_norm). 1.0 =
+    # raw nats^2, the historical single-floor behaviour, unchanged.
+    logit_scale = 1.0
+    if objective == "logit" and (dual_floor or logit_norm == "gap"):
+        # The logit analogue of the block below: the closed-mask losses are
+        # measured on the OUTPUT (log p of the target token, full depth, the
+        # masked sites shut), as diagnostics; under logit_norm="gap" the zero
+        # one is also the shared scale. Two no-grad passes over the training
+        # contexts. A log-prob is bounded where the zero-ablated
+        # pre-activation is not (the 1.9e8 failure below), so this closed loss
+        # cannot annihilate a term.
+        with torch.no_grad():
+            shut = {s: torch.full((bank.d_sae,), -40.0, device=device)
+                    for s in sites}                      # sigmoid(-40) == 0
+
+            def _closed_logprob(fl):
+                p_shut = LearnedMaskPatcher(bank, shut, seed_layer, seed_kind,
+                                            w_seed, b_seed, code_dtype=code_dtype,
+                                            floors=fl, tap_seed=False)
+                step_ = max(1, int(micro_bs))
+                out = []
+                for s0 in range(0, int(pt_tr.shape[0]), step_):
+                    lg = _forward_logits(inference, p_shut, pt_tr[s0:s0 + step_],
+                                         grad=False)
+                    out.append(_target_logprob(
+                        lg, pa_tr[s0:s0 + step_], logit_tok_tr[s0:s0 + step_],
+                        None if contrast_tr is None
+                        else contrast_tr[s0:s0 + step_], sets=_sets, seq=_seq).detach().float())
+                    del lg
+                return torch.cat(out)
+
+            _tgt = ptgt_tr.to(torch.float32)
+            _lp0 = _closed_logprob(None)
+            norm_zero = max(float(((_lp0 - _tgt.to(_lp0.device)) ** 2).mean()), 1e-6)
+            if dual_floor and floors is not None:
+                _lpf = _closed_logprob(floors)
+                norm_floor = max(float(((_lpf - _tgt.to(_lpf.device)) ** 2).mean()), 1e-6)
+            if logit_norm == "gap":
+                logit_scale = max(norm_zero, LOGIT_GAP_FLOOR)
+            dual_norm = logit_scale
+        if logger is not None:
+            logger.note(f"learned_mask[logit]: norm {logit_norm} -> scale "
+                        f"{logit_scale:.4g} | closed-mask zero {norm_zero:.4g} "
+                        f"/ floor {norm_floor:.4g} (nats^2)")
+    elif dual_floor:
         with torch.no_grad():
             shut = {s: torch.full((bank.d_sae,), -40.0, device=device)
                     for s in sites}                      # sigmoid(-40) == 0
@@ -1490,7 +1692,7 @@ def _run_learned_mask_impl(
                 # built its own — two full all-site graphs at once, which
                 # doubled peak VRAM and spilled into WDDM shared memory on L8
                 # (measured). Per-term backward holds one graph at a time.
-                if objective in ("pos", "maximise") and dual_floor:
+                if objective in ("pos", "maximise", "logit") and dual_floor:
                     # Same data, same anchors, same target — two ABLATION
                     # SEMANTICS. A latent must earn its place under both.
                     # `pos` divides by dual_norm = mean(target^2) to make its
@@ -1498,7 +1700,9 @@ def _run_learned_mask_impl(
                     # data_loss already divides by max_scale, so it needs no
                     # second normaliser — applying dual_norm there would
                     # rescale by the target's magnitude a second time.
-                    dn = dual_norm if objective == "pos" else 1.0
+                    # `logit` divides by its logit_norm scale (dual_norm is
+                    # set to it above; 1.0 = raw nats^2).
+                    dn = dual_norm if objective in ("pos", "logit") else 1.0
                     if patcher_zero is not None:
                         terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn,
                                   patcher_zero),
@@ -1513,7 +1717,11 @@ def _run_learned_mask_impl(
                                       patcher_pos))
                 elif objective == "pos":
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
-                elif objective in ("pin", "logit", "maximise"):
+                elif objective == "logit":
+                    # single floor: 1 / logit_scale, exactly 1.0 under the
+                    # default logit_norm="none" (the 025 behaviour)
+                    terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / logit_scale, None)]
+                elif objective in ("pin", "maximise"):
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
                 elif objective == "raise":
                     # posctx data; the target inside data_loss is
@@ -1688,7 +1896,7 @@ def _run_learned_mask_impl(
         with torch.no_grad():
             if objective == "logit" and pt_ho.shape[0]:
                 lg = _forward_logits(inference, patcher, pt_ho, grad=False)
-                lp = _target_logprob(lg, pa_ho, logit_tok_ho, contrast_ho)
+                lp = _target_logprob(lg, pa_ho, logit_tok_ho, contrast_ho, sets=_sets, seq=_seq)
                 ho = float(((lp - ptgt_ho[:lp.shape[0]].to(lp.device, lp.dtype))
                             ** 2).mean())
             elif objective == "maximise" and pt_ho.shape[0]:
@@ -1889,6 +2097,11 @@ def _run_learned_mask_impl(
         "amp_stats": _amp_stats,
         "amp_kept": _amp_kept,
         "dual_norm_shared": round(dual_norm, 6) if dual_floor else None,
+        "logit_norm": logit_norm if objective == "logit" else None,
+        "logit_metric": logit_metric if objective == "logit" else None,
+        "floors_valid_masked": (pos_valid is not None or neg_valid is not None) if mask_floor_source != "zero" else None,
+        "floors_precomputed": (floor_means is not None or pos_floor_means is not None) if mask_floor_source != "zero" else None,
+        "logit_scale": float("%.6g" % logit_scale) if objective == "logit" else None,
         # diagnostics only — these no longer scale the loss
         "dual_norm_zero": float("%.6g" % norm_zero) if dual_floor else None,
         "dual_norm_floor": float("%.6g" % norm_floor) if dual_floor else None,

@@ -24,8 +24,22 @@ Each process takes targets[i::k] for SHARD=i/k.
        OUT (default experiments/062-h100-protocol-v1/out)  LIMIT (first N of this shard, smoke tests)
        SWEEP_ARMS (comma list, default all)  SKIP_SPEC=1  CURVE_STRIDE (1 = every step of the training curve)
        ORDER (interleaved | list)  SLOT (co-tenant slot on the GPU; launch.sh sets it)
+       LAM (the main fit's sparsity penalty, 1e-3)  STEPS (the training budget, 400; smoke tests only)
+       FAMILY (turingllm | pythia-70m | gpt2-small)  DATA / STORES (public families: the shard directory and the
+       data pass's artefact root, default data_public/<FAMILY> / outputs_public/<FAMILY>)  SKIP_MISSING_SAES=1
+       CTX_DIR (read the context records from here, e.g. 086's rebuilt out_full/out/ctx_v2; forces EVAL_SPLIT=explicit)
+       (the only rebuilt variant: the source-file rule and ctx_v2_nosrc were dropped 2026-10-24)
+       GROUP_SPLIT (public families: 1 = group-aware split + held-out rule, the default; 0 = the per-row split)
 
 Every fresh fit also writes train.shardN.jsonl: fit stats + the per-step training curve (see train_row).
+
+FAMILY (DAN-40/41). turingllm (default) is the 15k run's path, unchanged: 049 amp_eval_pass_v2.setup() (TuringLLM's
+outputs/ stores) and 049's scorer through a patched M0 (EVAL_SPLIT, default as_run). A public family (069 data pass +
+070 adapters) gets the same G keys from the family's Inference / SAEBank and the stores under STORES (069
+common.configure / load_stores; configured at import, before anything imports store.*): K = bank.k, kinds from the
+bank (GPT-2: attn / resid_mid / mlp / resid). It fits through the same Runner.method / Runner.fit, scores with
+src eval/wcm_eval.score_circuit(split="explicit") on circuit/protocol_contexts.eval_probe, specificity with
+eval/wcm_specificity.specificity_rows, and runs float32 matmuls at "high" (TF32), as the 068 gate fits did.
 """
 import json
 import os
@@ -38,6 +52,7 @@ import torch
 
 HERE = Path(__file__).parent
 EXP = HERE.parent
+REPO = EXP.parent
 for d in ("059-context-pool", "049-circuit-graph", "056-specificity"):
     sys.path.insert(0, str(EXP / d))
 MODE = os.environ.get("MODE", "main")
@@ -46,10 +61,10 @@ TARGETS = Path(os.environ.get("TARGETS", str(HERE / ("targets_stage1.txt" if MOD
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 LIMIT = int(os.environ["LIMIT"]) if os.environ.get("LIMIT") else None
 SKIP_SPEC = os.environ.get("SKIP_SPEC") == "1"
-GAMMA, LAM = 0.25, 1e-3
+GAMMA, LAM = 0.25, float(os.environ.get("LAM", "1e-3"))           # LAM: the main fit's price (DAN-42 pilot sets it)
 W_LAMS = (2.5e-4, 5e-4, 1e-3, 2e-3, 4e-3)
 U_LAMS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3)
-STEPS = 400                                                          # the protocol's training budget
+STEPS = int(os.environ.get("STEPS", "400"))                          # the protocol's training budget (env: smoke only)
 RANK = 3e-3                                                          # the protocol's rank-keep weight
 SWEEP = ([("W_%g" % l, True, l, STEPS, GAMMA, RANK) for l in W_LAMS]
          + [("U_%g" % l, False, l, STEPS, GAMMA, RANK) for l in U_LAMS])
@@ -73,7 +88,52 @@ TAG = "shard%d" % SHARD_I
 # interleaved order's rotation; see interleave().
 SLOT = int(os.environ.get("SLOT", "0"))
 ORDER = os.environ.get("ORDER", "interleaved")          # interleaved | list (the target file's own order)
-KIND_RANK = {"attn": 0, "mlp": 1, "resid": 2}
+KIND_RANK = {"attn": 0, "resid_mid": 1, "mlp": 2, "resid": 3}  # within-layer order (GPT-2's resid_mid: after attn)
+
+# Model family (see the module docstring). A public family is configured here, at import: the store singletons take
+# their grid from config.model.family when store.* is first imported, and the companions (random_null, stable_core,
+# 073) import src modules that import store.* before they build the Runner.
+FAMILY = os.environ.get("FAMILY", "turingllm")
+PUBLIC = FAMILY != "turingllm"
+DATA = os.environ.get("DATA") or (str(REPO / "data_public" / FAMILY) if PUBLIC else None)
+STORES = os.environ.get("STORES") or (str(REPO / "outputs_public" / FAMILY) if PUBLIC else None)
+SKIP_MISSING_SAES = os.environ.get("SKIP_MISSING_SAES") == "1"   # lazy dictionaries; a missing one = a missing site
+# CTX_DIR (DAN-157): read the context records from this directory instead of OUT/ctx, e.g. the rebuilt held-out sets
+# (086 rebuild.py: out_full/out/ctx_v2). Read only: a missing record is an error, never built there.
+# It forces the explicit eval split (EVAL_SPLIT=explicit; any other value is refused): a rebuilt held-out set may hold
+# fewer than 16 rows, and the as_run split would then move reference rows into the held-out slice. A rebuilt record's
+# deduplicated contrast held-out set (neg_held_v2) reaches the scorers through protocol_contexts.eval_probe (metadata
+# n_neg_train; the contrast-train rows and the fit's rec["neg"] are the run's). Unset: unchanged.
+CTX_DIR = os.environ.get("CTX_DIR")
+if CTX_DIR:
+    if os.environ.get("EVAL_SPLIT", "explicit") != "explicit":
+        raise SystemExit("CTX_DIR needs EVAL_SPLIT=explicit, got %r" % os.environ["EVAL_SPLIT"])
+    os.environ["EVAL_SPLIT"] = "explicit"
+# GROUP_SPLIT (public families; DAN-157): 1 (default) = build_record's group-aware split + the held-out rule
+# (circuit/heldout_rule.py; duplicates only, no document rule), 0 = the per-row split of the 15k run. TuringLLM ignores it.
+GROUP_SPLIT = PUBLIC and os.environ.get("GROUP_SPLIT", "1") == "1"
+
+
+def _data_pass_common():
+    """069's common.py, loaded under its own module name (070 has a common.py too)."""
+    import importlib.util
+    if "data_pass_069_common" in sys.modules:
+        return sys.modules["data_pass_069_common"]
+    spec = importlib.util.spec_from_file_location("data_pass_069_common", EXP / "069-public-data-pass" / "common.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# SAE_PRELOAD (public families only; 082 chain): 0 = lazy dictionaries (config.model.sae_preload False: each (kind,
+# layer) SAE loads on first use), 1 = load all at bank construction; unset = 069 configure()'s rule. TuringLLM ignores it.
+SAE_PRELOAD = os.environ.get("SAE_PRELOAD")
+if PUBLIC:
+    _data_pass_common().configure(FAMILY, DATA, STORES, skip_missing_saes=SKIP_MISSING_SAES)
+    if SAE_PRELOAD in ("0", "1"):
+        from config import config as _config
+        _config.model.sae_preload = SAE_PRELOAD == "1"
 
 
 def interleave(targets, slot):
@@ -108,15 +168,92 @@ def jsonl_keys(path, fields):
     return out
 
 
+def shard_jsonl(d, stem):
+    """A companion's (random_null, rescore_alpha1, stable_core, 073) output file: d/<stem>.jsonl unsharded (the
+    names the 15k-run companions wrote), d/<stem>.shard<i>.jsonl under SHARD=i/k with k > 1."""
+    return Path(d) / ("%s.jsonl" % stem if SHARD_K == 1 else "%s.shard%d.jsonl" % (stem, SHARD_I))
+
+
+def read_jsonl_all(d, stem):
+    """Every row of d/<stem>.jsonl and of every shard's d/<stem>.shard*.jsonl (truncated lines skipped), so a resume or
+    a report sees the work of any shard count."""
+    rows = []
+    for p in [Path(d) / ("%s.jsonl" % stem)] + sorted(Path(d).glob("%s.shard*.jsonl" % stem)):
+        if not p.exists():
+            continue
+        for line in open(p):
+            try:
+                rows.append(json.loads(line))
+            except Exception:  # noqa: BLE001
+                continue
+    return rows
+
+
+def public_setup():
+    """The G dict of amp_eval_pass_v2.setup() for a public family: the family's Inference / SAEBank, the 069 stores
+    under STORES, the probe builder over the family's shards, and setup()'s config overrides (eval / probe sizes,
+    probe batch 4, position-aware off; protocol_harness.configure sets the rest per fit). M0 carries only the probe
+    builder: the public path scores through src (wcm_eval), not through a patched M0."""
+    from types import SimpleNamespace
+    from circuit.probe_dataset import ProbeDatasetBuilder
+    from config import config
+    from data.loader import DataLoader
+    from model.inference import Inference
+    from sae.bank import SAEBank
+    from store.latent_stats import latent_stats
+    C = _data_pass_common()
+    torch.set_float32_matmul_precision("high")                        # TF32, as the 068 gate fits (DAN-36)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    loader = DataLoader(device=device)
+    C.load_stores(os.path.abspath(STORES), int(sum(loader._shard_sequence_counts)))
+    latent_stats.load(os.path.join(STORES, "latent_stats.pt"))
+    inference = Inference(device=device)
+    bank = SAEBank(device=device)
+    C.check_store_grid(bank)
+    pb = ProbeDatasetBuilder(inference, bank, loader)
+    kinds = list(bank.kinds)
+    avg_acts = torch.zeros((bank.n_layer * len(kinds), bank.d_sae), device=bank.device)
+    disc = config.discovery                                             # amp_eval_pass_v2.setup()'s overrides
+    disc.probe_sequence_count = 64; disc.eval_sequence_count = 64; disc.eval_batch_size = 16
+    disc.probe_batch_size = 4; disc.position_aware = False
+    return dict(inference=inference, bank=bank, M0=SimpleNamespace(probe_builder=pb), avg_acts=avg_acts, KINDS=kinds,
+                NK=len(kinds), D=int(bank.d_sae), K=int(bank.k), device=device, family=FAMILY)
+
+
+def ctr_fallback(G, key):
+    """amp_eval_pass_v2.neg_ctx_store_fallback for the scorer's provenance label: the target's neg_ctx store row is the
+    shared zero-similarity fallback list."""
+    from pipeline.component_index import component_idx
+    from store.context import neg_ctx
+    l, k, i = key.split(".")
+    comp = component_idx(int(l), G["KINDS"].index(k), G["NK"])
+    ids, vals = neg_ctx.ctx_seq_idx[comp, int(i)], neg_ctx.ctx_seq_val[comp, int(i)]
+    return bool((ids > 0).any()) and float(vals.float().abs().sum()) == 0.0
+
+
 class Runner:
     def __init__(self):
         os.environ.setdefault("TAG", "h100_unused")
         os.environ.setdefault("CTR_SOURCE", "close")
-        import amp_eval_pass_v2 as V
         import protocol_harness as H
-        self.V, self.H, self.P = V, H, H.P
-        self.G = V.setup()
-        self.ctx_dir = OUT / "ctx"; self.ctx_dir.mkdir(parents=True, exist_ok=True)
+        self.H, self.P = H, H.P
+        self.family = FAMILY
+        if PUBLIC:
+            self.V = None                                     # 049's module scorer is TuringLLM-only (module globals)
+            self.G = public_setup()
+        else:
+            import amp_eval_pass_v2 as V
+            self.V = V
+            self.G = V.setup()
+        if CTX_DIR:
+            self.ctx_dir = Path(CTX_DIR)
+            if not self.ctx_dir.is_dir():
+                raise FileNotFoundError("CTX_DIR %s is not a directory" % self.ctx_dir)
+            if self.V is not None and self.V.EVAL_SPLIT != "explicit":
+                raise RuntimeError("CTX_DIR needs the explicit eval split; amp_eval_pass_v2 was imported with %r"
+                                   % self.V.EVAL_SPLIT)
+        else:
+            self.ctx_dir = OUT / "ctx"; self.ctx_dir.mkdir(parents=True, exist_ok=True)
         self.dev = self.G["device"]
 
     # ---------------------------------------------------------------------------------------------- contexts
@@ -127,11 +264,22 @@ class Runner:
         from pipeline.component_index import component_idx
         path = self.ctx_dir / ("%s.pt" % key)
         if path.exists():
-            return torch.load(path, weights_only=False)[key]
+            rec = torch.load(path, weights_only=False)[key]
+            if GROUP_SPLIT and rec.get("strong") is not None and "heldout" not in rec:
+                raise RuntimeError("%s was built without the group-aware split (GROUP_SPLIT=0 to use it)" % path)
+            return rec
+        if CTX_DIR:
+            raise FileNotFoundError("no record %s in CTX_DIR (records there are never built)" % path)
         l, k, i = self.H.parse(key)
         G = self.G
-        rec = build_record(G["inference"], G["bank"], G["M0"].probe_builder.loader,
-                           component_idx(l, G["KINDS"].index(k), G["NK"]), i)
+        loader = G["M0"].probe_builder.loader
+        kw = {}
+        if GROUP_SPLIT:
+            from circuit.protocol_contexts import group_split_for
+            if not hasattr(self, "_group_split"):
+                self._group_split = group_split_for(DATA, loader)
+            kw["group_split"] = self._group_split
+        rec = build_record(G["inference"], G["bank"], loader, component_idx(l, G["KINDS"].index(k), G["NK"]), i, **kw)
         torch.save({key: rec}, path)
         return rec
 
@@ -172,12 +320,25 @@ class Runner:
         return c, t_fit
 
     # ---------------------------------------------------------------------------------------------- scoring
-    def score(self, c, rec, held):
+    def score(self, c, rec, held, alphas=None):
+        """The protocol-v1 eval row on held-out `held`. alphas = {(layer, kind): {latent: alpha}} overrides the
+        fitted coefficients (rescore_alpha1: every member at 1)."""
+        if PUBLIC:
+            from circuit.protocol_contexts import eval_probe
+            from eval.wcm_eval import circuit_key, score_circuit
+            return score_circuit(self.G["inference"], self.G["bank"], c, eval_probe(rec, held, self.dev),
+                                 split="explicit", alphas=alphas, ctr_source="close",
+                                 ctr_fallback=ctr_fallback(self.G, circuit_key(c)))
         self.H.patch_eval_contexts(self.G, rec, held)
-        return self.V.score_circuit(c, {}, skip_roles=True)    # empty live pool: free0_rand = empty circuit (not the
-        #                                                        paper's random baseline, which is DAN-17)
+        return self.V.score_circuit(c, {}, override_alphas=alphas, skip_roles=True)   # empty live pool: free0_rand =
+        #                                       empty circuit (not the paper's random baseline, which is DAN-17)
 
     def spec(self, c, rec, arm_label):
+        if PUBLIC:
+            from circuit.protocol_contexts import eval_probe
+            from eval.wcm_specificity import specificity_rows
+            return specificity_rows(self.G["inference"], self.G["bank"], c, eval_probe(rec, "strong", self.dev),
+                                    arm=arm_label, split="explicit")
         import specificity as S
         if not hasattr(self, "_taps"):
             self._taps = S.make_patchers(self.G)
@@ -358,6 +519,9 @@ def main():
     if LIMIT:
         targets = targets[:LIMIT]
     log("MODE %s | %d targets | order %s (slot %d) | out %s" % (MODE, len(targets), ORDER, SLOT, OUT))
+    log("family %s%s | lambda %g | %d steps%s" % (
+        FAMILY, " (data %s, stores %s)" % (DATA, STORES) if PUBLIC else "", LAM, STEPS,
+        "" if STEPS == 400 else "  ** NOT the protocol's 400 **"))
     R = Runner()
     (main_mode if MODE == "main" else sweep_mode)(R, targets)
     log("DONE")

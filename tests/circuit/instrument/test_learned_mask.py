@@ -1616,3 +1616,289 @@ class TestFreeAmplitude:
         with pytest.raises(ValueError, match="free_amplitude"):
             _run("pin", bank, inf, pt, nt, pa, free_amplitude=True,
                  pin_values={SITE: torch.zeros(D)})
+
+
+class TestLogitFloorsAndNorm:
+    """Experiment 080 (2026-10-18): the logit objective under the dual / triple
+    floors (the same Z + C + A ablations as the latent circuits) and its
+    logit_norm scale. Hand-computable on the stub: the pos stream has x0 = 2,
+    x3 = 1, the unembed reads only dim 0 (logit of token 1 = 2 x0), so
+      natural      logits (0, 4, 0, 0)
+      closed zero  every latent at 0          -> x = 0       -> logits 0
+      closed negctx  every latent at the floor (latent 5 = 1, decoding to -e0)
+                   -> x0 = -1 -> logits (0, -2, 0, 0)."""
+
+    def _tok(self, pa):
+        return torch.full((pa.shape[0],), 1, dtype=torch.long)
+
+    @staticmethod
+    def _lp(logits):
+        t = torch.tensor(logits, dtype=torch.float32)
+        return float(t[1] - torch.logsumexp(t, 0))
+
+    def test_triple_floor_is_accepted_and_keeps_the_logit_latent(self):
+        bank, inf, pt, nt, pa = _setup()
+        scores, meta = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa),
+                            mask_floor_source="triple", neg_tokens=nt)
+        assert meta["objective"] == "logit" and meta["mask_floor_source"] == "triple"
+        assert set(meta["curve"]["terms"]) == {"zero", "floor", "pos"}
+        kept = {f.index for f in scores}
+        assert 0 in kept and 3 not in kept          # 3 never reaches the logits, under any floor
+
+    def test_dual_closed_losses_are_measured_on_the_output(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, meta = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa),
+                       mask_floor_source="dual", neg_tokens=nt, steps=2)
+        nat = self._lp([0, 4, 0, 0])
+        assert meta["dual_norm_zero"] == pytest.approx((nat - self._lp([0, 0, 0, 0])) ** 2, rel=1e-4)
+        assert meta["dual_norm_floor"] == pytest.approx((nat - self._lp([0, -2, 0, 0])) ** 2, rel=1e-4)
+        # default logit_norm="none": raw nats^2, the shared scale is exactly 1
+        assert meta["logit_norm"] == "none" and meta["logit_scale"] == 1.0
+        assert meta["dual_norm_shared"] == 1.0
+
+    def test_gap_norm_divides_every_term_by_the_zero_gap(self):
+        bank, inf, pt, nt, pa = _setup()
+        kw = dict(target_tokens=self._tok(pa), mask_floor_source="triple", neg_tokens=nt, steps=3)
+        _, raw = _run("logit", bank, inf, pt, nt, pa, **kw)
+        _, gap = _run("logit", bank, inf, pt, nt, pa, logit_norm="gap", **kw)
+        scale = (self._lp([0, 4, 0, 0]) - self._lp([0, 0, 0, 0])) ** 2
+        assert gap["logit_scale"] == pytest.approx(scale, rel=1e-4)
+        assert gap["dual_norm_shared"] == pytest.approx(scale, rel=1e-4)
+        for term in ("zero", "floor", "pos"):        # step 0: same thetas, so only the weight differs
+            assert raw["curve"]["terms"][term][0] == pytest.approx(gap["curve"]["terms"][term][0] * scale, rel=1e-4)
+
+    def test_gap_norm_applies_to_the_single_floor_too(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, raw = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), steps=2)
+        _, gap = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), steps=2, logit_norm="gap")
+        assert raw["logit_scale"] == 1.0
+        assert raw["curve"]["terms"]["data"][0] == pytest.approx(gap["curve"]["terms"]["data"][0]
+                                                                 * gap["logit_scale"], rel=1e-4)
+
+    def test_gap_norm_is_floored(self):
+        """An output that does not depend on the masked sites has a ~0 gap; the scale is floored, not ~0."""
+        from circuit.instrument.learned_mask import LOGIT_GAP_FLOOR
+        bank, inf, pt, nt, pa = _setup()
+        inf.Wv = torch.zeros(D, 4)
+        _, meta = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), steps=2, logit_norm="gap")
+        assert meta["logit_scale"] == pytest.approx(LOGIT_GAP_FLOOR)
+
+    def test_default_single_floor_is_unchanged(self):
+        """logit_norm="none" (the default) multiplies the 025 single-floor term by exactly 1.0."""
+        bank, inf, pt, nt, pa = _setup()
+        a, ma = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa))
+        b, mb = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), logit_norm="none")
+        assert a == b and ma["curve"]["loss"] == mb["curve"]["loss"]
+
+    def test_training_patchers_follow_the_objective_tap(self, monkeypatch):
+        """Every training patcher (zero, floor, posctx) of a logit fit runs with tap_seed=False, so a whole-model
+        scope masks the target's own site; every pos fit's keeps tap_seed=True (unchanged)."""
+        import circuit.instrument.learned_mask as LM
+        seen = []
+        orig = LM.LearnedMaskPatcher
+
+        class Rec(orig):
+            def __init__(self, bank_, thetas, *a, tap_seed=True, **k):
+                super().__init__(bank_, thetas, *a, tap_seed=tap_seed, **k)
+                if any(t.requires_grad for t in thetas.values()):
+                    seen.append(tap_seed)
+
+        monkeypatch.setattr(LM, "LearnedMaskPatcher", Rec)
+        bank, inf, pt, nt, pa = _setup()
+        _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), mask_floor_source="triple",
+             neg_tokens=nt, steps=2)
+        assert seen == [False, False, False]
+        seen.clear()
+        _run("pos", bank, inf, pt, nt, pa, mask_floor_source="triple", neg_tokens=nt, steps=2)
+        assert seen == [True, True, True]
+
+    def test_rank_keep_still_refused_and_bad_norm_raises(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="rank_weight"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), mask_floor_source="triple",
+                 neg_tokens=nt, rank_weight=3e-3)
+        with pytest.raises(ValueError, match="logit_norm"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), logit_norm="relative")
+
+    def test_negctx_family_still_barred_from_dual(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="dual"):
+            _run("negctx", bank, inf, pt, nt, pa, mask_floor_source="triple", neg_tokens=nt, target_act=2.0)
+
+
+class TestLogitSetMetricAndValidFloors:
+    """Experiment 081 (2026-10-19): logit_metric="set" (log P(target set) - log P(contrast set), greater-than's
+    endpoint) and the pos_valid / neg_valid masks that keep right-padding out of the A / C floors. Both default off."""
+
+    @staticmethod
+    def _sets(pa, rows):
+        return torch.tensor([rows] * pa.shape[0], dtype=torch.long)
+
+    def test_set_metric_on_hand_logits(self):
+        from circuit.instrument.learned_mask import _target_logprob
+        lg = torch.tensor([[[0.0, 4.0, 1.0, -1.0]], [[2.0, 0.0, 0.0, 3.0]]])      # [B=2, T=1, V=4]
+        an = torch.zeros(2, dtype=torch.long)
+        good, bad = torch.tensor([[1, 2], [3, -1]]), torch.tensor([[0, -1], [0, 1]])
+        lp = torch.log_softmax(lg[:, 0], -1)
+        p = lp.exp()
+        want = [float(torch.log(p[0, 1] + p[0, 2]) - lp[0, 0]), float(lp[1, 3] - torch.log(p[1, 0] + p[1, 1]))]
+        assert _target_logprob(lg, an, good, bad, sets=True).tolist() == pytest.approx(want, rel=1e-5)
+        # without a contrast set: the log mass alone; a one-token set is the token metric
+        assert _target_logprob(lg, an, good, sets=True)[1].item() == pytest.approx(float(lp[1, 3]), rel=1e-6)
+        tok, con = torch.tensor([1, 3]), torch.tensor([0, 0])
+        assert _target_logprob(lg, an, tok[:, None], con[:, None], sets=True).tolist() == pytest.approx(
+            _target_logprob(lg, an, tok, con).tolist(), rel=1e-6)
+
+    def test_one_token_sets_reproduce_the_token_metric_fit(self):
+        bank, inf, pt, nt, pa = _setup()
+        kw = dict(mask_floor_source="triple", neg_tokens=nt, steps=6, logit_norm="gap")
+        tok = torch.full((pa.shape[0],), 1, dtype=torch.long)
+        con = torch.full((pa.shape[0],), 2, dtype=torch.long)
+        a, ma = _run("logit", bank, inf, pt, nt, pa, target_tokens=tok, contrast_tokens=con, **kw)
+        b, mb = _run("logit", bank, inf, pt, nt, pa, target_tokens=tok[:, None], contrast_tokens=con[:, None],
+                     logit_metric="set", **kw)
+        assert set(a) == set(b)
+        assert mb["curve"]["loss"] == pytest.approx(ma["curve"]["loss"], rel=1e-5)
+        assert ma["logit_metric"] == "token" and mb["logit_metric"] == "set"
+
+    def test_set_fit_keeps_the_logit_latent(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, meta = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._sets(pa, [1, 2]),
+                       contrast_tokens=self._sets(pa, [0, 3]), logit_metric="set", mask_floor_source="triple",
+                       neg_tokens=nt)
+        scores, _ = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._sets(pa, [1, -1]),
+                         contrast_tokens=self._sets(pa, [0, 3]), logit_metric="set")
+        kept = {f.index for f in scores}
+        assert 0 in kept and 3 not in kept
+        assert meta["holdout_data_loss"] is not None
+
+    def test_set_metric_validation(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="logit_metric must be"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._sets(pa, [1]), logit_metric="mass")
+        with pytest.raises(ValueError, match=r"\[B, K\]"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=torch.ones(pa.shape[0], dtype=torch.long),
+                 logit_metric="set")
+        with pytest.raises(ValueError, match="empty set"):
+            bad = self._sets(pa, [0, 3])
+            bad[2] = -1
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._sets(pa, [1, 2]), contrast_tokens=bad,
+                 logit_metric="set")
+        with pytest.raises(ValueError, match="objective='logit'"):
+            _run("pos", bank, inf, pt, nt, pa, logit_metric="set")
+
+    def test_valid_masks_reach_the_floors_and_default_is_unchanged(self, monkeypatch):
+        import eval.floors as F
+        calls = []
+        orig = F.collect_site_means
+
+        def spy(inference, bank_, tokens, sites, **kw):
+            calls.append((int(tokens[0, 0]), int(tokens.shape[0]), kw.get("valid")))
+            return orig(inference, bank_, tokens, sites, **kw)
+
+        monkeypatch.setattr(F, "collect_site_means", spy)
+        bank, inf, pt, nt, pa = _setup()
+        tok = torch.full((pa.shape[0],), 1, dtype=torch.long)
+        kw = dict(target_tokens=tok, mask_floor_source="triple", neg_tokens=nt, steps=3)
+        _, m0 = _run("logit", bank, inf, pt, nt, pa, **kw)
+        assert [(c[0], c[1]) for c in calls] == [(1, 3), (0, 3)] and all(c[2] is None for c in calls)
+        assert m0["floors_valid_masked"] is False
+        calls.clear()
+        pv, nv = torch.ones(pt.shape, dtype=torch.bool), torch.ones(nt.shape, dtype=torch.bool)
+        _, m1 = _run("logit", bank, inf, pt, nt, pa, pos_valid=pv, neg_valid=nv, **kw)
+        assert [c[0] for c in calls] == [1, 0] and [tuple(c[2].shape) for c in calls] == [(3, 2), (3, 2)]
+        assert m1["curve"]["loss"] == pytest.approx(m0["curve"]["loss"], rel=1e-6)     # all-valid == no mask
+        assert m1["floors_valid_masked"] is True
+
+    def test_precomputed_floors_replace_the_collected_ones(self, monkeypatch):
+        """floor_means / pos_floor_means (081, 2026-10-21): the values collect_site_means would give reproduce the fit
+        exactly without collecting; different values change it; a missing site is refused; default unchanged."""
+        from eval.floors import collect_site_means
+        import eval.floors as F
+        bank, inf, pt, nt, pa = _setup()
+        tok = torch.full((pa.shape[0],), 1, dtype=torch.long)
+        kw = dict(target_tokens=tok, mask_floor_source="triple", neg_tokens=nt, steps=5, holdout_frac=0.0)
+        _, m0 = _run("logit", bank, inf, pt, nt, pa, **kw)
+        fC = collect_site_means(inf, bank, nt, {SITE})
+        fA = collect_site_means(inf, bank, pt, {SITE})
+        monkeypatch.setattr(F, "collect_site_means", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called")))
+        _, m1 = _run("logit", bank, inf, pt, nt, pa, floor_means=fC, pos_floor_means=fA, **kw)
+        assert m1["curve"]["loss"] == pytest.approx(m0["curve"]["loss"], rel=1e-6)
+        assert m1["floors_precomputed"] is True and m0["floors_precomputed"] is False
+        _, m2 = _run("logit", bank, inf, pt, nt, pa, floor_means=fA, pos_floor_means=fC, **kw)
+        assert m2["curve"]["loss"] != pytest.approx(m0["curve"]["loss"], rel=1e-6)
+        with pytest.raises(ValueError, match="floor_means lacks"):
+            _run("logit", bank, inf, pt, nt, pa, floor_means={}, pos_floor_means=fA, **kw)
+
+    def test_valid_mask_changes_the_floor_value(self):
+        """The stub's negctx stream puts latent 5 at 1 everywhere; mark the second position of every negative
+        invalid and give it a different value there: only the masked floor ignores it."""
+        from eval.floors import collect_site_means
+        bank, inf, pt, nt, pa = _setup()
+        inf.streams[1][:, 1, 5] = 3.0
+        nv = torch.ones(nt.shape, dtype=torch.bool)
+        nv[:, 1] = False
+        masked = collect_site_means(inf, bank, nt, {SITE}, valid=nv)[SITE]
+        plain = collect_site_means(inf, bank, nt, {SITE})[SITE]
+        assert masked[5].item() == pytest.approx(1.0) and plain[5].item() == pytest.approx(2.0)
+
+
+class TestLogitSeqMetric:
+    """Experiment 081 (2026-10-21): logit_metric="seq", multi-token answers teacher-forced over (good, bad) row
+    pairs. Default off."""
+
+    def test_seq_value_on_hand_logits(self):
+        from circuit.instrument.learned_mask import _target_logprob
+        g = torch.Generator().manual_seed(0)
+        lg = torch.randn(4, 5, 6, generator=g)                     # 2 pairs, T = 5, V = 6
+        an = torch.tensor([1, 1, 0, 2])
+        ans = torch.tensor([[2, 3], [4, -1], [1, 1], [5, 0]])
+        lp = torch.log_softmax(lg, -1)
+        rows = [float(lp[0, 1, 2] + lp[0, 2, 3]), float(lp[1, 1, 4]), float(lp[2, 0, 1] + lp[2, 1, 1]),
+                float(lp[3, 2, 5] + lp[3, 3, 0])]
+        want = [rows[0] - rows[1]] * 2 + [rows[2] - rows[3]] * 2
+        assert _target_logprob(lg, an, ans, seq=True).tolist() == pytest.approx(want, rel=1e-5)
+        with pytest.raises(ValueError, match="pairs"):
+            _target_logprob(lg[:3], an[:3], ans[:3], seq=True)
+
+    def test_one_token_answers_reproduce_the_token_fit(self):
+        """Every stub row is the same stream, so N items in token mode and the same N items as 2N (good, bad) rows
+        in seq mode, with the batch doubled so each step sees the same items, give the same losses and members."""
+        bank, inf, pt, nt, pa = _setup()
+        inf.streams[0] = inf.streams[0].repeat(2, 1, 1)             # 8 rows available
+        tok = torch.full((4,), 1, dtype=torch.long)
+        con = torch.full((4,), 2, dtype=torch.long)
+        kw = dict(mask_floor_source="triple", neg_tokens=nt, steps=8, logit_norm="gap")
+        a, ma = _run("logit", bank, inf, pt, nt, pa, target_tokens=tok, contrast_tokens=con, batch_size=2, **kw)
+        rows = pt.repeat_interleave(2, 0)
+        ans = torch.stack([tok, con], 1).reshape(-1, 1)
+        b, mb = _run("logit", bank, inf, rows, nt, pa.repeat_interleave(2), target_tokens=ans, logit_metric="seq",
+                     batch_size=4, **kw)
+        assert set(a) == set(b) and mb["logit_metric"] == "seq"
+        assert mb["curve"]["loss"][:3] == pytest.approx(ma["curve"]["loss"][:3], rel=1e-5)
+        assert mb["holdout_data_loss"] == pytest.approx(ma["holdout_data_loss"], rel=1e-5)
+        assert (mb["n_train_pos"], mb["n_holdout_pos"]) == (6, 2) and (ma["n_train_pos"], ma["n_holdout_pos"]) == (3, 1)
+
+    def test_seq_validation(self):
+        bank, inf, pt, nt, pa = _setup()
+        ans = torch.tensor([[1, -1], [2, -1], [1, 3], [2, 2]])
+        with pytest.raises(ValueError, match="contrast_tokens"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=ans, contrast_tokens=ans, logit_metric="seq")
+        with pytest.raises(ValueError, match="even"):
+            _run("logit", bank, inf, pt[:3], nt, pa[:3], target_tokens=ans[:3], logit_metric="seq")
+        with pytest.raises(ValueError, match="even"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=ans, logit_metric="seq", batch_size=3)
+        bad = ans.clone()
+        bad[1] = -1
+        with pytest.raises(ValueError, match="empty answer"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=bad, logit_metric="seq")
+        with pytest.raises(ValueError, match="objective='logit'"):
+            _run("pos", bank, inf, pt, nt, pa, logit_metric="seq")
+
+    def test_seq_holdout_split_keeps_pairs(self):
+        bank, inf, pt, nt, pa = _setup()
+        inf.streams[0] = inf.streams[0].repeat(3, 1, 1)             # 12 rows
+        ans = torch.tensor([[1], [2]] * 6)
+        rows = pt.repeat(3, 1)
+        _, m = _run("logit", bank, inf, rows, nt, pa.repeat(3), target_tokens=ans, logit_metric="seq", steps=2)
+        assert (m["n_train_pos"], m["n_holdout_pos"]) == (10, 2)      # round(3) = 3 -> 2: no pair split

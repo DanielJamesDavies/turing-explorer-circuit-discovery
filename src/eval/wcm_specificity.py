@@ -31,8 +31,8 @@ import torch
 
 from eval.ablation_faithfulness import CircuitOnlyPatcher, upstream_sites
 from eval.floors import collect_site_anchors, collect_site_means
-from eval.wcm_eval import EVAL_BATCH, HOLDOUT_FRAC, N_SEQ, _num, circuit_alphas, eval_split, seed_of, site_encoder, \
-    split_n
+from eval.wcm_eval import EVAL_BATCH, HOLDOUT_FRAC, N_SEQ, _num, circuit_alphas, contrast_split, eval_split, seed_of, \
+    site_encoder
 from model.hooks import multi_patch
 
 Site = Tuple[int, str]
@@ -145,7 +145,7 @@ def specificity_rows(
     pt, pa = probe.pos_tokens[:n_seq], probe.pos_argmax[:n_seq]
     nt = (probe.neg_tokens if contrast_tokens is None else contrast_tokens)[:n_seq]
     n_tr = eval_split(int(pt.shape[0]), probe.metadata, split, holdout_frac)
-    n_ntr = split_n(int(nt.shape[0]), holdout_frac)
+    n_ntr = contrast_split(int(nt.shape[0]), probe.metadata, holdout_frac, own=contrast_tokens is None)
     pt_tr, pa_tr, pt_ho, pa_ho = pt[:n_tr], pa[:n_tr], pt[n_tr:], pa[n_tr:]
     UPS = set(upstream_sites(bank, layer, kind))
     dev = pt.device

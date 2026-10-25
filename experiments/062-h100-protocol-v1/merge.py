@@ -13,23 +13,30 @@ Sweep (out/sweep): per method x lambda medians, per-target natural-scale cost (u
   PYTHONPATH=src python experiments/062-h100-protocol-v1/merge.py
       -> out/summary.md, out/targets.csv, out/sweep_rows.csv, out/faithfulness_vs_size.png
   env: OUT (default experiments/062-h100-protocol-v1/out)  GPUS (8, for the projection)
+       FAMILY (turingllm | pythia-70m | gpt2-small: k, depth bands, run size; family_table.py)  BANDS  K_TOPK
 """
 import glob
 import json
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE))
+from family_table import band_label, family  # noqa: E402
+
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 GPUS = int(os.environ.get("GPUS", 8))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
 BAND = (0.8, 1.5)          # DAN-8 pass rule (2026-09-27): Z, A, C all in BAND and necessity >= NEC_MIN
 NEC_MIN = 0.9
-N_FULL = 15046
-K_TOPK = 128
+FAM = family()             # TuringLLM by default: k 128, bands L0-4 / L5-7 / L8-11, 15,046 targets
+N_FULL = FAM["n_full"]
+K_TOPK = FAM["k"]
+BANDS = [(band_label(lo, hi), lo, hi) for lo, hi in FAM["bands"]]
 
 
 def read(pattern):
@@ -44,7 +51,8 @@ def read(pattern):
 
 
 def depth_band(layer):
-    return "L0-4" if layer <= 4 else ("L5-7" if layer <= 7 else "L8-11")
+    """The family's depth band of a layer (TuringLLM: L0-4 / L5-7 / L8-11); past the last band, the last band."""
+    return next((name for name, _, hi in BANDS if layer <= hi), BANDS[-1][0])
 
 
 def passes(df):
@@ -192,7 +200,7 @@ def sweep_summary(lines):
 def figure(sw):
     from analysis.style import BLUE, CATEGORICAL, INK_MUTED, configure_matplotlib, save_figure, style_suptitle, tint
     plt = configure_matplotlib()
-    bands = ["L0-4", "L5-7", "L8-11"]
+    bands = [name for name, _, _ in BANDS]
     fig, axes = plt.subplots(len(bands), 3, figsize=(15, 4.2 * len(bands)), sharey=True)
     for r, band in enumerate(bands):
         sub = sw[sw.depth == band]
@@ -222,6 +230,9 @@ def figure(sw):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     lines = ["# Protocol-v1 H100 runs: summary (%s)" % pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")]
+    if FAM["name"] != "turingllm":
+        lines.append("\nFamily: %s (k %d, %d layers, kinds %s, depth bands %s)" % (
+            FAM["name"], K_TOPK, FAM["n_layer"], "/".join(FAM["kinds"]), " / ".join(b[0] for b in BANDS)))
     main_summary(lines)
     sweep_summary(lines)
     txt = "\n".join(lines)

@@ -14,7 +14,10 @@ driver.Runner.fit path with the engine call wrapped.
   OUT=experiments/062-h100-protocol-v1/out_full/out PYTHONPATH=src python experiments/062-h100-protocol-v1/random_null.py
   env: TARGETS (default targets_sweep.txt; or out_full/out/targets.csv for the whole run)
        N_TARGETS (64, stratified by depth band and kind, cells interleaved)  N_DRAWS (2)
+       PRESELECTED=1 (TARGETS is the sample itself, e.g. a pre-drawn public list: its first N_TARGETS, no re-draw)
        OUT_RN (default experiments/062-h100-protocol-v1/out_random)  REPORT=1 (summarise; no GPU)
+       SHARD=i/k (targets[i::k] of the sample; rows to random.shard<i>.jsonl when k > 1)
+       FAMILY / DATA / STORES / LAM / STEPS as driver.py (public family: the live pool comes from its own bank)
 """
 import json
 import os
@@ -36,6 +39,7 @@ N_TARGETS = int(os.environ.get("N_TARGETS", 64))
 N_DRAWS = int(os.environ.get("N_DRAWS", 2))
 OUT_RN = Path(os.environ.get("OUT_RN", str(HERE / "out_random")))
 TARGETS = Path(os.environ.get("TARGETS", str(HERE / "targets_sweep.txt")))
+PRESELECTED = os.environ.get("PRESELECTED") == "1"
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
 
 _SUPPORT = {}                                              # set per fit; read by the wrapped engine call
@@ -102,6 +106,8 @@ def pick_targets():
         keys = list(pd.read_csv(TARGETS, index_col="seed").index)
     else:
         keys = [t for t in TARGETS.read_text().split() if t]
+    if PRESELECTED:
+        return keys[:N_TARGETS]
     cells = defaultdict(list)
     for k in keys:
         l, kind, _ = k.split(".")
@@ -115,16 +121,16 @@ def pick_targets():
 
 def main():
     OUT_RN.mkdir(parents=True, exist_ok=True)
-    path = OUT_RN / "random.jsonl"
+    path = driver.shard_jsonl(OUT_RN, "random")
     done = set()
-    if path.exists():
-        for line in open(path):
-            try:
-                r = json.loads(line); done.add((r["seed"], r["draw"]))
-            except Exception:  # noqa: BLE001
-                pass
-    keys = pick_targets()
-    print("random null: %d targets x %d draws (%d done)" % (len(keys), N_DRAWS, len(done)), flush=True)
+    for r in driver.read_jsonl_all(OUT_RN, "random"):
+        try:
+            done.add((r["seed"], r["draw"]))
+        except Exception:  # noqa: BLE001
+            pass
+    keys = pick_targets()[driver.SHARD_I::driver.SHARD_K]
+    print("random null: %d targets x %d draws (%d done; shard %d/%d)" % (
+        len(keys), N_DRAWS, len(done), driver.SHARD_I, driver.SHARD_K), flush=True)
     install_support_wrapper()
     R = driver.Runner()
     M = R.method(driver.GAMMA, driver.LAM, True)
@@ -180,7 +186,7 @@ def main():
 def report():
     import glob
     import pandas as pd
-    rn = pd.DataFrame([json.loads(l) for l in open(OUT_RN / "random.jsonl")])
+    rn = pd.DataFrame(driver.read_jsonl_all(OUT_RN, "random"))
     rn = rn[rn.get("error", pd.Series(index=rn.index, dtype=object)).isna()]
     rn = rn[rn.get("skip", pd.Series(index=rn.index, dtype=object)).isna()]
     passes = lambda d: (((d[HEAD] >= 0.8) & (d[HEAD] <= 1.5)).all(axis=1)) & (d.phi_sup_blind_tk >= 0.9)

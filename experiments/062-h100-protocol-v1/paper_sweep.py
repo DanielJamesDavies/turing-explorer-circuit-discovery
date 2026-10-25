@@ -8,6 +8,8 @@
 PNG previews go to OUT. Also prints every number the paper text quotes, so the text can be checked against it.
 
   OUT=experiments/062-h100-protocol-v1/out PYTHONPATH=src python experiments/062-h100-protocol-v1/paper_sweep.py
+  env: FAMILY (turingllm | pythia-70m | gpt2-small: merge.py's depth bands; family_table.py)  BANDS
+       A public family's figures go to paper/figures with a -<family> suffix, never over TuringLLM's.
 """
 import os
 import shutil
@@ -22,10 +24,16 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from analysis.style import (BLUE, CATEGORICAL, INK, INK_MUTED, SURFACE, configure_matplotlib,  # noqa: E402
                             grouped_bar_geometry, round_bars, save_figure, styled_legend, tint)
+sys.path.insert(0, str(HERE))
+from family_table import band_label, family  # noqa: E402
 
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 FIGS = ROOT / "paper" / "figures"
-BANDS = (("L0-4", "Layers 0–4"), ("L5-7", "Layers 5–7"), ("L8-11", "Layers 8–11"))   # merge.py's depth bands
+FAM = family()
+TAG = "" if FAM["name"] == "turingllm" else "-" + FAM["name"]        # public families never overwrite TuringLLM's
+# merge.py's depth bands (TuringLLM: L0-4 / L5-7 / L8-11) with their titles
+BANDS = tuple((band_label(lo, hi), band_label(lo, hi, "Layers %d–%d")) for lo, hi in FAM["bands"])
+DEEP = BANDS[-1][0]                                                # the deepest band (body figure's right panel)
 # unweighted colour (Daniel, 2026-09-27; tried in turn: red, teal, honey, pink, grey, now a LIGHTER GREY): red reads
 # as C (contrast mean) in the paper; grey marks the baseline. #9aa0a8 vs blue: dE 32.9 normal, 26.2 worst colour-
 # blind (lighter separates better than the theme's #6c727c, 26.3 / 22.1), and it sits further from Figure 1's dark
@@ -60,9 +68,14 @@ def body(plt, sw):
     WCM vs unweighted at the production price lambda = 1e-3, grouped bars per depth band, value on every bar and the
     ratio above each pair. The criterion is conjunctive, which is where unweighted circuits fail: their per-score
     medians look only somewhat lower, but they almost never hold all of them at once past layer 4.
-    Right: the cost of passing, layers 8-11. Pass rate against median circuit size (log) across the sweep of prices,
-    one line per method; an arrow marks the size gap at a matched pass rate."""
-    fig, (ax, bx) = plt.subplots(1, 2, figsize=(9.0, 3.2), gridspec_kw={"width_ratios": [1.0, 1.15], "wspace": 0.3})
+    The right panel (pass rate vs size, layers 8-11, with a "20x more latents" arrow at a matched population pass rate on
+    the five-penalty grid) was dropped 2026-10-12 (DAN-161 appendix cleanup): beside the paper's ~10x headline (a
+    per-target median ratio on the eight-penalty grid) it read as a contradiction. RIGHT_PANEL=1 restores it."""
+    right = os.environ.get("RIGHT_PANEL") == "1"
+    if right:
+        fig, (ax, bx) = plt.subplots(1, 2, figsize=(9.0, 3.2), gridspec_kw={"width_ratios": [1.0, 1.15], "wspace": 0.3})
+    else:
+        fig, ax = plt.subplots(1, 1, figsize=(4.6, 3.2))
     f = sw[np.isclose(sw.lam, PROD_LAM)]
     width, offsets = grouped_bar_geometry(len(ARMS))
     x = np.arange(len(BANDS))
@@ -78,15 +91,18 @@ def body(plt, sw):
     for j in range(len(BANDS)):                                   # the ratio over each pair, where it is dramatic
         w, u = vals[True][j], vals[False][j]
         if u > 0 and w / u >= 2:
-            ax.annotate("%.0f×" % (w / u), (x[j], max(w, u) + 9), ha="center", va="bottom", fontsize=9.5,
+            # a ratio of PASS RATES, said in words so it cannot be read as a size ratio (2026-10-12)
+            ax.annotate("%.0f× as many pass" % (w / u), (x[j], max(w, u) + 9), ha="center", va="bottom", fontsize=8.5,
                         color=INK, fontweight="bold")
     ax.set(xticks=x, xticklabels=["layers " + t.split(" ")[1] for _, t in BANDS], ylim=(0, 100),
            ylabel="targets that pass (%)")
     ax.set_title("Pass rate at the same sparsity penalty (λ = $10^{-3}$)", fontsize=11)
     styled_legend(ax, loc="upper right", fontsize=8.5)
     round_bars(ax)
+    if not right:
+        return fig
 
-    rows = sw[sw.depth == "L8-11"]
+    rows = sw[sw.depth == DEEP]
     curves = {}
     for weighted, color, name in ARMS:
         c = pass_curve(rows, weighted)
@@ -102,14 +118,14 @@ def body(plt, sw):
     bx.text(np.sqrt(w_best.n * u_match.n), y + 3, "%.0f× more latents" % (u_match.n / w_best.n), ha="center",
             va="bottom", fontsize=9, color=INK)
     bx.set(xscale="log", xlabel="circuit size (median latents)", ylabel="targets that pass (%)", ylim=(0, 60))
-    bx.set_title("The cost of passing, layers 8–11", fontsize=11)
+    bx.set_title("The cost of passing, " + BANDS[-1][1].lower(), fontsize=11)
     bx.grid(axis="x", visible=False)
     return fig
 
 
 def frontier(plt, sw):
     """APPENDIX: the pass-rate / size frontier for every depth band (the body shows layers 8-11)."""
-    fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.9), sharey=True)
+    fig, axes = plt.subplots(1, len(BANDS), figsize=(3.0 * len(BANDS), 2.9), sharey=True)
     for ax, (band, title) in zip(axes, BANDS):
         rows = sw[sw.depth == band]
         for weighted, color, name in ARMS:
@@ -132,7 +148,7 @@ def zac_bars(plt, sw):
     the methods differ."""
     f = sw[np.isclose(sw.lam, PROD_LAM)]
     # drawn near print size (the paper's text width is 5.5 in), so the theme's 10.5-13.5 pt text lands at ~7-9 pt
-    fig, axes = plt.subplots(1, 3, figsize=(8.5, 2.9), sharey=True)
+    fig, axes = plt.subplots(1, len(BANDS), figsize=(8.5 * (len(BANDS) / 3), 2.9), sharey=True)
     width, offsets = grouped_bar_geometry(len(ARMS))
     x = np.arange(len(HEAD))
     for ax, (band, title) in zip(axes, BANDS):
@@ -151,12 +167,13 @@ def zac_bars(plt, sw):
         ax.set(xticks=x, xticklabels=["Z", "A", "C"], ylim=(0, 1.3))
         round_bars(ax)
     axes[0].set_ylabel("held-out faithfulness (median)")
-    styled_legend(axes[2], loc="upper right", fontsize=9)
+    styled_legend(axes[-1], loc="upper right", fontsize=9)
     return fig
 
 
 def grid(plt, sw):
-    fig, axes = plt.subplots(3, 3, figsize=(9.0, 7.6), sharey=True, sharex=True)   # near print size, as in body()
+    fig, axes = plt.subplots(len(BANDS), 3, figsize=(9.0, 7.6 * (len(BANDS) / 3)), sharey=True, sharex=True,
+                             squeeze=False)                                    # near print size, as in body()
     for r, (band, title) in enumerate(BANDS):
         rows = sw[sw.depth == band]
         for cidx, (col, label) in enumerate(HEAD):
@@ -170,7 +187,7 @@ def grid(plt, sw):
             ax.set_xscale("log")
             ax.set_ylim(-0.1, 1.6)
             ax.set_title("%s: %s" % (title, label) if cidx == 0 else label, fontsize=11.5)
-            if r == 2:
+            if r == len(BANDS) - 1:
                 ax.set_xlabel("circuit size (median latents)")
         axes[r, 0].set_ylabel("faithfulness (held-out)")
     styled_legend(axes[0, 0], loc="lower right")
@@ -241,11 +258,13 @@ def main():
     numbers(sw)
     plt = configure_matplotlib()
     FIGS.mkdir(parents=True, exist_ok=True)
+    in_paper = {"wcm-vs-unweighted", "wcm-vs-unweighted-grid", "wcm-vs-unweighted-zac"}   # frontier: preview only
     for fig, name in ((body(plt, sw), "wcm-vs-unweighted"), (grid(plt, sw), "wcm-vs-unweighted-grid"),
                       (frontier(plt, sw), "wcm-vs-unweighted-frontier"), (zac_bars(plt, sw), "wcm-vs-unweighted-zac")):
         png = save_figure(fig, OUT / ("%s.png" % name))
-        shutil.copy(png.with_suffix(".pdf"), FIGS / ("%s.pdf" % name))
-        print("figure:", png, "->", FIGS / ("%s.pdf" % name))
+        if name in in_paper:
+            shutil.copy(png.with_suffix(".pdf"), FIGS / ("%s%s.pdf" % (name, TAG)))
+        print("figure:", png, "->", FIGS / ("%s%s.pdf" % (name, TAG)) if name in in_paper else "(preview only)")
 
 if __name__ == "__main__":
     main()

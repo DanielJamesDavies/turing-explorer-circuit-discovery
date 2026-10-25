@@ -384,6 +384,11 @@ def score_circuit(c, live_pool, override_alphas=None, skip_roles=False):
     if n_neg < 2:
         return dict(seed=key, skip="no_negatives", n=n_mem, n_pos=n_pos, n_neg=n_neg)
     n_tr = split_n(n_pos); n_ntr = split_n(n_neg)
+    if (pd_.metadata or {}).get("n_neg_train") is not None:
+        # 086 rebuilt contrast held-out set (protocol_contexts.eval_contrast): the run's contrast-train rows, then a
+        # deduplicated held-out set that may hold fewer than 16; absent on every as-run record (unchanged path)
+        n_ntr = int(pd_.metadata["n_neg_train"])
+        assert 0 < n_ntr < n_neg, "n_neg_train %d needs a contrast train and held-out slice (n_neg %d)" % (n_ntr, n_neg)
     if EVAL_SPLIT == "explicit" and (pd_.metadata or {}).get("n_train"):
         n_tr = int(pd_.metadata["n_train"])
         assert 0 < n_tr < n_pos, "explicit split needs both a train and a held-out slice (n_train %d, n %d)" % (n_tr, n_pos)

@@ -57,6 +57,20 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             top_k_scope=top_k_scope,
         )
 
+    # The probe's next-token targets for the mask hop's output endpoint
+    # (learned_mask.mask_objective="logit"); set for the duration of one hop.
+    _mask_target_tokens: Optional[torch.Tensor] = None
+
+    def _run_attribution_hop(self, ctx: Any, logger: CircuitLogger) -> Any:
+        """The base hop, with the probe's target tokens (row-aligned with the
+        probe positives the hop receives) held for the mask hop's output
+        endpoint. Only stores a reference; the hop itself is the base's."""
+        self._mask_target_tokens = ctx.probe_data.target_tokens[: self.probe_sequence_count]
+        try:
+            return super()._run_attribution_hop(ctx, logger)
+        finally:
+            self._mask_target_tokens = None
+
     def _run_ablation_hop(
         self,
         seed_comp_idx: int,
@@ -281,6 +295,25 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             logger.note("mask: seed has no upstream sites")
             return {}, 0.0, 0.0
         cfg = config.discovery.learned_mask
+        # OUTPUT ENDPOINT (default "pos": everything below is the production
+        # call, unchanged). "logit" reproduces log p(the actual next token) at
+        # each anchor instead of the target's pre-activation; with
+        # logit_scope="upstream" the maskable sites are the same upstream set
+        # as above, so the target's site and everything after it run live.
+        objective = getattr(cfg, "mask_objective", "pos")
+        logit_kw: Dict[str, Any] = {}
+        if objective == "logit":
+            tt = self._mask_target_tokens
+            if tt is None:
+                raise ValueError("mask_objective='logit' needs the probe's target_tokens; the mask hop must run "
+                                 "inside discover() (_run_attribution_hop holds them)")
+            logit_kw = dict(target_tokens=tt[: int(pos_tokens.shape[0])], logit_norm=cfg.logit_norm)
+            if cfg.logit_scope == "all":
+                sites = sorted(((l, k) for l in range(self.sae_bank.n_layer) for k in _kinds
+                                if self.sae_bank.saes[k][l] is not None),
+                               key=lambda s: (s[0], _kinds.index(s[1])))
+        elif objective != "pos":
+            raise ValueError("mask_objective must be 'pos' or 'logit', got %r" % (objective,))
         # Per-seed data condition, not an error: floors that score against
         # negatives cannot run for a seed with no stored negctx. Skip the
         # seed (visible in the log) instead of crashing the shard — the
@@ -294,7 +327,7 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             return {}, 0.0, 0.0
         scores, prov = run_learned_mask(
             self.inference, self.sae_bank,
-            objective="pos", sites=sites,
+            objective=objective, sites=sites, **logit_kw,
             seed_layer=seed_layer, seed_kind=seed_kind,
             seed_latent_idx=seed_latent_idx,
             pos_tokens=pos_tokens, pos_argmax=pos_argmax,

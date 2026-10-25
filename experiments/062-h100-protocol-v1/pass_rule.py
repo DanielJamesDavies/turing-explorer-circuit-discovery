@@ -5,18 +5,26 @@ headline is the full run's non-stage-1 targets. Every rule reads the held-out st
 (post-Top-K, *_tk) is primary, never mixed with the pre-activation read (*_pre) inside one rule (DAN-66).
 
   OUT=experiments/062-h100-protocol-v1/out_ckpt/out PYTHONPATH=src python experiments/062-h100-protocol-v1/pass_rule.py
+  env: FAMILY (turingllm | pythia-70m | gpt2-small: k and the depth thirds; family_table.py)  BANDS  K_TOPK
 """
 import glob
 import json
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE))
+from family_table import band_label, family  # noqa: E402
+
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
-K = 128
+FAM = family()                   # TuringLLM by default: k 128, depth L0-3 / L4-7 / L8-11
+K = FAM["k"]
+DEPTH_EDGES = [-1] + [hi for _, hi in FAM["curve_bands"]]
+DEPTH_LABELS = [band_label(lo, hi) for lo, hi in FAM["curve_bands"]]
 FAITH = {"tk": ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"], "pre": ["free0_pre", "freeM_topk_pre", "freeN_topk_pre"]}
 NEC, IND = "phi_sup_blind_tk", "phi_cf_alpha_blind_tk"
 
@@ -29,7 +37,7 @@ def load():
     d = ev.join(tg[["rank_clean", "amp_any"]], how="left")
     d["layer"] = d.index.str.split(".").str[0].astype(int)
     d["kind"] = d.index.str.split(".").str[1]
-    d["depth"] = pd.cut(d.layer, [-1, 3, 7, 11], labels=["L0-3", "L4-7", "L8-11"])
+    d["depth"] = pd.cut(d.layer, DEPTH_EDGES, labels=DEPTH_LABELS)
     d["near"] = d.rank_clean >= K / 2
     return d
 

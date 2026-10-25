@@ -171,6 +171,16 @@ def score(G, c, V, CleanTap, CircuitTap, arm):
                                             non_activation_threshold=0.0, filter_batch_size=32, load_window_size=256)
     nt = sel.tokens[:N_SEQ]
     n_tr = V.split_n(int(pt.shape[0])); n_ntr = V.split_n(int(nt.shape[0]))
+    if (pd_.metadata or {}).get("n_neg_train") is not None:   # 086 rebuilt contrast held-out set (eval_contrast)
+        n_ntr = int(pd_.metadata["n_neg_train"])
+        assert 0 < n_ntr < int(nt.shape[0]), "n_neg_train %d, n_neg %d" % (n_ntr, int(nt.shape[0]))
+    # the scorer's split rule (amp_eval_pass_v2.EVAL_SPLIT): "explicit" takes the probe's own train count, so a held-out
+    # set shorter than 16 (rebuilt records, 086) never pulls reference rows into the held-out slice; "as_run" (the
+    # 15k run) keeps the 3:1 slice. The two agree whenever the held-out set has 16 rows.
+    if getattr(V, "EVAL_SPLIT", "as_run") == "explicit" and (pd_.metadata or {}).get("n_train"):
+        n_tr = int(pd_.metadata["n_train"])
+        assert 0 < n_tr < int(pt.shape[0]), "explicit split needs a train and a held-out slice (n_train %d, n %d)" % (
+            n_tr, int(pt.shape[0]))
     pt_tr, pa_tr, pt_ho, pa_ho = pt[:n_tr], pa[:n_tr], pt[n_tr:], pa[n_tr:]
     UPS = set(upstream_sites(bank, layer, kind)); dev = pt.device
     means = {"Z": None,
