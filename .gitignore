@@ -124,3 +124,17 @@ AGENTS.md
 /experiments/**/logs/
 /experiments/**/*.out
 /experiments/**/*.watchstart
+# Old exploratory bulk data, untracked 2026-11-06 (kept on disk; not cited by the paper, not read by live code).
+# Still in git history. Kept tracked on purpose: 064/results (read by 096 + explorer), 065 descriptions.jsonl (072 + explorer)
+/experiments/038-transcoder-compare-gemma/sfc_nodes.jsonl
+/experiments/038-transcoder-compare-gemma/theirs_gtc_nodes.jsonl
+/experiments/038-transcoder-compare-gemma/theirs_gtc_pruned.jsonl
+/experiments/043-relativity/relativity_latents.jsonl
+/experiments/043-relativity/relativity_seqs.jsonl
+/experiments/049-circuit-graph/data_full/summary.shard*.json
+/experiments/049-circuit-graph/results_full/algorithm_census.jsonl
+/experiments/049-circuit-graph/results_full/interesting_circuits.csv
+/experiments/049-circuit-graph/results_full/run_stats_per_circuit.csv
+/experiments/049-circuit-graph/results_full/seed_seed_edges.csv
+/experiments/052-gemma3-270m/latent_circuits_*.jsonl
+/experiments/065-circuit-describer/results/runs/
