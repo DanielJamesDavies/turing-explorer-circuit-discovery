@@ -117,7 +117,7 @@ import torch
 from circuit.types.feature_id import FeatureID
 from observability.phases import phase as _phase
 from model.hooks import multi_patch
-from sae.dense import sparse_topk_to_dense
+from sae.dense import seed_threshold, sparse_topk_to_dense
 
 Site = Tuple[int, str]
 
@@ -142,8 +142,9 @@ def _amp_of(psi):
 
 OBJECTIVES = ("pos", "contrast", "negctx", "inject", "raise", "pin", "logit",
               "maximise")
-# Shared normalisers of the logit objective's data terms (see logit_norm).
-LOGIT_NORMS = ("none", "gap")
+# Normalisers of the logit objective's data terms (see logit_norm): one shared
+# scale ("none", "gap"), or one scale per ablation term ("gap_term").
+LOGIT_NORMS = ("none", "gap", "gap_term")
 # "gap" floor: a 0.1-nat rms full-vs-empty gap. Below it the output barely
 # depends on the masked sites, and dividing by the gap would only inflate the
 # data terms until lambda is negligible.
@@ -160,6 +161,172 @@ MASK_FLOOR_SOURCES = ("zero", "posctx", "negctx", "dual", "triple", "pn")
 # every dual arm on a close/random mode died on a missing floor. One tuple,
 # imported, so a new floor cannot drift out of sync again.
 FLOORS_NEEDING_NEGATIVES = ("negctx", "dual", "triple", "pn")
+
+# PROTOCOL V2 (2026-10-25): the A / C training terms under the pass rule's
+# sparsity-preserving fill. Ported from experiment 090 (sp_engine.py, arm
+# sp_ste); the semantics are the scorer's, CircuitOnlyPatcher(respect_topk=
+# True, topk=K)._respect_topk_fill (src/eval/ablation_faithfulness.py):
+#   members   at alpha x their live value, ALL kept (never evicted, even when
+#             more than K are active)
+#   budget    K - (members with a nonzero alpha x live value at that
+#             position), clamped at 0, per (batch, position)
+#   fill      the top-`budget` NON-members ranked by their mean, at that mean
+#   the rest  exactly 0.
+TRAIN_FILLS = ("dense", "sparse")
+SPARSE_GRADS = ("ste", "hard")
+
+
+def sparse_keep_mask(dense: torch.Tensor, member: torch.Tensor, alpha: torch.Tensor,
+                     floor_c: torch.Tensor, K: int) -> torch.Tensor:
+    """H [B, T, d_sae] bool: the entries the scorer's sparsity-preserving fill
+    keeps. dense [B, T, d] the live code, member [d] bool, alpha [d] (a member
+    counts as active where alpha * dense != 0 in the code dtype), floor_c [d]
+    the ablation value already in the code dtype (the scorer's mean_vector
+    after its .to(dtype)). The rank is the scorer's exact recipe: the mean in
+    float32, members at -inf, torch.argsort(descending=True)."""
+    D = int(dense.shape[-1])
+    if floor_c.dim() == 2:
+        # PER-POSITION MEANS [T, d] (2026-11-01, experiment 107; the scorer's
+        # _respect_topk_fill per-position branch): each position ranked by its
+        # own mean. The [d] path below is unchanged.
+        if int(floor_c.shape[0]) != int(dense.shape[1]):
+            raise ValueError(f"per-position floor has {int(floor_c.shape[0])} positions, the stream "
+                             f"{int(dense.shape[1])}")
+        mean_rank = floor_c.clone().to(torch.float32)
+        mean_rank[:, member] = float("-inf")
+        ranked = torch.argsort(mean_rank, dim=-1, descending=True)
+        rank_of = torch.empty_like(ranked)
+        rank_of.scatter_(-1, ranked, torch.arange(D, device=ranked.device).expand_as(ranked))
+        a_c = alpha.to(device=dense.device, dtype=dense.dtype)
+        act = ((dense * a_c) != 0) & member.view(1, 1, D)
+        budget = (int(K) - act.sum(dim=-1)).clamp(min=0)
+        fill = (rank_of.unsqueeze(0) < budget.unsqueeze(-1)) & ~member.view(1, 1, D)
+        return fill | member.view(1, 1, D)
+    mean_rank = floor_c.clone().to(torch.float32)
+    mean_rank[member] = float("-inf")
+    ranked = torch.argsort(mean_rank, descending=True)
+    rank_of = torch.empty_like(ranked)
+    rank_of[ranked] = torch.arange(D, device=ranked.device)
+    a_c = alpha.to(device=dense.device, dtype=dense.dtype)
+    act = ((dense * a_c) != 0) & member.view(1, 1, D)
+    budget = (int(K) - act.sum(dim=-1)).clamp(min=0)
+    fill = (rank_of.view(1, 1, D) < budget.unsqueeze(-1)) & ~member.view(1, 1, D)
+    return fill | member.view(1, 1, D)
+
+
+def sparse_code(code: torch.Tensor, H: torch.Tensor, grad: str) -> torch.Tensor:
+    """The sparsity-preserving code from the soft code and the keep mask.
+    "hard": H * code (gradients only through kept entries). "ste": forward
+    H * code, backward identity (straight-through)."""
+    Hc = H.to(code.dtype)
+    if grad == "hard":
+        return code * Hc
+    if grad == "ste":
+        return code + (code * Hc - code).detach()
+    raise ValueError(f"sparse_grad must be one of {SPARSE_GRADS}, got {grad!r}")
+
+
+# RESAMPLE TERM (2026-10-31, experiment 101; ported from 079 rs_engine, 092
+# sx_engine and 095 rs2_engine, where it ran as in-memory source patches). A
+# fourth data term whose floor is not a mean but the natural sparse code of a
+# DONOR context, position by position: code = m*alpha*dense + (1-m)*donor.
+# Donors are redrawn at every forward of the term (one donor row per training
+# row, with replacement, from a seeded generator), so a member must hold the
+# target up when everything it does not keep is a REAL other context (the 073
+# resample test). Under train_fill="sparse" the donor code takes the donor
+# analogue of the pass rule's sparsity-preserving fill (donor_keep_mask). Off
+# unless run_learned_mask(resample_weight > 0).
+RESAMPLE_SEED = 20261017              # 079's DonorFloors seed (091 / 095 / 100)
+RESAMPLE_CAPTURE_BATCH = 16           # 073 strict_eval.BATCH: the donor-code capture's forward batch
+
+
+def donor_keep_mask(dense: torch.Tensor, member: torch.Tensor, alpha: torch.Tensor,
+                    donor: torch.Tensor, K: int) -> torch.Tensor:
+    """H [B, T, d] bool, the training analogue of 073 ResamplePatcher's fill
+    (092 sx_engine.sp_keep_mask_donor, verbatim): members kept; the donor's
+    non-member entries with value > 0 at that position, largest first, up to
+    K - (#active members); the rest dropped. dense / donor [B, T, d] in the
+    code dtype, member [d] bool."""
+    D = int(dense.shape[-1])
+    mem = member.view(1, 1, D)
+    a_c = alpha.to(device=dense.device, dtype=dense.dtype)
+    act = ((dense * a_c) != 0) & mem
+    budget = (int(K) - act.sum(dim=-1)).clamp(min=0)
+    valid = (donor > 0) & ~mem
+    vals, idx = donor.float().masked_fill(~valid, float("-inf")).topk(int(K), dim=-1)
+    use = (torch.arange(int(K), device=dense.device).view(1, 1, -1) < budget.unsqueeze(-1)) & torch.isfinite(vals)
+    fill = torch.zeros_like(valid).scatter_(-1, idx, use)
+    return fill | mem
+
+
+@torch.no_grad()
+def capture_donor_codes(inference: Any, bank: Any, tokens: torch.Tensor, sites: List[Site],
+                        batch: int = RESAMPLE_CAPTURE_BATCH
+                        ) -> Dict[Site, Tuple[torch.Tensor, torch.Tensor]]:
+    """Natural sparse codes {site: (acts [N, T, k] float32, idx [N, T, k])} of
+    the donor contexts, on the CPU (073 strict_eval.capture_codes, the call
+    091 / 095 / 100 used, so the donor values are bit-identical to theirs)."""
+    kinds = list(bank.kinds)
+    k2i = {k: i for i, k in enumerate(kinds)}
+    want = set(sites)
+    parts: Dict[Site, Tuple[List[torch.Tensor], List[torch.Tensor]]] = {s: ([], []) for s in want}
+
+    def hook(layer_idx, acts):
+        for kd in kinds:
+            s = (layer_idx, kd)
+            if s in parts:
+                ta, ti = bank.encode(acts[k2i[kd]], kd, layer_idx)
+                parts[s][0].append(ta.detach().float())
+                parts[s][1].append(ti.detach())
+
+    inference.disable_compile()
+    try:
+        for s0 in range(0, int(tokens.shape[0]), int(batch)):
+            inference.forward(tokens[s0:s0 + int(batch)], activations_callback=hook, return_activations=False,
+                              tokenize_final=False)
+    finally:
+        inference.enable_compile()
+    missing = sorted(s for s, (a, _i) in parts.items() if not a)
+    if missing:
+        raise RuntimeError(f"capture_donor_codes: no code captured at sites {missing[:3]}")
+    return {s: (torch.cat(a).cpu(), torch.cat(i).cpu()) for s, (a, i) in parts.items()}
+
+
+class DonorPool:
+    """The resample term's floors: the donor contexts' natural codes, densified
+    per forward for the CURRENT donor rows (079 rs_engine.DonorFloors). draw(B)
+    picks B rows with replacement from a seeded CPU generator (one call per
+    forward of the donor patcher, so the draw sequence is the forward order);
+    get(site) densifies that site for those rows on demand, float32 [B, T, d]."""
+
+    def __init__(self, codes: Dict[Site, Tuple[torch.Tensor, torch.Tensor]], d_sae: int,
+                 device: Any, seed: int = RESAMPLE_SEED) -> None:
+        if not codes:
+            raise ValueError("DonorPool needs donor codes at one site at least")
+        self.codes, self.d_sae, self.device = codes, int(d_sae), device
+        self.n = int(next(iter(codes.values()))[0].shape[0])
+        if self.n == 0:
+            raise ValueError("DonorPool: no donor contexts")
+        self.gen = torch.Generator().manual_seed(int(seed))
+        self.rows: Optional[torch.Tensor] = None
+        self.n_draws = 0
+
+    def draw(self, B: int) -> None:
+        self.rows = torch.randint(self.n, (int(B),), generator=self.gen)
+        self.n_draws += 1
+
+    def get(self, site: Site) -> Optional[torch.Tensor]:
+        c = self.codes.get(site)
+        if c is None:
+            return None
+        if self.rows is None:
+            raise RuntimeError("DonorPool.get before draw()")
+        acts, idx = c
+        r = self.rows.to(acts.device)
+        a = acts[r].to(self.device, torch.float32)
+        i = idx[r].to(self.device)
+        dense = torch.zeros(a.shape[0], a.shape[1], self.d_sae, device=self.device, dtype=torch.float32)
+        return dense.scatter_(-1, i, a)
 
 
 class LearnedMaskPatcher:
@@ -178,7 +345,29 @@ class LearnedMaskPatcher:
                  pins: Optional[Dict[Site, torch.Tensor]] = None,
                  binarize: str = "none",
                  bin_threshold: float = 0.5,
-                 tap_seed: bool = True) -> None:
+                 tap_seed: bool = True,
+                 train_fill: str = "dense",
+                 sparse_grad: str = "ste",
+                 donors: Optional["DonorPool"] = None) -> None:
+        # RESAMPLE TERM (2026-10-31): with donors set, the floor at every site
+        # is the current donor rows' code (DonorPool.get, redrawn by
+        # _forward_preact before each forward) instead of floors[site]; under
+        # train_fill="sparse" it takes donor_keep_mask's fill. None (default)
+        # = the historical patcher, unchanged.
+        self.donors = donors
+        # PROTOCOL V2 (2026-10-25; experiment 090's sp_engine, ported):
+        # train_fill="sparse" runs this patcher's mean-floored branches (free-
+        # amplitude, or gate-only at alpha = 1 exactly; not pinned) under the
+        # pass rule's sparsity-preserving fill (see
+        # sparse_keep_mask); sparse_grad picks its backward ("ste" | "hard").
+        # "dense" (default) = the historical forward, bit-identical.
+        if train_fill not in TRAIN_FILLS:
+            raise ValueError(f"train_fill must be one of {TRAIN_FILLS}, got {train_fill!r}")
+        if sparse_grad not in SPARSE_GRADS:
+            raise ValueError(f"sparse_grad must be one of {SPARSE_GRADS}, got {sparse_grad!r}")
+        self.train_fill = train_fill
+        self.sparse_grad = sparse_grad
+        self.sparse_calls = 0
         # tap_seed=False removes the seed site's special case entirely: it is
         # masked like any other site and no pre-activation is captured. Used
         # by objective='logit', whose endpoint is the OUTPUT, so there is no
@@ -236,6 +425,10 @@ class LearnedMaskPatcher:
         # per-anchor reference max(clean, empty-circuit) for this patcher's
         # ablation. Both stay off/None by default (bit-identical).
         self.capture_site = False
+        # NECESSITY pass (2026-11-03): invert=True removes the members (code =
+        # dense x (1 - m), zero floor, no amplitudes) and keeps every other
+        # latent natural: the scorer's necessity edit, made differentiable.
+        self.invert = False
         self.seed_x: Optional[torch.Tensor] = None
         self.offtarget_ref: Optional[torch.Tensor] = None
         # constant per-site tensors cast once per (site, device, dtype) —
@@ -244,12 +437,46 @@ class LearnedMaskPatcher:
 
     def _const(self, tag: str, site: Site, t: torch.Tensor,
                like: torch.Tensor) -> torch.Tensor:
+        if tag == "floor" and self.donors is not None:
+            # a donor floor changes every forward: cast, never cached
+            return t.to(device=like.device, dtype=like.dtype)
         key = (tag, site, like.device, like.dtype)
         c = self._const_cache.get(key)
         if c is None:
             c = t.to(device=like.device, dtype=like.dtype)
             self._const_cache[key] = c
         return c
+
+    def _unit_alpha(self, site: Site, like: torch.Tensor) -> torch.Tensor:
+        """A cached constant alpha of exactly 1 [d_sae] in `like`'s dtype and
+        device (the gate-only code under train_fill="sparse")."""
+        key = ("unit_alpha", site, like.device, like.dtype)
+        c = self._const_cache.get(key)
+        if c is None:
+            c = torch.ones(int(like.shape[-1]), device=like.device, dtype=like.dtype)
+            self._const_cache[key] = c
+        return c
+
+    def _sparse_delta(self, site: Site, dense: torch.Tensor, m: torch.Tensor,
+                      alpha: torch.Tensor, floor: torch.Tensor) -> torch.Tensor:
+        """code_sp - dense for train_fill="sparse" (090 sp_engine._sp_delta).
+        Membership is the selection rule (m > bin_threshold; theta > 0 under
+        anneal), K the dictionary's k. The code is built directly as
+        m*alpha*dense + (1-m)*floor (algebraically delta + dense) so a bf16
+        stream rounds once, as the scorer does: at binary gates a member lands
+        on alpha x dense and a filled non-member on its mean, exactly.
+        With donors (the resample term) the floor is the donor code and the
+        keep mask is donor_keep_mask (095 rs2_engine._sp_delta_donor)."""
+        f = self._const("floor", site, floor, dense)
+        with torch.no_grad():
+            member = (m.detach() > self.bin_threshold).to(dense.device)
+            if self.donors is not None:
+                H = donor_keep_mask(dense, member, alpha.detach(), f, int(self.bank.k))
+            else:
+                H = sparse_keep_mask(dense, member, alpha.detach(), f, int(self.bank.k))
+            self.sparse_calls += 1
+        code = m * alpha * dense + (1.0 - m) * f
+        return sparse_code(code, H, self.sparse_grad) - dense
 
     def release(self) -> None:
         """Drop the graph-connected seed capture. Bounded to one forward's
@@ -310,9 +537,18 @@ class LearnedMaskPatcher:
             if self.binarize == "ste":
                 hard = (m > self.bin_threshold).to(m.dtype)
                 m = hard + m - m.detach()
+            if self.invert:
+                # members removed, everything else natural: code - dense = -dense * m
+                out = self.bank.decode(-dense * m, kind, layer_idx, add_bias=False)
+                return x + out.to(x.dtype)
             pin = self.pins.get((layer_idx, kind))
             floor = self.floors.get((layer_idx, kind))
+            if self.donors is not None:
+                floor = self.donors.get((layer_idx, kind))       # resample term: this forward's donor code
             amp = self.amps.get((layer_idx, kind))
+            if self.train_fill == "sparse" and floor is not None and pin is not None:
+                raise ValueError("train_fill='sparse' is defined for the mean-floored code without pins "
+                                 "(free-amplitude, or gate-only at alpha = 1)")
             if amp is not None and pin is None:
                 # code = m*alpha*dense + (1-m)*floor, so
                 # delta = dense*(m*alpha - 1) + (1-m)*floor.
@@ -320,10 +556,13 @@ class LearnedMaskPatcher:
                 # below (algebraic identity, both floor branches).
                 alpha = _amp_of(amp).to(
                     device=dense.device, dtype=dense.dtype)
-                delta_code = dense * (m * alpha - 1.0)
-                if floor is not None:
-                    delta_code = delta_code + (1.0 - m) * self._const(
-                        "floor", (layer_idx, kind), floor, dense)
+                if floor is not None and self.train_fill == "sparse":
+                    delta_code = self._sparse_delta((layer_idx, kind), dense, m, alpha, floor)
+                else:
+                    delta_code = dense * (m * alpha - 1.0)
+                    if floor is not None:
+                        delta_code = delta_code + (1.0 - m) * self._const(
+                            "floor", (layer_idx, kind), floor, dense)
             elif pin is not None:
                 # PINNED execution (D3.1): kept -> clean pin value, dropped
                 # -> floor (or 0). code = m*pin + (1-m)*floor, so the delta
@@ -342,8 +581,16 @@ class LearnedMaskPatcher:
                 # exactly identity (delta_code == 0 there), so the
                 # decode(all)+error invariant is untouched.
                 # code - dense == (floor - dense) * (1 - m)
-                f = self._const("floor", (layer_idx, kind), floor, dense)
-                delta_code = (f - dense) * (1.0 - m)
+                if self.train_fill == "sparse":
+                    # PROTOCOL V2, unweighted arms (2026-10-26): the gate-only
+                    # code is the free-amplitude code at alpha = 1, so it takes
+                    # the same sparsity-preserving fill with a constant alpha
+                    # of exactly 1 (U differs from WCM only in the coefficients).
+                    delta_code = self._sparse_delta((layer_idx, kind), dense, m,
+                                                    self._unit_alpha((layer_idx, kind), dense), floor)
+                else:
+                    f = self._const("floor", (layer_idx, kind), floor, dense)
+                    delta_code = (f - dense) * (1.0 - m)
         if psi is not None:
             # additive injection, always >= 0; position-uniform (broadcast
             # over [B, T]) — the same semantics as the cf injection eval.
@@ -361,6 +608,11 @@ def _forward_preact(inference: Any, patcher: LearnedMaskPatcher,
                     tokens: torch.Tensor, grad: bool) -> torch.Tensor:
     patcher.seed_pre = None
     patcher.seed_x = None
+    # resample term: every forward of a donor patcher draws its donor rows
+    # first (one per row of this batch), so donors are redrawn per forward
+    donors = getattr(patcher, "donors", None)
+    if donors is not None:
+        donors.draw(int(tokens.shape[0]))
     # Never run a patcher forward through the compiled model: each distinct
     # patcher closure fails dynamo's guards and adds a recompile variant to
     # module-level caches. This matches the eager-patcher policy every other
@@ -395,6 +647,11 @@ def _forward_logits(inference: Any, patcher: LearnedMaskPatcher,
     logit-objective step is strictly more expensive than a pos one on the
     same sites. Same no-compile policy, same reasoning as _forward_preact.
     """
+    # resample term (objective="logit", 2026-11-01): the donor rows are
+    # redrawn per forward, as in _forward_preact
+    donors = getattr(patcher, "donors", None)
+    if donors is not None:
+        donors.draw(int(tokens.shape[0]))
     was_compiled = getattr(inference, "_compiled", False)
     if was_compiled:
         inference.disable_compile()
@@ -655,6 +912,42 @@ def _run_learned_mask_impl(
     # rank_temp sets the sigmoid temperature as a fraction of the seed's clean
     # pre-activation at each anchor.
     rank_mode: str = "cut",
+    # "cut" only: beat the rank_cut_k-th largest OTHER latent (None = the
+    # bank's k, unchanged). Smaller = a rank margin below the Top-K cut.
+    rank_cut_k: Optional[int] = None,
+    # The rank term's weight multiplier inside the ZERO ablation's term only
+    # (1.0 = unchanged). Near-threshold seeds are censored mainly there.
+    rank_zero_mult: float = 1.0,
+    # CENSORED ACTIVATION (objective "pos"; None = off, bit-identical): fit
+    # the seed's soft Top-K activation pre * sigmoid((pre - tau_K) / T)
+    # instead of its pre-activation, T = censor_temp x |clean seed| per anchor.
+    censor_temp: Optional[float] = None,
+    # RIVAL TERM (objective "pos"; 0.0 = off): weight on the squared rise of
+    # the seed site's other latents above BOTH their clean value and the seed.
+    rival_weight: float = 0.0,
+    # ADAPTIVE λ (objective "pos" with a multi-term floor; None = off,
+    # bit-identical): keep every ablation term's training faithfulness
+    # f = mean(circuit) / mean(natural) (Z / A / C, EMA 0.9) inside
+    # [1 - eps, 1 + 2 eps]. log λ moves by lam_adapt_rate x clip(d / eps, -1,
+    # 1) per step, d = the smallest distance of any f to that band's edge
+    # (> 0 inside), from 25% of the run to lam_adapt_frac, within
+    # l1_lambda x [1/30, 30], then holds; l1_lambda is the starting price.
+    lam_adapt_eps: Optional[float] = None,
+    lam_adapt_rate: float = 0.02,
+    lam_adapt_frac: float = 0.7,
+    # the adaptive λ's range: l1_lambda x [1 / lam_adapt_down, lam_adapt_up]
+    # (2026-11-03: a ×21 rise over-shrank a passing target into a held-out
+    # fail; 1 for lam_adapt_down = raise-only)
+    lam_adapt_up: float = 30.0,
+    lam_adapt_down: float = 30.0,
+    # NECESSITY TERM (objective "pos" with a multi-term floor; 0.0 = off,
+    # bit-identical): a fifth forward with the members REMOVED (zero) and the
+    # rest natural, the scorer's necessity edit; one-sided hinge
+    # relu(v - (e0 + (1 - necessity_target) (a - e0)))^2 / mean(target^2) on
+    # the seed (a = its clean value, e0 = the zero-ablation empty circuit's),
+    # so it costs nothing until necessity would fall below necessity_target.
+    necessity_weight: float = 0.0,
+    necessity_target: float = 0.95,
     rank_temp: float = 0.05,
     # "top": exponent p of ((rank - 1) / k)^p. Higher p = flatter near rank 1.
     rank_power: float = 2.0,
@@ -675,6 +968,14 @@ def _run_learned_mask_impl(
     # the logit analogue of pos's mean(target^2) scale, so lambda prices a
     # latent against the same relative error for every target. Read only by
     # objective="logit".
+    # "gap_term" (2026-10-27, experiment 081): a PER-TERM normaliser. Each
+    # ablation term is divided by its OWN closed-mask gap^2 (zero term: the
+    # zero gap; C term: the closed C-floor gap; A term: the closed A-floor
+    # gap), each measured under that term's training fill (train_fill) and
+    # floored at LOGIT_GAP_FLOOR, so every term is ~ (1 - its own
+    # faithfulness)^2. Motivation: 080's whole-model calibration, where the
+    # zero gap was ~5x the mean-ablation gaps and "gap" under-weighted the
+    # A / C errors. Needs a multi-term floor (dual / triple / pn).
     logit_norm: str = "none",
     # LOGIT METRIC (2026-10-19, experiment 081): what the logit objective
     # reproduces at each anchor. "token" (default, bit-identical) = log p of
@@ -700,13 +1001,59 @@ def _run_learned_mask_impl(
     # per task). None (default) = collected here, unchanged.
     floor_means: Optional[Dict[Site, torch.Tensor]] = None,
     pos_floor_means: Optional[Dict[Site, torch.Tensor]] = None,
+    # PROTOCOL V2 (2026-10-25, experiment 090): the fill of the mean-floored
+    # training patchers (the C term's and the A term's; the Z term has no
+    # floor and is untouched). "dense" (default) = every non-member at its
+    # mean, bit-identical. "sparse" = the pass rule's sparsity-preserving fill
+    # (sparse_keep_mask), with sparse_grad "ste" (straight-through, v2) or
+    # "hard". Needs a mean floor and no pins; a gate-only (unweighted) fit
+    # runs it at alpha = 1 exactly.
+    train_fill: str = "dense",
+    sparse_grad: str = "ste",
+    # RESAMPLE TERM (2026-10-31, experiment 101; the native port of 079 /
+    # 095's donor-resample term "R"). resample_weight gamma_R > 0 adds a fourth
+    # data term to the dual / triple / pn floors of objective="pos": a patcher
+    # over the SAME thetas / amplitudes whose floor at every masked site is the
+    # natural code of a DONOR context (resample_tokens [N, T], e.g. the
+    # target's training contrast contexts), one donor row per training row,
+    # redrawn at every forward from a generator seeded with resample_seed.
+    # Weighted gamma_R / dual_norm like the A / C terms; no rank-keep or
+    # off-target term (as 079). resample_k > 1 enters the term k times at
+    # gamma_R / k (k independent donor draws per row per step; 100 E4). Under
+    # train_fill="sparse" the donor code takes the sparsity-preserving donor
+    # fill (donor_keep_mask; 092 test 3 / 095), with sparse_grad's backward;
+    # under "dense" every non-member is at its donor value (079 / 091). Gate-
+    # only (unweighted) fits run the same term at alpha = 1. 0.0 = off,
+    # bit-identical (no donor patcher is built, no capture, no draw).
+    resample_weight: float = 0.0,
+    resample_tokens: Optional[torch.Tensor] = None,
+    resample_k: int = 1,
+    resample_seed: int = RESAMPLE_SEED,
     binarize: str = "none",
     anneal_reach_frac: float = 1.0,
+    # The anneal's starting temperature (geometric anneal_t0 -> 0.05). 1.0 =
+    # the historical schedule, bit-identical. A warm_state fit taken from a
+    # finished anneal sets 0.05: its gates were learned at T = 0.05, and
+    # restarting at T = 1 re-softens them (measured 2026-11-02: the zero term
+    # 1e-4 at the end of one λ, 0.03-0.16 at the start of the next).
+    anneal_t0: float = 1.0,
     support: Optional[Dict[Site, torch.Tensor]] = None,
     raise_gamma: float = 1.5,
     pin_values: Optional[Dict[Site, torch.Tensor]] = None,
     scale_normalize: bool = False,
     delta_init: Optional[Dict[Site, Dict[int, float]]] = None,
+    # WARM START (2026-11-02, experiment 107 arena C): {"theta": {site:
+    # [d_sae]}, "amp": {site: [d_sae]}} raw parameters (the gate logits theta
+    # and, under free_amplitude, the amplitude psi) to start from instead of
+    # theta_init / softplus^-1(1): a lambda path fits each lambda from the
+    # previous one's final state (return_state). Sites absent from a dict keep
+    # the default init; the optimizer state starts fresh. None = off,
+    # bit-identical.
+    warm_state: Optional[Dict[str, Dict[Site, torch.Tensor]]] = None,
+    # True adds provenance["final_state"] = the same {"theta", "amp"} dicts
+    # (detached, on CPU) for a later warm_state. Tensors, so not JSON: off by
+    # default because callers serialise provenance.
+    return_state: bool = False,
     suppress_weight: float = 0.0,
     step_hook: Optional[Any] = None,
     logger: Any = None,
@@ -778,10 +1125,39 @@ def _run_learned_mask_impl(
         raise ValueError(f"offtarget_mode must be 'all' or 'cut', got {offtarget_mode!r}")
     if rank_mode not in ("cut", "keep", "top"):
         raise ValueError(f"rank_mode must be 'cut', 'keep' or 'top', got {rank_mode!r}")
+    if (censor_temp is not None or rival_weight > 0 or rank_zero_mult != 1.0) and objective != "pos":
+        raise ValueError("censor_temp / rival_weight / rank_zero_mult need objective='pos'")
+    if censor_temp is not None and not float(censor_temp) > 0:
+        raise ValueError(f"censor_temp must be > 0, got {censor_temp}")
+    if rival_weight < 0 or rank_zero_mult < 0:
+        raise ValueError("rival_weight and rank_zero_mult must be >= 0")
+    if necessity_weight < 0 or not 0 < float(necessity_target) <= 1:
+        raise ValueError("necessity_weight must be >= 0 and necessity_target in (0, 1]")
+    if necessity_weight > 0 and (objective != "pos" or mask_floor_source not in ("dual", "triple", "pn")):
+        raise ValueError("necessity_weight needs objective='pos' and a multi-term floor (dual / triple / pn)")
+    if lam_adapt_eps is not None:
+        if objective != "pos" or mask_floor_source not in ("dual", "triple", "pn"):
+            raise ValueError("lam_adapt_eps needs objective='pos' and a multi-term floor (dual / triple / pn)")
+        if not (float(lam_adapt_eps) > 0 and float(lam_adapt_rate) > 0 and 0 < float(lam_adapt_frac) <= 1):
+            raise ValueError("lam_adapt_eps and lam_adapt_rate must be > 0 and lam_adapt_frac in (0, 1]")
+        if not (float(lam_adapt_up) >= 1 and float(lam_adapt_down) >= 1):
+            raise ValueError("lam_adapt_up and lam_adapt_down must be >= 1")
+    if rank_cut_k is not None and (rank_mode != "cut" or not 1 <= int(rank_cut_k) <= int(bank.k)):
+        raise ValueError(f"rank_cut_k needs rank_mode='cut' and 1 <= rank_cut_k <= k, got {rank_cut_k} "
+                         f"with rank_mode {rank_mode!r}")
+    # Rank-keep stays latent-only. A behavioural version (the answer token's clean vocabulary rank) was tried on
+    # 2026-11-01 (experiment 107) and removed: it collapsed SVA fits (Z 0.89 -> 0.00 at simple, lambda 1e-5) because
+    # the answer's absolute vocabulary rank is arbitrary there, and the logit-difference metric already scores the
+    # answer against its competitor (Daniel: behavioural WCM = Z + A + C + R).
     if (offtarget_weight > 0 or rank_weight > 0) and objective != "pos":
         raise ValueError("offtarget_weight / rank_weight need objective='pos'")
     if logit_norm not in LOGIT_NORMS:
         raise ValueError(f"logit_norm must be one of {LOGIT_NORMS}, got {logit_norm!r}")
+    if logit_norm == "gap_term" and (objective != "logit"
+                                     or mask_floor_source not in ("dual", "triple", "pn")):
+        raise ValueError("logit_norm='gap_term' normalises each ablation term by its own closed-mask gap: it needs "
+                         "objective='logit' and a multi-term floor (dual / triple / pn), got objective "
+                         f"{objective!r}, mask_floor_source {mask_floor_source!r}")
     if logit_metric not in LOGIT_METRICS:
         raise ValueError(f"logit_metric must be one of {LOGIT_METRICS}, got {logit_metric!r}")
     _sets = logit_metric == "set"
@@ -833,6 +1209,33 @@ def _run_learned_mask_impl(
     if binarize not in ("none", "ste", "anneal"):
         raise ValueError(
             f"binarize must be 'none', 'ste' or 'anneal', got {binarize!r}")
+    if train_fill not in TRAIN_FILLS:
+        raise ValueError(f"train_fill must be one of {TRAIN_FILLS}, got {train_fill!r}")
+    if sparse_grad not in SPARSE_GRADS:
+        raise ValueError(f"sparse_grad must be one of {SPARSE_GRADS}, got {sparse_grad!r}")
+    # Free-amplitude fits use the fitted alpha; gate-only (unweighted) fits run
+    # the same fill at alpha = 1 exactly. Pinned execution has no live member
+    # value to keep, so it is not defined there.
+    if train_fill == "sparse" and (mask_floor_source == "zero" or objective == "pin"):
+        raise ValueError("train_fill='sparse' re-imposes the sparsity-preserving fill on the mean-floored terms: "
+                         f"it needs a mean floor and no pins (mask_floor_source {mask_floor_source!r}, "
+                         f"objective {objective!r})")
+    _resample = float(resample_weight) > 0
+    if float(resample_weight) < 0:
+        raise ValueError(f"resample_weight must be >= 0, got {resample_weight}")
+    if _resample:
+        # the donor draw hooks _forward_preact / _forward_logits, and the term
+        # rides the multi-floor branch (079's scope; objective="logit" joined
+        # 2026-11-01, experiment 107); a single-floor R is not defined
+        if objective not in ("pos", "logit") or mask_floor_source not in ("dual", "triple", "pn"):
+            raise ValueError("resample_weight > 0 needs objective='pos' or 'logit' and a multi-term floor (dual / "
+                             f"triple / pn), got objective {objective!r}, mask_floor_source {mask_floor_source!r}")
+        if resample_tokens is None or int(resample_tokens.shape[0]) == 0:
+            raise ValueError("resample_weight > 0 needs resample_tokens (the donor contexts)")
+        if int(resample_k) < 1:
+            raise ValueError(f"resample_k must be >= 1, got {resample_k}")
+    if not 0.05 <= float(anneal_t0) <= 1.0:
+        raise ValueError(f"anneal_t0 must be in [0.05, 1], got {anneal_t0}")
     if binarize == "anneal" and abs(float(keep_threshold) - 0.5) > 1e-9:
         raise ValueError(
             "binarize='anneal' hardens the gate at theta=0, i.e. m=0.5 - a "
@@ -997,6 +1400,9 @@ def _run_learned_mask_impl(
     sae = bank.saes[seed_kind][seed_layer]
     w_seed = sae.encoder.weight[seed_latent_idx].detach()
     b_seed = sae._get_bias_eff()[seed_latent_idx].detach()
+    # the seed's own activation threshold (JumpReLU dictionaries; None = ReLU):
+    # the censored term's cut is never below it (seed_threshold)
+    _thr_seed = seed_threshold(bank, seed_layer, seed_kind, seed_latent_idx)
     # DIFFERENTIAL SEED (2026-08-28): seed_vector=(w, b) overrides
     # the encoder-row derivation, so a circuit can be fitted against
     # a VIRTUAL direction -- e.g. w_A - w_B, whose reconstruction
@@ -1152,6 +1558,24 @@ def _run_learned_mask_impl(
                  else math.log(math.expm1(1.0)))
         amps = {s: torch.full((bank.d_sae,), _psi1, device=device,
                               requires_grad=True) for s in sites}
+    if warm_state is not None:
+        unknown = set(warm_state) - {"theta", "amp"}
+        if unknown:
+            raise ValueError(f"warm_state keys must be 'theta' / 'amp', got {sorted(unknown)}")
+        if warm_state.get("amp") and not free_amplitude:
+            raise ValueError("warm_state['amp'] needs free_amplitude=True")
+        with torch.no_grad():
+            for key, dst in (("theta", thetas), ("amp", amps)):
+                for st, v in (warm_state.get(key) or {}).items():
+                    if st not in dst:
+                        continue           # a site outside this fit's scope
+                    if tuple(v.shape) != tuple(dst[st].shape):
+                        raise ValueError(f"warm_state[{key!r}][{st}] has shape {tuple(v.shape)}, "
+                                         f"expected {tuple(dst[st].shape)}")
+                    dst[st].copy_(v.to(dst[st].device, dst[st].dtype))
+            # support exclusion wins over the warm values
+            for st, excl in support_excl_masks.items():
+                thetas[st].masked_fill_(excl, SUPPORT_EXCL)
     params = list(thetas.values()) + list(deltas.values()) + list(amps.values())
     inj_lambda = float(l1_lambda if inject_lambda is None else inject_lambda)
     # scale_normalize: relative error + target-relative delta pricing (see
@@ -1180,7 +1604,14 @@ def _run_learned_mask_impl(
     # means what governs size is not the lr integral but how much lr survives
     # LATE, while marginal latents are still mid-crossing. Decay starves
     # exactly those steps; warmup feeds them.
-    _SCHEDULES = ("constant", "cosine", "linear", "cosine_up", "linear_up")
+    # "geometric" (2026-11-02, experiment 107 arena C): lr * lr_min_frac**frac,
+    # the anneal's own shape (T = 0.05**progress). Under binarize="anneal" the
+    # gate is sigmoid(theta / T) and Adam moves theta by ~lr per step, so the
+    # gate moves ~lr / T per step: constant lr makes late steps 20x larger
+    # (measured: late blow-ups, zero term 0.0015 -> 12.2), cosine still peaks
+    # lr / T at ~2.5x mid-run; geometric with lr_min_frac 0.05 holds it fixed.
+    _SCHEDULES = ("constant", "cosine", "linear", "cosine_up", "linear_up",
+                  "geometric")
     if lr_schedule not in _SCHEDULES:
         raise ValueError(f"lr_schedule must be one of {_SCHEDULES}, "
                          f"got {lr_schedule!r}")
@@ -1193,8 +1624,8 @@ def _run_learned_mask_impl(
     # ramp is not a schedule anyone would ship.
     if not 0.0 <= float(warmup_frac) < 1.0:
         raise ValueError(f"warmup_frac must be in [0, 1), got {warmup_frac}")
-    if warmup_frac and lr_schedule not in ("cosine", "linear"):
-        raise ValueError("warmup_frac only applies to 'cosine' or 'linear', "
+    if warmup_frac and lr_schedule not in ("cosine", "linear", "geometric"):
+        raise ValueError("warmup_frac only applies to 'cosine', 'linear' or 'geometric', "
                          f"got lr_schedule={lr_schedule!r}")
     n_warm = int(round(float(warmup_frac) * int(steps)))
 
@@ -1206,6 +1637,8 @@ def _run_learned_mask_impl(
             # one step short of it.
             return lr_floor + (float(lr) - lr_floor) * (step + 1) / n_warm
         frac = (step - n_warm) / max(int(steps) - n_warm - 1, 1)
+        if lr_schedule == "geometric":
+            return float(lr) * float(lr_min_frac) ** frac
         if lr_schedule == "linear":
             shape = 1.0 - frac
         elif lr_schedule == "linear_up":
@@ -1317,7 +1750,9 @@ def _run_learned_mask_impl(
                                  pins=_pins,
                                  binarize=binarize,
                                  bin_threshold=keep_threshold,
-                                 tap_seed=_tap)
+                                 tap_seed=_tap,
+                                 train_fill=train_fill if floors is not None else "dense",
+                                 sparse_grad=sparse_grad)
     # DUAL FLOOR: a second patcher over the SAME thetas, differing only in the
     # floor, so one mask is scored under both ablation semantics and gradients
     # from both accumulate into the same parameters.
@@ -1344,8 +1779,33 @@ def _run_learned_mask_impl(
         LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
                            deltas=deltas, amps=amps, code_dtype=code_dtype,
                            floors=floors_pos, binarize=binarize,
-                           bin_threshold=keep_threshold, tap_seed=_tap)
+                           bin_threshold=keep_threshold, tap_seed=_tap,
+                           train_fill=train_fill, sparse_grad=sparse_grad)
         if pos_floor else None)
+    # RESAMPLE TERM: the donor patcher, same thetas / amplitudes / gate, its
+    # floor = the donor pool (codes captured once here, rows drawn per forward).
+    donor_pool: Optional[DonorPool] = None
+    patcher_donor: Optional[LearnedMaskPatcher] = None
+    if _resample:
+        donor_pool = DonorPool(capture_donor_codes(inference, bank, resample_tokens.to(device), sites),
+                               bank.d_sae, device, seed=resample_seed)
+        patcher_donor = LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
+                                           deltas=deltas, amps=amps, code_dtype=code_dtype,
+                                           binarize=binarize, bin_threshold=keep_threshold,
+                                           tap_seed=_tap,
+                                           train_fill=train_fill, sparse_grad=sparse_grad,
+                                           donors=donor_pool)
+        if logger is not None:
+            logger.note(f"learned_mask[resample]: gamma_R {resample_weight} | {donor_pool.n} donor contexts | "
+                        f"k {int(resample_k)} | fill {train_fill}")
+    # NECESSITY TERM (2026-11-03): the same thetas, inverted (members removed,
+    # the rest natural); its data term is a one-sided hinge (data_loss)
+    patcher_nec: Optional[LearnedMaskPatcher] = None
+    if necessity_weight > 0:
+        patcher_nec = LearnedMaskPatcher(bank, thetas, seed_layer, seed_kind, w_seed, b_seed,
+                                         code_dtype=code_dtype, floors=None, binarize=binarize,
+                                         bin_threshold=keep_threshold, tap_seed=True)
+        patcher_nec.invert = True
 
     def mask_mean() -> torch.Tensor:
         return torch.stack([torch.sigmoid(t).mean() for t in thetas.values()]).mean()
@@ -1393,6 +1853,27 @@ def _run_learned_mask_impl(
     # rank-term contributions of the current step (diagnostics: the curve
     # recorded per step; detached GPU scalars, no host sync)
     _rank_log: List[torch.Tensor] = []
+    # (term name, share of anchors with the seed outside the site's Top-K)
+    # per data-term call of the current step (diagnostic, 2026-11-02)
+    _cens_log: List[Tuple[str, torch.Tensor]] = []
+    # adaptive λ (option B): (term name, mean circuit value, mean natural
+    # value) per data-term call of the current step; the per-term training
+    # faithfulness EMA; log(λ / l1_lambda)
+    _err_log: List[Tuple[str, torch.Tensor, torch.Tensor]] = []
+    _lam_ema: Dict[str, float] = {}
+    _lam_state = [0.0]
+
+    def _lam_now() -> float:
+        return float(l1_lambda) * math.exp(_lam_state[0]) if lam_adapt_eps is not None else l1_lambda
+
+    def _term_name(p) -> str:
+        if p is not None and p is patcher_zero:
+            return "zero"
+        if p is not None and p is patcher_pos:
+            return "pos"
+        if p is not None and p is patcher_donor:
+            return "resample"
+        return "floor"
 
     def data_loss(tokens, anchors, targets, micro_index, pat=None) -> torch.Tensor:
         pat = pat if pat is not None else patcher
@@ -1415,6 +1896,15 @@ def _run_learned_mask_impl(
             return ((lp - tg[:lp.shape[0]].to(lp.device, lp.dtype)) ** 2).mean()
         pre = _forward_preact(inference, pat, tk, grad=True)
         vals = _at(pre, an)
+        if patcher_nec is not None and pat is patcher_nec:
+            # NECESSITY: with the members removed the seed must fall at least
+            # necessity_target of the way from its clean value to e0
+            _n = vals.shape[0]
+            _a = tg[:_n].to(vals.device, vals.dtype)
+            _e0 = _e0_seed[s:s + _n].to(vals.dtype)
+            _thr = _e0 + (1.0 - float(necessity_target)) * (_a - _e0)
+            _sgn = torch.sign(_a - _e0)
+            return (torch.relu(_sgn * (vals - _thr)) ** 2).mean()
         if objective == "maximise":
             # No target: drive the seed as high as the mask can, and let the
             # L1 term set the price of each latent kept. UNBOUNDED by
@@ -1430,11 +1920,44 @@ def _run_learned_mask_impl(
             tgt = torch.full_like(vals, float(target_act))
         else:
             tgt = tg[:vals.shape[0]].to(vals.device, vals.dtype)
-        loss = ((vals - tgt) ** 2).mean()
-        if pat.capture_site and tokens is pt_tr:
+        _site = pat.capture_site and tokens is pt_tr
+        if _site:
             # every site latent's pre-activation at the seed's anchors
             xa = _at(pat.seed_x, an)
             pre_all = xa.to(_ot_W.dtype) @ _ot_W.T + _ot_b
+            _sd = int(seed_latent_idx)
+            _others = pre_all.index_fill(-1, torch.tensor([_sd], device=pre_all.device), float("-inf"))
+            _ps = pre_all[:, _sd]
+            _tauK = torch.topk(_others, int(getattr(bank, "k", bank.d_sae)), dim=-1).values[:, -1]
+            if _thr_seed is not None:                       # JumpReLU: the seed's threshold is a cut too
+                _tauK = _tauK.clamp(min=_thr_seed)
+            # DIAGNOSTIC (2026-11-02): the share of anchors where the seed is
+            # outside the site's Top-K under this term's ablation
+            _cens_log.append((_term_name(pat), (_ps < _tauK).float().mean().detach()))
+        if censor_temp is not None and _site:
+            # CENSORED ACTIVATION (2026-11-02, exp 107 latent pilot): fit what
+            # the scorer reads. The activation read is the seed's value only
+            # while it is inside the site's Top-K, so both sides of the data
+            # term pass through a soft Top-K gate sigmoid((pre - tau_K) / T),
+            # tau_K = the K-th largest OTHER latent (the circuit's own, and the
+            # clean one for the target), T = censor_temp x |clean seed| per
+            # anchor. A seed well inside the Top-K is unchanged; one the
+            # ablation pushes out is charged its whole value.
+            _n = vals.shape[0]
+            _T = _cens_T[s:s + _n].to(vals.dtype)
+            vals = vals * torch.sigmoid((vals - _tauK[:_n].to(vals.dtype)) / _T)
+            tgt = tgt * torch.sigmoid((tgt - _cut_clean[s:s + _n].to(vals.dtype)) / _T)
+        loss = ((vals - tgt) ** 2).mean()
+        if lam_adapt_eps is not None:
+            _err_log.append((_term_name(pat), vals.detach().float().mean(), tgt.detach().float().mean()))
+        if _site:
+            if rival_weight > 0:
+                # RIVAL TERM (2026-11-02): latents at the seed's site that rise
+                # above BOTH their clean value and the seed are charged (the
+                # seed's value is detached: this term only pushes rivals down)
+                _ref = torch.maximum(_clean_site[s:s + pre_all.shape[0]].to(pre_all.dtype), _ps.detach()[:, None])
+                _ex = torch.relu(_others - _ref).nan_to_num(0.0)
+                loss = loss + float(rival_weight) * (_ex ** 2).sum(-1).mean()
             if pat.offtarget_ref is not None:
                 # OFF-TARGET TERM: other latents charged only for rising
                 # above their reference (the seed's column is excluded there).
@@ -1442,13 +1965,10 @@ def _run_learned_mask_impl(
                 excess = torch.relu(pre_all - ref)
                 loss = loss + float(offtarget_weight) * (excess ** 2).sum(-1).mean()
             if rank_weight > 0:
-                _sd = int(seed_latent_idx)
-                _others = pre_all.index_fill(-1, torch.tensor([_sd], device=pre_all.device),
-                                             float("-inf"))
-                _ps = pre_all[:, _sd]
                 if rank_mode == "cut":
                     # TOP-K HINGE: the seed must beat the k-th largest OTHER latent.
-                    _tau = torch.topk(_others, int(bank.k), dim=-1).values[:, -1]
+                    _kc = int(bank.k) if rank_cut_k is None else int(rank_cut_k)
+                    _tau = torch.topk(_others, _kc, dim=-1).values[:, -1]
                     _pen = torch.relu(_tau + float(rank_delta) - _ps) ** 2
                 elif rank_mode == "keep":
                     # RANK-PRESERVING: the seed must beat the rival at its own
@@ -1466,8 +1986,11 @@ def _run_learned_mask_impl(
                     _T = _rank_T[s:s + _ps.shape[0]]
                     _above = torch.sigmoid((_others - _ps[:, None]) / _T[:, None]).sum(-1)
                     _pen = float(dual_norm) * (_above / float(bank.k)) ** float(rank_power)
-                loss = loss + float(rank_weight) * _pen.mean()
-                _rank_log.append((float(rank_weight) * _pen.mean()).detach())
+                # rank_zero_mult: the rank term weighs more inside the ZERO
+                # ablation's term (2026-11-02), where censoring happens
+                _rw = float(rank_weight) * (float(rank_zero_mult) if pat is patcher_zero else 1.0)
+                loss = loss + _rw * _pen.mean()
+                _rank_log.append((_rw * _pen.mean()).detach())
         return loss
 
     # TERM SCALING. Both dual terms measure the SAME quantity - squared error
@@ -1498,7 +2021,10 @@ def _run_learned_mask_impl(
     # logit objective: the shared scale of its data terms (logit_norm). 1.0 =
     # raw nats^2, the historical single-floor behaviour, unchanged.
     logit_scale = 1.0
-    if objective == "logit" and (dual_floor or logit_norm == "gap"):
+    # logit_norm="gap_term": {"zero" | "floor" | "pos": that term's own scale}
+    term_scales: Optional[Dict[str, float]] = None
+    norm_pos = None
+    if objective == "logit" and (dual_floor or logit_norm in ("gap", "gap_term")):
         # The logit analogue of the block below: the closed-mask losses are
         # measured on the OUTPUT (log p of the target token, full depth, the
         # masked sites shut), as diagnostics; under logit_norm="gap" the zero
@@ -1510,10 +2036,12 @@ def _run_learned_mask_impl(
             shut = {s: torch.full((bank.d_sae,), -40.0, device=device)
                     for s in sites}                      # sigmoid(-40) == 0
 
-            def _closed_logprob(fl):
+            def _closed_logprob(fl, fill="dense"):
                 p_shut = LearnedMaskPatcher(bank, shut, seed_layer, seed_kind,
                                             w_seed, b_seed, code_dtype=code_dtype,
-                                            floors=fl, tap_seed=False)
+                                            floors=fl, tap_seed=False,
+                                            train_fill=fill if fl is not None else "dense",
+                                            sparse_grad=sparse_grad)
                 step_ = max(1, int(micro_bs))
                 out = []
                 for s0 in range(0, int(pt_tr.shape[0]), step_):
@@ -1534,6 +2062,20 @@ def _run_learned_mask_impl(
                 norm_floor = max(float(((_lpf - _tgt.to(_lpf.device)) ** 2).mean()), 1e-6)
             if logit_norm == "gap":
                 logit_scale = max(norm_zero, LOGIT_GAP_FLOOR)
+            elif logit_norm == "gap_term":
+                # each term's own closed-mask gap, under the fill that term
+                # trains with (the Z term has no floor: its fill is the zero)
+                _fill = train_fill
+                term_scales = {"zero": max(norm_zero, LOGIT_GAP_FLOOR)}
+                if floors is not None:
+                    _lpf_t = _closed_logprob(floors, _fill)
+                    norm_floor = max(float(((_lpf_t - _tgt.to(_lpf_t.device)) ** 2).mean()), 1e-6)
+                    term_scales["floor"] = max(norm_floor, LOGIT_GAP_FLOOR)
+                if floors_pos is not None:
+                    _lpp = _closed_logprob(floors_pos, _fill)
+                    norm_pos = max(float(((_lpp - _tgt.to(_lpp.device)) ** 2).mean()), 1e-6)
+                    term_scales["pos"] = max(norm_pos, LOGIT_GAP_FLOOR)
+                logit_scale = term_scales["zero"]           # reported; the terms use term_scales
             dual_norm = logit_scale
         if logger is not None:
             logger.note(f"learned_mask[logit]: norm {logit_norm} -> scale "
@@ -1581,8 +2123,9 @@ def _run_learned_mask_impl(
     # ([n_train, d_sae] each, ~8 MB).
     _ot_W = _ot_b = None
     _ot_info: Dict[str, Any] = {}
-    if offtarget_weight > 0 or rank_weight > 0:
-        # both terms read every site latent's pre-activation from the stream
+    if (offtarget_weight > 0 or rank_weight > 0 or censor_temp is not None or rival_weight > 0
+            or necessity_weight > 0):
+        # these terms read every site latent's pre-activation from the stream
         # captured at the seed's site
         _sae_ot = bank.saes[seed_kind][seed_layer]
         _ot_W = _sae_ot.encoder.weight.detach()
@@ -1611,10 +2154,22 @@ def _run_learned_mask_impl(
         _sd0 = int(seed_latent_idx)
         _clean_seed = _clean[:, _sd0]
         _clean_others = _clean.index_fill(-1, torch.tensor([_sd0], device=_clean.device), float("-inf"))
-        _rank_clean = ((_clean_others > _clean_seed[:, None]).sum(-1) + 1).clamp(1, int(bank.k)).to(device)
+        _rank_clean = ((_clean_others > _clean_seed[:, None]).sum(-1) + 1).clamp(
+            1, int(getattr(bank, "k", bank.d_sae))).to(device)
         # soft-rank temperature for the "top" mode: a fraction of the seed's
         # own clean pre-activation at that anchor
         _rank_T = (float(rank_temp) * _clean_seed.abs()).clamp(min=1e-3).to(device)
+        # censored activation: the clean Top-K cut among the OTHER latents and
+        # the soft gate's temperature, per training anchor; rival term: the
+        # clean pre-activations of the other latents (seed column -inf)
+        _cut_clean = torch.topk(_clean_others, int(getattr(bank, "k", bank.d_sae)), dim=-1).values[:, -1].to(device)
+        if _thr_seed is not None:                           # JumpReLU: fires only above its threshold
+            _cut_clean = _cut_clean.clamp(min=_thr_seed)
+        _cens_T = (float(censor_temp or 0.05) * _clean_seed.abs()).clamp(min=1e-4).to(device)
+        _clean_site = _clean_others.to(device)
+        # necessity term: the seed under the ZERO-ablation empty circuit (the
+        # scorer's e0), per training anchor
+        _e0_seed = (_site_pre(_shut, None)[:, _sd0].to(device) if necessity_weight > 0 else None)
         if logger is not None and rank_weight > 0:
             logger.note("learned_mask[rank]: mode %s gamma_R %g | clean rank per anchor median %d "
                         "(min %d, max %d)" % (rank_mode, rank_weight, int(_rank_clean.median()),
@@ -1650,6 +2205,8 @@ def _run_learned_mask_impl(
     terms_t: List[torch.Tensor] = []
     pen_t: List[torch.Tensor] = []
     rank_t: List[torch.Tensor] = []
+    cens_t: List[Dict[str, torch.Tensor]] = []
+    lam_t: List[float] = []                      # adaptive λ: the price used at each step
     size_t: List[torch.Tensor] = []
     mm_t: List[torch.Tensor] = []
     inference.disable_compile()
@@ -1666,12 +2223,19 @@ def _run_learned_mask_impl(
                 # time AT final sharpness to settle.
                 prog = step / max(int(steps) - 1, 1)
                 eff = min(prog / max(float(anneal_reach_frac), 1e-6), 1.0)
-                t_now = 1.0 * (0.05 ** eff)
+                # anneal_t0: the starting temperature (1.0 = the historical
+                # schedule, bit-identical; 0.05 = hold the final temperature,
+                # for a warm start that must not re-soften its gates)
+                t_now = float(anneal_t0) * ((0.05 / float(anneal_t0)) ** eff)
                 patcher.temperature = t_now
                 if patcher_zero is not None:
                     patcher_zero.temperature = t_now
                 if patcher_pos is not None:
                     patcher_pos.temperature = t_now
+                if patcher_donor is not None:
+                    patcher_donor.temperature = t_now
+                if patcher_nec is not None:
+                    patcher_nec.temperature = t_now
             if lr_schedule != "constant":
                 lr_now = lr_at(step)
                 for group in opt.param_groups:
@@ -1684,6 +2248,8 @@ def _run_learned_mask_impl(
             step_total: Any = None      # detached GPU accumulator
             step_terms: List[torch.Tensor] = []
             _rank_log.clear()
+            _cens_log.clear()
+            _err_log.clear()
             for j in range(accum):
                 mi = step * accum + j
                 # Every loss term is backwarded SEPARATELY (grad(a+b) =
@@ -1703,18 +2269,31 @@ def _run_learned_mask_impl(
                     # `logit` divides by its logit_norm scale (dual_norm is
                     # set to it above; 1.0 = raw nats^2).
                     dn = dual_norm if objective in ("pos", "logit") else 1.0
+                    # logit_norm="gap_term": each term by its own scale
+                    dn_z = term_scales["zero"] if term_scales else dn
+                    dn_c = term_scales["floor"] if term_scales else dn
+                    dn_a = term_scales.get("pos", dn) if term_scales else dn
                     if patcher_zero is not None:
-                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn,
+                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn_z,
                                   patcher_zero),
                                  (pt_tr, pa_tr, ptgt_tr,
-                                  float(dual_floor_weight) / dn, patcher)]
+                                  float(dual_floor_weight) / dn_c, patcher)]
                     else:
                         # "pn": negctx promotes to the primary slot.
-                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn, patcher)]
+                        terms = [(pt_tr, pa_tr, ptgt_tr, 1.0 / dn_c, patcher)]
                     if patcher_pos is not None:
                         terms.append((pt_tr, pa_tr, ptgt_tr,
-                                      float(triple_floor_weight) / dn,
+                                      float(triple_floor_weight) / dn_a,
                                       patcher_pos))
+                    if patcher_donor is not None:
+                        # RESAMPLE TERM, last: k entries at gamma_R / k, each
+                        # its own forward and so its own donor draw
+                        terms += [(pt_tr, pa_tr, ptgt_tr,
+                                   float(resample_weight) / dn / int(resample_k),
+                                   patcher_donor)] * int(resample_k)
+                    if patcher_nec is not None:
+                        # NECESSITY TERM (2026-11-03): members removed, hinge
+                        terms.append((pt_tr, pa_tr, ptgt_tr, float(necessity_weight) / dn, patcher_nec))
                 elif objective == "pos":
                     terms = [(pt_tr, pa_tr, ptgt_tr, 1.0, None)]
                 elif objective == "logit":
@@ -1759,6 +2338,12 @@ def _run_learned_mask_impl(
                             term_names.append("zero")
                         elif pat_t is not None and pat_t is patcher_pos:
                             term_names.append("pos")
+                        elif pat_t is not None and pat_t is patcher_donor:
+                            # k > 1: resample, resample2, ... (one curve per draw)
+                            _nr = sum(1 for _n in term_names if _n.startswith("resample"))
+                            term_names.append("resample" if _nr == 0 else "resample%d" % (_nr + 1))
+                        elif pat_t is not None and pat_t is patcher_nec:
+                            term_names.append("necessity")
                         elif ti > 0 and pat_t is None and objective in ("pos", "maximise", "contrast"):
                             # neg-suppress / contrast's second term: the hard negatives
                             term_names.append("neg")
@@ -1788,7 +2373,39 @@ def _run_learned_mask_impl(
                 penalty = (l1_lambda * edit_sum()
                            + inj_lambda * sn_delta * delta_sum())
             else:
-                penalty = l1_lambda * mask_sum()
+                if lam_adapt_eps is not None:
+                    # ADAPTIVE λ (2026-11-02, exp 107 option B): this step's
+                    # price comes from the running per-term errors; log λ
+                    # rises while every ablation term's relative error (EMA)
+                    # is under eps and falls while any is over, during the
+                    # first lam_adapt_frac of the run, then holds.
+                    # the signal mirrors the pass rule: each term's training
+                    # faithfulness f = mean(circuit) / mean(natural) on this
+                    # step's batches (EMA 0.9), Z / A / C only (the donor term
+                    # R is not in the production pass rule, and its error is
+                    # high on every fit); u > 0 while every f is inside
+                    # [1 - eps, 1 + 2 eps], < 0 once one leaves it. Adapts
+                    # from 25% of the run (after the opening transient) to
+                    # lam_adapt_frac, then holds.
+                    if _err_log:
+                        _by_e: Dict[str, List[float]] = {}
+                        for _nm, _mv, _mt in _err_log:
+                            if _nm == "resample":
+                                continue
+                            _s = _by_e.setdefault(_nm, [0.0, 0.0])
+                            _s[0] += float(_mv)
+                            _s[1] += float(_mt)
+                        for _nm, (_sv, _st) in _by_e.items():
+                            _f = _sv / _st if abs(_st) > 1e-12 else 1.0
+                            _lam_ema[_nm] = _f if _nm not in _lam_ema else 0.9 * _lam_ema[_nm] + 0.1 * _f
+                    if _lam_ema and 0.25 * int(steps) <= step < float(lam_adapt_frac) * int(steps):
+                        _eps = float(lam_adapt_eps)
+                        _d = min(min(_f - (1.0 - _eps), (1.0 + 2.0 * _eps) - _f) for _f in _lam_ema.values())
+                        _u = max(-1.0, min(1.0, _d / _eps))
+                        _lam_state[0] = min(max(_lam_state[0] + float(lam_adapt_rate) * _u,
+                                                -math.log(float(lam_adapt_down))), math.log(float(lam_adapt_up)))
+                    lam_t.append(float(l1_lambda) * math.exp(_lam_state[0]))
+                penalty = _lam_now() * mask_sum()
             if member_penalty is not None and member_penalty_weight > 0:
                 # ECHO PENALTY (2026-08-28): per-latent price scaled by a
                 # precomputed vector — in the knowledge-circuit runs this is
@@ -1817,7 +2434,7 @@ def _run_learned_mask_impl(
                     ((1.0 - torch.sigmoid(thetas[s]))
                      * (_amp_of(a) - 1.0).abs()).sum()
                     for s, a in amps.items()]).sum()
-                penalty = penalty + l1_lambda * off_member
+                penalty = penalty + _lam_now() * off_member
                 if amp_l1 > 0:
                     penalty = penalty + amp_l1 * torch.stack([
                         (torch.sigmoid(thetas[s])
@@ -1854,6 +2471,11 @@ def _run_learned_mask_impl(
                 pen_t.append(_pen)
                 rank_t.append(torch.stack(_rank_log).sum() if _rank_log
                               else torch.zeros((), device=_pen.device))
+                if _cens_log:
+                    _by: Dict[str, List[torch.Tensor]] = {}
+                    for _nm, _v in _cens_log:
+                        _by.setdefault(_nm, []).append(_v)
+                    cens_t.append({_nm: torch.stack(_vs).mean() for _nm, _vs in _by.items()})
                 size_t.append(torch.stack([(torch.sigmoid(t) > keep_threshold).sum()
                                            for t in thetas.values()]).sum())
                 mm_t.append(mask_mean())
@@ -1879,6 +2501,17 @@ def _run_learned_mask_impl(
         if losses_t:
             curve["penalty"] = torch.stack(pen_t).float().cpu().tolist()
             curve["rank"] = torch.stack(rank_t).float().cpu().tolist()
+            # the rank term as the loss sees it (the data terms divide by
+            # dual_norm = mean(target^2); the raw value above does not)
+            if objective == "pos" and dual_floor:
+                curve["rank_norm"] = [v / dual_norm for v in curve["rank"]]
+            # share of anchors with the seed outside the site's Top-K, per
+            # ablation term (only steps that captured the site)
+            if lam_t and len(lam_t) == len(losses_t):
+                curve["lambda"] = lam_t
+            if cens_t and len(cens_t) == len(losses_t):
+                curve["censored"] = {_nm: torch.stack([d[_nm] for d in cens_t]).float().cpu().tolist()
+                                     for _nm in cens_t[0] if all(_nm in d for d in cens_t)}
             curve["n_members"] = [int(v) for v in torch.stack(size_t).cpu()]
             curve["mean_m"] = torch.stack(mm_t).float().cpu().tolist()
             if len(terms_t) == len(losses_t):
@@ -2076,6 +2709,7 @@ def _run_learned_mask_impl(
         "theta_init_mode": theta_init_mode,
         "binarize": binarize,
         "anneal_reach_frac": float(anneal_reach_frac) if binarize == "anneal" else None,
+        "anneal_t0": float(anneal_t0) if binarize == "anneal" else None,
         "site_lambda_weighted": site_lambda_weights is not None,
         "mask_floor_source": mask_floor_source,
         "mask_floor_sites": len(floors) if floors else 0,
@@ -2092,6 +2726,17 @@ def _run_learned_mask_impl(
         "rank_weight": float(rank_weight) if rank_weight > 0 else None,
         "rank_delta": float(rank_delta) if rank_weight > 0 else None,
         "rank_mode": rank_mode if rank_weight > 0 else None,
+        "rank_cut_k": (int(rank_cut_k) if rank_cut_k is not None else None) if rank_weight > 0 else None,
+        "rank_zero_mult": float(rank_zero_mult) if rank_weight > 0 else None,
+        "censor_temp": float(censor_temp) if censor_temp is not None else None,
+        "rival_weight": float(rival_weight),
+        "lam_adapt_eps": float(lam_adapt_eps) if lam_adapt_eps is not None else None,
+        "lam_adapt_rate": float(lam_adapt_rate) if lam_adapt_eps is not None else None,
+        "lam_adapt_frac": float(lam_adapt_frac) if lam_adapt_eps is not None else None,
+        "lam_adapt_range": [1.0 / float(lam_adapt_down), float(lam_adapt_up)] if lam_adapt_eps is not None else None,
+        "lambda_final": float(_lam_now()),
+        "necessity_weight": float(necessity_weight),
+        "necessity_target": float(necessity_target) if necessity_weight > 0 else None,
         "rank_temp": float(rank_temp) if (rank_weight > 0 and rank_mode == "top") else None,
         "rank_power": float(rank_power) if (rank_weight > 0 and rank_mode == "top") else None,
         "amp_stats": _amp_stats,
@@ -2101,7 +2746,27 @@ def _run_learned_mask_impl(
         "logit_metric": logit_metric if objective == "logit" else None,
         "floors_valid_masked": (pos_valid is not None or neg_valid is not None) if mask_floor_source != "zero" else None,
         "floors_precomputed": (floor_means is not None or pos_floor_means is not None) if mask_floor_source != "zero" else None,
+        "train_fill": train_fill,
+        "sparse_grad": sparse_grad if train_fill == "sparse" else None,
+        "sparse_fill_calls": (int(patcher.sparse_calls + (patcher_pos.sparse_calls if patcher_pos is not None else 0))
+                              if train_fill == "sparse" else None),
+        # resample term (None when off): gamma_R, draws per row per step,
+        # donor count, donor draws made (one per donor forward), the donor
+        # term's fill and its sparsity-preserving fill calls
+        "resample_weight": float(resample_weight) if _resample else None,
+        "resample_k": int(resample_k) if _resample else None,
+        "resample_seed": int(resample_seed) if _resample else None,
+        "resample_n_donors": int(donor_pool.n) if donor_pool is not None else None,
+        "resample_draws": int(donor_pool.n_draws) if donor_pool is not None else None,
+        "resample_fill": train_fill if _resample else None,
+        "resample_fill_calls": (int(patcher_donor.sparse_calls)
+                                if patcher_donor is not None and train_fill == "sparse" else None),
         "logit_scale": float("%.6g" % logit_scale) if objective == "logit" else None,
+        # logit_norm="gap_term" only: each term's own scale, and the closed
+        # A-floor gap (under the training fill)
+        "logit_term_scales": ({k: float("%.6g" % v) for k, v in term_scales.items()}
+                              if term_scales is not None else None),
+        "dual_norm_pos": float("%.6g" % norm_pos) if norm_pos is not None else None,
         # diagnostics only — these no longer scale the loss
         "dual_norm_zero": float("%.6g" % norm_zero) if dual_floor else None,
         "dual_norm_floor": float("%.6g" % norm_floor) if dual_floor else None,
@@ -2149,6 +2814,10 @@ def _run_learned_mask_impl(
         "n_holdout_neg": (int(nt_ho.shape[0])
                           if objective in ("contrast", "negctx", "inject") else None),
     }
+    if return_state:
+        provenance["final_state"] = {
+            "theta": {s: t.detach().cpu().clone() for s, t in thetas.items()},
+            "amp": {s: a.detach().cpu().clone() for s, a in amps.items()}}
     if logger is not None:
         logger.note(f"learned_mask[{objective}]: kept {len(scores)} "
                     f"(loss {provenance['loss_initial']:.5f} -> "
@@ -2158,7 +2827,12 @@ def _run_learned_mask_impl(
         patcher_zero.release()
     if patcher_pos is not None:
         patcher_pos.release()
+    if patcher_donor is not None:
+        patcher_donor.release()
+    if patcher_nec is not None:
+        patcher_nec.release()
     return scores, provenance
 
 
-__all__ = ["LearnedMaskPatcher", "run_learned_mask", "OBJECTIVES"]
+__all__ = ["LearnedMaskPatcher", "run_learned_mask", "OBJECTIVES", "DonorPool", "donor_keep_mask",
+           "capture_donor_codes"]

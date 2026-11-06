@@ -35,9 +35,9 @@ SPEC_COLS = ["rank_clean", "rank_circuit", "rank_empty", "in_topk_clean", "in_to
              "specificity_gap", "target_faith_pre"]
 CURVE_POINTS = 100
 
-# Pass rule adopted for protocol v1 (DAN-8, 2026-09-27; experiments/062-h100-protocol-v1/pass_rule.py):
-# held-out strongest contexts, Z, A and C faithfulness (activation read) all in [0.8, 1.5] AND necessity >= 0.9.
-PASS_RULE = "Z,A,C faithfulness (free0/freeM_topk/freeN_topk _tk, held=strong) in [0.8, 1.5] and phi_sup_blind_tk >= 0.9"
+# Pass rule (DAN-8, 2026-09-27; floor 0.8 -> 0.75 on 2026-10-31; src/eval/wcm_eval.py BAND):
+# held-out strongest contexts, Z, A and C faithfulness (activation read) all in [0.75, 1.5] AND necessity >= 0.9.
+PASS_RULE = "Z,A,C faithfulness (free0/freeM_topk/freeN_topk _tk, held=strong) in [0.75, 1.5] and phi_sup_blind_tk >= 0.9"
 
 
 def passes(ev: Optional[dict]) -> Optional[int]:
@@ -45,8 +45,22 @@ def passes(ev: Optional[dict]) -> Optional[int]:
         return None
     faith = [num(ev.get(c)) for c in ("free0_tk", "freeM_topk_tk", "freeN_topk_tk")]
     nec = num(ev.get("phi_sup_blind_tk"))
-    ok = all(f is not None and 0.8 <= f <= 1.5 for f in faith) and nec is not None and nec >= 0.9
+    ok = all(f is not None and 0.75 <= f <= 1.5 for f in faith) and nec is not None and nec >= 0.9
     return int(ok)
+
+
+def vacuous(ev: Optional[dict]) -> Optional[int]:
+    """Protocol §12.4 (as src/eval/wcm_eval.is_vacuous, kept torch-free here): a_pos_tk <= 0 or any of e0_tk /
+    eM_topk_tk / eN_topk_tk above 0.95 a_pos_tk; the stored vacuous_v2 when present, else the v1 vacuous_tk flag
+    for a row without those reads."""
+    if not ev:
+        return None
+    if ev.get("vacuous_v2") is not None:
+        return flag(ev["vacuous_v2"])
+    ap, es = num(ev.get("a_pos_tk")), [num(ev.get(c)) for c in ("e0_tk", "eM_topk_tk", "eN_topk_tk")]
+    if ap is None or any(e is None for e in es):
+        return flag(ev.get("vacuous_tk"))
+    return int(ap <= 0 or any(ap - e < 0.05 * ap for e in es))
 
 
 def _downsample(curve: dict) -> dict:
@@ -119,7 +133,7 @@ def build(bundle: Bundle, run: RunSource, run_name: str) -> dict:
             (cid, ids.circuit_key(run_name, arm, key), run_name, arm, seed_gid, layer, kind, latent, "star",
              len(graph["nodes"]), len(graph["edges"]),
              *[flag(head.get(c)) if c in ("amp_any", "near_threshold") else num(head.get(c)) for c in HEADLINE],
-             flag(ev.get("strong", {}).get("vacuous_tk")), passes(ev.get("strong")), pack(graph), pack(meta)))
+             vacuous(ev.get("strong")), passes(ev.get("strong")), pack(graph), pack(meta)))
         conn.executemany("INSERT INTO member VALUES (?,?,?,?,?)", [(g, cid, r, a, al) for g, r, a, al in members])
         for held, row in ev.items():
             conn.execute("INSERT INTO circuit_eval VALUES (" + ",".join("?" * (2 + len(EVAL_COLS) + 1)) + ")",

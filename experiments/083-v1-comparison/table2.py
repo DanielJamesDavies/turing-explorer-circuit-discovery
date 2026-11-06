@@ -8,7 +8,8 @@ fails; vacuous denominators are excluded from the denominator and counted (062/m
 FIGURE (dan77-faithfulness-vs-size): every method at its genuine sizes. WCM at all eight prices (2.5e-5 .. 4e-3) and
 unweighted at all five (1e-5 .. 1e-3), from the reference rows; path attribution (IG) and attribution patching (AtP)
 truncated at the target's WCM size at every WCM price (one line per ranking), and at their natural size; Ge's tau
-bisection points (binned by size); DAN-43 at the production per-site counts. Pass rate (top) and median A (bottom).
+bisection points (binned by size); DAN-43 at the production per-site counts; CircuitLasso (exp 098, when its rows are
+in OUT083) like IG / AtP, its natural size = the support at the cross-validated λ. Pass rate (top) and median A (bottom).
 TABLE 2 (summary): each method at its natural operating point (WCM and unweighted at the SAME price, lambda 1e-3;
 attribution at its natural position-union size; Ge at its bisected size), then the attribution truncations at the
 W_0.001 size and DAN-43.
@@ -36,17 +37,24 @@ import cmp_common as C  # noqa: E402
 
 REF = os.environ.get("REF", "local" if C.CTX_DIR else "auto")
 COMMON = os.environ.get("COMMON") == "1"
-FIG_RANKINGS = [r for r in os.environ.get("FIG_RANKINGS", "max,sfc").split(",") if r]
+FIG_RANKINGS = [r for r in os.environ.get("FIG_RANKINGS", "max,sfc,coef").split(",") if r]
 PROD = C.REF_ARM
 U_PROD = "U_0.001"                                          # unweighted at the same price (Daniel, 2026-10-24)
-METHOD_LABEL = {"abl_ig": "path attribution (IG)", "atp": "attribution patching (AtP)"}
+# "lasso" = CircuitLasso (Yin et al. 2026) adapted to one target latent: experiments/098-circuitlasso-baseline writes
+# its rows into OUT083/attr and OUT083/fitted (rows.lasso.*.jsonl) in the same format as the attribution rows.
+METHOD_LABEL = {"abl_ig": "path attribution (IG)", "atp": "attribution patching (AtP)",
+                "lasso": "sparse regression (CircuitLasso, adapted)"}
+NATURAL_LABEL = {"lasso": ("support at the cross-validated λ", "cv")}      # (label, ranking); default: position union
 RANK_LABEL = {"max": "top-n by max |attr| over contexts and positions", "agg": "top-n by mean |attr|",
-              "sfc": "top-n by the aggregate ranking of prior work (SFC: |signed sum|)"}
+              "sfc": "top-n by the aggregate ranking of prior work (SFC: |signed sum|)",
+              "coef": "top-n by |Lasso coefficient| (the paper's ranking)",
+              "std": "top-n by |standardised Lasso coefficient|"}
 SECTION_NAT, SECTION_N = "natural operating point", "at the WCM size (λ 1e-3)"
 SECTION_X = "ground truth (exact activation patching)"
-SOURCE_LABEL = {"abl_ig": "IG-ranked", "atp": "AtP-ranked", "act": "activation-ranked"}
+SOURCE_LABEL = {"abl_ig": "IG-ranked", "atp": "AtP-ranked", "act": "activation-ranked", "lasso": "Lasso-ranked"}
 RANK_SHORT = {"max": "max", "agg": "mean |attr|", "sfc": "SFC aggregate", "mean": "mean anchor activation",
-              "coact": "co-activation with the target"}
+              "coact": "co-activation with the target", "coef": "|coefficient|", "std": "|standardised coefficient|"}
+NOT_DAN43 = ("fitted_act", "fitted_lasso")                  # fitted rows that are not the DAN-43 (attribution) row
 
 
 # ---------------------------------------------------------------------------------------------- loading
@@ -96,8 +104,9 @@ def table_rows(ref):
     attr = C.last_by(ours("attr"), ("seed", "method", "ranking", "size_arm"))
     for m in METHOD_LABEL:
         rr = [r for r in attr if r["method"] == m and r["size_arm"] == "natural"]
-        lab = "%s, natural size (position union)" % METHOD_LABEL[m]
-        out.append((SECTION_NAT, lab, frame(rr, lab, method=m, ranking="union")))
+        nat, nrk = NATURAL_LABEL.get(m, ("position union", "union"))
+        lab = "%s, natural size (%s)" % (METHOD_LABEL[m], nat)
+        out.append((SECTION_NAT, lab, frame(rr, lab, method=m, ranking=nrk)))
     ge = [r for r in C.last_by(ours("ge"), ("seed", "point")) if r.get("final")]
     lab = "hierarchical attribution (Ge, adapted), τ bisected to the WCM size"
     out.append((SECTION_NAT, lab, frame(ge, lab, method="ge_hier", ranking="bisect")))
@@ -112,7 +121,7 @@ def table_rows(ref):
             for v, vlab in (("a1", "per-site counts, α = 1"), ("fit", "per-site counts, fitted coefficients (DAN-43)")):
                 rr = [r for r in fit if r["method"] == m and r["ranking"] == rk and r["variant"] == v]
                 src = SOURCE_LABEL.get(m.replace("fitted_", ""), m)
-                lab = "%s members (%s), %s" % (src, RANK_SHORT.get(rk, rk), vlab.replace(" (DAN-43)", "" if m == "fitted_act" else " (DAN-43)"))
+                lab = "%s members (%s), %s" % (src, RANK_SHORT.get(rk, rk), vlab.replace(" (DAN-43)", "" if m in NOT_DAN43 else " (DAN-43)"))
                 out.append((SECTION_N, lab, frame(rr, lab, method=m, ranking=rk)))
     ex = C.last_by(ours("exact"), ("seed", "variant"))
     for v, vlab in (("a1", "α = 1"), ("fit", "fitted coefficients")):
@@ -248,8 +257,9 @@ def figure(pts):
     plt = configure_matplotlib()
     colors = {"WCM": BLUE, "unweighted": "#9aa0a8", "abl_ig": CATEGORICAL[2], "atp": CATEGORICAL[3],
               "ge_hier": CATEGORICAL[6], "fitted_abl_ig": CATEGORICAL[5], "fitted_atp": CATEGORICAL[7],
-              "fitted_act": CATEGORICAL[4], "exact_patch": "#20242b"}
-    names = {"abl_ig": "IG", "atp": "AtP", "ge_hier": "Ge (τ bisection points)"}
+              "fitted_act": CATEGORICAL[4], "exact_patch": "#20242b", "lasso": CATEGORICAL[1],
+              "fitted_lasso": CATEGORICAL[1]}
+    names = {"abl_ig": "IG", "atp": "AtP", "ge_hier": "Ge (τ bisection points)", "lasso": "Lasso"}
     dashes = {"max": "-", "agg": ":", "sfc": "--"}
     fig, axes = plt.subplots(2, 3, figsize=(9.6, 5.8), sharex=True, sharey="row")
     for j, (b, lo, hi) in enumerate(C.DEPTH_BANDS):
@@ -261,7 +271,7 @@ def figure(pts):
                 g = g.sort_values("n_median")
                 kind, head = g.kind.iloc[0], series.split("/")[0]
                 rk = series.split("/")[1] if "/" in series else None
-                if kind in ("attr", "natural") and rk not in FIG_RANKINGS + ["union"]:
+                if kind in ("attr", "natural") and rk not in FIG_RANKINGS + ["union", "cv"]:
                     continue
                 c = colors.get(head, INK_MUTED)
                 if head == "fitted_act" and rk == "coact":
@@ -275,7 +285,8 @@ def figure(pts):
                 elif kind == "ge":
                     ax.scatter(g.n_median, scale * g[col], marker="D", s=14, color=c, label=name, zorder=4)
                 else:
-                    src = {"fitted_abl_ig": "IG-ranked", "fitted_atp": "AtP-ranked", "exact_patch": "exact-ranked"}.get(
+                    src = {"fitted_abl_ig": "IG-ranked", "fitted_atp": "AtP-ranked", "exact_patch": "exact-ranked",
+                           "fitted_lasso": "Lasso-ranked (%s)" % rk}.get(
                         head, "activation-ranked (%s)" % rk if head == "fitted_act" else head)
                     lab = src + (", fitted α" if series.endswith("/fit") else ", α = 1")
                     ax.scatter(g.n_median, scale * g[col], marker="s" if series.endswith("/fit") else "^", s=24,

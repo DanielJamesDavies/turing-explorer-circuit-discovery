@@ -33,6 +33,7 @@ MIN_CLEAN = int(os.environ.get("MIN_CLEAN", 4))
 OUT_RD = Path(os.environ.get("OUT_RD", str(HERE / "out_rescore_dedup")))
 LEAK = HERE / "out_dup_leakage" / "leakage.csv"
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 
 def band(layer):
@@ -139,7 +140,7 @@ def report():
     def flag(d):
         d = d.set_index("seed")
         ok = d[HEAD].notna().all(axis=1)
-        p = ok & ((d[HEAD] >= 0.8) & (d[HEAD] <= 1.5)).all(axis=1) & (d["phi_sup_blind_tk"] >= 0.9)
+        p = ok & ((d[HEAD] >= BAND[0]) & (d[HEAD] <= BAND[1])).all(axis=1) & (d["phi_sup_blind_tk"] >= NEC_MIN)
         return d.assign(passed=p, dev=(d[HEAD] - 1).abs().max(axis=1),
                         vac=d["vacuous_tk"].fillna(False).astype(bool))
 

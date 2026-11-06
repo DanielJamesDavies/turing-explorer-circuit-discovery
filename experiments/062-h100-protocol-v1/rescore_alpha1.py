@@ -105,11 +105,12 @@ def report():
     depth band and site kind: pass rate under the DAN-8 rule, median Z / A / C, necessity. No GPU."""
     import glob
     import pandas as pd
+    from merge import BAND, NEC_MIN
     HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
 
     def passes(df):
-        inb = ((df[HEAD] >= 0.8) & (df[HEAD] <= 1.5)).all(axis=1)
-        return inb & (df.phi_sup_blind_tk >= 0.9)
+        inb = ((df[HEAD] >= BAND[0]) & (df[HEAD] <= BAND[1])).all(axis=1)
+        return inb & (df.phi_sup_blind_tk >= NEC_MIN)
 
     a1 = pd.DataFrame(driver.read_jsonl_all(OUT_A1, "alpha1"))
     a1 = a1[a1.get("error", pd.Series(index=a1.index, dtype=object)).isna()]

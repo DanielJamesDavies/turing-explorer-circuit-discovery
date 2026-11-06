@@ -1,0 +1,89 @@
+{
+ "family": "pythia-70m",
+ "seed": 20261101,
+ "per_band": 8,
+ "max_try": 40,
+ "min_held": 8,
+ "min_neg": 32,
+ "bands": [
+  [
+   "L0-1",
+   0,
+   1
+  ],
+  [
+   "L2-3",
+   2,
+   3
+  ],
+  [
+   "L4-5",
+   4,
+   5
+  ]
+ ],
+ "kinds": [
+  "attn",
+  "mlp",
+  "resid"
+ ],
+ "quota": {
+  "L0-1/attn": 3,
+  "L0-1/mlp": 3,
+  "L0-1/resid": 2,
+  "L2-3/mlp": 3,
+  "L2-3/resid": 3,
+  "L2-3/attn": 2,
+  "L4-5/resid": 3,
+  "L4-5/attn": 3,
+  "L4-5/mlp": 2
+ },
+ "cells": {
+  "L0-1/attn": [
+   "1.attn.16353",
+   "1.attn.8947",
+   "1.attn.2206"
+  ],
+  "L0-1/mlp": [
+   "1.mlp.30451",
+   "1.mlp.30224",
+   "1.mlp.394"
+  ],
+  "L0-1/resid": [
+   "1.resid.5845",
+   "0.resid.22519"
+  ],
+  "L2-3/attn": [
+   "2.attn.32651",
+   "2.attn.32065"
+  ],
+  "L2-3/mlp": [
+   "3.mlp.30452",
+   "2.mlp.9577",
+   "2.mlp.5282"
+  ],
+  "L2-3/resid": [
+   "3.resid.20346",
+   "2.resid.20677",
+   "2.resid.45"
+  ],
+  "L4-5/attn": [
+   "4.attn.4527",
+   "5.attn.20417",
+   "5.attn.8712"
+  ],
+  "L4-5/mlp": [
+   "4.mlp.24567",
+   "5.mlp.18964"
+  ],
+  "L4-5/resid": [
+   "5.resid.26855",
+   "4.resid.526",
+   "5.resid.24122"
+  ]
+ },
+ "notes": [],
+ "n": 24,
+ "n_tried": 40,
+ "n_eligible_tried": 24
+}

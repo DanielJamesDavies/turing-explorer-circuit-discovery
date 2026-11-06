@@ -1,0 +1,418 @@
+{
+ "population": {
+  "targets_median_boost_peak": 0.29389213293325156,
+  "targets_median_boost_mean": 0.06175221084961069,
+  "resid_L8_10_median_boost_peak": 1.4632716062478721,
+  "inference_median_best_fired_dla_top1": 0.041
+ },
+ "latents": {
+  "9.resid.7640": {
+   "role": "negation pivot (candidate)",
+   "pass": true,
+   "peak_act": 34.25,
+   "mean_act": 5.240628242492676,
+   "lmax": 0.09320084005594254,
+   "lmin": -0.04249335825443268,
+   "boost_peak_nats": 3.192128771916032,
+   "boost_mean_nats": 0.4884309546212151,
+   "suppress_peak_nats": -1.4553975202143192,
+   "z1": 6.043745994567871,
+   "z1_site_null_p95": 9.97633275985717,
+   "kurt": -0.3897111415863037,
+   "gain": 1.4082109928131104,
+   "ctx_z": 1.7992804050445557,
+   "boost_peak_pctile_all_targets": 97.34070914422821,
+   "boost_peak_pctile_same_site": 82.41758241758241,
+   "promoted": [
+    [
+     "it",
+     0.093
+    ],
+    [
+     "no",
+     0.074
+    ],
+    [
+     "though",
+     0.074
+    ],
+    [
+     "although",
+     0.073
+    ],
+    [
+     "sometimes",
+     0.061
+    ],
+    [
+     "more",
+     0.06
+    ],
+    [
+     "son",
+     0.06
+    ],
+    [
+     "oh",
+     0.06
+    ],
+    [
+     "both",
+     0.059
+    ],
+    [
+     "training",
+     0.059
+    ]
+   ],
+   "suppressed": [
+    [
+     "ribute",
+     -0.042
+    ],
+    [
+     "img",
+     -0.041
+    ],
+    [
+     "independ",
+     -0.04
+    ],
+    [
+     "large",
+     -0.04
+    ],
+    [
+     "obb",
+     -0.039
+    ],
+    [
+     "Arbe",
+     -0.038
+    ],
+    [
+     "passengers",
+     -0.037
+    ],
+    [
+     "clou",
+     -0.037
+    ],
+    [
+     "big",
+     -0.036
+    ],
+    [
+     "liv",
+     -0.036
+    ]
+   ]
+  },
+  "8.resid.31095": {
+   "role": "causal 'but also' (candidate)",
+   "pass": true,
+   "peak_act": 25.125,
+   "mean_act": 3.3542637825012207,
+   "lmax": 0.0962236225605011,
+   "lmin": -0.059983834624290466,
+   "boost_peak_nats": 2.41761851683259,
+   "boost_mean_nats": 0.3227594121757562,
+   "suppress_peak_nats": -1.507093844935298,
+   "z1": 7.6752028465271,
+   "z1_site_null_p95": 8.663834714889525,
+   "kurt": 0.41109681129455566,
+   "gain": 1.1448431015014648,
+   "ctx_z": -0.8196719288825989,
+   "boost_peak_pctile_all_targets": 95.1146360970408,
+   "boost_peak_pctile_same_site": 80.39647577092511,
+   "promoted": [
+    [
+     "by",
+     0.096
+    ],
+    [
+     "from",
+     0.069
+    ],
+    [
+     "durch",
+     0.065
+    ],
+    [
+     "picked",
+     0.056
+    ],
+    [
+     "upon",
+     0.054
+    ],
+    [
+     "from",
+     0.053
+    ],
+    [
+     "through",
+     0.05
+    ],
+    [
+     "by",
+     0.048
+    ],
+    [
+     "depends",
+     0.046
+    ],
+    [
+     "dern",
+     0.045
+    ]
+   ],
+   "suppressed": [
+    [
+     "ech",
+     -0.06
+    ],
+    [
+     "san",
+     -0.059
+    ],
+    [
+     "fif",
+     -0.057
+    ],
+    [
+     "protection",
+     -0.055
+    ],
+    [
+     "refuge",
+     -0.054
+    ],
+    [
+     "au",
+     -0.053
+    ],
+    [
+     "PM",
+     -0.053
+    ],
+    [
+     "ok",
+     -0.052
+    ],
+    [
+     "BS",
+     -0.051
+    ],
+    [
+     "mur",
+     -0.05
+    ]
+   ]
+  },
+  "9.resid.17596": {
+   "role": "importance as a comparison dimension (candidate)",
+   "pass": true,
+   "peak_act": 41.5,
+   "mean_act": 4.3379011154174805,
+   "lmax": 0.07647199928760529,
+   "lmin": -0.04886482656002045,
+   "boost_peak_nats": 3.1735879704356194,
+   "boost_mean_nats": 0.33172797100790774,
+   "suppress_peak_nats": -2.0278903022408485,
+   "z1": 6.641880035400391,
+   "z1_site_null_p95": 9.97633275985717,
+   "kurt": 1.470529556274414,
+   "gain": 1.0513941049575806,
+   "ctx_z": 0.6188329458236694,
+   "boost_peak_pctile_all_targets": 97.30738469741402,
+   "boost_peak_pctile_same_site": 81.97802197802197,
+   "promoted": [
+    [
+     "ever",
+     0.076
+    ],
+    [
+     "quantity",
+     0.07
+    ],
+    [
+     "sword",
+     0.069
+    ],
+    [
+     "taste",
+     0.062
+    ],
+    [
+     "quality",
+     0.062
+    ],
+    [
+     "weapon",
+     0.061
+    ],
+    [
+     "anything",
+     0.06
+    ],
+    [
+     "technical",
+     0.06
+    ],
+    [
+     "communication",
+     0.058
+    ],
+    [
+     "its",
+     0.058
+    ]
+   ],
+   "suppressed": [
+    [
+     "alen",
+     -0.049
+    ],
+    [
+     "Anto",
+     -0.047
+    ],
+    [
+     "Edd",
+     -0.047
+    ],
+    [
+     "Andrew",
+     -0.045
+    ],
+    [
+     "Le",
+     -0.044
+    ],
+    [
+     "Lyn",
+     -0.044
+    ],
+    [
+     "urban",
+     -0.044
+    ],
+    [
+     "feder",
+     -0.044
+    ],
+    [
+     "David",
+     -0.043
+    ],
+    [
+     "Stra",
+     -0.043
+    ]
+   ]
+  },
+  "10.resid.15497": {
+   "role": "eponymous law (output-facing reference)",
+   "pass": true,
+   "peak_act": 39.5,
+   "mean_act": 5.88508939743042,
+   "lmax": 0.10636395215988159,
+   "lmin": -0.049787487834692,
+   "boost_peak_nats": 4.201376110315323,
+   "boost_mean_nats": 0.6259613671249156,
+   "suppress_peak_nats": -1.966605769470334,
+   "z1": 9.296069145202637,
+   "z1_site_null_p95": 9.66862459182739,
+   "kurt": 1.5797972679138184,
+   "gain": 1.0448386669158936,
+   "ctx_z": 0.718682050704956,
+   "boost_peak_pctile_all_targets": 98.78032524660091,
+   "boost_peak_pctile_same_site": 90.10989010989012,
+   "promoted": [
+    [
+     "Law",
+     0.106
+    ],
+    [
+     "law",
+     0.085
+    ],
+    [
+     "Equ",
+     0.079
+    ],
+    [
+     "Second",
+     0.063
+    ],
+    [
+     "circ",
+     0.062
+    ],
+    [
+     "laws",
+     0.06
+    ],
+    [
+     "Princi",
+     0.058
+    ],
+    [
+     "Circ",
+     0.056
+    ],
+    [
+     "ropy",
+     0.056
+    ],
+    [
+     "Mean",
+     0.055
+    ]
+   ],
+   "suppressed": [
+    [
+     "readily",
+     -0.05
+    ],
+    [
+     "charts",
+     -0.047
+    ],
+    [
+     "Vec",
+     -0.047
+    ],
+    [
+     "recre",
+     -0.045
+    ],
+    [
+     "photos",
+     -0.045
+    ],
+    [
+     "Nic",
+     -0.044
+    ],
+    [
+     "learned",
+     -0.044
+    ],
+    [
+     "hol",
+     -0.044
+    ],
+    [
+     "lain",
+     -0.043
+    ],
+    [
+     "fresh",
+     -0.043
+    ]
+   ]
+  }
+ }
+}

@@ -281,12 +281,33 @@ class CircuitOnlyPatcher:
         # Active kept latents per (batch, position).
         n_kept_active = (patched != 0).sum(dim=-1)  # [B, T]
         budget = (self.topk - n_kept_active).clamp(min=0)  # [B, T]
+        if mean_vector.dim() == 2:
+            # PER-POSITION MEANS [T, d_sae] (2026-11-01, experiment 107: fixed-length task prompts, SFC's ablation
+            # convention): the same fill with each position ranked by its own mean. The [d_sae] path below is unchanged.
+            T_ = int(all_latents.shape[1])
+            if int(mean_vector.shape[0]) != T_:
+                raise ValueError(f"per-position means have {int(mean_vector.shape[0])} positions, the prompts {T_}")
+            mean_rank = mean_vector.clone().to(torch.float32)
+            if keep_tensor is not None:
+                mean_rank[:, keep_tensor] = float("-inf")
+            ranked = torch.argsort(mean_rank, dim=-1, descending=True)  # [T, d_sae]
+            rank_of = torch.empty_like(ranked)
+            rank_of.scatter_(-1, ranked, torch.arange(ranked.shape[-1], device=ranked.device).expand_as(ranked))
+            fill = rank_of.unsqueeze(0) < budget.unsqueeze(-1)  # [B, T, d_sae]
+            if keep_tensor is not None:
+                fill[:, :, keep_tensor] = False
+            return torch.where(fill, mean_vector.unsqueeze(0).to(patched.dtype).expand_as(patched), patched)
         # Rank non-kept latents by mean magnitude (kept excluded from fill).
         mean_rank = mean_vector.clone().to(torch.float32)
         if keep_tensor is not None:
             mean_rank[keep_tensor] = float("-inf")
         ranked = torch.argsort(mean_rank, descending=True)  # [d_sae]
         max_b = int(budget.max().item())
+        # The kept latents rank last (-inf); never let the fill reach them. Only a budget above the non-kept count can
+        # (k close to d_sae, e.g. a ReLU dictionary run at k = d_sae, 2026-11-01): there the fill overwrote kept values
+        # with means. For every Top-K bank (budget <= k << d_sae - #kept) this cap never binds: bit-identical.
+        if keep_tensor is not None:
+            max_b = min(max_b, int(mean_rank.shape[-1]) - int(keep_tensor.numel()))
         if max_b > 0:
             fill_latents = ranked[:max_b]  # [max_b]
             fill_means = mean_vector[fill_latents]  # [max_b]

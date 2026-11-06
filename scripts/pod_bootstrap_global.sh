@@ -12,7 +12,8 @@
 # TuringLLM track of the 082 public-model session (2026-10-25): a SECOND checkout beside the public tree, so the
 # public tree (/root/turing, its config.yaml and venv) is never reset or overwritten:
 #   ROOT=/root/turing-tl TL_TRACK=1 bash /root/turing/scripts/pod_bootstrap_global.sh
-# With TL_TRACK=1 it also installs what the TuringLLM track (082 chain.sh T0-T5) reads:
+# With TL_TRACK=1 it also installs what the TuringLLM track (082 chain.sh T0-T9; protocol v2 2026-10-25: the 8k refit
+# reads the stores, data/ and the corpus index; T9 also the as-run records and the 15k main circuits) reads:
 #   7  the 15k run's results  /workspace/results/062-full-20260927-1924.tgz -> 062/out_full/{out/main,out/sweep,...}
 #   8  the local-only inputs  TL_EXTRAS (default /root/tl-extras.tgz, sent from Daniel's PC with runpodctl send):
 #      062/out_full/out/ctx (the 15,046 as-run records, 2.4 GB), 062/out_random{,_scale} (65 stored DAN-17 circuits

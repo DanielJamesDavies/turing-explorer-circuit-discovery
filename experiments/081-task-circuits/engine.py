@@ -52,7 +52,7 @@ import torch  # noqa: E402
 
 import task_common as C  # noqa: E402
 
-EVAL_BS = 16
+EVAL_BS = int(os.environ.get("EVAL_BS", 16))   # scorer / probe batch (2026-10-27: env knob; numbers unchanged)
 PROFILE_BS = 8                      # even: (good, bad) pairs stay together
 PROFILE_N = int(os.environ.get("PROFILE_N", 256))  # held-out items per member profile (0 = all; Python-loop bound)
 MEANS_BS = 64                       # prompts per collect_site_means call (dense [B, T, 32768] codes per site)
@@ -170,9 +170,10 @@ class Engine:
         their valid-position counts: the mean over every valid position."""
         from eval.floors import collect_site_means
         tot, n = None, 0.0
+        skip = int(getattr(self.bank, "mean_skip_positions", 0) or 0)     # BOS-prefix banks (eval.floors)
         for s0 in range(0, int(tokens.shape[0]), MEANS_BS):
             v = valid[s0:s0 + MEANS_BS]
-            k = float(v.sum())
+            k = float(v[:, skip:].sum())
             m = collect_site_means(self.inf, self.bank, tokens[s0:s0 + MEANS_BS], set(self.sites), valid=v)
             if tot is None:
                 tot = {s: x.double() * k for s, x in m.items()}
@@ -252,7 +253,9 @@ class Engine:
                   theta_init=lm.theta_init, log_every=0, deep_site_threshold=lm.deep_site_threshold,
                   deep_batch_size=lm.deep_batch_size, optimizer=lm.optimizer, weight_decay=lm.weight_decay,
                   code_dtype=lm.code_dtype, lr_schedule=lm.lr_schedule, lr_min_frac=lm.lr_min_frac,
-                  warmup_frac=lm.warmup_frac)
+                  warmup_frac=lm.warmup_frac,
+                  # WCM_VERSION (v2 = the A / C terms under the scorer's sparsity-preserving fill, straight-through)
+                  **C.WCM_VERSIONS[C.WCM_VERSION])
         if support is not None:
             kw.update(support={s: torch.tensor(v, dtype=torch.long) for s, v in support.items()}, l1_lambda=0.0,
                       binarize="none", theta_init=40.0)
@@ -275,6 +278,8 @@ class Engine:
         n_pres = int(kw["pos_tokens"].shape[0]) // B["rows_per_item"]
         prov["present"] = dict(pool=B["n_items_train"], n=n_pres, epochs=round(n_pres / max(1, B["n_items_train"]), 3),
                                c_pool=int(B["c_tokens"].shape[0]))
+        prov["wcm_version"] = C.WCM_VERSION
+        prov["train_means_source"] = "scorer"     # engine.means(B): the same tensors the scorer uses (= v2's eval_ref)
         peak = round(torch.cuda.max_memory_allocated() / 2 ** 20) if torch.cuda.is_available() else None
         if a["weighted"] and prov.get("amp_kept") is not None:
             alphas = C.alphas_from_json(prov["amp_kept"])

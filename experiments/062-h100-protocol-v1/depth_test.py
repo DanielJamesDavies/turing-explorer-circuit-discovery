@@ -17,7 +17,7 @@ import pandas as pd
 
 HERE = Path(__file__).parent
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
-BAND, NEC_MIN = (0.8, 1.5), 0.9
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 
 def passes(df):

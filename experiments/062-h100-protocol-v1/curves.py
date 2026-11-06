@@ -33,8 +33,7 @@ FAM = family()                   # TuringLLM by default: 12 layers, layers 0-3 /
 N_LAYER = FAM["n_layer"]
 BANDS = tuple((band_label(lo, hi, "layers %d-%d"), range(lo, hi + 1)) for lo, hi in FAM["curve_bands"])
 HEAD = ("free0_tk", "freeM_topk_tk", "freeN_topk_tk")
-BAND = (0.8, 1.5)          # the DAN-8 pass band (2026-09-27); "in band" below also requires necessity >= NEC_MIN
-NEC_MIN = 0.9
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass band; "in band" below also requires necessity >= NEC_MIN)
 LAST = 100                                                   # the "still shrinking" window, in steps
 PERIOD = 12            # batches of 4 cycle through the 48 training contexts in a fixed order: one pass = 12 steps
 # near print size (the paper's text width is 5.5 in) with smaller titles and labels, so the text lands at ~6-8 pt

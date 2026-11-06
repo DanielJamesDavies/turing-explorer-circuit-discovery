@@ -241,7 +241,7 @@ def figure_v3(s):
     """MAIN-RESULT FIGURE, v3 draft (Daniel, 2026-10-04): one panel per ablation method (Z, A, C), one line per target
     layer coloured red (layer 0) -> purple (layer 11). x = median circuit size across the 190-target sweep of sparsity
     penalties (WCM); y = median faithfulness under that ablation on its own scale (1 = the target fully reproduced,
-    above 1 = overshoot), with the pass band [0.8, 1.5] shaded. Preview only."""
+    above 1 = overshoot), with the pass band (merge.BAND) shaded. Preview only."""
     from matplotlib.colors import LinearSegmentedColormap, Normalize
     from matplotlib.cm import ScalarMappable
     plt = configure_matplotlib()
@@ -258,7 +258,7 @@ def figure_v3(s):
     fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.5), sharey=True, gridspec_kw={"wspace": 0.1})
     for ax, (col, name) in zip(axes, zip(M.HEAD, ("(a) Zero ablation (Z)", "(b) Activating-mean ablation (A)",
                                                    "(c) Contrast-mean ablation (C)"))):
-        ax.axhspan(0.8, 1.5, color=tint("#12c46a", 0.9), zorder=0, linewidth=0)
+        ax.axhspan(*M.BAND, color=tint("#12c46a", 0.9), zorder=0, linewidth=0)
         ax.axhline(1.0, color=INK_SECONDARY, linewidth=0.8, linestyle=(0, (3, 2)), zorder=1)
         for layer, g in sw.groupby("layer"):
             c = g.groupby("lam").agg(n=("n", "median"), f=(col, "median")).sort_values("n")
@@ -286,9 +286,9 @@ OUTCOMES = (("pass", "passes", "#0044ff"),
 def outcome(s):
     """One outcome per circuit, in order: pass; a score undefined (no defined Z / A / C or necessity, counted as a fail
     by the rule); fails necessity; fails zero ablation (necessity holding); fails only the mean ablations."""
-    ok = {k: s[c].between(0.8, 1.5) for k, c in zip("ZAC", M.HEAD)}
+    ok = {k: s[c].between(*M.BAND) for k, c in zip("ZAC", M.HEAD)}
     undef = s[M.HEAD + ["phi_sup_blind_tk"]].isna().any(axis=1)
-    nec = s.phi_sup_blind_tk >= 0.9
+    nec = s.phi_sup_blind_tk >= M.NEC_MIN
     return np.select([s.passes, undef, ~nec, ~ok["Z"]], ["pass", "undef", "nec", "zero"], "mean")
 
 

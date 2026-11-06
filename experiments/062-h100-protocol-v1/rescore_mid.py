@@ -24,6 +24,7 @@ import driver  # noqa: E402
 
 OUT_RM = Path(os.environ.get("OUT_RM", str(HERE / "out_rescore_mid")))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 
 def run_rows(held):
@@ -87,7 +88,7 @@ def report():
         d = pd.DataFrame(list(rows.values()))
         d = d[~d["vacuous_tk"].fillna(False).astype(bool)]
         ok = d[HEAD].notna().all(axis=1)
-        p = ok & ((d[HEAD] >= 0.8) & (d[HEAD] <= 1.5)).all(axis=1) & (d["phi_sup_blind_tk"] >= 0.9)
+        p = ok & ((d[HEAD] >= BAND[0]) & (d[HEAD] <= BAND[1])).all(axis=1) & (d["phi_sup_blind_tk"] >= NEC_MIN)
         dev = (d[HEAD] - 1).abs().max(axis=1)                     # as merge.py: worst over the defined scores
         print("%-34s rows %5d  pass %.2f%%  median worst-of-3 %.3f" % (label, len(d), 100 * p.mean(), dev.median()))
         return d.assign(passed=p, dev=dev).set_index("seed")

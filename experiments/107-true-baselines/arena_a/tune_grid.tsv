@@ -1,0 +1,11 @@
+# A13 (2026-11-05): WCM tuning grid for arena A, PRE-REGISTERED before any run (TUNING.md). One factor at a time from
+# v4 at lambda 1e-3, 400 steps (the pod's protocol point); run order = priority (STOP_AT drops the tail).
+# columns: name <TAB> env overrides on top of the base fit env ("-" = none; "REUSE" = the existing panel circuits) <TAB>
+#          knobs changed vs v4 (count, for the tie-break) <TAB> est. GPU-h (9 dev targets, fits + eval + start-up + score)
+#          <TAB> what it reads
+base	REUSE	0	0.05	v4 as is: the panel circuits (out/panel/wcm_l1e-3 + wcm_l1e-3_rerun), re-scored with the current scorer
+r0	AA_RANK_W=0	1	0.74	rank-keep off: k = d_sae, no censoring to protect; 9.z.19003 ends with rank term 5.9 vs zero 0.66
+nec0.3	NEC_W=0.3	1	0.85	necessity term at 0.3 (1.0 lifted nec_a but pushed A to 1.54): 4.z / 5.tc / 8.tc fail necessity
+r0.01	AA_RANK_W=0.01	1	0.74	rank-keep at 1/10 of v4's (the dose between r0 and v4)
+r0_nec0.3	AA_RANK_W=0 NEC_W=0.3	2	0.85	the two together (if their effects are on different targets they add)
+s600	STEPS=600	1	1.02	1.5x training budget (membership plateaus by step ~300; the untested "more steps" arm)

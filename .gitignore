@@ -111,5 +111,16 @@ AGENTS.md
 /*.bak
 /*.tgz
 /*.zip
+# Other papers' official code, cloned at pinned commits for exp 107 (never committed; see 107/README.md)
+/third_party/
 # Items staged for deletion (review, then delete the folder in File Explorer)
 /_to_delete/
+# Private documents (repo is public): tutor correspondence and internal reviews
+/docs/tutor-update/
+/docs/critical-review-*.md
+# Local run leftovers: queue gate flags (scripts wait for these on disk), run logs, watcher stamps
+/experiments/**/READY
+/experiments/**/*_READY
+/experiments/**/logs/
+/experiments/**/*.out
+/experiments/**/*.watchstart

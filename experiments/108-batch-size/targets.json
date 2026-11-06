@@ -1,0 +1,143 @@
+{
+ "seed": 20261106,
+ "source": "experiments/107-true-baselines/latent_pilot/targets_dev48.txt",
+ "ctx": "experiments/062-h100-protocol-v1/out_full/out/ctx",
+ "panel": [
+  "11.resid.10297",
+  "4.attn.35016",
+  "6.attn.33144",
+  "9.attn.27124",
+  "3.mlp.32628",
+  "6.mlp.25102",
+  "11.mlp.2554",
+  "4.resid.25803",
+  "5.resid.5995",
+  "8.resid.20406",
+  "3.attn.1392",
+  "6.attn.35949",
+  "10.attn.843",
+  "1.mlp.37214",
+  "7.mlp.33101",
+  "9.mlp.40169"
+ ],
+ "timing": [
+  "11.resid.10297",
+  "4.attn.35016"
+ ],
+ "cells": {
+  "deep.resid": [
+   "11.resid.10297",
+   "8.resid.20406",
+   "8.resid.4054",
+   "9.resid.38531",
+   "10.resid.11481",
+   "9.resid.392"
+  ],
+  "shallow.attn": [
+   "4.attn.35016",
+   "3.attn.1392",
+   "2.attn.22342",
+   "2.attn.27772",
+   "4.attn.23914",
+   "1.attn.16144"
+  ],
+  "mid.attn": [
+   "6.attn.33144",
+   "6.attn.35949",
+   "7.attn.11883",
+   "7.attn.15736",
+   "6.attn.17152"
+  ],
+  "deep.attn": [
+   "9.attn.27124",
+   "10.attn.843",
+   "11.attn.12206"
+  ],
+  "shallow.mlp": [
+   "3.mlp.32628",
+   "1.mlp.37214",
+   "3.mlp.17726",
+   "3.mlp.13711",
+   "2.mlp.9455"
+  ],
+  "mid.mlp": [
+   "6.mlp.25102",
+   "7.mlp.33101",
+   "6.mlp.6186",
+   "5.mlp.34302",
+   "6.mlp.27720"
+  ],
+  "deep.mlp": [
+   "11.mlp.2554",
+   "9.mlp.40169",
+   "11.mlp.39065",
+   "11.mlp.6616",
+   "9.mlp.13833",
+   "10.mlp.2064"
+  ],
+  "shallow.resid": [
+   "4.resid.25803",
+   "3.resid.24347",
+   "4.resid.25998",
+   "1.resid.4992",
+   "1.resid.9185"
+  ],
+  "mid.resid": [
+   "5.resid.5995",
+   "5.resid.21170",
+   "6.resid.29337",
+   "7.resid.14946",
+   "7.resid.28035"
+  ]
+ },
+ "eligibility": {
+  "2.attn.22342": "ok (strong held 16, mid held 16)",
+  "3.attn.1392": "ok (strong held 16, mid held 16)",
+  "2.attn.27772": "ok (strong held 16, mid held 16)",
+  "4.attn.23914": "ok (strong held 16, mid held 16)",
+  "4.attn.35016": "ok (strong held 16, mid held 16)",
+  "1.attn.16144": "ok (strong held 16, mid held 16)",
+  "3.mlp.32628": "ok (strong held 16, mid held 16)",
+  "3.mlp.17726": "ok (strong held 16, mid held 16)",
+  "2.mlp.9455": "ok (strong held 16, mid held 16)",
+  "3.mlp.13711": "ok (strong held 16, mid held 16)",
+  "1.mlp.37214": "ok (strong held 16, mid held 16)",
+  "1.resid.9185": "ok (strong held 16, mid held 16)",
+  "3.resid.24347": "ok (strong held 16, mid held 16)",
+  "4.resid.25998": "ok (strong held 16, mid held 16)",
+  "1.resid.4992": "ok (strong held 16, mid held 16)",
+  "4.resid.25803": "ok (strong held 16, mid held 16)",
+  "7.attn.15736": "ok (strong held 16, mid held 16)",
+  "6.attn.33144": "ok (strong held 16, mid held 16)",
+  "6.attn.17152": "ok (strong held 16, mid held 16)",
+  "7.attn.38584": "thin / no strongest pool",
+  "7.attn.11883": "ok (strong held 16, mid held 10)",
+  "6.attn.35949": "ok (strong held 16, mid held 16)",
+  "6.mlp.27720": "ok (strong held 16, mid held 16)",
+  "5.mlp.34302": "ok (strong held 16, mid held 16)",
+  "6.mlp.6186": "ok (strong held 16, mid held 16)",
+  "6.mlp.25102": "ok (strong held 16, mid held 16)",
+  "7.mlp.33101": "ok (strong held 16, mid held 16)",
+  "7.resid.14946": "ok (strong held 16, mid held 16)",
+  "6.resid.29337": "ok (strong held 16, mid held 16)",
+  "5.resid.5995": "ok (strong held 16, mid held 16)",
+  "5.resid.21170": "ok (strong held 16, mid held 16)",
+  "7.resid.28035": "ok (strong held 16, mid held 16)",
+  "10.attn.843": "ok (strong held 16, mid held 16)",
+  "8.attn.39566": "thin / no strongest pool",
+  "11.attn.12206": "ok (strong held 16, mid held 16)",
+  "9.attn.27124": "ok (strong held 16, mid held 16)",
+  "10.mlp.2064": "ok (strong held 16, mid held 16)",
+  "9.mlp.40169": "ok (strong held 16, mid held 16)",
+  "11.mlp.6616": "ok (strong held 16, mid held 16)",
+  "9.mlp.13833": "ok (strong held 16, mid held 16)",
+  "11.mlp.39065": "ok (strong held 16, mid held 16)",
+  "11.mlp.2554": "ok (strong held 16, mid held 16)",
+  "8.resid.4054": "ok (strong held 16, mid held 16)",
+  "10.resid.11481": "ok (strong held 16, mid held 16)",
+  "8.resid.20406": "ok (strong held 16, mid held 16)",
+  "9.resid.392": "ok (strong held 16, mid held 16)",
+  "9.resid.38531": "ok (strong held 16, mid held 16)",
+  "11.resid.10297": "ok (strong held 16, mid held 16)"
+ }
+}

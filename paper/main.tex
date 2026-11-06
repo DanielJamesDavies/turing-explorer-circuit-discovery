@@ -10,6 +10,7 @@
 \usepackage{microtype}
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage{longtable}   % tab:protocol is taller than a page (it was clipped as a float; 2026-10-26)
 \usepackage{graphicx}
 \usepackage{enumitem}
 \setlist{noitemsep, topsep=2pt}
@@ -28,12 +29,29 @@
 
 \input{math_commands}
 
+% EXTERNAL SWITCH (DAN-152, 2026-10-27). Draft mode (\externalfalse, the default): placeholders print in red with
+% their text. External mode (\externaltrue), for an outside read: no placeholder text and no ticket number reaches
+% the PDF. A \pending inside a sentence prints nothing (the space before it is removed); a \pending that starts a
+% paragraph or box prints a grey "[to be added]"; the table-cell placeholder prints "--"; a footnote at the provenance sentence of
+% sec:setting says the printed numbers still come from the earlier run. Flip it here, or build without editing
+% under the job name main-external, which turns it on (output build/main-external.pdf):
+%   latexmk -pdf -jobname=main-external main.tex
+% The checklist of every placeholder is paper/resources/pending-checklist.md (paper/tables/list_pending.py).
+\newif\ifexternal
+\externalfalse
+\edef\thisjobname{\jobname}\edef\externaljobname{\detokenize{main-external}}
+\ifx\thisjobname\externaljobname\externaltrue\fi
 % Visible placeholder for text that waits on a run or a protocol decision.
 % Grep for \pending before submission; every instance must be gone.
-\newcommand{\pending}[1]{\textcolor{red!70!black}{[\textit{pending: #1}]}}
+\DeclareRobustCommand{\pending}[1]{%
+  \ifexternal
+    \ifvmode\textcolor{black!55}{[to be added]}\else\unskip\fi
+  \else
+    \textcolor{red!70!black}{[\textit{pending: #1}]}%
+  \fi}
 % 2026-10-24 (paper prep for the pod results): a one-character table-cell placeholder; the table it sits in carries
 % one \pending naming the source. A grep for \pending also finds \pendingcell.
-\newcommand{\pendingcell}{\textcolor{red!70!black}{?}}
+\DeclareRobustCommand{\pendingcell}{\ifexternal--\else\textcolor{red!70!black}{?}\fi}
 
 % Abstract set as in the NeurIPS/ICLR styles: \large centred heading, body at
 % full 10pt, side-indented 3pc each side (their styles set \leftmargini=3pc,
@@ -85,7 +103,7 @@ For a target sparse autoencoder (SAE) latent, \emph{weighted circuit masking} (W
 % REWRITE 2026-10-12 (DAN-161 step 9): sentences 4-5 = claim 1 (with the random null), 6-7 = claim 2.
 % 2026-10-24 (paper prep, DAN-157/181): 46%, 1.5% / 45% and 747 are as-run numbers (original held-out sets, DAN-17
 % null). Swap in the rebuilt-held-out macros (experiments/087-intervals, e.g. \passall) and the harder-null result.
-At a sparsity penalty that yields circuits of $10^{2}$--$10^{3}$ upstream latents, $46\%$ of ${\sim}15{,}000$ sampled latents in TuringLLM, a 12-layer language model, get a circuit that reproduces the target under all three ablations and is necessary for it, on held-out text, while random circuits of the same size, given the same coefficient fitting, fail on all $747$ targets tested \pending{rebuilt held-out re-score, DAN-157; harder random nulls, DAN-181; Pythia-70m and GPT-2 small, DAN-40/41}.
+At a sparsity penalty that yields circuits of $10^{2}$--$10^{3}$ upstream latents, $46\%$ of ${\sim}15{,}000$ sampled latents in TuringLLM, a 12-layer language model, get a circuit that reproduces the target under all three ablations and is necessary for it, on held-out text, while random circuits of the same size, given the same coefficient fitting, fail on all $747$ targets tested \pending{v2 8k headline; null clause restated on the v2 126-target panel with the harder nulls, DAN-181; public models, DAN-40/41}.
 A weaker penalty gives larger circuits that pass more often.
 The coefficients are what keep these circuits small: without them the same nodes pass for $1.5\%$ of targets instead of $45\%$, and circuits for targets in the last four layers need ${\sim}10^{4}$ latents to pass, about $10\times$ more, with only half as many of those targets passing at all.
 The procedure needs no behavioural task and applies to any latent in an SAE bank.
@@ -108,9 +126,12 @@ Sparse autoencoders (SAEs) decompose a model's activations into latents like thi
 A latent says what the model represents; it does not say how the model computes it.
 That question belongs to circuit discovery, whose methods, over components or features and by search, attribution, or learned masks, predominantly target an output~\citep{conmy2023towards, syed2023attribution, marks2025sparse, ameisen2025circuit, bhaskar2024finding, caples2025scaling}.
 An output is the model's computation expressed in our vocabulary; targeting latents instead can capture variables that never show up as a token.
+Behavioural targets also start from tasks we thought to pose; latents, learned without labels, let the model's activations propose what to explain.
 
-Latent targets have been approached by attribution, tracing upstream of a chosen SAE latent and thresholding the scores~\citep{ge2024automatically, golimblevskaia2025circuit}.
-To our knowledge, no method \emph{optimises} a circuit for a single target latent and tests it by intervening on that latent.
+% DAN-31 (2026-10-27): CircuitLens is transcoder-based; Palit (probe target, ablation-tested) added; the claim now says
+% what is intervened on (everything outside the circuit) and what is measured (the target).
+Internal targets have been approached by attribution, tracing upstream of a chosen SAE or transcoder latent, or a probe direction, and thresholding the scores~\citep{ge2024automatically, golimblevskaia2025circuit, palit2026probes}.
+To our knowledge, no method \emph{optimises} a circuit of upstream latents for a single target latent and tests it by ablating everything outside the circuit and measuring that latent.
 We call this \emph{latent-targeted circuit discovery} (\cref{fig:overview}).
 
 \begin{figure}[t]
@@ -126,7 +147,7 @@ We call this \emph{latent-targeted circuit discovery} (\cref{fig:overview}).
 
 Our method, \emph{weighted circuit masking} (WCM), learns two things for every upstream latent: a gate for whether it belongs to the circuit, and a scaling coefficient for how strongly it acts.
 Both are trained so that the circuit alone reproduces the target with everything else ablated in three ways at once: set to zero, or to its mean over contexts where the target fires, or where it is silent.
-We test each circuit on held-out text for \emph{faithfulness} (the circuit alone reproduces the target), \emph{necessity} (removing the circuit removes the target), and \emph{sufficiency to induce} (setting the circuit's values switches the target on where it was silent).
+We test each circuit on held-out text for \emph{faithfulness} (the circuit alone reproduces the target), \emph{necessity} (removing the circuit removes the target), and \emph{sufficiency to induce} (setting the circuit's values turns on the silent target).
 
 % 2026-10-24 (paper prep, DAN-40/41): the public-model frame is 512 targets per model (dev-notes/2026-10-23-pod-plan
 % §0, F3).
@@ -142,7 +163,7 @@ Random circuits of the same size, given the same coefficient fitting, pass for n
 The rate is one point on a size trade-off, not a ceiling: in a 190-target sweep it rises from $42\%$ to $58\%$ as a weaker penalty grows the median circuit from about $500$ to $1{,}100$ latents (\cref{sec:main-result,app:weighted-details}).
 Residual-stream targets pass most often ($65\%$) and attention outputs least, about one in seven.
 The coefficients are what keep circuits small: without them, circuits for targets in the last four layers need ${\sim}10^{4}$ latents to pass, $10\times$ more, and only $41\%$ of those targets pass at any size we tried, against $80\%$ with coefficients (\cref{sec:weighted}).
-The study covers Top-K dictionaries only, and node sets are not unique: a refit that passes about as often shares about two thirds of the original circuit's latents, so we report sizes and scores rather than single memberships (\cref{sec:limitations,app:underdetermination}).
+The study covers models of at most 254M parameters and Top-K dictionaries only, and node sets are not unique: a refit that passes about as often shares about two thirds of the original circuit's latents, so we report sizes and scores rather than single memberships (\cref{sec:limitations,app:underdetermination}).
 \Cref{sec:case-study} opens one passing circuit, for a latent that reads a date or place as classical Greek antiquity; \cref{app:case-studies} returns to the law latent above, and \cref{app:random-gallery} shows circuits for randomly drawn targets.
 
 We contribute:
@@ -164,18 +185,18 @@ We release the pipeline, discovery methods, and analysis code at \href{https://g
 % validated conjunction in the last paragraph.
 
 \paragraph{Circuit discovery.}
-Manual analysis of components~\citep{olah2020zoom, wang2023interpretability} gave way to automated search: ACDC~\citep{conmy2023towards} and Edge Pruning~\citep{bhaskar2024finding} prune components or edges against an output metric, and attribution patching~\citep{nanda2023attribution, syed2023attribution, kramar2024atp} and its refinements~\citep{hanna2024faith, rezaeijafari2025relp} score them to first order (our IG baseline adapts EAP-IG's estimator to nodes).
-Sparse feature circuits~\citep{marks2025sparse} moved the nodes to SAE features with error nodes, and attribution graphs~\citep{ameisen2025circuit, lindsey2025biology} build per-prompt graphs over transcoder features~\citep{dunefsky2024transcoders}, a substrate we do not run.
-Their objectives are anchored at an output, and circuits for one task can differ across its prompts~\citep{makou2026many}.
+Manual analysis of components~\citep{olah2020zoom, wang2023interpretability} gave way to automated search: ACDC~\citep{conmy2023towards} and Edge Pruning~\citep{bhaskar2024finding} prune components or edges against an output metric, and attribution patching~\citep{nanda2023attribution, syed2023attribution, kramar2024atp} and its refinements~\citep{hanna2024faith, rezaeijafari2025relp} score them to first order (our IG baseline adapts the activation-space variant of \citet{marks2025sparse}, not EAP-IG).
+Sparse feature circuits~\citep{marks2025sparse} moved the nodes to SAE features with error nodes, and attribution graphs~\citep{ameisen2025circuit, lindsey2025biology} build per-prompt graphs over cross-layer transcoder features~\citep{dunefsky2024transcoders}, a substrate we do not run.
+Their objectives are anchored at an output, and circuits for one task found on inputs of different token frequency differ in structure but share a core and one mechanism~\citep{makou2026many}.
 
 \paragraph{Circuits for internal features.}
 Internal targets are not new.
 Hierarchical attribution extracts the subgraph behind a chosen SAE feature~\citep{ge2024automatically}, dictionary features have been traced patch-free in Othello-GPT~\citep{he2024dictionary}, transcoder features are reverse-engineered from their input circuits~\citep{dunefsky2024transcoders}, latent attribution debugs a chosen latent~\citep{duprelatour2025debugging}, CircuitLens explains a feature's activation from upstream interactions~\citep{golimblevskaia2025circuit}, and attribution graphs have been extended to concept directions read by linear probes~\citep{palit2026probes}.
 Upstream features have also been ranked by single ablations~\citep{cunningham2024sparse} or linked by sparse regression~\citep{yin2026scalable}.
-These methods attribute, ablate one node at a time, or regress; circuit probing is closer in spirit, optimising a mask over model weights for a labelled intermediate variable~\citep{lepori2023uncovering}, and sparsely connected transcoders learn latent-to-latent masks while the dictionary is trained~\citep{drori2025sparsely}.
+These methods attribute, ablate one node at a time, or regress; circuit probing is closer in spirit, optimising a mask over one block's neurons for a labelled intermediate variable~\citep{lepori2023uncovering}, and sparsely connected transcoders learn latent-to-latent masks while the dictionary is trained~\citep{drori2025sparsely}.
 
 \paragraph{Masks and scalars.}
-Learned masks descend from subnetwork probing~\citep{cao2021low, conmy2023towards} and edge pruning~\citep{bhaskar2024finding, li2024optimal}; over SAE latents they have localised attributes~\citep{chaudhary2024evaluating} and found behavioural circuits~\citep{caples2025scaling}, the latter being our unweighted circuit masking with its objective moved to a latent.
+Learned masks descend from subnetwork probing~\citep{cao2021low, conmy2023towards} and edge pruning~\citep{bhaskar2024finding, li2024optimal}; over SAE latents they have localised attributes~\citep{chaudhary2024evaluating} and found behavioural circuits, with per-position masks under one per-token mean ablation~\citep{caples2025scaling}; our unweighted circuit masking moves this objective to a latent, with one shared mask, three ablations, the sparsity-preserving fill, and rank-keep.
 Such masks keep a node at its natural scale or ablate it; learned per-unit scales serve other jobs, in pruning, steering, and regression~\citep{liu2017learning, kwon2022fast, stoehr2024activation, yin2026scalable}, and gate-times-magnitude parametrisations separate membership from strength outside circuit discovery~\citep{louizos2018learning, lai2025joint}.
 
 \paragraph{Evaluating circuits.}
@@ -185,26 +206,15 @@ Size-matched random circuits~\citep{shi2024hypothesis, seth2026circuitkit} go un
 
 What this paper adds is the conjunction: circuits of SAE latents \emph{optimised} for a single target latent, with a gate and a separate \emph{fitted} coefficient per node, trained under three ablations at once, and tested on held-out contexts against random circuits given the same fitting, for ${\sim}15$k sampled latents per model \pending{only TuringLLM so far; Pythia-70m and GPT-2 small, DAN-40/41} (further related work in \cref{app:related}).
 
-\section{Setting}
-% BUDGET 1.25 pp for Setting + Formulation + Evidence Base + Attribution
-% Baselines together.
-\label{sec:setting}
-
-% REWRITE 2026-09-22 (DAN-24): Setting, the problem statement and the
-% evidence base compressed from ~2.5 pp. The two-criteria formalism (P1:
-% interventional control vs P2: faithfulness) now lives in sec:drivers-closure
-% (appendix); P2 and P2* merged into one weighted, multi-method problem.
-The primary model is TuringLLM-1.0-254M, a 12-layer decoder-only transformer trained from scratch on a documented synthetic corpus of ${\sim}2$ billion tokens generated by Phi-3 Mini~\citep{abdin2024phi3}; a model whose training data is known is a more tractable subject than one trained on an opaque crawl (\cref{app:corpus}).
-A bank of 36 Top-K sparse autoencoders, one per site (attention output, MLP output, and residual stream at each layer), maps each activation onto 40{,}960 latents with $K = 128$ active per position (\cref{app:sae-quality}).
-% 2026-10-24 (paper prep, DAN-40/41): \pending removed here; the "Beyond TuringLLM" paragraph carries the placeholders.
-The same protocol is applied to Pythia-70m and GPT-2 small with public Top-K dictionaries (\cref{sec:main-result}).
-% Running example (DAN-149, 2026-10-03): the case-study latent 9.resid.20419 replaces the pre-v1 temperature latent.
-As a running example we follow a layer-9 residual-stream latent of TuringLLM that fires where a passage places its subject in classical Greek antiquity: after ``In the 5th century BC, the philosopher taught in the city of'' it reaches $76\%$ of its typical activation, and after ``In the 19th century, \ldots'' it stays silent (\cref{sec:case-study}).
-
 \section{Method}
 \label{sec:method}
 
+% 2026-10-26 (DAN-147 stage a): the former "Setting" section is folded in here; its model details and the
+% context protocol moved to "Experimental setup" (sec:setting, start of sec:results).
+WCM applies to any model with a bank of Top-K sparse autoencoders, one per site (attention output, MLP output, and residual stream at each layer), each keeping $K$ latents active per position.
 For a latent $f$ and a sequence--position pair $(x, t)$, write $a_f(x, t) \geq 0$ for its activation (after Top-K) and $\preact(x, t)$ for its pre-activation (before it); pseudocode is in \cref{app:pseudocode}.
+% Running example (DAN-149, 2026-10-03): the case-study latent 9.resid.20419 replaces the pre-v1 temperature latent.
+As a running example we follow a layer-9 residual-stream latent of TuringLLM that fires where a passage places its subject in classical Greek antiquity: after ``In the 5th century BC, the philosopher taught in the city of'' it reaches $76\%$ of its typical activation, and after ``In the 19th century, \ldots'' it stays silent (\cref{sec:case-study}).
 
 \subsection{Problem}
 \label{sec:problem}
@@ -212,31 +222,20 @@ For a latent $f$ and a sequence--position pair $(x, t)$, write $a_f(x, t) \geq 0
 
 \paragraph{Targets and contexts.}
 Fix a target latent $f$ and let $U_f$ be the latents at every SAE site that causally precedes $f$'s site.
-Each target has \emph{activating contexts} from two stores, up to 64 of its strongest-activating sequences and up to 64 drawn from the middle of its activation distribution, each with an anchor at the target's peak (\cref{app:stores}).
-With full stores it trains on 32 strongest and 16 mid-band contexts and is scored on 16 held-out strongest contexts (primary) and 16 held-out mid-band contexts (reported); the split is stratified by activation and always trains on the two strongest (\cref{app:protocol}).
-% 2026-10-24 (DAN-157, rule approved by Daniel 2026-10-24; src/circuit/heldout_rule.py, experiments/086-heldout-rebuild).
-% No source-file rule. Details and the audit (085) in app:heldout.
-Held-out strongest contexts exclude every training-side context and its exact, anchor-prefix and near copies (a shared run of $\geq 32$ tokens or $\geq 50\%$ shared 8-grams), filled to 16 from the next strongest unseen contexts (floor 8); held-out contrast contexts follow the same rule (\cref{app:heldout}).
-It also has 64 \emph{contrast contexts}: corpus sequences ranked by their highest cosine similarity to any of its strongest-activating contexts in pooled final-layer representation space, excluding its activating contexts, and kept only if the target stays out of its site's Top-K on them, so that they are close to the target's contexts but verified silent (\cref{app:stores}).
+Each target has \emph{activating contexts}, sequences on which it fires, each with an anchor at the target's peak and split into training and held-out sets, and \emph{contrast contexts}, sequences close to the activating ones on which it is verified silent, outside its site's Top-K (\cref{sec:setting,app:stores}).
 For the running example they are history passages about other periods, such as the Enlightenment, Renaissance music, or the pre-Columbian era.
-% PROTOCOL v1 (2026-09-24, DAN-64 / DAN-7): NegContextSelector("close"), silence =
-% post-Top-K activation 0. The earlier pre-built kNN store gave 38% of targets one
-% shared fallback list (seq_repr capped at 200k of 24.8M sequences); WCM no longer uses it.
-Targets are drawn uniformly at random, the same number per site (before targets without usable contexts are dropped), with no prioritisation heuristic (\cref{app:protocol}).
 
 \paragraph{Circuit-only execution.}
 A \emph{weighted circuit} is a node set $C \subseteq U_f$ with a scaling coefficient $\alpha_{s,i} > 0$ for each node.
-Under an ablation method $\pi$, the forward pass is modified at every upstream site $s$: the site's Top-K code $c_s$, computed from the (already modified) stream, is replaced by
-\[
-    \hat{c}_{s,i} =
-    \begin{cases}
-        \alpha_{s,i}\, c_{s,i} & (s, i) \in C \\
-        v^{\pi}_{s,i} & \text{otherwise,}
-    \end{cases}
-\]
-and the stream continues as $x + W_{\mathrm{dec}}^{s}(\hat{c}_s - c_s)$, so SAE errors pass through unchanged and every downstream site, including the target's, reads the modified stream.
+% 2026-10-26 (DAN-147 stage b): the edit is defined once, in gated form; the hard circuit is its thresholding.
+Under an ablation method $\pi$, the forward pass is modified at every upstream site $s$: with $c^{s}$ the site's Top-K code, computed from the (already modified) stream, gates $m_s \in [0, 1]^{d_{\mathrm{sae}}}$, and ablation value $c^{s}_{\pi}$,
+\begin{equation}\label{eq:edit}
+    x \;\leftarrow\; x + W_{\mathrm{dec}}^{s}\!\left[\, m_s \odot \alpha_s \odot c^{s} + (1 - m_s) \odot c^{s}_{\pi} - c^{s} \,\right].
+\end{equation}
+A circuit runs with binary gates, $m_{s,i} = 1$ exactly for its nodes: members are kept at $\alpha$ times their live value and every other latent is sent to its ablation value; WCM trains continuous gates and thresholds them to obtain $C$ (\cref{sec:ablmask}).
+Editing only the decoded difference passes SAE errors through unchanged, and every downstream site, including the target's, reads the modified stream.
 Nodes are \emph{recomputed}, not clamped: a node's value at each position is whatever the modified stream gives it.
-The ablation value $v^{\pi}$ is zero (Z), the latent's mean over activating contexts (A), or its mean over contrast contexts (C), optionally sparsity-preserving, with the per-position Top-K re-imposed.
+The ablation value is zero (Z), the latent's mean over activating contexts (A), or its mean over contrast contexts (C), optionally sparsity-preserving, with the per-position Top-K re-imposed.
 An unweighted circuit fixes $\alpha = 1$.
 Writing $a_C$ for the target's mean activation at the anchors under this intervention, $a_{\varnothing}$ for the empty circuit, and $a_{\mathrm{pos}}$ for the unmodified model, \emph{faithfulness} is
 \[
@@ -251,7 +250,7 @@ Faithfulness depends on the ablation method~\citep{miller2024transformer, muelle
     \min \bigl\{\, |C| \;:\; \exists\, \alpha \ \text{ with } \ \phi^{\mathrm{free}}_{\pi}(C, \alpha) \geq 1 - \varepsilon \ \text{ for every } \pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\} \,\bigr\}.
 \end{equation}
 WCM solves a differentiable relaxation of \labelcref{eq:p2}; with $\alpha = 1$ the smallest faithful node sets are several times larger (\cref{sec:weighted}).
-Problem~\labelcref{eq:p2} asks for \emph{a} minimiser, and its near-optimal solutions form a large equivalence class (\cref{sec:underdetermination}), so only class-invariant quantities are treated as properties of the target.
+Problem~\labelcref{eq:p2} asks for \emph{a} minimiser, and its near-optimal solutions form a large equivalence class (\cref{sec:underdetermination}), so only class-invariant quantities describe the target.
 
 \subsection{Weighted Circuit Masking}
 \label{sec:ablmask}
@@ -259,50 +258,41 @@ Problem~\labelcref{eq:p2} asks for \emph{a} minimiser, and its near-optimal solu
 % RESTRUCTURE 2026-10-11 (DAN-161 step 1): the attribution-baseline summary (was 4.2) moved to app:attribution.
 
 Rather than thresholding attribution scores (the rank-and-cut baselines it is compared against, \cref{sec:attr-baselines}), WCM learns the circuit directly, adopting the optimisation framing of learned-mask circuit discovery~\citep{bhaskar2024finding, caples2025scaling} with a continuous-sparsification gate~\citep{savarese2020winning}, and moving its objective from an output to a single latent.
-For every upstream site $s$ it attaches gate parameters $\theta_s \in \R^{d_{\mathrm{sae}}}$ with gates $m_s = \sigma(\theta_s)$, and coefficient parameters $\psi_s$ with $\alpha_s = \mathrm{softplus}(\psi_s)$.
-A latent is kept at $\alpha$ times its live value when its gate is open and sent to its ablation value when closed:
-\[
-    x \;\leftarrow\; x + W_{\mathrm{dec}}^{s}\!\left[\, m_s \odot \alpha_s \odot c^{s} + (1 - m_s) \odot c^{s}_{\mathrm{abl}} - c^{s} \,\right],
-\]
-where $c^{s}$ is the site's dense Top-K code and $c^{s}_{\mathrm{abl}}$ its ablation value, a dense mean in training (the sparsity-preserving variant is used only in evaluation); editing only the decoded difference leaves the SAE error untouched, as in evaluation.
+Each upstream latent gets two learned quantities: a gate, which decides whether it belongs to the circuit, and a coefficient, which decides how strongly it acts.
+The sparsity penalty prices membership only, so strength is fitted separately from it.
+% 2026-10-26 (DAN-147 stage b): one loss display with every term, then one sentence per term.
+At every upstream site $s$, WCM sets $m_s = \sigma(\theta_s / T)$ and $\alpha_s = \mathrm{softplus}(\psi_s)$ in \eqref{eq:edit}, with parameters $\theta_s, \psi_s \in \R^{d_{\mathrm{sae}}}$, and minimises
+\begin{equation}\label{eq:loss}
+\begin{aligned}
+    \mathcal{L} = {} & \frac{1}{\nu} \sum_{\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}} \gamma_{\pi} \Bigl( \operatorname{mean}\bigl[(\tilde{z}_{\pi} - z)^{2}\bigr] + \gamma_{\mathrm{R}}\, \mathcal{R}_{\pi} \Bigr)
+    + \lambda \sum_{s, i} \Bigl[ \sigma(\theta_{s,i}) + \bigl(1 - \sigma(\theta_{s,i})\bigr)\, \lvert \alpha_{s,i} - 1 \rvert \Bigr], \\
+    & \nu = \operatorname{mean}\bigl[z^{2}\bigr], \qquad
+    \mathcal{R}_{\pi} = \operatorname{mean}\Bigl[\operatorname{relu}\bigl(\tau^{(r)}_{\pi} - \tilde{z}_{\pi}\bigr)^{2}\Bigr],
+\end{aligned}
+\end{equation}
+where $z$ is the target's pre-activation $\preact$ at the anchors of the training contexts on the unmodified stream, $\tilde{z}_{\pi}$ its value under \eqref{eq:edit} with method $\pi$, and the means run over those anchors.
+% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1; exps 090/093): A and C trained under the scorer's fill
+% (train_fill "sparse", sparse_grad "ste", train_means_source "eval_ref"). v1 trained them under a dense mean.
+Under A and C, training uses evaluation's sparsity-preserving fill (\cref{sec:eval-abl}), since circuits trained against a dense mean, a code no Top-K SAE produces, rely on a background that evaluation removes: at each position the members are kept and only the largest-mean non-members fill the rest of the Top-K, with straight-through gradients and evaluation's own means.
 
-\paragraph{Objective.}
-The circuit is trained to \emph{reproduce} the target's pre-activation at the anchors of the training contexts, by mean squared error against its value on the unmodified stream.
-The pre-activation is forced by Top-K: the activation is censored at zero, so a loss on it carries no gradient exactly where the mask must learn.
-Reproducing the pre-activation does not, however, keep the target in its site's Top-K: the loss constrains the site's stream along one direction of $d_{\mathrm{model}}$, and a circuit can restore that projection while other latents at the site rise past the target.
-A \emph{rank-keep} term therefore asks the target to hold its natural rank: with $r$ the target's rank among its site's other latents at an anchor in the unmodified model, capped at $K$, and $\tau^{(r)}_{\pi}$ the $r$-th largest of their pre-activations under the circuit,
-\[
-    \mathcal{R}_{\pi} = \operatorname{mean}\Bigl[\operatorname{relu}\bigl(\tau^{(r)}_{\pi} - \preact\bigr)^{2}\Bigr],
-\]
-which is zero whenever the target is at or above its natural rank, so it never pulls a circuit towards a state the unmodified model does not have.
-
-\paragraph{Training under three ablation methods.}
-A mask trained under one ablation method learns whatever that method rewards: trained only under mean ablation over contrast contexts, its zero-ablation faithfulness is $0.0$ at depth (it learns the difference from the contrast-context mean, never a set that suffices alone), and trained only under zero ablation, it is never asked what separates firing from a near-identical context that does not fire.
-WCM therefore scores one mask under all three ablation methods at once, with gradients accumulating into the same parameters:
-\[
-    \mathcal{L}
-    = \frac{\sum_{\pi} \gamma_{\pi} \bigl(\mathcal{L}_{\pi} + \gamma_{\mathrm{R}}\, \mathcal{R}_{\pi}\bigr)}{\nu}
-    \;+\; \lambda \sum_{s}\sum_{i} \sigma(\theta_{s,i}),
-    \qquad
-    \nu = \operatorname{mean}\bigl(\text{target}^2\bigr),
-\]
-summed over $\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}$, with $\gamma_{\mathrm{Z}} = 1$, $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$ at every layer, and $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; the ablation means are computed on training-split contexts only (\cref{app:protocol}).
+\paragraph{The terms.}
+The squared error \emph{reproduces} the pre-activation rather than the activation, which Top-K censors at zero, so that the loss carries gradient exactly where the mask must learn.
+Reproducing it does not keep the target in its site's Top-K, since the loss constrains the stream along one direction of $d_{\mathrm{model}}$ and other latents at the site can rise past the target; the \emph{rank-keep} term $\mathcal{R}_{\pi}$, with $r$ the target's rank among its site's other latents at an anchor in the unmodified model (capped at $K$) and $\tau^{(r)}_{\pi}$ the $r$-th largest of their pre-activations under the circuit, is zero whenever the target holds its natural rank, so it never pulls a circuit towards a state the unmodified model does not have (rejected alternatives in \cref{app:rank-designs}).
 % PROTOCOL v1 (2026-09-24, DAN-7): rank-keep gamma_R = 3e-3. Local sweep on 16 targets
 % (experiments/055, 056): 3e-3 to 1e-1 all give 7-8/16 passing faithfulness under
 % Z, A and C (plain WCM 6/16) at ~330-350 nodes (plain 398). It does NOT reliably
 % remove amplifier circuits; specificity is reported, not claimed.
-All terms measure the same quantity on the same target, so one shared, bounded normaliser suffices; the sparsity penalty is flat per latent, and the calibration of the three-method design is in \cref{app:membership-studies}.
+The weights $\gamma_{\pi}$ score one mask under all three ablation methods at once, because a mask trained under one method learns whatever that method rewards: under the contrast-context mean alone it learns the difference from that mean, never a set that suffices alone, and under zero ablation alone it is never asked what separates firing from a near-identical context that does not fire (\cref{app:single-method}).
+All terms measure the same quantity on the same target, so one shared, bounded normaliser $\nu$ suffices (\cref{app:membership-studies}).
+The sparsity penalty $\lambda\,\sigma(\theta)$ is flat per latent.
+The guard $\lambda\,(1 - \sigma(\theta))\,|\alpha - 1|$ is required because, with coefficients free, the optimiser could hold a gate just below the keep threshold while inflating its coefficient, emptying the node set while keeping function intact.
+The temperature $T$ decays geometrically from $1$ to $0.05$ (continuous sparsification;~\citealp{savarese2020winning}), so the training forward converges to the binary gates of the circuit $C = \{(s, i) : \theta_{s,i} > 0\}$, the gates above $\tfrac{1}{2}$ at any temperature, that evaluation scores; the gates are optimised directly rather than sampled~\citep{louizos2018learning, li2024optimal}.
 % RESTRUCTURE 2026-10-12 (DAN-161 step 5): the pre-v1 calibration sentences (A term halves layer-2 node sets;
 % Jaccard 0.13 vs 0.54) moved to app:single-method; claim 15 of the claims map needs a v1 rerun before the main text.
-
-\paragraph{Scaling coefficients.}
-Coefficients start at $\alpha = 1$, so training starts exactly at unweighted behaviour; \emph{unweighted circuit masking} keeps them there.
-One guard is required: with coefficients free, the optimiser can hold a gate just below the keep threshold while inflating its coefficient, emptying the node set while keeping function intact, so latents with closed gates are charged $\lambda\,(1 - \sigma(\theta))\,|\alpha - 1|$.
-The zero-ablation term anchors the coefficients: trained without it, they calibrate against the mean ablation's background and overshoot by one to three orders of magnitude once that background is removed (pre-v1; \cref{app:single-method}).
-
-\paragraph{Binarisation.}
-Evaluation scores the hard node set $\{i : m_i > \tfrac{1}{2}\}$, so the gates are annealed during training, $m = \sigma(\theta / T)$ with $T$ decaying geometrically from $1$ to $0.05$ (continuous sparsification;~\citealp{savarese2020winning}), and the training forward converges to the binary gates that evaluation scores; the gates are optimised directly rather than sampled~\citep{louizos2018learning, li2024optimal}.
-Training runs 400 AdamW steps; all settings are in \cref{app:protocol}, and the binarisation study in \cref{app:membership-studies}.
+% 2026-10-26 (DAN-147 stage b): the C-only zero-ablation 0.0 and the coefficient overshoot now live only in app:single-method.
+Coefficients start at $\alpha = 1$, so training starts exactly at unweighted behaviour; \emph{unweighted circuit masking} keeps them there, and the zero-ablation term anchors them (\cref{app:single-method}).
+% 2026-10-26 (DAN-147 stage c): gamma_Z/C/A/R, lambda and the 400 steps now live only in tab:protocol (with provenance).
+The ablation means are computed on training-split contexts only; the weights $\gamma$, the penalty $\lambda$, the schedule, and where each came from are in \cref{tab:protocol}, and the binarisation study in \cref{app:membership-studies}.
 
 \subsection{Evaluation}
 \label{sec:eval}
@@ -311,7 +301,10 @@ Training runs 400 AdamW steps; all settings are in \cref{app:protocol}, and the 
 
 % RESTRUCTURE 2026-10-12 (DAN-161 step 5): the evaluation-family table moved to app:protocol (after tab:protocol);
 % the necessity details, near-threshold and specificity definitions now live in its rows.
-Every reported score is read on held-out contexts and reads the target's activation (after Top-K) in every term of its ratio; the full evaluation family and its settings are in \cref{tab:semantics,tab:protocol}.
+% 2026-10-26 (protocol-v1.md §12.1, Daniel): two pass rates, never mixed inside one rule; pre-activation Z and
+% necessity on a baseline of 0 (Z_pre = x / a_pos, nec_pre = (a_pos - x_removed) / a_pos). Placed here, not in the
+% pass-criterion paragraph, for the page budget (DAN-24).
+Every reported score is read on held-out contexts and reads the target's activation (after Top-K) in every term of its ratio, except a secondary pass rate: the pass rule on the pre-activation, with Z and necessity measured from $0$; the full evaluation family and its settings are in \cref{tab:semantics,tab:protocol}.
 
 \paragraph{Intervention scores.}
 % PROTOCOL v1 (2026-09-22, DAN-7): necessity uses the SFC-completeness form
@@ -332,24 +325,24 @@ All scores are unclipped ratios: success means landing near $1$, and a score far
 
 \paragraph{Ablation methods.}
 The choice of ablation is load-bearing~\citep{li2024optimal, miller2024transformer}.
-Mean ablation over activating contexts leaks target signal into the ablation value increasingly with depth ($a_{\varnothing}$ up to $30\%$ of $a_{\mathrm{pos}}$; \cref{app:floors}), while mean ablation over contrast contexts does not; dense means put the model on streams a Top-K SAE can never emit, so evaluation re-imposes the per-position Top-K after applying them (sparsity-preserving; \cref{app:respect-topk}).
+Mean ablation over activating contexts leaks target signal into the ablation value increasingly with depth ($a_{\varnothing}$ up to $30\%$ of $a_{\mathrm{pos}}$; \cref{app:floors}), while mean ablation over contrast contexts does not; dense means put the model on streams a Top-K SAE can never emit, so training and evaluation re-impose the per-position Top-K after applying them (sparsity-preserving; \cref{app:respect-topk}).
+Patching from real contexts, often preferred for keeping the model on-distribution~\citep{heimersheim2024patching}, is scored in \cref{app:resample}.
 
 \paragraph{Random-circuit baselines.}
 % 2026-10-24 (paper prep, DAN-181; design in experiments/084-harder-nulls/README.md, decisions 2026-10-24): the two
 % harder nulls added; the first null is DAN-17 (random_null.py).
 Fitted coefficients could make any set look faithful, so every random circuit, matched to the weighted circuit's size site by site, receives the \emph{same coefficient fitting} on its own nodes before scoring.
-Its members are latents active on the target's strongest training contexts or, in two harder nulls, latents active near the anchor and matched on frequency or contribution (\cref{app:nulls}).
+Its members are latents active on the target's strongest training contexts or, in two harder nulls, near-anchor latents matched on frequency or contribution (\cref{app:nulls}).
 
 \paragraph{Specificity and near-threshold targets.}
 Every score reads the target alone, so a circuit that restores the target by lifting its whole neighbourhood at the site passes them all; we report specificity (the target's rank, the latents lifted above the Top-K cut, and the faithfulness of co-firing \emph{sibling} latents) as a measured property, not a criterion (\cref{app:specificity}).
-A \emph{near-threshold} target, whose median rank at the held-out anchors of the unmodified model is at least $K/2$, has an ill-conditioned activation read, since small shifts near the cut push it out of the Top-K; such targets stay in the headline pass rate and are also reported as a stratum.
+A \emph{near-threshold} target, whose median rank at the held-out anchors of the unmodified model is at least $K/2$, has an ill-conditioned activation read, since small shifts near the cut push it out of the Top-K; such targets stay in the headline pass rate and are also reported as a stratum, on both the activation and the pre-activation read.
 
 \paragraph{Pass criterion.}
 % DAN-8, 2026-09-27. experiments/062-h100-protocol-v1/pass_rule.py applies it.
 A circuit passes if, on the held-out strongest contexts and the activation read, its faithfulness under all three ablation methods (Z, and sparsity-preserving A and C) lies in $[0.8, 1.5]$ and its necessity is at least $0.9$.
 The band is asymmetric by design: below $0.8$ the circuit fails to restore its target, while an overshoot up to $1.5$ still restores it, and whether that overshoot is specific to the target is measured for every circuit.
-Sufficiency to induce, specificity, and the random-circuit baseline are reported rather than required; targets with a vacuous zero-ablation denominator are excluded and counted, and an undefined A or C ratio counts as a fail (\cref{app:protocol}).
-
+Sufficiency to induce, specificity, and the random-circuit baseline are reported rather than required; a target is vacuous, and is excluded and counted, when any of the rule's empty-circuit baselines (zero ablation, A, or C) already reaches $95\%$ of the unmodified activation, so that its ratio has no room to measure the circuit; this depends only on the target and its contexts, never on the circuit (\cref{app:protocol}).
 \section{Experiments and Results}
 \label{sec:results}
 % 2026-09-22: results are being rebuilt around the production runs; every
@@ -360,37 +353,106 @@ Sufficiency to induce, specificity, and the random-circuit baseline are reported
 % secondary findings 0.75 + non-identifiability 0.5. Overflow goes to the
 % appendix, not into the budget.
 
-\paragraph{Setup.}
+\paragraph{Experimental setup.}
+\label{sec:setting}
+% 2026-10-26 (DAN-147 stage a): the former "Setting" section and the context protocol from sec:problem moved here.
+% REWRITE 2026-09-22 (DAN-24): Setting, the problem statement and the evidence base compressed from ~2.5 pp.
+The primary model is TuringLLM-1.0-254M, a 12-layer decoder-only transformer trained from scratch on a documented synthetic corpus of ${\sim}2$ billion tokens generated by Phi-3 Mini~\citep{abdin2024phi3}; a model whose training data is known is a more tractable subject than one trained on an opaque crawl (\cref{app:corpus}).
+Its bank of 36 Top-K sparse autoencoders maps each activation onto 40{,}960 latents with $K = 128$ active per position (\cref{app:sae-quality}).
+% 2026-10-24 (paper prep, DAN-40/41): \pending removed here; the "Beyond TuringLLM" paragraph carries the placeholders.
+Targets are drawn uniformly at random, the same number per site (before targets without usable contexts are dropped), with no prioritisation heuristic (\cref{app:protocol}).
+Activating contexts come from two stores, up to 64 of a target's strongest-activating sequences and up to 64 drawn from the middle of its activation distribution (\cref{app:stores}).
+With full stores a target trains on 32 strongest and 16 mid-band contexts and is scored on 16 held-out strongest contexts (primary) and 16 held-out mid-band contexts (reported); the split is stratified by activation and always trains on the two strongest (\cref{app:protocol}).
+% 2026-10-24 (DAN-157, rule approved by Daniel 2026-10-24; src/circuit/heldout_rule.py, experiments/086-heldout-rebuild).
+% No source-file rule. Details and the audit (085) in app:heldout.
+Held-out strongest contexts exclude every training-side context and its exact, anchor-prefix and near copies (a shared run of $\geq 32$ tokens or $\geq 50\%$ shared 8-grams), filled to 16 from the next strongest unseen contexts (floor 8); held-out contrast contexts follow the same rule (\cref{app:heldout}).
+% PROTOCOL v1 (2026-09-24, DAN-64 / DAN-7): NegContextSelector("close"), silence =
+% post-Top-K activation 0. The earlier pre-built kNN store gave 38% of targets one
+% shared fallback list (seq_repr capped at 200k of 24.8M sequences); WCM no longer uses it.
+Each target has 64 contrast contexts: corpus sequences ranked by their highest cosine similarity to any of its strongest-activating contexts in pooled final-layer representation space, excluding its activating contexts, and kept only if the target stays out of its site's Top-K on them (\cref{app:stores}).
 % REWRITE 2026-10-12 (tier 3, Daniel 4a): lists every dataset behind a main-text number.
 % 2026-10-24 (paper prep): DAN-40/41 \pending moved to "Beyond TuringLLM"; the 22-target pre-v1 panel is retired
 % (DAN-159: the v1 comparison runs on the 190 sweep targets, experiments/083-v1-comparison); the harder nulls (DAN-181,
 % experiments/084-harder-nulls) run on 126 of the sweep targets; held-out sets rebuilt (DAN-157, experiments/086).
-All results use protocol v1 (\cref{app:protocol}), on TuringLLM and on the two public models of \cref{sec:main-result}.
-The \emph{production run} fits WCM to $15{,}046$ sampled targets at one sparsity penalty; three samples of it are re-scored with every coefficient set to $1$ ($1{,}746$ targets), against size-matched random circuits ($747$), and after a refit ($175$; \cref{app:underdetermination}).
-A \emph{sweep} fits weighted and unweighted circuit masking to $190$ targets across sparsity penalties (\cref{sec:weighted}), also used by the attribution comparison and the harder nulls, and $280$ targets are refitted under four contrast-context sources (\cref{app:contrast-source}).
-The TuringLLM numbers below were scored on the original held-out sets, which repeated training text (\cref{app:heldout}) \pending{re-scores on the rebuilt sets, DAN-157}.
+% DAN-148 (2026-10-27): the public-model sentence above (old line "The same protocol is applied to Pythia-70m ...")
+% merged into this one.
+% DAN-152 (2026-10-27): provenance stated once, here and in app:protocol (Daniel 2026-10-26: 071, 068 and the DAN-131
+% attention tests stay as labelled protocol-v1 analyses; everything else quoted becomes v2). The external-mode footnote
+% is true only until the post-pod rewrite: delete it then. The old held-out caveat sentence ("The TuringLLM numbers
+% below were scored on the original held-out sets, which repeated training text") is now the \pending below.
+All main-text results use protocol v2 (the sparsity-preserving training fill and fresh, deduplicated context records; \cref{app:protocol}) on every model; analyses under earlier protocols are marked in the appendix.\ifexternal\footnote{Most numbers in this version still come from runs under the earlier protocol, scored on held-out sets that repeated training text (\cref{app:heldout}); the runs described here replace them, and values shown as -- or [to be added] are filled from those runs.}\fi
+In the \emph{production run} we fit WCM to $15{,}046$ sampled targets at one sparsity penalty; three samples of it are re-scored with every coefficient set to $1$ ($1{,}746$ targets), against size-matched random circuits ($747$), and after a refit ($175$; \cref{app:underdetermination}).
+In a \emph{sweep} we fit weighted and unweighted circuit masking to $190$ targets across sparsity penalties (\cref{sec:weighted}), also used by the attribution comparison and the harder nulls, and $280$ targets are refitted under four contrast-context sources (\cref{app:contrast-source}).
+\pending{numbers below are still v1, on held-out sets that repeated training text (\cref{app:heldout}); the v2 8k run replaces them}
 
-\subsection{Weighted Circuits at Scale}
+% DAN-148 (2026-10-27): claim headings, qualitative so they survive the v2 numbers (was "Weighted Circuits at Scale").
+\subsection{Weighted Circuits Explain Many Sampled Latents, Fewer at Depth}
 \label{sec:main-result}
 % BUDGET 1.5 pp, one figure. DAN-75 full run (2026-09-27): every number below is printed by
 % experiments/062-h100-protocol-v1/paper_main.py; layer 0 explained in DAN-126.
 % Figure 2 (2026-10-06): failure-anatomy.pdf, paper_main.py figure_v4; outcome shares printed by figure_v4.
 % pass-or-fails-only-mean (Z and necessity hold) by band 79.1 / 79.8 / 75.5%; fails only the mean ablations 10.0 /
 % 34.7 / 53.2%, 59% of all failing circuits; attention: fails Z 39.9%, of which 63% near-threshold.
-\Cref{fig:failure-anatomy} breaks the production run down by target layer and site: $15{,}004$ fitted circuits ($42$ targets had too few activating or silence-checked contrast contexts, and $10$ circuits with a vacuous denominator are excluded).
+% DAN-148 stage 2 (2026-10-27): the one main-result paragraph is split into verdict-first paragraphs, negatives as lead
+% sentences; per-cell numbers go to tab:main-result, whose cells wait on the v2 8k run (paper/tables/main_result.py).
+% The v1 numbers left in the text are unchanged (audit rows "Results 5.1"); the post-pod rewrite swaps them. The run's
+% skip and vacuous counts (42, 10) moved from the text to the table caption as pending cells; tab:protocol keeps them.
+% The mid-band 12% (rescore_mid.py) is brought up from app:production.
 % 2026-10-24 (paper prep, DAN-157): as run. Rebuilt-set headline (targets with >= 8 clean held-out rows) and worst case
 % (below floor = fail) go here; macros from experiments/087-intervals (e.g. \passall).
-Under the pass criterion (\cref{sec:eval}), $46\%$ of circuits pass at the production sparsity penalty \pending{rebuilt held-out headline and worst case with intervals, DAN-157}.
-They hold a median of $494$ upstream latents ($386$ for passing circuits), and $91\%$ lie within $10^{2}$--$10^{3}$ (\cref{fig:circuit-sizes}).
-The pass rate depends on the target's site and depth: $65\%$ of residual-stream, $52\%$ of MLP, and $14\%$ of attention-output targets pass, and the rate falls from $85\%$ at layer 1 to $15\%$ at layer 11.
+In the production run, WCM finds a passing circuit for $46\%$ of targets, and success falls with depth and at attention outputs (\cref{tab:main-result,fig:failure-anatomy}).
+The rate is the pass criterion of \cref{sec:eval} at the production sparsity penalty, over $15{,}004$ fitted circuits \pending{v2 8k headline, 95\% interval} (\cref{tab:main-result} also gives the rate on the pre-activation read\pending{rate}).
+Circuits hold a median of $494$ upstream latents ($386$ for passing circuits), and $91\%$ lie within $10^{2}$--$10^{3}$ (\cref{fig:circuit-sizes}).
+
 % RESTRUCTURE 2026-10-12 (DAN-161 step 6): the failure-anatomy detail (attention, layer 0), mid-band transfer and
 % sufficiency to induce moved to app:production; claims map 1, 4, 8, 9.
-Depth breaks the mean-ablation background, not sufficiency: zero ablation and necessity hold for three circuits in four or more at every depth, while the share that fail only under the two mean ablations grows from $10\%$ at layers 0--4 to $53\%$ at 8--11.
-Attention outputs are the hard case: $40\%$ of their circuits fail even zero ablation, mostly at targets that barely enter their site's Top-K.
-The full anatomy, transfer to weaker contexts, and sufficiency to induce are in \cref{app:production}.
-Most circuits are specific to their target: under Z, A, and C the target is restored to a median $0.94$, $0.99$, and $0.92$ of its pre-activation and its co-firing siblings to $0.26$, $0.46$, and $0.41$, while a minority ($30\%$) are flagged as amplifiers, which is why specificity is reported for every circuit (\cref{app:specificity}).
+Attention outputs are the main failure: $14\%$ of attention-output targets pass, against $65\%$ of residual-stream and $52\%$ of MLP targets, and $40\%$ of their circuits fail even zero ablation, mostly at targets that barely enter their site's Top-K (\cref{app:production}).
+Depth breaks the mean-ablation background, not sufficiency: the pass rate falls from $85\%$ at layer 1 to $15\%$ at layer 11, yet zero ablation and necessity hold for three circuits in four or more at every depth, while the share that fail only under the two mean ablations grows from $10\%$ at layers 0--4 to $53\%$ at 8--11 (\cref{app:production}).
 
-\paragraph{Random circuits.}
+Production circuits transfer only in part to weaker contexts: on held-out mid-band contexts $12\%$ pass, so a circuit is a circuit for the regime it was fitted in (\cref{app:production}).
+Most are specific to their target, though $30\%$ are flagged as amplifiers: the target is restored to a median $0.92$--$0.99$ of its pre-activation under Z, A, and C, and its co-firing siblings to $0.26$--$0.46$ (\cref{app:specificity}).
+
+\begin{table}[t]
+\begin{minipage}[c]{0.645\linewidth}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.92}
+% DAN-148 (2026-10-27): caption beside the table for the page budget. Every cell is written by paper/tables/main_result.py from the v2 8k run
+% (experiments/094-tl-v2-records/out_v2); it was validated on the v1 15k run (062 out_full/out), whose numbers are NOT
+% for this table. Columns: n non-vacuous circuits; post-Top-K pass % [95% Wilson]; pre-activation pass % (protocol
+% section 12.1, baseline 0); median Z / A / C; median necessity; median size.
+\newcommand{\mrrow}{& \pendingcell & \pendingcell & \pendingcell & \pendingcell & \pendingcell & \pendingcell & \pendingcell & \pendingcell \\}
+\begin{tabular}{llrcrrrrrr}
+\toprule
+& & & \multicolumn{2}{c}{\textbf{pass (\%)}} & \multicolumn{3}{c}{\textbf{faithfulness}} & & \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-8}
+\textbf{Site} & \textbf{Layers} & $n$ & \textbf{activation} [95\% CI] & \textbf{pre-act.} & Z & A & C & $\phisup$ & \textbf{size} \\
+\midrule
+residual & 0--4 \mrrow
+ & 5--7 \mrrow
+ & 8--11 \mrrow
+\addlinespace[1pt]
+MLP & 0--4 \mrrow
+ & 5--7 \mrrow
+ & 8--11 \mrrow
+\addlinespace[1pt]
+attention & 0--4 \mrrow
+ & 5--7 \mrrow
+ & 8--11 \mrrow
+\midrule
+all & 0--11 \mrrow
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.335\linewidth}\small
+\caption{Pass rates fall with depth at every site kind and are lowest at attention outputs.
+Production run: circuits ($n$, without \pendingcell{} targets lacking contexts and \pendingcell{} vacuous ones), pass rate on the activation read [$95\%$ Wilson] and the pre-activation read (\cref{app:production}), and medians of held-out Z, A, C, necessity, and size.}
+\label{tab:main-result}
+\end{minipage}
+\end{table}
+
+\paragraph{Random circuits of the same size fail.}
 % The old panel's range (0 to 4.9e4, median ~21) was on the pre-activation read and is not quoted.
 % DAN-17 (2026-10-05): 062 random_null.py, OUT_RN=out_random_scale, REPORT=1. 747 targets (249 per site kind,
 % stratified by depth band x kind), one draw each, matched to the production circuit's size site by site (median
@@ -402,28 +464,33 @@ Most circuits are specific to their target: under Z, A, and C the target is rest
 % softplus(softplus^-1(1)(1 - 0.05*0.05)^400), the gradient-free AdamW value; train-split Z median 0.00, 0.4% reach 0.8).
 % The "properties of the selected node set" conclusion was cut: this null cannot show it. The old DAN-40/41 \pending
 % here is folded into the harder-null \pending (all three models).
-Random circuits of the same size as each target's circuit, drawn from latents active on its strongest training contexts and given the same coefficient fitting, failed on all $747$ targets of a stratified sample, against $43\%$ for the fitted circuits on the same targets.
-Their median faithfulness is $0.00$ under every ablation method at every depth, only one has even a single score in the pass band, and none induces the target to half its level in contrast contexts.
+% DAN-148 (2026-10-27, page budget): the sentence on the null's medians (0.00, one in band, none induces to half) moved
+% to app:nulls, values unchanged.
+On a stratified sample of $747$ production targets, random circuits of the same size as each target's circuit, drawn from latents active on its strongest training contexts and given the same coefficient fitting, failed on every target, against $43\%$ for the fitted circuits (\cref{app:nulls}).
 This null is weak, however: its coefficients barely move (median exactly $0.798$, the value weight decay alone reaches), and it fails on its training contexts too, so it shows that unrelated latents cannot be fitted, not that the selection matters; the harder nulls test that \pending{harder-null pass rates on all three models, fitted and at $\alpha = 1$, DAN-181}.
 
-\paragraph{An operating point, not a ceiling.}
+\paragraph{The pass rate is an operating point, not a ceiling.}
 % Pooled 190-target sweep pass rates by penalty: app:weighted-details (paper_sweep.py).
-The $46\%$ is the pass rate at one sparsity penalty and one training budget.
-Weaker penalties give larger circuits that pass more often ($31\%$ of the $190$ sweep targets at $\lambda = 4 \times 10^{-3}$, $58\%$ at $2.5 \times 10^{-4}$, with the median circuit growing from $218$ to $1{,}103$ latents; \cref{sec:weighted}), and at the 400-step budget most circuits are still shrinking (\cref{fig:training-curves}), so reported sizes are sizes at a fixed budget.
+% DAN-148 (2026-10-27): the unconverged budget leads; depth framing added ("deeper targets need larger circuits"),
+% its per-band numbers pending the v2 sweep (DAN-131 v1 evidence stays out of the body).
+The 400-step budget has not converged: most circuits are still shrinking at its end (\cref{fig:training-curves}), so sizes and the $46\%$ hold at that budget and one sparsity penalty.
+Weaker penalties give larger circuits that pass more often ($31\%$ of the $190$ sweep targets at $\lambda = 4 \times 10^{-3}$, $58\%$ at $2.5 \times 10^{-4}$, with the median circuit growing from $218$ to $1{,}103$ latents; \cref{sec:weighted}), and deeper targets need larger circuits \pending{v2 sweep: size, rate, $n$, CI by band}.
 
 \begin{figure}[t]
 \centering
 % Data: experiments/062-h100-protocol-v1 (DAN-75 full run); paper_main.py figure_v4 (2026-10-06).
 \includegraphics[width=\linewidth]{failure-anatomy.pdf}
-\caption{How the weighted circuits of $14{,}994$ TuringLLM latents (the run's non-vacuous circuits) fare at the production sparsity penalty, by target layer and site kind.
+% DAN-148 (2026-10-27): finding first, qualitative (the v2 refit changes every number).
+\caption{Pass rates fall with depth and are lowest at attention outputs; with depth, failing circuits increasingly fail only the two mean ablations.
+Outcomes of the weighted circuits of $14{,}994$ TuringLLM latents (the production run's non-vacuous circuits) at the production sparsity penalty, by target layer and site kind.
 % 2026-10-24 (Daniel): "pre-stated" dropped here and in the contributions; the rule was fixed on stage 1 of the run.
-Each circuit is counted once: it passes (faithfulness under Z, A, and C in $[0.8, 1.5]$ and necessity $\geq 0.9$, on held-out contexts); fails only the mean ablations (A, C, or both) while zero ablation and necessity hold; fails zero ablation while necessity holds; fails necessity; or has an undefined score ($3\%$, counted as a fail).
-Numbers on the bars are pass rates (\%), and panel titles give each site kind's overall pass rate; layer-0 attention outputs have no upstream site.}
+Each circuit is counted once: it passes (the criterion of \cref{sec:eval}); fails only the mean ablations (A, C, or both) while zero ablation and necessity hold; fails zero ablation while necessity holds; fails necessity; or has an undefined score ($3\%$, counted as a fail).
+Bar numbers are pass rates (\%), and panel titles give each site kind's overall pass rate; layer-0 attention has no upstream site.}
 \label{fig:failure-anatomy}
 \label{fig:main-result}
 \end{figure}
 
-\paragraph{Beyond TuringLLM.}
+\paragraph{The same pipeline runs on two public models.}
 % Skeleton for the public-model runs (DAN-40/41) through the shared engine
 % (DAN-34/35/36). The 033 Pythia pilot numbers are do-not-quote (DAN-38/65);
 % dense ReLU dictionaries are out of scope (Limitations; data in experiments/030).
@@ -431,49 +498,48 @@ Numbers on the bars are pass rates (\%), and panel titles give each site kind's 
 % §0: F1 corpora, F3 frame, F5 lambda rule, F6 nulls, F7 arms; D8 TF32). "unchanged" dropped: lambda is set per model
 % by the pre-stated size rule, and precision differs. The old DAN-40/41 \pending of sec:weighted (alpha = 1) and of
 % the random-circuit paragraph are folded into the placeholder below and the harder-null one.
-The same protocol is applied to two public models with public \emph{Top-K} dictionaries: EleutherAI's $k{=}16$, $32{,}768$-latent dictionaries for Pythia-70m~\citep{biderman2023pythia} and OpenAI's $k{=}32$, $32{,}768$-latent dictionaries~\citep{gao2024scaling} for GPT-2 small~\citep{radford2019language}, at every layer (sites in \cref{tab:protocol}).
-Only the model and dictionary adapters differ; discovery, the ablation methods, the contrast contexts, and every score run through the same code as on TuringLLM.
-Each model gets $512$ random targets, a sparsity penalty set by a size-only rule stated before a pilot, and TF32 fits (frame, corpora and rule in \cref{tab:protocol}).
-\pending{Pythia-70m and GPT-2 small: adopted $\lambda$, pass rate with interval and median size by depth band and site kind, the $\alpha = 1$ re-score, unweighted masking on Pythia-70m, DAN-40/41}
+Pythia-70m~\citep{biderman2023pythia} and GPT-2 small~\citep{radford2019language} get public \emph{Top-K} dictionaries at every layer, EleutherAI's ($k{=}16$) and OpenAI's ($k{=}32$; \citealp{gao2024scaling}), both with $32{,}768$ latents (model cards in \cref{app:corpus}); only the model and dictionary adapters differ, and discovery, the ablations, the contrast contexts, and every score run through the same code as on TuringLLM.
+Each model gets $512$ random targets, a sparsity penalty set by a size-only rule, and TF32 fits (frame, corpora and rule in \cref{tab:protocol}).
+\pending{public models, DAN-40/41: $\lambda$; pass rate, CI, size by band and kind; $\alpha = 1$; unweighted (Pythia)}
 
-\subsection{Why the Coefficients Matter}
+\subsection{Fitted Coefficients Make Faithful Circuits Several Times Smaller}
 \label{sec:weighted}
 % BUDGET 1.0 pp. Panel: experiments/029-panel (pre-v1, refit under DAN-16).
 % Running example: experiments/032-running-example.
 
-Three versions of each circuit separate what the nodes contribute from what the coefficients contribute: the weighted circuit as fitted, the same nodes at natural scale ($\alpha = 1$), and a random circuit of the same size given the same coefficient fitting (\cref{sec:eval}).
-% DAN-20 (2026-10-03 / 10-06): 062 rescore_alpha1.py (REPORT=1), 1,746 production circuits re-scored with every
-% alpha = 1, paired; by band fitted 66 / 44 / 20% -> alpha = 1 4 / 0 / 0%. Random arm: DAN-17 (Random circuits,
-% below). Members alone: member_restoration.py (app:weighted-details, fig:coef-members).
-On $1{,}746$ circuits sampled from the production run, the weighted circuits pass for $44.7\%$ of targets and the same nodes at natural scale for $1.5\%$: median faithfulness falls from $0.94$, $0.95$, and $0.89$ to $0.00$, $0.09$, and $0.06$ under Z, A, and C, and at natural scale no depth band passes more than $4\%$ of its targets (\cref{fig:coef-triad}).
-% 2026-10-24 (paper prep, DAN-181): "an arbitrary one" rests on the DAN-17 null only; revisit after the harder nulls.
-Random circuits given the same coefficient fitting pass for none (\cref{sec:main-result}), so the fitted coefficients are necessary but not sufficient: they make a selected node set faithful, not an arbitrary one.
-% RESTRUCTURE 2026-10-12 (DAN-161 step 6): member restoration (claims map 3), the natural-scale attribution cost,
-% the shared-penalty comparison and "the coefficients carry causal weight" moved to app:weighted-details.
-How the coefficients act, by compensating for the ablated environment rather than restoring members to their natural values, is in \cref{app:weighted-details}.
-% 2026-10-24 (paper prep): the DAN-40/41 \pending here is folded into the "Beyond TuringLLM" placeholder.
+% DAN-148 stage 3 (2026-10-27): reordered to lead with the complete sweep (claim 2), then the alpha = 1 re-score and
+% the random null. Moved, values unchanged: the within-1e3 rates, the full run's dotted levels (69 / 45 / 22%) and the
+% shared-penalty rates (already in app:weighted-details) to app:weighted-details; the alpha = 1 medians to the triad
+% paragraph. No pre-v1 item is left in this subsection (the old ones were cut or moved on 2026-10-12), so there is no
+% pre-v1 paragraph to gather.
 % 062 sweep (DAN-76, 2026-09-27), experiments/062-h100-protocol-v1/paper_sweep.py (prints every number here).
-% Body figure (2026-09-28, DAN-133 session): pass rate under the DAN-8 rule at the production penalty (left) and the
-% pass-rate / size frontier at layers 8-11 (right). The per-score Z / A / C medians (the 2026-09-27 body figure) moved
-% to the appendix as fig:wcm-vs-unweighted-zac; the all-band frontier is fig:wcm-vs-unweighted-frontier.
-Unweighted circuit masking isolates what the coefficients buy: the same objective and optimiser with $\alpha$ held at $1$.
 % Figure 3 (2026-10-06): budget-curves.pdf, paper_main.py figure_budget. 190 sweep targets; WCM at eight penalties
 % (sweep_rows.csv + out_bands / out_depth / out_lowlam), unweighted at five. Ever pass: WCM 88 / 85 / 80%, unweighted
 % 82 / 71 / 41%; within 1e3 latents: WCM 82 / 48 / 27%, unweighted 63 / 0 / 2%. Smallest passing circuit among targets
 % both pass: 127 vs 514 (3.7x, 62 targets), 457 vs 6,350 (9.6x, 34), 906 vs 13,075 (10.5x, 26). On the five-penalty
 % WCM grid alone the deep ratio was 14.1x over 20 targets (app:weighted-details).
-\Cref{fig:budget} follows $190$ targets across a sweep of sparsity penalties and asks, for a budget of $N$ latents, what share of targets have a passing circuit that small.
-Weighted circuits explain more targets at every budget, and keep explaining more as the budget grows: within $10^{3}$ latents they pass for $82\%$, $48\%$, and $27\%$ of targets at layers 0--4, 5--7, and 8--11, against $63\%$, $0\%$, and $2\%$ for unweighted circuits, and over the whole sweep for $88\%$, $85\%$, and $80\%$, against $82\%$, $71\%$, and $41\%$ even with unweighted circuits of up to ${\sim}2 \times 10^{5}$ latents.
+On the $190$ sweep targets, weighted circuits explain more targets than unweighted ones at every circuit budget, and the gap grows with depth (\cref{fig:budget}).
+Unweighted circuit masking isolates what the coefficients buy: the same objective, fill, and optimiser with every $\alpha$ fixed at exactly $1$.
 Where both methods pass, the smallest unweighted circuit is larger by a median per-target factor of $3.7\times$ at layers 0--4, $9.6\times$ at 5--7, and $10.5\times$ at 8--11, where it holds ${\sim}10^{4}$ latents (median $13{,}075$ against $906$).
-The production penalty is one point on the weighted curves: the full run, fitted at that penalty alone, levels off at $69\%$, $45\%$, and $22\%$ (dotted), while weaker penalties carry the same targets much further.
-At that shared penalty unweighted circuits pass $54\%$ against $64\%$ at layers 0--4 but $2.1\%$ and $1.5\%$ against $38\%$ and $18\%$ at layers 5--7 and 8--11 (\cref{app:weighted-details}).
+Unweighted circuits of up to ${\sim}2 \times 10^{5}$ latents never catch up at depth: over the whole sweep weighted circuits pass for $88\%$, $85\%$, and $80\%$ of targets by band, against $82\%$, $71\%$, and $41\%$ \pending{v2 $n$, CI}; the rates within $10^{3}$ latents, and at the production penalty alone, are in \cref{app:weighted-details}.
+
+% DAN-20 (2026-10-03 / 10-06): 062 rescore_alpha1.py (REPORT=1), 1,746 production circuits re-scored with every
+% alpha = 1, paired; by band fitted 66 / 44 / 20% -> alpha = 1 4 / 0 / 0%. Random arm: DAN-17 (Random circuits,
+% below). Members alone: member_restoration.py (app:weighted-details, fig:coef-members).
+% 2026-10-24 (paper prep, DAN-181): "an arbitrary one" rests on the DAN-17 null only; revisit after the harder nulls.
+Without their fitted coefficients the same nodes almost never pass: on $1{,}746$ circuits sampled from the production run, the weighted circuits pass for $44.7\%$ of targets and the same nodes at natural scale ($\alpha = 1$) for $1.5\%$, with no depth band above $4\%$ (\cref{fig:coef-triad}).
+Random circuits given the same coefficient fitting pass for none (\cref{sec:main-result}), so we interpret the fitted coefficients as necessary but not sufficient: they make a selected node set faithful, not an arbitrary one.
+% RESTRUCTURE 2026-10-12 (DAN-161 step 6): member restoration (claims map 3), the natural-scale attribution cost,
+% the shared-penalty comparison and "the coefficients carry causal weight" moved to app:weighted-details.
+% 2026-10-24 (paper prep): the DAN-40/41 \pending here is folded into the "Beyond TuringLLM" placeholder.
+How the coefficients act, compensating for the ablated environment rather than restoring natural values, is in \cref{app:weighted-details}.
 
 \begin{figure}[t]
 \centering
 % Data: experiments/062-h100-protocol-v1 sweep + out_bands / out_depth / out_lowlam; paper_main.py figure_budget.
 \includegraphics[width=\linewidth]{budget-curves.pdf}
-\caption{Fitted coefficients explain more targets at every circuit budget.
-For each target depth band, the share of $190$ sweep targets with a circuit of at most $N$ upstream latents that passes the criterion of \cref{sec:eval} (faithfulness under Z, A, and C in $[0.8, 1.5]$ and necessity $\geq 0.9$, on held-out contexts), taking each target's smallest passing circuit over the sparsity penalties it was fitted at: weighted circuit masking (blue) at eight penalties, $\lambda$ from $4 \times 10^{-3}$ to $2.5 \times 10^{-5}$, and unweighted circuit masking ($\alpha = 1$, grey) at five, $10^{-3}$ to $10^{-5}$.
+\caption{Fitted coefficients explain more targets at every circuit budget, and under both methods deeper targets need larger circuits.
+For each target depth band, the share of $190$ sweep targets with a circuit of at most $N$ upstream latents that passes the criterion of \cref{sec:eval}, taking each target's smallest passing circuit over the sparsity penalties it was fitted at: weighted circuit masking (blue) at eight penalties, $\lambda$ from $4 \times 10^{-3}$ to $2.5 \times 10^{-5}$, and unweighted circuit masking ($\alpha = 1$, grey) at five, $10^{-3}$ to $10^{-5}$.
 Targets that never pass count as unexplained; shading is a $90\%$ bootstrap interval over targets, and each curve ends at the largest circuit fitted.
 Dotted: the full run (${\sim}15{,}000$ targets) at the production penalty alone, which levels off at that penalty's pass rate.}
 \label{fig:budget}
@@ -481,7 +547,7 @@ Dotted: the full run (${\sim}15{,}000$ targets) at the production penalty alone,
 % Running example, protocol v1 (2026-10-03): 062 out_case sweep (chain_case_sweep.sh), eval.shard0.jsonl.
 % W 1e-3: 728 latents, Z/A/C 0.98/1.11/0.90 pass; W 5e-4: 935, A 0.57 FAIL; W 2.5e-4: 1,551 pass.
 % U 1e-3..1e-5: 1,105 / 3,003 / 5,987 / 12,387 / 24,837 latents, all fail (A 0.31-0.71).
-For the running example, the weighted circuit passes with $728$ latents, while unweighted circuit masking on the same target fails at every penalty we tried, up to $24{,}837$ latents, where its activating-mean faithfulness is still $0.71$.
+For the running example, the weighted circuit passes with $728$ latents, while unweighted masking fails at every penalty we tried, up to $24{,}837$ latents (activating-mean faithfulness $0.71$).
 
 % Figure 4 (sec:case-study) is placed here in the source so that it floats to the top of the page where
 % sec:case-study begins; a [t] float defined after the section's text waits for the next page.
@@ -489,7 +555,7 @@ For the running example, the weighted circuit passes with $728$ latents, while u
 \centering
 % Data: experiments/063-case-studies/case_study.py; figure: case_figure.py.
 \includegraphics[width=\linewidth]{case-study.pdf}
-\caption{The weighted circuit of a latent for classical Greek antiquity (layer 9, residual stream; \cref{sec:case-study}).
+\caption{A passing circuit has a readable core: the weighted circuit of a latent for classical Greek antiquity (layer 9, residual stream; \cref{sec:case-study}).
 \textbf{(a)}~The readable core: role groups among the circuit's $60$ largest contributors, named from their latents' own top contexts, with each group's size, layers, and share of the circuit's contribution at the target's anchor.
 Arrows give the drop in the destination when the source group is removed, under activating-mean ablation; the two left-hand groups also lower the target directly, by $0.11$ and $0.12$.
 The dashed grey group fires about as much on contrast contexts.
@@ -499,13 +565,14 @@ Not drawn: a generic core of $7$ latents and $682$ further latents, together $55
 \label{fig:case-study}
 \end{figure}
 
-\paragraph{Attribution at matched size.}
+\paragraph{Attribution patching ranks latents closer to exact patching than IG.}
 % RESTRUCTURE 2026-10-11 (DAN-161 step 2): the method comparison (was 5.4, Table 2) moved to app:method-comparison.
 % 2026-10-24 (paper prep, DAN-159/DAN-77): the pre-v1 22-target sentence and its \pending are replaced. Exact-patching
 % numbers: experiments/083-v1-comparison/exact_report.log (10 targets, training contexts, so unaffected by DAN-157).
-On the $190$ sweep targets, \cref{app:method-comparison} compares WCM with attribution patching (AtP), integrated gradients (IG), hierarchical attribution, and ranked members given fitted coefficients, at every size each produces; against exact patching, AtP ranks latents better than IG (median rank correlation $0.86$ against $0.71$) \pending{verdict, DAN-159 and DAN-77}.
+% DAN-148 (2026-10-27): the verdict moved into the heading; source labels (ten targets, 190 sweep targets) made explicit.
+On ten targets with exact patching, the median rank correlation with the exact effect is $0.86$ for attribution patching (AtP) and $0.71$ for integrated gradients (IG); on the $190$ sweep targets, \cref{app:method-comparison} compares both, hierarchical attribution, and ranked members given fitted coefficients with WCM at every size each produces \pending{verdict, DAN-159 and DAN-77}.
 
-\subsection{A Circuit for Classical Antiquity}
+\subsection{A Circuit for Classical Antiquity Has a Readable Core}
 \label{sec:case-study}
 % DAN-138 / DAN-149 (2026-10-03). Every number: experiments/063-case-studies/case_study.py ->
 % results_case/9.resid.20419.json (probes, group edges, knock-outs); figure: case_figure.py. Groups are named from
@@ -513,7 +580,7 @@ On the $190$ sweep targets, \cref{app:method-comparison} compares WCM with attri
 % Years as % of the reference 29.49: 800-200 BC 41-53%, 100 BC 33%, 5000-1000 BC 18-31%, AD 300-800 18-23%,
 % AD 1000-1900 0%. Story share = 4.2 + 9.4 + 13.1 = 26.7% of the positive contribution.
 
-The running example shows what a passing circuit contains.
+We open the running example's circuit to show what a passing circuit contains.
 Its target, a layer-9 residual-stream latent, fires where a passage places its subject in classical Greek antiquity, and its logit effect promotes ``Arist'', ``Spart'', ``Ath'', and ``Greek''.
 It tracks era and place rather than a word: completing ``In [year], the scholar lived in the city of'', it reaches $41$--$53\%$ of its typical activation for 800--200~BC, $18$--$31\%$ for older dates, and at most $6\%$ from AD~1000 on, and for places it gives ancient Athens $91\%$, Rome $51\%$, Egypt $32\%$, and medieval France $0\%$ (\cref{fig:case-study}b,c).
 
@@ -524,8 +591,8 @@ Its weighted circuit holds $728$ latents and passes in the production run (Z, A,
 Grouping its $60$ largest contributors by their own top contexts gives a readable core (\cref{fig:case-study}a).
 Ten latents at layers 7--9 respond to classical Greece itself (Athens, Sparta, Socrates, Thales) and carry $13\%$ of the circuit's contribution; removing them takes the target to $0.29$, $0.22$, and $0.32$ under Z, A, and C, against $0.67$, $1.00$, and $0.78$ when as many random members of similar contribution rank are removed (\cref{fig:case-study}d).
 Upstream, latents for dates and eras feed latents for early civilisations (Egypt, Sumer, Babylon), and both feed the classical group: removing the dates group lowers the early-civilisation group by $22\%$ and the classical group by $10\%$.
-Latents for philosophy and rhetoric, the subject matter of the target's training contexts, matter little.
-Removing all $21$ latents of the three story groups, $3\%$ of the circuit, takes the target to $0.20$, $0.20$, and $0.19$ (random: $0.49$, $0.98$, $0.74$).
+Latents for philosophy and rhetoric, the subject of the target's training contexts, matter little.
+Removing all $21$ story-group latents, $3\%$ of the circuit, takes the target to $0.20$, $0.20$, and $0.19$ (random: $0.49$, $0.98$, $0.74$).
 
 The core is a reading, not the whole circuit: the story groups carry $27\%$ of the contribution and $682$ further latents most of the rest, and ``BC'' alone partly triggers the target (``The BC Lions'' reaches $44\%$).
 The circuit is also flagged as an amplifier under activating-mean ablation, restoring co-firing latents almost as well as the target, although it lifts only $104$ latents above the Top-K cut against a run median of $578$ under the same ablation (\cref{app:specificity}).
@@ -538,20 +605,33 @@ Five further cases, including a latent for names that carry a physical law, are 
 % ("no held-out split", panel sizes) and merged.
 
 \paragraph{Circuit size is a measurement at a stated scaling convention.}
-At natural scale a latent's circuit is large for deep targets (\cref{sec:weighted}), and in (pre-v1) attribution node sets every latent is individually removable at the noise level while bulk removal craters the target (\cref{sec:drivers-closure}).
-A latent's activation, reached through an additive residual stream, is a dense function of many small contributions, so any rule that thresholds individual contributions undercounts it however the threshold is tuned.
+At natural scale a latent's circuit is large for deep targets (\cref{sec:weighted}), and in attribution node sets every latent is individually removable at the noise level while bulk removal craters the target (\cref{sec:drivers-closure}).
+% DAN-182: revisit if the drivers-closure rerun changes the result
+% (DAN-31, reading C: compensation framing; Kendiukhov 2026b is NOT support, its joint ablations are subadditive.)
+This is the pattern compensation predicts: other components make up part of an ablated one's effect~\citep{mcgrath2023hydra, rushing2024explorations}, backups act only once a primary set is removed~\citep{gong2026conditional}, and attribution graphs need a group of features perturbed together~\citep{ameisen2025circuit}.
+% DAN-182 end
+We hypothesise that a latent's activation, reached through an additive residual stream, is a dense function of many small contributions, in which case any rule that thresholds individual contributions undercounts it however the threshold is tuned.
 We interpret most of that collective tail as redundancy that fewer, rescaled latents can carry, since fitted coefficients remove it (\cref{fig:budget}); a circuit's size is therefore meaningful only alongside whether its coefficients were fitted.
+% DAN-182: revisit if the drivers-closure rerun changes the result
+Fitted to replace an ablated complement, coefficients over-drive the target once it returns (median $2.16$ for residual-stream circuits; \cref{app:resample}), the fitted counterpart of self-repair's overcorrection~\citep{rushing2024explorations}.
+% DAN-182 end
 
 \paragraph{Ablation methods are part of the method.}
-\citet{miller2024transformer} showed that faithfulness is not robust to the choice of ablation; our measurements push the point into training.
+\citet{miller2024transformer} showed that faithfulness, and even which circuit is optimal, depends on the ablation method; we train one circuit against several at once, and our measurements show the same dependence in training.
 % AUDIT 2026-10-12 (DAN-161 step 10): the pre-v1 Jaccard 0.13 vs 0.54 clause was removed here; its two pairs are
 % hand-picked and size-confounded (app:single-method now says so). Replaced by the v1 contrast-source result.
-The home-turf effect (\cref{sec:method-comparison}), the contrast contexts behind the C ablation changing how far a circuit generalises (\cref{app:contrast-source-v1}), the miscalibration of coefficients trained without zero ablation (\cref{sec:ablmask}), and circuits that fail a resample test until trained against one (\cref{app:resample}) all say the same thing: the ablation methods used for discovery, training, and evaluation belong in the method statement.
-Equivalence classes of node sets, and composing circuits into chains, are discussed in \cref{app:underdetermination}.
+Methods winning under their own ablation (\cref{sec:method-comparison}), the contrast contexts behind the C ablation changing how far a circuit generalises (\cref{app:contrast-source-v1}), the miscalibration of coefficients trained without zero ablation (\cref{app:single-method}), and circuits that fail a resample test until trained against one (\cref{app:resample}) all point the same way: the ablation methods used for discovery, training, and evaluation belong in the method statement, as they do for output circuits~\citep{mueller2025mib, mahale2026explanation}.
+Equivalence classes of node sets, and composing circuits into chains, are in \cref{app:underdetermination}.
 
 \paragraph{Node sets are samples; function is stable.}
 % RESTRUCTURE 2026-10-12 (DAN-161 step 4): the non-identifiability subsection moved to app:underdetermination.
 Refitting a target with its training contexts in a different order, on a different GPU, gives a circuit that is about a fifth smaller, passes about as often, and shares a median $64\%$ of the original's latents, and the shared core alone passes on $48$ of the $56$ targets where both fits pass (\cref{app:underdetermination}); we therefore treat sizes and functional scores, not individual memberships, as properties of the target.
+
+\paragraph{Latent targets reduce the experimenter's choice of what to explain.}
+% DAN-151 (2026-10-27): framing point (Daniel, 2026-09-30). No named "no token expression" example: the three
+% internal-looking case-study targets all write strongly to the unembedding (experiments/096-no-token-latent).
+Sampled targets surfaced variables no task set of ours would have contained, such as names that carry a law and a date read as classical antiquity (\cref{sec:case-study,app:case-studies}), while no latent we examined checks whether a stated fact is correct.
+The bias moves rather than vanishes: which variables exist depends on the dictionary~\citep{leask2025canonical}, and reading a latent still relies on human interpretation.
 
 \paragraph{Recommendations.}
 % DAN-151 / DAN-161 step 8 (2026-10-12): conditional advice collected from the results, AtP*-style.
@@ -581,23 +661,23 @@ An attention latent draws most of its signal from other token positions, while a
 Position-specific membership, or a separate latent set for the source positions, may lower that cost; we have not tested either.
 
 \textbf{Circuits are fitted to one regime and one budget.}
-Circuits fitted mostly to strong contexts transfer only in part to weaker ones ($12\%$ pass on held-out mid-band contexts), and at the 400-step budget most are still shrinking, so pass rates and sizes describe a stated operating point (\cref{app:production}, \cref{fig:training-curves}).
+Circuits fitted mostly to strong contexts transfer only in part to weaker ones ($12\%$ pass on held-out mid-band contexts), and at the 400-step budget most are still shrinking, so pass rates and sizes describe a stated operating point (\cref{app:production}).
 
 \textbf{Faithfulness holds under the ablations a circuit was trained against.}
-When everything outside the circuit takes its value on another real context, as in causal scrubbing, $0.1\%$ of circuits pass; training against such backgrounds raises this to $30\%$ on $99$ targets (\cref{app:resample}).
+When everything outside the circuit takes its value on another real context, as in causal scrubbing, almost no circuits pass; training against such backgrounds as well raises this to $24\%$ on $72$ targets without a significant loss on the production test ($69\%$ to $62\%$; \cref{app:resample}).
 
 \textbf{Faithful at the anchor, not at every position.}
 Read at every position, deep circuits under zero ablation also fire on most contrast-context positions where the target is silent ($74\%$ at layers 8--11), so a circuit explains the target where it fires rather than simulating it everywhere (\cref{app:resample}).
 
 \textbf{Faithfulness does not imply specificity.}
-A circuit can restore its target by lifting its whole neighbourhood; the rank-keep term limits the lifts that overtake the target but does not remove such circuits ($30\%$ are flagged), so specificity is measured rather than claimed.
+A circuit can restore its target by lifting its neighbourhood; rank-keep limits lifts past the target but does not remove such circuits ($30\%$ are flagged).
 
 % APPENDIX CUTS 2026-10-12 (tier 3, Daniel 1a): the wiring limitation was cut with the direct-effect-edges appendix.
 \textbf{Contrast contexts.}
 Contrast contexts are verified silent only in that the target stays out of its Top-K, and ``close'' is one of several defensible constructions; circuits trained on close contexts pass less often when evaluated on distant ones than circuits trained on random contexts (\cref{app:contrast-source-v1}).
 
 \textbf{Generality.}
-TuringLLM's synthetic corpus aids control but limits generality, which the two public models partly address; larger models remain open, and the method is scoped to Top-K dictionaries: on dense ReLU dictionaries it replicates, but a random-circuit baseline with fitted coefficients stops discriminating once a set spans the anchors (pre-v1, six targets; \cref{app:dense-relu}).
+TuringLLM's synthetic corpus aids control but limits generality, which the two public models partly address; larger models remain open, and the method is scoped to Top-K dictionaries: on dense ReLU dictionaries it replicates, but a random-circuit baseline with fitted coefficients stops discriminating once a set spans the anchors (six targets; \cref{app:dense-relu}).
 
 \section{Conclusion}
 % BUDGET 0.25 pp.
@@ -609,7 +689,7 @@ We asked what makes an internal latent fire, and answered with weighted circuit 
 Two results carry the paper.
 Circuits for arbitrary latents can be found at scale and tested strictly: at a penalty that yields $10^{2}$--$10^{3}$ upstream latents, $46\%$ of ${\sim}15{,}000$ randomly sampled TuringLLM latents get a circuit that is faithful under three ablations and necessary on held-out text, while random circuits of the same size and fitting fail on all $747$ targets tested.
 And fitted coefficients are what keep those circuits small: without them, deep circuits are about $10\times$ larger, and half as many deep targets pass at any size we tried.
-Because the targets are sampled rather than chosen, the results describe a model's internal variables as a population, not a few tasks we thought to ask about; and because a circuit's size depends on whether its coefficients were fitted, a claim that some computation is dense or sparse needs its scaling convention stated.
+Because the targets are sampled rather than chosen, the results describe a population of internal variables, as recovered by one dictionary, rather than a few tasks we thought to ask about; and because a circuit's size depends on whether its coefficients were fitted, a claim that some computation is dense or sparse needs its scaling convention stated.
 Circuits for single latents are a building block: composing them into chains, with propagation tested at every link, is the path from dependencies to a map of the model's internal computation.
 % End of the main body: build.ps1 reports this label's page. Target: the main
 % body ends on page 12 or earlier (DAN-24).
@@ -627,84 +707,60 @@ TuringLLM, its synthetic training corpus, and the trained SAE bank are described
 \crefalias{subsection}{appendix}
 \crefalias{subsubsection}{appendix}
 
-\section{Corpus and Model Details}
+\section{Model Cards}
 \label{app:corpus}
+% 2026-10-27 (DAN-28): the four-subsection "Corpus and Model Details" appendix (corpus construction, architecture
+% table, loss curve, fitness grades, sample completions) is condensed to this card; removed text verbatim in
+% paper/resources/dan28-removed-appendix.md. Public-model facts: src/model/families.py, protocol-v1.md §9.2,
+% Linear DAN-35 comments; public SAE quality: experiments/070-public-model-adapters/recon_*.json.
 
-\subsection{A Corpus Built by Design}
+\Cref{tab:model-cards} gives what the results depend on for each model.
+TuringLLM follows the GPT residual-stream design with SwiGLU MLPs and RMSNorm; it is meant as a subject whose training data is fully known, not as a strong model.
+The public models and dictionaries are used as released, read at the hook points the dictionaries were trained on.
 
-The synthetic corpus was constructed in two stages.
-The first produced a relatively small but high-quality foundation: Phi-3 Mini~\citep{abdin2024phi3}, a 3.8B-parameter language model available under a permissive licence, generated instructional and educational text spanning 18 broad subject areas (Physics, Mathematics, Computer Science, Chemistry, Biology, Philosophy, English, Creative Writing, Languages, Art, Music, Engineering, Economics, Business, Geography, History, Culinary Arts, and Communication), recursively generating topics and sub-topics and producing structured documents of headings and text.
-
-The second stage addressed scale.
-A fine-tuned T5-based paraphrase model~\citep{vorobev2023paraphraser, raffel2020exploring} expanded the corpus by generating 11 paraphrased variants of each source document, motivated by knowledge distillation results~\citep{ba2014deep, hinton2015distilling} suggesting that varied outputs of a stronger teacher can be advantageous over raw data alone.
-The final corpus totals approximately 2 billion tokens.
-
-Two tokenized datasets were derived using the Phi-3 Mini tokenizer.
-The language-modelling training set combines original and augmented texts shuffled into epochs, concluding with a second pass over only the high-quality originals to consolidate representations around the cleaner signal.
-% 2026-10-23 (DAN-28): was "4,096 shards"; data/ holds shard_0 .. shard_3029 (3,030 files, contiguous).
-The interpretability dataset consists of 64-token chunks shuffled into 3,030 shards, allowing the pipeline to process one shard at a time with a bounded memory footprint.
-
-\subsection{Architecture and Training}
-
-\begin{table}
+\begin{table}[!ht]
 \centering
-\begin{tabular}{ll}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
 \toprule
-\textbf{Attribute}         & \textbf{Value}  \\
+ & \textbf{TuringLLM-1.0-254M} & \textbf{Pythia-70m}~\citep{biderman2023pythia} & \textbf{GPT-2 small}~\citep{radford2019language} \\
 \midrule
-Parameters                 & 254M            \\
-Layers                     & 12              \\
-Residual stream dimension  & 1,024           \\
-Attention heads            & 16              \\
-MLP hidden dimension       & 4,096           \\
-Context length             & 1,024 tokens    \\
-Vocabulary size            & 50,304 tokens   \\
-MLP activation             & SwiGLU          \\
-Normalisation              & RMSNorm         \\
-Tokenizer                  & Phi-3 Mini      \\
+\multicolumn{4}{@{}l}{\emph{Model}} \\
+Parameters & 254M & 70M & 124M \\
+Layers, $d_{\mathrm{model}}$, heads & 12, 1{,}024, 16 & 6, 512, 8 & 12, 768, 12 \\
+Block & sequential; SwiGLU MLP (4{,}096); RMSNorm & parallel attention and MLP; GELU MLP (2{,}048); LayerNorm & sequential; GELU MLP (3{,}072); LayerNorm \\
+Context & 1{,}024 & 2{,}048 & 1{,}024 \\
+Tokenizer & Phi-3 Mini; vocabulary 50{,}304 & GPT-NeoX; 50{,}304 & GPT-2 BPE; 50{,}257 \\
+Training data & ${\sim}2$B synthetic tokens: Phi-3 Mini~\citep{abdin2024phi3} educational documents over 18 subject areas, each with 11 paraphrases~\citep{vorobev2023paraphraser}; a final pass over the originals only & the Pile~\citep{gao2020pile}, 300B tokens & WebText \\
+Training & trained here: 3{,}985 steps, minimum cross-entropy 1.62 (train), 1.80 (validation) & released checkpoint & released checkpoint \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Dictionaries}} \\
+Source & trained here, Top-K & EleutherAI Top-K & OpenAI v5 Top-K~\citep{gao2024scaling}, via jbloom's release \\
+$k$, latents & $128$, $40{,}960$ & $16$, $32{,}768$ & $32$, $32{,}768$ \\
+Sites & attention out, MLP out, residual; 12 layers (36) & attention out, MLP out, residual; 6 layers (18) & attention out, residual between attention and MLP, MLP out, residual; 12 layers (48) \\
+Input & the raw activation & the raw activation & per-token layer-normalised; edits scaled back by the token's standard deviation \\
+Training data & see the note below & the Pile, 8.2B tokens, context 2{,}049 & OpenWebText~\citep{gokaslan2019openwebtext}, context 64, no BOS \\
+Quality & explained variance $0.77$--$0.99$; layer-1 attention: 37\% of latents fire; layer-11 attention: 55\% of loss recovered (\cref{fig:sae-quality}) & FVU $0.02$--$0.29$; $\Delta$CE $+0.02$ to $+0.47$ nats, largest at the residual stream ($+0.16$ to $+0.47$) & FVU $\leq 0.30$; $\Delta$CE $\leq +0.30$ nats, largest at the two residual sites \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Analysis corpus (64-token windows, no BOS for the public models)}} \\
+Windows & $24.8$M, in 3{,}030 shards & $4$M, one pinned file of the uncopyrighted Pile & $4$M, pre-tokenised OpenWebText \\
 \bottomrule
-\end{tabular}
-\caption{TuringLLM-1.0-254M architecture summary.}
+\end{tabularx}
+\caption{Model cards. FVU is the fraction of variance unexplained and $\Delta$CE the cross-entropy increase when one site's reconstruction is spliced in, over 1{,}024 WikiText tokens (16 windows of 64, no BOS); \cref{tab:protocol} gives the sampling frame, corpora and precision. \pending{TuringLLM SAEs' training data and token count (Daniel to obtain, DAN-185)}}
+\label{tab:model-cards}
 \label{tab:turinglm}
 \end{table}
-
-TuringLLM follows the residual-stream design of the GPT family~\citep{radford2019language} with two deliberate departures: SwiGLU~\citep{shazeer2020glu, ramachandran2017searching} replaces the ReLU MLP, following the motivation of the Llama family~\citep{touvron2023llama}, and RMSNorm~\citep{zhang2019root} replaces layer normalisation.
-\Cref{tab:turinglm} lists its dimensions; SAEs attach at three sites per layer (attention output, MLP output, and the residual stream).
-% APPENDIX CUTS 2026-10-12 (tier 2): the TikZ architecture figure (fig:architecture), which repeated the table, was
-% removed; text in paper/notes/main-before-appendix-cuts-2026-10-12.tex.
-Training reached a minimum cross-entropy of approximately 1.62 (train) and 1.80 (validation); the same infrastructure applied to GPT-2 (124M) reaches approximately 3.29~\citep{karpathy2024nanogpt}, reflecting the tighter distribution of the synthetic corpus.
-The loss curve (\cref{fig:loss-curve}) drops sharply in its final phase, corresponding to the second pass over Phi-3 Mini originals.
-
-\begin{figure}
-\centering
-\includegraphics[width=0.9\linewidth]{loss-curve.pdf}
-\caption{TuringLLM training and validation cross-entropy over the 3{,}985-step run (log scale).
-The dashed reference marks the validation loss reached by the same training infrastructure applied to GPT-2 (124M); the drop near step 3{,}700 corresponds to the final pass over only the high-quality Phi-3 Mini originals.}
-\label{fig:loss-curve}
-\end{figure}
-
-\subsection{Fitness for Interpretability}
-
-TuringLLM is not designed to win benchmarks; it is designed to be a controlled subject.
-Standard held-out benchmarks fit poorly for a base model trained on synthetic educational text, so fitness was evaluated qualitatively and through structured internal tests: Phi-3 Mini composed topic-specific opening sentences and scored TuringLLM's completions on English quality and topic adherence, yielding average grades of approximately B and A respectively across the 18 subject areas.
-This level of competence supports the working hypothesis that the model contains structured internal representations worth studying; a model merely interpolating noise would not produce consistently topical completions.
-Representative completions are shown in \cref{fig:completions}.
 
 \subsection{Sparse Autoencoder Quality}
 \label{app:sae-quality}
 
-\Cref{fig:sae-quality} reports three standard quality metrics for the 36-SAE bank, per site.
-\emph{Explained variance}, $1 - \operatorname{Var}(x - \hat{x}) / \operatorname{Var}(x)$, measures reconstruction fidelity.
-\emph{Alive latents} is the fraction of each dictionary's 40,960 latents that fired at least once during the full collection pass over the interpretability corpus.
-\emph{Loss recovered} splices each SAE's reconstruction into the model at its site and reports the recovered share of the cross-entropy gap between the original model and zero-ablating that site~\citep{marks2025sparse}, measured over 12{,}288 tokens of the interpretability corpus.
-Because the SAEs are Top-K with $K = 128$, sparsity is fixed by construction and the usual $L_0$--fidelity trade-off curve is a single point per SAE.
+\Cref{fig:sae-quality} reports, for each TuringLLM site, explained variance, $1 - \operatorname{Var}(x - \hat{x}) / \operatorname{Var}(x)$; the fraction of the 40{,}960 latents that fire at least once over the interpretability corpus; and loss recovered, the share of the cross-entropy gap between the model and zero-ablating the site that splicing in the reconstruction recovers~\citep{marks2025sparse}, over 12{,}288 tokens.
+Attention SAEs explain 0.93--0.99 of variance, residual SAEs decline with depth to 0.85, and MLP SAEs reach 0.77 at layer 9.
+Two sites are weak: only 37\% of the layer-1 attention latents ever fire (84\% at layer 2, at least 93\% elsewhere), and the layer-11 attention SAE recovers 55\% of the gap despite explaining 0.96 of variance (layer 10: 84\%).
+Of the public dictionaries, the $k = 16$ Pythia-70m ones are the lossiest per site (\cref{tab:model-cards}).
 
-Three observations matter for interpreting the paper's results.
-First, reconstruction fidelity is healthy across the bank: attention SAEs explain 0.93--0.99 of variance, residual SAEs decline smoothly with depth to 0.85, and MLP SAEs bottom out at 0.77 in layer 9.
-Second, the layer-1 attention SAE has a dead-latent crater: only 37\% of its latents ever fire (84\% at layer 2, at least 93\% everywhere else).
-Third, loss recovered exposes a functional gap that explained variance misses: the layer-11 attention SAE recovers only 55\% of the cross-entropy gap despite explaining 0.96 of variance (layer 10: 84\%), indicating that the unexplained residual at the final attention site is disproportionately important to the logits.
-
-\begin{figure}
+\begin{figure}[!hb]
 \centering
 % Regenerated 2026-09-25: eval.sae.reconstruction_eval (--batches 3 --seqs 64 --ce) + eval.sae.report
 % (--run-root outputs); data in analysis-restyled/sae-eval/tables.
@@ -715,21 +771,7 @@ Middle: fraction of latents that fired at least once over the full collection pa
 Right: percentage of the cross-entropy gap recovered when splicing each SAE's reconstruction into the model, relative to zero-ablating the site.}
 \label{fig:sae-quality}
 \end{figure}
-
-\begin{figure}
-\centering
-\small
-\begin{tabular}{@{}p{0.95\linewidth}@{}}
-\toprule
-``Physics utilizes the fundamental concepts of quantum mechanics to explain how electrons populate a sublevel within an atom, which is marked by energy levels. These levels define the overall potential energy and enable electrons to occupy specific energy levels or sublevels [\ldots]'' \\[0.6em]
-``Artificial Intelligence (AI) has played a pivotal role in elevating personalization in human-robot interfaces, elevating the potential for truly personalized and responsive user experiences. The evolution towards AI extends its roots back to the 1960s with early rule-based [\ldots]'' \\[0.6em]
-``Artificial Intelligence (AI) and Machine Learning (ML) technology have become indispensable in modern engineering. These technologies enable engineers to analyze vast datasets with unprecedented efficiency, leading to significant improvements in design processes, maintenance, and optimization.'' \\
-\bottomrule
-\end{tabular}
-\caption{Representative TuringLLM completions (excerpts).
-Continuations are topical and grammatical, supporting the use of the model as an interpretability subject; occasional repetitions and factual slips (e.g.\ conflated terminology) reflect its 254M-parameter scale and synthetic corpus.}
-\label{fig:completions}
-\end{figure}
+\FloatBarrier
 
 \section{Protocol}
 \label{app:protocol}
@@ -742,9 +784,15 @@ Continuations are topical and grammatical, supporting the use of the model as an
 % on the named issue. Every model runs these settings through the same engine;
 % only the dictionary row differs.
 
-Every circuit in this paper is discovered and scored under the settings in \cref{tab:protocol}, on every model; only the model and its dictionary change.
+% DAN-152 (2026-10-27): provenance stated once (with sec:setting). Was: "Every circuit in this paper is discovered and
+% scored under the settings in tab:protocol, on every model; only the model and its dictionary change." The v1-labelled
+% analyses follow Daniel's 2026-10-26 decision (v2-number-audit.md, open decision 2); "exploratory" replaces "pre-v1".
+Every circuit in the main text is discovered and scored under the settings in \cref{tab:protocol}, protocol v2, on every model; only the model and its dictionary change.
+Protocol v2 differs from its predecessor, protocol v1, in training the A and C terms under the sparsity-preserving fill that evaluation uses, rather than a dense mean, and in fitting from fresh context records, deduplicated and split by whole groups of copies (\cref{app:heldout}).
+Three appendix analyses ran under protocol v1 and are marked where they appear: the contrast-source comparison (\cref{app:contrast-source}), the cross-GPU refit (\cref{app:underdetermination}), and the tests of why attention outputs fail (\cref{app:production}).
+Analyses marked \emph{exploratory} predate protocol v1, and each states how its settings differ.
 % Moved from sec:eval 2026-10-12 (DAN-161 step 5); placed before tab:protocol so the small table fills this page.
-\Cref{tab:semantics} names the evaluation family; every reported number carries its row, is read on the held-out activating contexts (or held-out contrast contexts), and reads the target's activation in every term of its ratio.
+\Cref{tab:semantics} names the evaluation family; every reported number carries its row, is read on the held-out activating contexts (or held-out contrast contexts), and reads the target's activation in every term of its ratio, except the secondary pass rate on the pre-activation read (\cref{tab:protocol}, Read).
 
 \begin{table}[h]
 \centering
@@ -772,13 +820,25 @@ SAE errors are preserved in every row, and every ratio reads the target the same
 \label{tab:semantics}
 \end{table}
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}p{0.30\linewidth}p{0.66\linewidth}@{}}
+% 2026-10-26: a longtable, not a float. As a [h] float it overflowed the page by ~840pt and everything from the WCM
+% block on was clipped from the PDF ("Float too large for page").
+{\small
+\begin{longtable}{@{}p{0.30\linewidth}p{0.66\linewidth}@{}}
 \toprule
 \textbf{Setting} & \textbf{Value} \\
 \midrule
+\endfirsthead
+\toprule
+\textbf{Setting} & \textbf{Value} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r@{}}{\emph{continued on the next page}} \\
+\endfoot
+\bottomrule
+\caption{The protocol behind every reported circuit.\ifexternal\else{} Values marked pending are fixed before the corresponding runs are reported.\fi}
+\label{tab:protocol}
+\endlastfoot
 \multicolumn{2}{@{}l}{\emph{Models and dictionaries}} \\
 TuringLLM-1.0-254M & Top-K, $k = 128$, $40{,}960$ latents; attention output, MLP output, residual stream at 12 layers \\
 Pythia-70m & EleutherAI Top-K, $k = 16$, $32{,}768$ latents; the same three sites at 6 layers \\
@@ -795,36 +855,38 @@ Precision & TuringLLM fits and scores in bf16, its validated precision; Pythia-7
 % held-out strongest rows as run; check before quoting.
 Activating contexts & up to 64 strongest and up to 64 mid-band stored contexts, with repeated corpus ids removed but not repeated text (\cref{sec:evidence}); a store with fewer than 8 is treated as absent. Each pool is split $3{:}1$ into training and held-out contexts: ranked by anchor activation in blocks of 4, block $b$ holds out position $(b + 2) \bmod 4$, so ranks 1--2 always train. With full pools the target trains on 32 strongest (a stratified two-thirds of the 48 strongest training contexts) and 16 mid-band, and holds out 16 strongest (primary) and 16 mid-band (reported). Targets with fewer than 8 mid-band contexts train on all their strongest training contexts ($665$ of $15{,}004$: 48 for $187$, 6--47 for $478$); in all, $502$ targets train on fewer than 48 contexts and, as split, $472$ had fewer than 16 held-out strongest contexts \\
 Held-out rule & every held-out set excludes each training-side context (strongest and mid-band training contexts, all 64 contrast contexts, and every corpus copy of them) and its exact, anchor-prefix (identical up to the anchor) and near copies (a shared run of $\geq 32$ tokens, or $\geq 50\%$ of its 8-grams shared), and any copy of an already accepted held-out context; held-out activating contexts must fire at the anchor. TuringLLM: rebuilt for the fixed circuits; strongest filled to 16 from the original held-out contexts, then the strongest admissible contexts of a 512-context corpus scan; mid-band only filtered; floor 8 (below it a target is scored and flagged). Public models: pools split by whole groups of copies and same-document rows, then the rule applied as a final check (\cref{app:heldout}) \\
-Contrast contexts & 64 per target: candidates ranked by highest cosine similarity to any of the target's strongest stored contexts (pooled final-layer representations), its activating contexts excluded; the $8{,}192$ most similar are scanned in order and kept only if the target is outside its Top-K at every position, until 64 are kept (\cref{app:stores}); 48 train, 16 held out, stratified by similarity; the held-out 16 then go through the held-out rule against the contrast training contexts and every activating context, must stay silent at every position, and are refilled from the selector's next candidates. Targets with fewer than 4 are skipped; 10 have fewer than 64 \\
+Contrast contexts & 64 per target: candidates ranked by highest cosine similarity to any of the target's strongest stored contexts (pooled final-layer representations), its activating contexts excluded; the $128n$ most similar ($8{,}192$ for $n = 64$; $24{,}576$ in the deduplicated records) are scanned in order and kept only if the target is outside its Top-K at every position, until 64 are kept (\cref{app:stores}); 48 train, 16 held out, stratified by similarity; the held-out 16 then go through the held-out rule against the contrast training contexts and every activating context, must stay silent at every position, and are refilled from the selector's next candidates. Targets with fewer than 4 are skipped; 10 have fewer than 64 \\
 Anchor & position of the target's peak activation in each context \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Weighted circuit masking, WCM[Z+C+A]}} \\
-Ablation methods & Z zero ablation (weight 1); C mean over contrast contexts ($\gamma_{\mathrm{C}} = 0.25$); A mean over activating contexts ($\gamma_{\mathrm{A}} = 0.25$), at every layer; both are dense means over the training contexts (no Top-K re-imposed in training) \\
+% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1): v1 trained A and C under dense means over the training contexts.
+Ablation methods & Z zero ablation (weight 1); C mean over contrast contexts ($\gamma_{\mathrm{C}} = 0.25$); A mean over activating contexts ($\gamma_{\mathrm{A}} = 0.25$), at every layer; A and C are trained under the evaluation's sparsity-preserving fill, bit for bit (\cref{app:respect-topk}), with straight-through gradients through the fill's selection, and with the evaluation's means (A over the reference contexts below, C over the 48 training contrast contexts) \\
 Objective & MSE to the target's natural pre-activation at the anchors, each term divided by one shared $\nu = \operatorname{mean}(\text{target}^2)$ \\
 Rank-keep & $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$ on $\operatorname{relu}(\tau^{(r)} - \preact)^2$ inside every ablation term, $r$ the target's rank among its site's other latents at the training anchor in the unmodified model, capped at $K$ \\
 Gates & $m = \sigma(\theta / T)$, $\theta_0 = 4$; $T$ annealed geometrically from $1$ to $0.05$; nodes are $\{m > \tfrac{1}{2}\}$ \\
-Scaling coefficients & $\alpha = \mathrm{softplus}(\psi)$, $\alpha_0 = 1$; closed gates charged $\lambda (1 - \sigma(\theta))\,|\alpha - 1|$ (no temperature) \\
+Scaling coefficients & $\alpha = \mathrm{softplus}(\psi)$, $\alpha_0 = 1$; closed gates charged $\lambda (1 - \sigma(\theta))\,|\alpha - 1|$ (no temperature). Unweighted circuit masking fixes every $\alpha$ at exactly $1$ and is otherwise identical, including the sparsity-preserving training fill \\
 Sparsity penalty & $\lambda = 10^{-3}$, flat per latent (TuringLLM). Public models: a 30-target pilot at three values (Pythia-70m $\{3 \times 10^{-4}, 10^{-3}, 3 \times 10^{-3}\}$, GPT-2 small $\{10^{-3}, 3 \times 10^{-3}, 10^{-2}\}$) under a rule stated before it: keep $10^{-3}$ unless the pooled median circuit size leaves $[100, 1000]$, else take the value whose median is nearest $494$ on a log scale; size only, never pass rate \pending{adopted $\lambda$ per public model, DAN-42} \\
 Optimiser & AdamW, learning rate $0.05$ (constant), weight decay $0.05$, 400 steps, batch 4 \\
 Execution & nodes recomputed from the edited stream; SAE errors preserved; every upstream site edited \\
+% 2026-10-26 (DAN-147 stage c, item 6): provenance and disjointness from protocol-v1.md §2, §9, §9.2, §10.1; wording for Daniel's review.
+Provenance & $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$ at every layer is a protocol decision; $\gamma_{\mathrm{R}}$ comes from a sweep on 16 TuringLLM targets; $\lambda$ is calibrated on TuringLLM; the 400-step schedule is examined in the binarisation sweep (\cref{app:membership-studies}). TuringLLM: the calibration targets are not disjoint from the evaluation set; the pass rule was set on a $1{,}416$-target subset of the same frame. Pythia-70m and GPT-2 small: $\lambda$ comes from the 30-target pilot, disjoint from the 512 main targets, and every other setting carries over from TuringLLM unchanged \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Evaluation (\cref{sec:eval}), on the held-out contexts}} \\
 Reference contexts & the evaluation's A means, the anchor means set by sufficiency to induce, the specificity siblings, and the random-circuit pool are computed on the strongest training contexts (48 with a full pool) for every target, one reference whether or not the target trains on mid-band contexts; C means use the 48 training contrast contexts, as in training \\
-Read & every pass/fail score reads the target's activation (after Top-K), in every term of the ratio; the same scores on the pre-activation are reported as a diagnostic; training uses the pre-activation, which keeps a gradient where Top-K censors the activation \\
-Faithfulness & $\phi^{\mathrm{free}}_{\pi}$ under Z, dense A, sparsity-preserving A and C \\
+% 2026-10-26 (protocol-v1.md §12.1, Daniel): two reads, two pass rates, never mixed inside one rule. Baseline 0 for
+% the pre-activation Z and necessity: with every upstream latent zeroed, a residual target's pre-activation is a
+% median ~190x its clean value, so (x - e0) / (a_pos - e0) is undefined for 91% of residual targets (v1 15k, 10 shards).
+Read & the headline pass rate reads the target's activation (after Top-K), in every term of every ratio; a secondary pass rate applies the same rule to the pre-activation, asking whether the circuit reproduces the target's input apart from whether the target then survives the Top-K competition. On that read Z and necessity are measured from a baseline of $0$, latent off ($\phi^{\mathrm{free}}_{\mathrm{Z}} = \hat{a}_C / \hat{a}_{\mathrm{pos}}$, $\phisup = (\hat{a}_{\mathrm{pos}} - \hat{a}_{M \setminus C}) / \hat{a}_{\mathrm{pos}}$, hats for pre-activations), because with every upstream latent zeroed a residual-stream target's pre-activation leaves its natural range and the empty-circuit form is undefined for most of them; A and C keep their mean-ablation baselines; for attention and MLP targets, where the empty circuit is well defined, the empty-circuit baseline is reported as a sensitivity check. The two reads are never mixed inside one rule. Training uses the pre-activation, which keeps a gradient where Top-K censors the activation \\
+Faithfulness & $\phi^{\mathrm{free}}_{\pi}$ under Z, dense A, sparsity-preserving A and C; each of $a_C$, $a_{\varnothing}$, $a_{\mathrm{pos}}$ is the target's mean over the held-out anchors, so the score is a ratio of means, not a mean of per-context ratios, and its spread over contexts within a target is not reported \\
 Necessity & $\phisup(C) = (a_{\mathrm{pos}} - a_{M \setminus C}) / (a_{\mathrm{pos}} - a_{\varnothing})$, the circuit as one set, its nodes set to zero; $a_{\varnothing}$ the zero-ablation empty circuit. Two details differ from the completeness score of \citet{marks2025sparse}: SAE errors are always preserved, where they ablate the circuit's error nodes, and the nodes are zero-ablated rather than mean-ablated, so the score needs no reference distribution \\
 Sufficiency to induce & $\phiind$ and $\phiind^{\alpha}$ on the held-out contrast contexts, nodes set at every position to ($\alpha$ times) their mean at the anchors; $\phiind^{\alpha}$ is the one reported \\
 Random-circuit baseline & size-matched site by site, drawn from latents active on the target's strongest training contexts; coefficients fitted with the production objective for 400 steps, gates started fully open on the random nodes ($\theta_0 = 40$) and held closed elsewhere, no sparsity penalty; one draw on each of $747$ targets, stratified by depth and site kind \\
 % 2026-10-24 (paper prep, DAN-181): 084 README + pod plan §0 F6 (WIN 8; contrib excludes members; SUB_N 32).
 Harder random circuits & fitted as above, at the production circuit's per-site counts; anchor-active: latents active at the anchor or up to 8 positions before it on some training context, each member's frequency decile matched, production members allowed; contribution-matched: also matched on contribution to the target (activation $\times$ gradient of the pre-activation, binned by deciles of the production members' own contributions), production members excluded; every set also scored at $\alpha = 1$; $126$ TuringLLM sweep targets ($14$ per depth band and site kind) and $128$ per public model, one draw each and a second on $32$ (\cref{app:nulls}) \\
 Specificity (reported) & the target's rank and Top-K share; latents lifted above the unmodified Top-K cut, against the empty circuit; sibling faithfulness against the target's (\cref{app:specificity}) \\
-Near-threshold targets & median rank among all the site's latents at the held-out strongest anchors $\geq K/2$ (uncapped, unlike the rank-keep $r$), identified from the unmodified model; kept in the headline pass rate and also reported as a stratum on both reads \\
-Pass criterion & faithfulness under Z, sparsity-preserving A, and C all in $[0.8, 1.5]$, and necessity $\geq 0.9$ (held-out strongest contexts, activation read); targets with a vacuous zero-ablation denominator, $|a_{\mathrm{pos}} - a_{\varnothing}| < 0.05\,a_{\mathrm{pos}}$, excluded and counted; an undefined A or C ratio is a fail; the largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ reported alongside \\
-\bottomrule
-\end{tabular}
-\caption{The protocol behind every reported circuit. Values marked pending are fixed before the corresponding runs are reported.}
-\label{tab:protocol}
-\end{table}
+Near-threshold targets & median rank among all the site's latents at the held-out strongest anchors $\geq K/2$ (uncapped, unlike the rank-keep $r$), identified from the unmodified model; kept in the headline pass rate and also reported as a stratum on both reads, with the split of its targets into passing both rules, the pre-activation rule only, the activation rule only, and neither \\
+Pass criterion & faithfulness under Z, sparsity-preserving A, and C all in $[0.8, 1.5]$, and necessity $\geq 0.9$ (held-out strongest contexts, activation read); targets with a vacuous denominator, $a_{\mathrm{pos}} \leq 0$ or $a_{\mathrm{pos}} - e < 0.05\,a_{\mathrm{pos}}$ for any of the empty-circuit baselines $e$ of Z, A, and C, excluded and counted, with the all-targets rate (vacuous counted as fails) reported as a lower bound; a score still undefined on a non-vacuous target is a fail; the largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$ reported alongside. Secondary: the same rule on the pre-activation read (Read, above), reported separately over all targets and the near-threshold stratum \\
+\end{longtable}}
 \FloatBarrier   % keep the protocol tables inside this appendix (they drifted ~13 pages)
 
 \subsection{Held-out Contexts}
@@ -845,7 +907,7 @@ An admissible context must fire at its anchor, both when selected and when score
 Held-out mid-band contexts go through the same check and are only removed; held-out contrast contexts are checked against the contrast training contexts and every activating context, must stay silent at every position, and are refilled from the close selector's next candidates.
 Targets with fewer than $8$ admissible strongest contexts are scored and flagged rather than dropped: headline pass rates are over targets with at least $8$, and a worst case counts the rest as fails.
 \pending{rebuilt held-out sets: targets below the floor by depth band and site kind, the share of scan contexts and their strength relative to the training contexts, headline and worst-case pass rates, DAN-157}
-A paired re-score of a fixed stratified sample of $1{,}000$ targets on the original and the rebuilt sets, on one machine, measures what the repetition did to the pass rate: \pending{paired original against rebuilt pass rate on the 1,000-target sample, by depth band and site kind, DAN-157}.
+A paired re-score of a fixed stratified sample of $1{,}000$ targets on the original and the rebuilt sets, on one machine, measures what the repetition did to the pass rate. \pending{paired original against rebuilt pass rate on the 1,000-target sample, by depth band and site kind, DAN-157}
 % 2026-10-24 (Daniel): same-document grouping dropped; copies only, as for TuringLLM.
 For Pythia-70m and GPT-2 small, whose circuits are fitted after the rule was fixed, each pool is split by whole groups of copies (exact, anchor-prefix, and near-duplicate), so no group spans training and held-out contexts, and the rule is applied once more as a final check.
 
@@ -878,7 +940,7 @@ with $W_e^{(f)}$ the target's encoder row, $b_e^{(f)}$ its effective bias, and $
 The two gradient estimators share one path, from every upstream site's mean over the target's activating training contexts (its A ablation value, $\bar{c}^{s}$) to its natural code $c^{s}$, all sites interpolated together and held at their interpolated codes, and both multiply a gradient by $(c^{s} - \bar{c}^{s})$:
 \begin{itemize}
 \item \textbf{Attribution patching} (AtP) takes the gradient at the clean point, giving the first-order estimate of mean-ablating each latent~\citep{nanda2023attribution, syed2023attribution, kramar2024atp}.
-\item \textbf{Integrated gradients from the mean} (IG) averages the gradient over $10$ points of the path. It follows the $\mathrm{IE}_{\mathrm{ig}}$ node estimator of \citet{marks2025sparse}, the node-level counterpart of EAP-IG~\citep{hanna2024faith}, in form but not in detail: theirs interpolates one submodule at a time with the rest of the model live, starts from a zero patch when no counterfactual exists, and scores the error terms as nodes.
+\item \textbf{Integrated gradients from the mean} (IG) averages the gradient over $10$ points of the path. It follows the $\mathrm{IE}_{\mathrm{ig}}$ node estimator of \citet{marks2025sparse}, the node-level, activation-space counterpart of EAP-IG~\citep{hanna2024faith}, in form but not in detail: theirs interpolates one submodule at a time with the rest of the model live (as in their released code), starts from a zero patch when no counterfactual exists, and scores the error terms as nodes.
 \end{itemize}
 The two differ only in where they linearise, with target, contexts, path, and selection held fixed.
 Two further baselines use them:
@@ -886,7 +948,7 @@ Two further baselines use them:
 \item \textbf{Hierarchical attribution} applies the gating algorithm of \citet{ge2024automatically} to our SAE sites. Without transcoders our graph is not linear, so its scores are first-order gradients rather than their exact linear attributions, aggregated over contexts rather than per prompt; its threshold is bisected towards the weighted circuit's size, and every bisection point is scored.
 \item \textbf{Ranked members with fitted coefficients} fill the weighted circuit's per-site counts from the top of a ranking at each site, then fit coefficients exactly as for random circuits (\cref{sec:eval}: only the coefficients move, with no sparsity penalty), and are scored at $\alpha = 1$ and fitted. The rankings are IG, the latent's mean activation at the target's anchor over the training contexts (no gradient), and the correlation of that activation with the target's across contexts (co-activation). Against WCM, these rows separate what the selection contributes from what the coefficients contribute.
 \end{itemize}
-IG makes the attribution baselines comparable in kind to the published estimator, but not identical to it, so the output-targeted comparison of \cref{sec:sfc-boundary} uses its own reimplementation of the published recipe; a version of that recipe with the target latent as its metric, which would isolate the choice of target from everything else, is \pending{DAN-48}.
+IG makes the attribution baselines comparable in kind to the published estimator, but not identical to it, so the output-targeted comparison of \cref{sec:sfc-boundary} uses its own reimplementation of the published recipe; a version of that recipe with the target latent as its metric, which would isolate the choice of target from everything else, has not been run \pending{DAN-48}.
 
 \paragraph{Exact activation patching.}
 % 2026-10-24 (paper prep): experiments/083-v1-comparison/exact_report.log (exact_patching.py, CAND=subset; targets in
@@ -898,7 +960,7 @@ On ten targets (one per depth band and site kind, and a tenth at layers 8--11), 
 The candidates, $3{,}200$--$3{,}900$ per target out of $8$k--$760$k active latents, are the $2{,}000$ top-ranked by each of AtP and IG and $1{,}000$ other active latents drawn at random, so the comparison covers the heads of the two rankings and a random sample of the rest.
 Under the aggregate ranking defined below, the median rank correlation with the exact effect is $0.86$ for AtP and $0.71$ for IG ($0.81$ and $0.62$ on magnitudes), and of the exact top-$n$ latents at the weighted circuit's size, AtP's top-$n$ holds a median $79\%$ and IG's $54\%$; ranked by their largest score at any context and position, both track the exact effect less closely ($0.72$ and $0.62$).
 These measurements use training contexts only.
-Members ranked by exact effect, given fitted coefficients, give a ground-truth row for the comparison: \pending{exact-ranked circuits scored on the rebuilt held-out sets, DAN-159}.
+Members ranked by exact effect, given fitted coefficients, give a ground-truth row for the comparison \pending{exact-ranked circuits scored on the rebuilt held-out sets, DAN-159}.
 
 \subsection{Rankings and Node Sets}
 \label{sec:membership}
@@ -930,11 +992,11 @@ A node set's size at a stated faithfulness is a measured quantity, and \cref{sec
 % ig_mean rows dropped. Old table and text kept verbatim in paper/notes/paper-prep-2026-10-24.md. Removed here: the
 % \pending markers "protocol-v1 comparison ... DAN-159", "aggregate-ranking rerun in the v1 comparison suite" and
 % "the aggregate-ranking rerun".
-Every method is compared on the $190$ sweep targets under protocol v1, scored on the rebuilt held-out sets (\cref{app:heldout}) with the pass criterion of \cref{sec:eval}, by depth band.
+Every method is compared on the $190$ sweep targets, scored on their held-out contexts (\cref{app:heldout}) with the pass criterion of \cref{sec:eval}, by depth band.
 The comparison is a curve first (\cref{fig:size-comparison}): pass rate and median activating-mean faithfulness against median circuit size, with every method at the sizes it actually produces.
 WCM appears at its eight sparsity penalties and unweighted circuit masking at its five (\cref{fig:budget}); AtP and IG are truncated to the weighted circuit's size at every WCM penalty and also shown at their natural size; every bisection point of the hierarchical attribution is shown; and the ranked-member baselines sit at the weighted circuit's per-site counts (\cref{sec:attr-baselines}).
 \Cref{tab:matrix} summarises the curve at one point per method: each method at its natural operating point, with WCM and unweighted circuit masking at the same sparsity penalty, $\lambda = 10^{-3}$, rather than at matched size, since no unweighted penalty on the grid gives circuits as small as WCM's (the nearest is $\lambda = 10^{-3}$ for $99\%$ of targets, at a median $1.85\times$ the WCM size); then AtP and IG truncated to the WCM size at $\lambda = 10^{-3}$ under each ranking; then the ranked members at $\alpha = 1$ and fitted.
-A pre-v1 version of this comparison, on a 22-target panel and with older attribution code, is retired; only its attribution-mass measurement, below, is kept.
+An exploratory version of this comparison, on a 22-target panel and with older attribution code, is retired; only its attribution-mass measurement, below, is kept.
 
 \begin{figure}[t]
 \centering
@@ -979,23 +1041,31 @@ co-activation-ranked, $\alpha = 1$ \pendrow
 co-activation-ranked, fitted \pendrow
 \bottomrule
 \end{tabular}
-\caption{The method comparison at one point per method, on the $190$ sweep targets (protocol v1, rebuilt held-out sets): medians of held-out faithfulness under zero (Z), activating-mean (A), and contrast-mean (C) ablation and of necessity, and the pass rate under the criterion of \cref{sec:eval} by target depth band.
-Weighted-circuit and fitted rows apply their coefficients; the rankings and baselines are defined in \cref{sec:attr-baselines}.
+
+\smallskip
+\parbox{\linewidth}{\scriptsize\textit{Note.} Weighted and unweighted circuit masking share $\lambda = 10^{-3}$ rather than a matched size, because no unweighted penalty on the grid gives circuits as small as WCM's. Weighted-circuit and fitted rows apply their coefficients. A dash marks a cell with no defined value, such as a band in which every circuit of the row has a vacuous denominator.}
+% DAN-148 (2026-10-27): caption restructured, finding first (pending until the v2 comparison), row names defined,
+% caveats in the table note. Best / second-best marking (MIB style) is applied by paper/tables/matrix_body.py, which
+% writes this tabular's body from 083 table2.py's table2.csv (spec in paper/tables/README.md).
+\caption{\pending{the finding, first: which methods pass at the weighted circuit's size and by how much, DAN-159}
+The method comparison at one point per method on the $190$ sweep targets: medians of held-out faithfulness under zero (Z), activating-mean (A), and contrast-mean (C) ablation and of necessity ($\phisup$), median size ($n$), and the pass rate under the criterion of \cref{sec:eval} by target depth band.
+Rows (\cref{sec:attr-baselines}): \emph{weighted} and \emph{unweighted circuit masking} at the same sparsity penalty; \emph{position union}, every latent kept by the per-position attribution cut, collected over the target's causal prefix (the natural size); \emph{hierarchical attribution}, the gating algorithm of \citet{ge2024automatically} with its threshold bisected towards the weighted circuit's size; \emph{largest score}, \emph{mean $|$score$|$}, and \emph{aggregate}, the top-$n$ latents ($n$ the weighted circuit's size) by a latent's largest $|$attribution$|$ at any context and position, by its mean summed $|$attribution$|$, and by the magnitude of its mean summed signed attribution (the ranking of \citet{marks2025sparse}); \emph{ranked members}, the weighted circuit's per-site counts filled from the top of an IG, mean-anchor-activation, or co-activation ranking, at $\alpha = 1$ or with fitted coefficients.
+Bold marks the best and underlining the second-best entry of each column (faithfulness: closest to $1$; $\phisup$ and pass rate: highest).
 \pending{every cell, from experiments/083-v1-comparison \texttt{table2.py}, DAN-159; the exact-patching-ranked rows on ten targets as a separate block or a note, DAN-159}}
 \label{tab:matrix}
 \end{table}
 
 Three questions structure the comparison.
 First, at natural size, does attribution reconstruct the target with its full per-position union, and do the methods' node sets coincide there, so that method identity matters only under pressure to be compact? \pending{natural-size rows and node-set overlap, DAN-159}
-Second, at the weighted circuit's size, does any attribution ranking pass, the aggregate ranking and the hierarchical attribution included, and how does unweighted circuit masking at the same penalty compare? On the pre-v1 panel every truncation failed under mean ablation and the weighted circuit passed on most targets. \pending{truncated and unweighted rows by depth band, DAN-159}
+Second, at the weighted circuit's size, does any attribution ranking pass, the aggregate ranking and the hierarchical attribution included, and how does unweighted circuit masking at the same penalty compare? On the exploratory panel every truncation failed under mean ablation and the weighted circuit passed on most targets. \pending{truncated and unweighted rows by depth band, DAN-159}
 Third, do fitted coefficients rescue members chosen by attribution, by activation, or by exact effect, which separates what the selection contributes from what the coefficients contribute? \pending{ranked-member rows at $\alpha = 1$ and fitted, DAN-159 and DAN-43}
-Throughout this programme, a method has tended to win the scores whose ablation method it was trained or ranked under, which we call the \emph{home-turf effect}, and under the prior work's own first-order evaluation the pre-v1 ranking inverts (below); rankings are therefore a matrix of discovery method against ablation method, never a single column.
+Throughout this programme, a method has tended to win the scores whose ablation method it was trained or ranked under, which we call the \emph{home-turf effect}, and under the prior work's own first-order evaluation the exploratory panel's ranking inverts (below); rankings are therefore a matrix of discovery method against ablation method, never a single column.
 
-\paragraph{Attribution-mass recovery (pre-v1).}
+\paragraph{Attribution-mass recovery (exploratory).}
 % Moved here from app:weighted-details 2026-10-12 (appendix cuts, tier 2). Data: experiments/034-ge-replication (pre-v1).
 % 2026-10-24 (paper prep): kept, labelled pre-v1 (034 data; unaffected by the 2026-10-23 IG prefix-cut fix). It now
 % refers to the retired 22-target panel, not tab:matrix.
-\citet{ge2024automatically} score circuits by attribution recovery inside their linearised graph, with no intervention; our first-order analogue, measured on the retired pre-v1 panel, is \emph{attribution-mass recovery}, the share of total activation-times-gradient mass a node set captures (a surrogate: the exact leaf-sum identity exists only in their substitute model).
+\citet{ge2024automatically} score circuits by attribution recovery inside their linearised graph, with no intervention; our first-order analogue, measured on the retired exploratory panel, is \emph{attribution-mass recovery}, the share of total activation-times-gradient mass a node set captures (a surrogate: the exact leaf-sum identity exists only in their substitute model).
 Under it that panel's intervention ranking inverts: plain top-$n$ attribution leads (median signed recovery $0.76$), the replication follows ($0.72$), and the weighted circuit trails ($0.52$) while being the only arm that passed the intervention test there.
 The home-turf effect therefore reaches evaluation frameworks themselves: a circuit that reproduces the target on held-out intervention while holding a third of the absolute attribution mass ($0.37$ median) shows that first-order attribution mass is not what faithfulness is made of.
 
@@ -1007,10 +1077,10 @@ The home-turf effect therefore reaches evaluation frameworks themselves: a circu
 % were removed; text in paper/notes/main-before-appendix-cuts-2026-10-12.tex. The paragraph below is pending a v1
 % redesign (Daniel, tier-3 item 3: keep and update, tie to the two claims).
 
-\paragraph{Output-targeted circuits do not explain latents, and vice versa.}
+\paragraph{On three deep targets, output-targeted and latent circuits fail each other's objective.}
 \label{sec:sfc-boundary}
-A reimplementation of the sparse-feature-circuits recipe~\citep{marks2025sparse} (integrated gradients one submodule at a time from a zero patch, error nodes, an output metric) on the same model and SAE bank scores $\phiind = \phisup = 0.000$ on each of the three deep target latents it was run on (layers 8--10), even at its most permissive threshold, and our circuits score near zero on logit faithfulness (\cref{app:logit-faith}): ``which latents support this output?'' and ``what makes this latent fire?'' are answered by circuits that fail each other's objective.
-The output-targeted arm ran at its ceiling threshold, in-sample, and before protocol v1 and its evaluation fixes, so this is a scope result on three targets, not a ranking; \pending{re-run under protocol v1, DAN-48}.
+A reimplementation of the sparse-feature-circuits recipe~\citep{marks2025sparse} (integrated gradients one submodule at a time from a zero patch, as in its released code, error nodes, an output metric) on the same model and SAE bank scores $\phiind = \phisup = 0.000$ on each of the three deep target latents it was run on (layers 8--10), even at its most permissive threshold, and our circuits score near zero on logit faithfulness (\cref{app:logit-faith}): ``which latents support this output?'' and ``what makes this latent fire?'' are answered by circuits that fail each other's objective.
+The output-targeted arm ran at its ceiling threshold, in-sample, and before protocol v1 and its evaluation fixes \pending{re-run under protocol v1, DAN-48}.
 
 \section{Individual Contributions Undercount Faithfulness}
 \label{sec:drivers-closure}
@@ -1023,7 +1093,7 @@ The output-targeted arm ran at its ceiling threshold, in-sample, and before prot
 % were dropped and node sets undercounted). Rerun under protocol v1 on the DAN-159 rankings and the rebuilt held-out
 % sets, then rewrite or narrow this appendix and the Discussion sentence that cites it. Text left as is until then.
 
-This appendix is pre-v1, and so are all of its numbers: it uses node sets from an earlier version of the attribution baselines (\cref{app:attribution}) at natural scale ($\alpha = 1$), on one target each at layers 2, 8, 9, and 10, under the evaluation that preceded protocol v1.
+This appendix is exploratory, and so are all of its numbers: it uses node sets from an earlier version of the attribution baselines (\cref{app:attribution}) at natural scale ($\alpha = 1$), on one target each at layers 2, 8, 9, and 10, under the evaluation that preceded protocol v1.
 Leave-one-out is blind to how these node sets work: removing any single node changes the target by $0.000$, the noise level.
 Yet cutting nodes in bulk by their own attribution ranking craters function: dropping the bottom half by score moves $\phi^{\mathrm{free}}_{\mathrm{Z}}$ from $0.975$ to $0.895$ at layer 2 but from $1.119$ to $0.595$ at layer 8; dropping the bottom 90\% yields $0.635$, $0.000$, $0.222$, and $0.005$ at layers 2, 8, 9, and 10.
 The scores being cut are minuscule, $2$--$5 \times 10^{-4}$ in attribution units.
@@ -1052,12 +1122,22 @@ On the held-out mid-band contexts, where targets fire more weakly, $12\%$ pass (
 % DAN-131 tests 1-3 (2026-10-03), experiments/062-h100-protocol-v1: freeze_attn.py (out_freeze/; 150 attention + 48
 % controls), out_attn/ (32 attention targets, gamma and rank-keep arms), attn_heads.py (out_heads/; 222 circuits,
 % decomposition reconstructs the pre-activation within 0.03); weaker penalties: out_bands/ + out_depth/ (16 per band).
-Three local tests on samples of production attention targets locate the cost in source positions.
+Three local tests on samples of production attention targets, run under protocol v1, locate the cost in source positions.
 About $85\%$ of an attention target's clean contribution comes from source positions other than its own and the first token, for passing and failing targets alike.
 Failing targets read from more positions and more heads than passing ones at the same circuit size (layers 0--4: $4.5$ against $2.4$ effective positions, $7.1$ against $4.5$ effective heads).
 Under activating-mean ablation the dominant head of a failing circuit keeps $0.42$ of its contribution when only its attention pattern is ablated and $0.60$ when only its values are (passing circuits: $1.04$ and $0.80$), so the circuit loses both where the head attends and what it reads.
 Holding attention patterns at their clean values does not rescue them ($5$ of $120$ failing circuits), and raising the A and C weights or the rank-keep weight barely helps ($21\%$ to $29\%$ on $24$ targets); at a weaker penalty about half pass, at ${\sim}9$k latents ($10$ of $22$ attention targets at $\lambda = 2.5 \times 10^{-5}$).
 Near-threshold targets are a separate case, largely a Top-K censoring effect: their clean margin above the first excluded latent is $25\%$, against $81$--$91\%$ for other targets, and over all $1{,}142$ of them the pre-activation read gives median faithfulness $0.93$ under zero ablation but only $0.50$ and $0.42$ under the two mean ablations, so the read explains their zero-ablation failures but not all of their mean-ablation ones.
+
+\paragraph{Two pass rates.}
+% 2026-10-26 (protocol-v1.md §12.1, Daniel; stated before any v2 production fit). Fill from the v2 8k scorer output
+% (*_tk and *_pre columns; free0_raw_pre, a_pos_pre, phi_sup_blind_raw_pre). v1 15k, for the v1-vs-v2 record only:
+% near-threshold 1,142 targets (1,134 attention), 0.8% post-Top-K, 10.9% pre-activation (pre Z in band 80%, A 25%, C 20%).
+The headline pass rate reads the activation; the secondary one applies the same rule to the pre-activation read, with $0$ as the Z and necessity baseline (\cref{tab:protocol}), and asks whether a circuit reproduces its target's input whether or not the target then survives the Top-K competition.
+Over all targets the pre-activation pass rate is \pendingcell\% against \pendingcell\% for the headline, and among targets outside the near-threshold stratum \pendingcell\% against \pendingcell\%.
+Of the \pendingcell{} near-threshold targets, \pendingcell\% pass both rules, \pendingcell\% the pre-activation rule only, \pendingcell\% the activation rule only, and \pendingcell\% neither.
+With the empty-circuit baseline in place of $0$, for attention and MLP targets only, the pre-activation pass rate is \pendingcell\%.
+\pending{every value above, with intervals and by depth band and site kind, from the v2 8k run's two reads, \texttt{protocol-v1.md} \S12.1}
 
 % APPENDIX CUTS 2026-10-12 (tier 2): circuit sizes, sufficiency to induce by site kind, and training dynamics moved
 % here from app:weighted-details (they describe the production run); the short duplicate summary was dropped.
@@ -1082,7 +1162,8 @@ Which latents \emph{can} be induced from upstream is therefore itself a per-kind
 \centering
 % Data: experiments/062-h100-protocol-v1 (DAN-75 full run); paper_main.py.
 \includegraphics[width=\linewidth]{induce.pdf}
-\caption{Sufficiency to induce across the production run ($14{,}994$ non-vacuous TuringLLM circuits), on held-out contrast contexts where the target is silent.
+\caption{Sufficiency to induce is set by site kind: residual-stream targets are switched on most often and attention outputs least often, especially beyond layer 4.
+Sufficiency to induce across the production run ($14{,}994$ non-vacuous TuringLLM circuits), on held-out contrast contexts where the target is silent.
 Left: median $\phiind^{\alpha}$ by target depth band and site kind ($1$ is the target's natural level, dashed).
 Right: the share of circuits that switch the target on to at least half its natural level.
 Reported for every circuit; not part of the pass criterion.}
@@ -1103,7 +1184,8 @@ Before their $0.25$ weights, the contrast-mean and activating-mean errors are ab
 \centering
 % Data: experiments/062-h100-protocol-v1 (DAN-75 full run); curves.py.
 \includegraphics[width=\linewidth]{training-curves.pdf}
-\caption{Training dynamics of the $15{,}004$ production fits, by target depth band (layers 0--3, 4--7, and 8--11; median and interquartile range).
+\caption{Circuits are still shrinking at the 400-step budget, most at depth, while the data loss stays nearly flat.
+Training dynamics of the $15{,}004$ production fits, by target depth band (layers 0--3, 4--7, and 8--11; median and interquartile range).
 Left: circuit size (latents above the keep threshold) per step.
 Middle: the data loss (the Z, C, and A terms, penalty excluded), averaged over each pass through the 48 training contexts (12 steps), since every step sees one batch of 4.
 Right: the share of members removed over the last 100 steps, by target layer (median and interquartile range).}
@@ -1131,10 +1213,12 @@ Right: the data loss split into its ablation terms as weighted in the objective 
 
 \paragraph{Weighted against unweighted circuits across the sparsity penalty.}
 % 062 sweep (DAN-76, 2026-09-27): experiments/062-h100-protocol-v1/paper_sweep.py prints every number below.
-The comparison at a fixed penalty (\cref{fig:wcm-vs-unweighted}) uses the one value both grids share, $\lambda = 10^{-3}$; the rest comes from the full sweep, which fits WCM at $\lambda \in \{2.5, 5, 10, 20, 40\} \times 10^{-4}$ and unweighted circuit masking at $\lambda \in \{0.1, 0.3, 1, 3, 10\} \times 10^{-4}$ to 191 targets (five per layer and site kind, plus the pilot targets; 190 with usable contexts) and scores every circuit on the held-out strongest contexts.
+The comparison at a fixed penalty (\cref{fig:wcm-vs-unweighted}) uses the one value both grids share, $\lambda = 10^{-3}$; the rest comes from the full sweep, which fits WCM at $\lambda \in \{2.5, 5, 10, 20, 40\} \times 10^{-4}$ and unweighted circuit masking (every coefficient fixed at exactly $1$, all else including the training fill as WCM) at $\lambda \in \{0.1, 0.3, 1, 3, 10\} \times 10^{-4}$ to 191 targets (five per layer and site kind, plus the pilot targets; 190 with usable contexts) and scores every circuit on the held-out strongest contexts.
 \Cref{fig:budget} adds WCM at $\lambda \in \{0.25, 0.5, 1\} \times 10^{-4}$ for every sweep target, so that both methods reach circuits of ${\sim}10^{4}$ latents and beyond.
 % Moved from sec:weighted 2026-10-12 (DAN-161 step 6).
-At the shared penalty unweighted circuits keep $1.85\times$ as many latents and pass $54\%$ against $64\%$ at layers 0--4, but $2.1\%$ against $38\%$ at 5--7 and $1.5\%$ against $18\%$ at 8--11 (\cref{fig:wcm-vs-unweighted}): their scores are lower one by one, and the criterion asks for all of them at once.
+At the shared penalty unweighted circuits keep $1.85\times$ as many latents and pass $54\%$ against $64\%$ at layers 0--4, but $2.1\%$ against $38\%$ at 5--7 and $1.5\%$ against $18\%$ at 8--11 (\cref{fig:wcm-vs-unweighted}) \pending{$n$ per band and $95\%$ Wilson intervals, v2 sweep}: their scores are lower one by one, and the criterion asks for all of them at once.
+% Moved from sec:weighted 2026-10-27 (DAN-148 stage 3), values unchanged.
+On the budget curves of \cref{fig:budget}, weighted circuits within $10^{3}$ latents pass for $82\%$, $48\%$, and $27\%$ of targets at layers 0--4, 5--7, and 8--11, against $63\%$, $0\%$, and $2\%$ for unweighted circuits; the full run, fitted at the production penalty alone, levels off at $69\%$, $45\%$, and $22\%$ (dotted), while weaker penalties carry the same targets much further.
 
 \begin{figure}[t]
 \centering
@@ -1142,8 +1226,9 @@ At the shared penalty unweighted circuits keep $1.85\times$ as many latents and 
 % 2026-10-06, when the budget curves (fig:budget) replaced it.
 % 2026-10-12: right panel (matched-pass-rate frontier arrow, "20x") dropped; paper_sweep.py RIGHT_PANEL=1 restores it.
 \includegraphics[width=0.62\linewidth]{wcm-vs-unweighted.pdf}
-\caption{Weighted against unweighted circuit masking at the shared sparsity penalty, $\lambda = 10^{-3}$ (the production setting): the share of targets whose circuit passes the criterion of \cref{sec:eval} (faithfulness under Z, A, and C in $[0.8, 1.5]$ and necessity $\geq 0.9$, on held-out contexts) for weighted circuit masking (blue) and unweighted circuit masking ($\alpha = 1$, grey), by target depth band; bold labels give the ratio of pass rates.
-190 targets, protocol v1; the per-score medians are in \cref{fig:wcm-vs-unweighted-zac}.}
+\caption{At the shared sparsity penalty, unweighted circuits pass almost as often as weighted ones at layers 0--4 but rarely beyond.
+Weighted against unweighted circuit masking at $\lambda = 10^{-3}$ (the production setting): the share of targets whose circuit passes the criterion of \cref{sec:eval} (faithfulness under Z, A, and C in $[0.8, 1.5]$ and necessity $\geq 0.9$, on held-out contexts) for weighted circuit masking (blue) and unweighted circuit masking ($\alpha = 1$, grey), by target depth band; bold labels give the ratio of pass rates.
+190 targets; the per-score medians are in \cref{fig:wcm-vs-unweighted-zac}.}
 \label{fig:wcm-vs-unweighted}
 \end{figure}
 Unweighted masking needs a weaker penalty to reach comparable faithfulness, so the two grids differ.
@@ -1159,6 +1244,8 @@ Pooled over depth bands, WCM's pass rate rises monotonically as the penalty weak
 % resid 9.7, mlp 16.1, attn 28.9%; target natural 3.06, A-fill empty circuit 1.16, members at alpha = 1 0.61 (medians);
 % fitted pass among them 16% vs 51%.
 \Cref{fig:coef-triad} sets the three versions of a circuit side by side: the circuits as fitted (the full run, $46\%$ pass; $44.7\%$ on the $1{,}746$ targets of the next sample), the same nodes with every coefficient set to $1$ ($1.5\%$ of $1{,}746$; at most $4\%$ in any depth band or site kind), and random nodes of the same size given the same coefficient fitting ($0$ of $747$).
+% Moved from sec:weighted 2026-10-27 (DAN-148 stage 3), values unchanged.
+On the $1{,}746$ circuits, median faithfulness falls from $0.94$, $0.95$, and $0.89$ with fitted coefficients to $0.00$, $0.09$, and $0.06$ at natural scale, under Z, A, and C.
 At natural scale the nodes seldom overshoot the target: $4$ of the $1{,}746$ circuits exceed $1.5$ under any ablation method, all at attention-output targets.
 More often they fall short of the empty circuit itself under activating-mean ablation ($18\%$; $7\%$ at layers 0--4, $32\%$ at 8--11, and $29\%$ of attention-output targets).
 There the activating-context means that the members replace already carry more of the target (a median $1.16$ of a natural $3.06$) than the members do at their natural scale ($0.61$), and the fitted coefficients make up the difference; these circuits pass less often with fitted coefficients ($16\%$, against $51\%$ for the other targets).
@@ -1171,11 +1258,13 @@ There the activating-context means that the members replace already carry more o
 % 0.7975 = softplus(softplus^-1(1) * (1 - 0.05 * 0.05)^400) (nulls_core.alpha_inert). Train-split Z of DAN-17: median
 % 0.00, 0.4% >= 0.8 (DAN-181 issue). Fill from 084 report.py tables 1-9 (out/report.md).
 The random circuits of the triad are the weakest null that fits coefficients.
+% Moved from sec:main-result 2026-10-27 (DAN-148), values unchanged.
+On the $747$ targets their median faithfulness is $0.00$ under every ablation method at every depth, only one has even a single score in the pass band, and none induces the target to half its level in contrast contexts.
 Their members are latents active anywhere on the target's strongest training contexts, and most are silent at the positions that feed the anchor, so their coefficients receive no gradient: the median coefficient is exactly $0.798$, the value weight decay alone reaches from $1$ in $400$ steps, and on the circuits' own training contexts the median zero-ablation faithfulness is $0.00$ ($0.4\%$ reach $0.8$).
 The null therefore shows that unrelated latents cannot be fitted, not that WCM's selection matters.
 Two harder nulls keep everything else and change only where the members come from.
 The \emph{anchor-active} null draws, at each site, the production circuit's member count from latents active at the anchor or up to $8$ positions before it on at least one training context, matching each member's corpus-frequency decile; production members may be drawn.
-The \emph{contribution-matched} null also matches each member's contribution to the target, the mean over training contexts of its activation times the gradient of the target's pre-activation, binned by deciles of the production members' own contributions, and excludes the production members: it is a substitution test, asking whether other latents of the same strength can stand in for the selected ones.
+The \emph{contribution-matched} null also matches each member's contribution to the target, the mean over training contexts of its activation times the gradient of the target's pre-activation, binned by deciles of the production members' own contributions, and excludes the production members: it is a substitution test, asking whether other latents of the same strength can stand in for the selected ones, as overlap-penalised search does for output circuits~\citep{chen2026rome}.
 Each set is fitted exactly as above and scored on held-out and on training contexts, with fitted coefficients and with every coefficient at $1$; the latter is the size-matched, nothing-fitted null of prior work~\citep{shi2024hypothesis, seth2026circuitkit}, and once circuits carry fitted coefficients the fair control fits them on the random members too.
 Both run on $126$ of the sweep targets ($14$ per depth band and site kind) and on $128$ targets per public model, one draw each and a second draw on $32$, so that each target's WCM score can also be placed within its own null draws.
 \pending{harder nulls: pass rate with interval per null and depth band, median Z / A / C and necessity on held-out and training contexts, the share of coefficients that moved, the WCM score's quantile among each target's draws, the overlap of anchor-active draws with production members, and the contribution-matching shortfall, on all three models, DAN-181}
@@ -1184,7 +1273,8 @@ Both run on $126$ of the sweep targets ($14$ per depth band and site kind) and o
 \centering
 % Data: experiments/062-h100-protocol-v1/triad.py (FIG=1 writes this file).
 \includegraphics[width=\linewidth]{coefficient-triad.pdf}
-\caption{The coefficient triad on the production circuits.
+\caption{Only the selected nodes with their fitted coefficients pass: the same nodes at natural scale, and random nodes given the same fitting, almost never do.
+The coefficient triad on the production circuits.
 \textbf{(a)}~The share of targets that pass the criterion of \cref{sec:eval}, by target depth band and site kind, for the circuits as fitted (blue; the full run, $14{,}994$ circuits), the same nodes with every coefficient set to $1$ (grey; $1{,}746$ targets), and random nodes of the same size given the same coefficient fitting (light grey; $747$ targets), whose coefficients barely move from initialisation (median $\alpha$ exactly $0.798$, the value weight decay alone reaches; \cref{app:nulls}).
 \textbf{(b)}~Median faithfulness under zero (Z), activating-mean (A), and contrast-mean (C) ablation, with interquartile ranges; $1$ is perfect (dashed).
 % 2026-10-24 (paper prep, DAN-181): add the anchor-active and contribution-matched bars to (a) and their medians to (b)
@@ -1252,7 +1342,7 @@ The gap between the methods is smallest under zero ablation, largest under the t
 % paired bootstrap over targets, 2,000 resamples); figure: source_figure.py PAPER=1; geometry: set_geometry.py
 % (out/geometry/); near / mid / far: thirds_rescore.py (out/thirds/report.md).
 The C term of WCM trains against the mean over contrast contexts, so the choice of contrast contexts could shape what a circuit learns.
-We refitted 280 targets of the production run (8 per layer and site kind) under four contrast sources, all checked for silence after Top-K: \emph{close} (the production set, \cref{app:stores}), \emph{random}, \emph{distant}, and \emph{fused}, a third of each.
+This analysis ran under protocol v1: we refitted 280 targets of the production run (8 per layer and site kind) under four contrast sources, all checked for silence after Top-K: \emph{close} (the production set, \cref{app:stores}), \emph{random}, \emph{distant}, and \emph{fused}, a third of each.
 For every target the four sets are disjoint, and every circuit, fitted at $\lambda \in \{3 \times 10^{-4}, 10^{-3}, 3 \times 10^{-3}\}$, is scored on the held-out contexts of the close, random and distant sets alike, so the training source is the only difference between arms and all arms are scored on the same contexts.
 Scores are interpolated to a matched circuit size of $490$ latents, the median close-trained circuit at the production sparsity penalty.
 
@@ -1301,7 +1391,7 @@ A circuit is flagged as an amplifier when, under at least one ablation method an
 
 % APPENDIX CUTS 2026-10-12 (tier 2): the 16-target pilot paragraph was cut (the production numbers below supersede it);
 % its rank-keep sentence is kept.
-The rank-keep term (\cref{sec:ablmask}) keeps the target in its Top-K more often but does not reliably remove amplifiers, so specificity is reported for every circuit rather than claimed for the method.
+The rank-keep term (\cref{sec:ablmask}) keeps the target in its Top-K more often but does not reliably remove amplifiers.
 % DAN-75 full run, spec.shard*.jsonl (2026-09-27).
 Most circuits are specific ($15{,}004$ circuits): under Z, A, and C the target is restored to a median $0.94$, $0.99$, and $0.92$ of its pre-activation, its siblings to $0.26$, $0.46$, and $0.41$, and the site's other active latents to $0.14$, $0.28$, and $0.24$.
 Under the two mean ablations, circuits lift a median of $578$ and $517$ latents above the unmodified Top-K cut, against $5$ and $4$ for the empty circuit, and the target stays in its Top-K on $84\%$ and $80\%$ of held-out anchors.
@@ -1324,17 +1414,21 @@ Causal scrubbing~\citep{chan2022causal} sets a stricter test: everything outside
 We scored the production circuits of the $747$ targets that have a random-circuit baseline this way.
 At each position a removed latent takes a donor context's sparse code (so the donor's sparsity is kept), with donors drawn from the target's activating training contexts (A), its contrast contexts (C), or random corpus text (R); the scores and the pass rule are otherwise unchanged.
 With A and C donors, $0.1\%$ of circuits pass, against $43.1\%$ under the production test, with median faithfulness $0.18$ (A), $0.04$ (C), and $0.01$ (R); random circuits pass on none.
+As for output circuits under node ablation~\citep{miller2024transformer}, resample ablation scores far below mean ablation.
 
 The failure is one of closure, not of membership, for residual-stream targets.
 In a 45-target diagnostic with C donors, holding the members at their own values in the base context restores residual-stream targets to a median $0.92$ (MLP $0.39$, attention $0.11$), while members recomputed from the mixed stream do not; the node set carries the signal, but the members lose the inputs they receive from outside the circuit.
 The coefficients show the same dependence: with the base context as its own donor, so that nothing is ablated, residual-stream circuits overshoot to a median $2.16$, because coefficients fitted to stand in for an ablated complement over-drive the target when the complement is present.
 
-Nothing in training asks a circuit to survive a real background, so we added one: a fourth ablation method whose replacement values are donor codes, drawn afresh at every step from contrast and random corpus contexts disjoint from the evaluation donors.
-In a 27-target pilot, paired against the production configuration refitted on the same hardware, it raises the resample pass rate from $0\%$ to $33\%$ and the production pass rate from $37\%$ to $52\%$, at $1.15\times$ the circuit size.
-Its side effect is that the target now also fires at nearby positions of the activating passage where it is naturally silent; a penalty on lifts at those positions roughly halves the effect, and with both terms at weight $0.25$ the resample pass rate is $37\%$, the production pass rate $59\%$, and the size $1.35\times$.
-% 079 out_confirm/report.md (2026-10-23): 99 targets disjoint from the pilot, arm RS0.25_S0.25 fixed before the run.
-With that configuration fixed in advance, $99$ further targets (11 per depth band and site kind) confirm the pilot: the resample pass rate rises from $0\%$ to $30\%$ ($39\%$, $36\%$, and $15\%$ by depth band), the production pass rate from $44\%$ to $57\%$, and the size by $1.22\times$, while the correlation with the target at every position stays where it was ($0.77$ against $0.79$).
-Deep targets gain least on the resample test but most on the production test ($21\%$ to $45\%$).
+% 2026-10-26: experiments/095-v2-resample-appendix (out/tables.md). Protocol v2, 72 targets = exp 093's (8 per band x
+% kind), paired: v2 (093's circuits) vs v2CR (R added, C kept) vs v2R (R in place of C), both refitted; no silent-
+% position term. Held-out sets: the 15k as-run sets (DAN-157 leakage; paired, absolute rates on leaky sets).
+% Rates s1, paired CIs s1b, medians s2, size / time s3; v1 numbers: 079 out_confirm, recomputed in s5.
+Nothing in training asks a circuit to survive a real background, so we tried adding one: a resample ablation whose replacement values are the sparse codes of the target's training contrast contexts, one donor per context, drawn afresh at every step, with the donor's sparsity kept as in the test; the test's donors are held-out contrast contexts and random corpus text, never seen in training.
+On $72$ targets ($8$ per depth band and site kind), paired against the production configuration, adding it as a fourth ablation method raises the resample pass rate from $0\%$ to $24\%$ (95\% CI of the difference $+14$ to $+33$ points; $33\%$, $33\%$, and $4\%$ by depth band), while the production pass rate moves from $69\%$ to $62\%$ (CI $-17$ to $+3$ points), at $1.18\times$ the circuit size and $1.45\times$ the fitting time.
+Using it in place of the contrast-mean ablation gains as much on the resample test ($25\%$) but costs the production test ($51\%$; CI $-29$ to $-7$ points), most at layers 8--11 ($46\%$ to $21\%$), where the median contrast-mean faithfulness falls from $0.83$ to $0.48$.
+Under our earlier training protocol, whose dense mean fill left more circuits failing the production test ($44\%$), the same addition raised both rates on $99$ targets, the resample pass rate to $30\%$ and the production pass rate to $57\%$; with the sparsity-preserving training fill (\cref{sec:ablmask}) only the resample gain remains.
+Deep targets gain least on the resample test under either protocol ($4\%$ here, $15\%$ before).
 
 % 2026-10-24 (Daniel): exp 074 disclosed. Data: experiments/073-strict-eval/out/report.md, "074 - all-position
 % simulation" (747 targets; 16 held-out activating + 16 held-out contrast contexts; medians). The activating contexts
@@ -1348,7 +1442,7 @@ Under the contrast-mean ablation the reads are closer (median correlation $0.66$
 A circuit is thus a mechanism for the target's activation where the target fires, not a simulation of the target at every position, and deep circuits under zero ablation overfire away from the anchor.
 
 Faithfulness is therefore relative to the ablation methods a circuit is trained and tested against, and robustness to a stricter test can be trained for by giving training the backgrounds the circuit must survive.
-Every result in the main text uses the three methods of protocol v1.
+Every result in the main text uses the three production ablation methods.
 
 \section{Case Studies}
 \label{app:case-studies}
@@ -1376,8 +1470,9 @@ Each case is tested three ways.
 \toprule
 \textbf{Target} & \textbf{What it computes} & \textbf{Minimal pair (clean model)} & \textbf{Story groups removed: Z / A / C (random)} & \textbf{Caveat} \\
 \midrule
-9.resid.20419 (\cref{sec:case-study}) & a date or place read as classical Greek antiquity & ``In the 5th century BC, the philosopher \ldots'' $76\%$; ``In the 19th century, \ldots'' $0\%$ & $0.20 / 0.20 / 0.19$ \newline ($0.49 / 0.98 / 0.74$) & ``BC'' is partly lexical (``The BC Lions'' $44\%$) \\
-10.resid.15497 & the possessive after a name that carries a law, before ``law'' appears & ``Snell's'' $94\%$, ``Ohm's'' $80\%$; ``Darwin's'', ``Picasso's'' $0\%$; invented ``Zorbel's'' $76\%$ in electromagnetism, $0\%$ in painting & $0.00 / {-0.12} / 0.03$ \newline ($0.54 / 0.92 / 0.64$) & amplifier: lifts ${\sim}7{,}900$ latents, target rank $1 \to 4$ \\
+9.resid.20419 (\cref{sec:case-study}) & a date or place read as classical Greek antiquity & ``In the 5th century BC, the philosopher \ldots'' $76\%$; ``In the 19th century, \ldots'' $0\%$ & $0.20 / 0.20 / 0.19$ \newline ($0.49 / 0.98 / 0.74$) & ``BC'' is partly lexical (``The BC Lions'' $44\%$); the date route is weak \\
+% 2026-10-27: direct logit effect from experiments/096-no-token-latent/results/direct_effects.md (boost at peak 4.20 nats; top tokens Law, law, Equ).
+10.resid.15497 & the possessive after a name that carries a law, before ``law'' appears & ``Snell's'' $94\%$, ``Ohm's'' $80\%$; ``Darwin's'', ``Picasso's'' $0\%$; invented ``Zorbel's'' $76\%$ in electromagnetism, $0\%$ in painting & $0.00 / {-0.12} / 0.03$ \newline ($0.54 / 0.92 / 0.64$) & amplifier: lifts ${\sim}7{,}900$ latents, target rank $1 \to 4$; also promotes ``Law'' and ``law'' directly ($4.2$ nats at peak) \\
 8.resid.31095 & ``but also'' when a sentence attributes causes & ``influenced not only by memory but also'' $89\%$; ``involves not only memory but also'' $0\%$ & $0.19 / 0.41 / 0.28$ \newline ($0.73 / 0.93 / 0.81$) & one latent alone gives most of the drop \\
 8.attn.29991 & acid--base dissociation & acid--base sentences $46$--$87\%$; other chemistry $0$--$16\%$ & $0.25 / 0.11 / 0.16$ \newline ($0.61 / 1.19 / 0.80$) & ``Her acid wit'' $38\%$ \\
 9.resid.7640 & the pivot in ``not X, but rather Y'' & negated clause, then pivot $37$--$124\%$; same comma without negation $0$--$13\%$ & $0.00 / 0.03 / 0.00$ \newline ($0.42 / 0.80 / 0.39$) & fragile: random removals also hurt; lifts $15$--$21$k latents \\
@@ -1462,53 +1557,56 @@ The transcoder-based methods need a substrate our SAE bank does not provide, and
 
 \paragraph{Masks, scalars, and ablations.}
 Learned masks for circuit discovery descend from subnetwork probing~\citep{cao2021low}, applied to computational-graph vertices by \citet{conmy2023towards} and to edges by Edge Pruning~\citep{bhaskar2024finding} and by uniform gradient sampling with optimal ablation~\citep{li2024optimal}, on $L_0$-gate and continuous-sparsification machinery~\citep{louizos2018learning, savarese2020winning}.
-Masks over SAE latents have been learned to localise attributes~\citep{chaudhary2024evaluating}, a procedure adopted by benchmarks~\citep{mueller2025mib, karvonen2025saebench}, and to find behavioural circuits by continuous sparsification~\citep{caples2025scaling}; with its coefficients fixed at 1, its objective moved to a single latent, and one mask shared across positions, the latter is our unweighted circuit masking.
+Masks over SAE latents have been learned to localise attributes~\citep{chaudhary2024evaluating}, a procedure adopted by benchmarks~\citep{mueller2025mib, karvonen2025saebench}, and to find behavioural circuits by continuous sparsification, with a mask per token position and a single per-token mean ablation~\citep{caples2025scaling}; with its coefficients fixed at 1, its objective moved to a single latent, one mask shared across positions, and three ablations with the sparsity-preserving fill and rank-keep in place of one mean ablation, the latter is our unweighted circuit masking.
 Every such mask keeps a node at its natural scale or ablates it.
 The continuous coefficients of \citet{li2024optimal} interpolate between the two and play the role of our gates; what they learn besides is a constant for each \emph{removed} component, the dual of our scale for each kept one.
 That constant minimises the ablated model's expected loss, so a component's importance is what it carries beyond the best constant; we keep the three ablations fixed and defined by data (zero, and the means over activating and over contrast contexts), so that what absence means is set before training rather than fitted with the circuit.
 
-Learned per-unit scales appear with other jobs: scales that double as the pruning criterion~\citep{liu2017learning, huang2018data, you2019gate}; scales for the units kept after pruning, fitted after the mask is fixed~\citep{kwon2022fast, he2017channel}; steering multipliers~\citep{stoehr2024activation}; sparse fitted weights on SAE latents for a task vector~\citep{kharlapenko2025scaling}; regression weights on feature-to-feature edges~\citep{yin2026scalable}; and manual rescaling of the nodes of a pruned circuit~\citep{gao2025weightsparse}.
+Learned per-unit scales appear with other jobs: scales that double as the pruning criterion~\citep{liu2017learning, huang2018data, you2019gate}; scales for the units kept after pruning, fitted after the mask is fixed~\citep{kwon2022fast, he2017channel}; steering multipliers~\citep{stoehr2024activation}; sparse fitted weights on SAE latents for a task vector~\citep{kharlapenko2025scaling}; regression weights on feature-to-feature edges~\citep{yin2026scalable}; and, after pruning, a fitted logit scale and shift together with manual rescaling of a few nodes~\citep{gao2025weightsparse}.
+\citet{gao2025weightsparse} warn that rescaling nodes can hide superposition, letting a few rescaled nodes stand in for many; our random circuits receive the same coefficient fitting as the circuits they control for, which tests whether rescaling alone makes a set faithful (\cref{app:nulls}).
+% DAN-31 (2026-10-27, reading C): why CircuitLasso is not a baseline.
+CircuitLasso~\citep{yin2026scalable}, run among others on GPT-2 small with OpenAI's sparse autoencoders, the dictionary family of our public run, links features one layer pair at a time by an observational sparse regression, whose coefficients its authors note are not causal effect sizes, and scores its circuits on training data; we do not run it, since our question is which latents suffice under intervention on held-out contexts, though its coefficients could rank members for the comparison of \cref{sec:method-comparison}.
 Gate-times-magnitude parametrisations separate membership from strength in sparse training and fine-tuning~\citep{louizos2018learning, guo2021parameter, lai2025joint}, where a closed gate means no change or zero rather than an ablated node.
 Feature-preserving subnetworks have also been pruned by saliency in vision models~\citep{hamblin2022pruning}.
 
-Circuits are routinely evaluated under several ablations~\citep{miller2024transformer, mueller2025mib} but discovered under one.
+Circuits are evaluated under one or several ablations~\citep{miller2024transformer} but discovered under one; MIB compares discovery under counterfactual, mean, and optimal ablations while evaluating under counterfactual patching alone, and circuits discovered under the evaluation's own ablation score best~\citep{mueller2025mib}.
 The nearest objectives sum the clean-to-corrupted and corrupted-to-clean directions of one counterfactual~\citep{chen2025rethinking}, or certify a circuit against every patch value in a bounded set~\citep{hadad2026formal}.
 % 2026-10-23 (Daniel): the sentence reading the three-ablation objective as resample ablation was cut; exp 073 contradicts
 % it (app:resample: 0.1% of circuits pass a resample test).
 Training under several ablations is the circuit-level counterpart of attribution averaged over several baselines~\citep{kapishnikov2019xrai, erion2021improving}; it is not resample ablation, which our circuits mostly fail (\cref{app:resample}).
 
 \paragraph{Nulls, variance, and non-uniqueness.}
-Random circuits as a null follow \citet{shi2024hypothesis}, who test whether a candidate is more faithful than about a hundred random circuits of at least its size, sampled as paths through the model, and CircuitKIT~\citep{seth2026circuitkit}, which reports a $z$-score against random subgraphs of equal size.
+Random circuits as a null follow \citet{shi2024hypothesis}, who test whether a candidate is more faithful than $90\%$ of $100$ random circuits built from random input-to-output paths, with the random circuits' size varied from the candidate's own up to most of the model, and CircuitKIT~\citep{seth2026circuitkit}, which compares a circuit with size-matched random subgraphs by an improvement ratio and a $z$-score.
 In both, the random circuits are sampled and ablated but not fitted, which matches circuits that are not fitted either.
 Our circuits fit a coefficient per node, and fitting alone might rescale an arbitrary set into reproducing a target, so our random circuits receive the same coefficient fitting before scoring (\cref{sec:eval}); with every coefficient at 1 they reduce to the nothing-fitted null.
 The broader concern is the one \citet{meloux2025dead} raise: interpretability methods produce plausible explanations even for randomly initialised networks, so findings are better treated as statistical estimates tested against alternative hypotheses.
 Causal scrubbing~\citep{chan2022causal} is a stricter test in this spirit, resampling everything outside the hypothesis from other inputs (\cref{app:resample}).
 
 Circuit discovery is also variable.
-EAP-IG circuits vary with the data batch, the prompt template, and the example~\citep{wu2026demystifying}; on one task, defensible analytic choices change the derived claim for most pairs of specifications~\citep{mahale2026explanation}; and Certified Circuits stabilise membership by randomised subsampling of the data, keeping only components included consistently~\citep{anani2026certified}.
-On small networks where every circuit can be enumerated, many circuits reproduce the same behaviour exactly~\citep{meloux2025everything}, and in language models structurally distinct, low-overlap circuits support the same task~\citep{chen2026rome}, with circuits for one task differing across its inputs~\citep{makou2026many}.
+EAP-IG circuits vary with the data batch and the prompt template, and their faithfulness varies widely across individual examples~\citep{wu2026demystifying}; on one task, defensible analytic choices change the derived claim for most pairs of specifications~\citep{mahale2026explanation}; and Certified Circuits stabilise membership by randomised subsampling of the data, keeping only components included consistently~\citep{anani2026certified}.
+On small networks where every circuit can be enumerated, many circuits reproduce the same behaviour exactly~\citep{meloux2025everything}, and in language models structurally distinct, low-overlap circuits support the same task~\citep{chen2026rome}, and circuits for one task found on different inputs differ in structure, yet a shared core recovers their performance~\citep{makou2026many}.
 Our node sets are non-identifiable in the same way, which is why a circuit's function, not its exact member list, is what we report as the finding (\cref{app:underdetermination}).
 
 \paragraph{Self-repair and inhibition.}
-Ablation-based tests meet compensation: when one attention layer is ablated, later layers make up part of its effect~\citep{mcgrath2023hydra}; the self-repair of single heads persists over the full training distribution, partial and variable across prompts, carried in part by the final LayerNorm scale and by sparse anti-erasure neurons~\citep{rushing2024explorations}; and copy-suppression heads, which lower the logits of tokens that earlier layers would copy from context, account for part of it~\citep{mcdougall2024copy}.
+Ablation-based tests meet compensation: when one attention layer is ablated, later layers make up part of its effect~\citep{mcgrath2023hydra}; the self-repair of single heads persists over the full training distribution, partial and variable across prompts, carried in part by the final LayerNorm scale and by sparse anti-erasure neurons~\citep{rushing2024explorations}; and copy-suppression heads, which lower the logit of a token that earlier layers predict when it already appears in the context, account for $39\%$ of the self-repair that follows ablating the name-mover heads of the IOI circuit~\citep{mcdougall2024copy}.
 Conditional co-ablation finds backup components that become important only once a primary set is removed~\citep{gong2026conditional}.
-Our scores intervene on the circuit as one set (\cref{sec:eval}), so they measure what the set does with any compensation inside the model included; per-member roles, where backups matter most, are not claimed.
+Our scores intervene on the circuit as one set (\cref{sec:eval}), so they measure what the set does with any compensation inside the model included; necessity in particular is scored with the complement recomputed, so backups outside the circuit are free to respond, while faithfulness training holds the complement at its ablation value and so never rewards including dormant backups; per-member roles, where backups matter most, are not claimed.
 
 \paragraph{Position-aware circuits.}
-Position handling divides prior work into three strategies, each right for its setting: position-indexed nodes on templatic data and scores summed over positions otherwise~\citep{marks2025sparse}, per-instance graphs built one prompt at a time~\citep{ameisen2025circuit}, and schema-aligned positions across variable-length examples~\citep{haklay2025position}.
+Position handling divides prior work into three strategies, each right for its setting: scores summed over positions, with nodes kept per position as an option of the released code~\citep{marks2025sparse}, per-instance graphs built one prompt at a time~\citep{ameisen2025circuit}, and schema-aligned positions across variable-length examples~\citep{haklay2025position}.
 WCM needs none of these commitments: one mask is shared across positions and nodes are recomputed at every position, which suits the setting none of the three targets, one reusable circuit over arbitrary non-templatic text; our attribution baselines instead select per position and take the union over the causal prefix (\cref{sec:membership}).
 
 \paragraph{Contrast contexts.}
-Retrieved non-activating examples appear in automated interpretability for explanation scoring~\citep{paulo2024automatically}; \citet{paulo2025evaluating} find evaluations collapse when negatives come from neighbouring features, convergent with our finding that close contrast contexts generalise worst to other backgrounds (\cref{app:contrast-source}); and \citet{oneill2024sparse} design corrupted negatives for task-level circuit identification.
-We use retrieved contrast contexts for causal discovery rather than explanation scoring, and treat their construction as a controlled variable with measured consequences.
+Retrieved non-activating examples have been used to falsify feature explanations: \citet{ma2025revising} select the sentences most similar to a feature's top activations and keep those on which it is zero at every token, and EleutherAI's \texttt{delphi} library draws nearest-neighbour hard negatives per activating example for explanation scoring~\citep{eleuther2024delphi}. Explanation scores collapse to chance when negatives come from neighbouring features~\citep{eleuther2024autointerp}, convergent with our finding that close contrast contexts generalise worst to other backgrounds (\cref{app:contrast-source}). Retrieval-based corruptions have also been used for circuit discovery on a behaviour, as the nearest non-memorised samples in the model's own embedding space~\citep{lasy2025memorization}, and \citet{oneill2024sparse} design corrupted negatives for task-level circuit identification.
+We use retrieved, silence-checked contexts per latent as the background a circuit is trained and evaluated against (the C mean, the resample donors, and the held-out set for sufficiency to induce), rather than for explanation scoring or as one paired corruption, and treat their construction as a controlled variable with measured consequences.
 
 \paragraph{The SAE basis.}
-Static structure among latents is well documented: co-occurrence and decoder geometry reveal modularity~\citep{li2025geometry}, coactivation-derived components steer behaviour~\citep{deng2026coactivation}, meta-decompositions show latents are not atomic~\citep{leask2025canonical}, cross-layer feature-flow graphs track latents through the forward pass~\citep{laptev2025feature}, though decoder similarity misses most causally strong feature interactions~\citep{droste2026decoder}, and Jacobian SAEs train adjacent dictionaries for sparse computation between them~\citep{farnik2025jacobian}.
+Static structure among latents is well documented: co-occurrence and decoder geometry reveal modularity~\citep{li2025geometry}, coactivation-derived components steer behaviour~\citep{deng2026coactivation}, meta-decompositions show latents are not atomic~\citep{leask2025canonical}, cross-layer feature-flow graphs track latents through the forward pass~\citep{laptev2025feature}, though decoder similarity misses most ablation-validated feature transitions through an MLP layer~\citep{droste2026decoder}, and Jacobian SAEs train adjacent dictionaries for sparse computation between them~\citep{farnik2025jacobian}.
 But that structure is correlational, geometric, or weight-based, where the relationships discovered here are context-conditioned and intervention-tested.
-Weight-based connections need that test: virtual weights between interpretable components include \emph{interference weights}, large connections between components that never interact on the data distribution~\citep{turner2026interference}.
-Intervention-based latent graphs have been mapped at scale in single-cell foundation models, by ablating one SAE feature at a time and measuring the change in downstream features, finding inhibitory edges dominant~\citep{kendiukhov2026causal} and a heavy-tailed hub structure with redundancy that grows with interaction order~\citep{kendiukhov2026exhaustive}; those graphs measure the effect of one feature at a time, where our circuits are fitted jointly for each target and tested as a set.
-The basis itself is imperfect: reconstruction errors are pathological~\citep{gurnee2024pathological}, although much of the error is linearly predictable from the activation~\citep{engels2025dark}; SAEs trained from different seeds learn largely different features~\citep{paulo2025sparse}; downstream utility is mixed~\citep{smith2025negative}; and units are not canonical~\citep{leask2025canonical}.
-Interventions on the basis are imperfect too: a behaviour suppressed by clamping SAE features can be recovered through the reconstruction residual while the features stay clamped~\citep{cui2026sae}; the effect of ablating single-token features on their token's logit differs more across SAE families than across model scales~\citep{cho2026single}; and dictionaries trained only on what an affine map from an earlier layer cannot explain recover more of the loss when several layers are replaced at once~\citep{poduval2026resae}.
+Weight-based connections need that test: in a one-layer model expanded into virtual weights between transcoder features, many large weights are \emph{interference weights}, irrelevant or harmful to behaviour, and raw weight magnitude separates them poorly from the weights that matter~\citep{turner2026interference}.
+Intervention-based latent graphs have been mapped at scale in single-cell foundation models, by ablating one SAE feature at a time and measuring the change in downstream features, finding that most edges are ones whose removal lowers the downstream feature (termed inhibitory there)~\citep{kendiukhov2026causal} and a heavy-tailed hub structure with redundancy that grows with interaction order~\citep{kendiukhov2026exhaustive}; those graphs measure the effect of one feature at a time, where our circuits are fitted jointly for each target and tested as a set.
+The basis itself is imperfect: reconstruction errors are pathological~\citep{gurnee2024pathological}, although much of the error is linearly predictable from the activation~\citep{engels2025dark}; SAEs trained from different seeds learn largely different features, Top-K ones most of all~\citep{paulo2025sparse}; downstream utility is mixed~\citep{smith2025negative}, and in causal-variable localisation SAE features are no better than neurons~\citep{mueller2025mib}; and units are not canonical~\citep{leask2025canonical}.
+Interventions on the basis are imperfect too: an optimised perturbation can recover a behaviour suppressed by clamping SAE features, through the reconstruction residual and with the features still clamped~\citep{cui2026sae}; the effect of ablating single-token features on their token's logit differs more across SAE families than across model scales within a family~\citep{cho2026single}; and dictionaries trained only on what an affine map from an earlier layer cannot explain recover more of the loss when several layers are replaced at once, at most sparsity levels~\citep{poduval2026resae}.
 This conditions our claims: reconstruction residuals stay as explicit anchors, evaluation intervenes on measured activations, and the SAE basis is treated as a useful but imperfect sample of the model's internal variables.
 
 \section{Node Sets Are Non-Identifiable; Function Is Not}
@@ -1522,25 +1620,29 @@ This conditions our claims: reconstruction residuals stay as explicit anchors, e
 % AUDIT 2026-10-12 (Daniel): the unsourced pre-v1 "40-85% shared" range was replaced by v1 numbers. Cross-GPU:
 % experiments/068-validation-gates/out_golden/report.md, J(r0, H100) over 32 targets: median 0.602, min 0.318, max
 % 0.960 (r0 vs r1 on the same RTX: J 1.0000, d-alpha 0). Reordered refit: out_stable_core (below).
-The masking engine is bit-deterministic at fixed settings on one GPU type (two identical runs agree exactly, with \emph{zero} node flips), so small perturbations are controlled experiments on the objective, and each one we tried gave the same verdict.
+The masking engine is bit-deterministic at fixed settings on one GPU type (two identical runs agree exactly, with \emph{zero} node flips), so small perturbations are controlled experiments on the objective, and the ones we tried gave the same verdict.
 % APPENDIX CUTS 2026-10-12 (tier 2): the Extended Discussion (app:discussion) was merged into this section: its probes
 % replace the one-line summary here, its equivalence-class paragraph (a repeat) was dropped, and "From circuits to
 % chains" is condensed below. 2026-09-24 leak-fix A/B (055, 16 targets): Jaccard median 0.66; H100 vs local 0.66.
-In pre-v1 probes, five on unweighted circuit masking and two on WCM, each perturbation left faithfulness roughly unchanged but exchanged nodes.
+In exploratory probes, five on unweighted circuit masking and two on WCM, each perturbation left faithfulness roughly unchanged but exchanged nodes.
 A float32 and a bfloat16 run differ only in rounding, yet exchange $16.5\%$ of nodes at layer 8 (Jaccard $0.835$) at unchanged faithfulness and size.
 Strengthening the sparsity penalty swaps nodes rather than nesting them (containment $0.49$--$0.80$ between consecutive steps); no gate ever freezes, so the stopping step is another sampling axis; $8$--$25\%$ of nodes sit within $0.05$ of the decision cut and are load-bearing; and short-budget and long-budget runs at matched size share only $0.40$--$0.53$ of their nodes.
 Recomputing the mean-ablation values without a quarter of their contexts, a change that leaves the pass rate and median faithfulness unchanged, moves node sets as far as a change of hardware (median Jaccard $0.66$).
-Under protocol v1 the effect holds at scale: the same settings on a different GPU type give node sets with a median Jaccard of $0.60$ ($0.32$--$0.96$ over $32$ targets), and a refit with reordered training contexts shares a median $64\%$ of the original circuit's latents (below).
-A discovered node set is one sample from an equivalence class of near-optimal solutions to \labelcref{eq:p2}, so we report node sets as equivalence classes and let set-level and functional claims carry the conclusions.
+The effect holds at scale: under protocol v1, the same settings on a different GPU type give node sets with a median Jaccard of $0.60$ ($0.32$--$0.96$ over $32$ targets), and a refit with reordered training contexts shares a median $64\%$ of the original circuit's latents (below).
+A discovered node set is one sample from an equivalence class of near-optimal solutions to \labelcref{eq:p2}, so we report node sets as equivalence classes and let set-level and functional claims carry the conclusions, since overlap does not track faithfulness~\citep{hanna2024faith} and circuits are in general not identifiable~\citep{meloux2025everything, meloux2025dead}.
 
 \paragraph{A stable core at scale.}
-To measure this on the production run, we refitted 175 of its targets (5 per layer and site kind) under protocol v1 with one change: the training contexts visited in a different fixed order.
+To measure this on the production run, we refitted 175 of its targets (5 per layer and site kind) under the production protocol with one change: the training contexts visited in a different fixed order.
 The refit ran on a different GPU from the production fit, and a refit is bitwise reproducible on the same GPU type but not across types, so the two fits differ by the reordering and by float-level differences in the hardware.
 The \emph{core} of a target is the set of latents in both circuits; its coefficients are refitted on the core alone, as for the random baseline, and it is scored with the production scorer.
 \Cref{tab:stable-core} gives the result.
-The two fits share a median $64\%$ of the original circuit's latents (Jaccard $0.54$), less at depth.
+The two fits share a median $64\%$ of the original circuit's latents (Jaccard $0.54$), less at depth; component-level EAP-IG circuits are more stable across data resamples (Jaccard $0.80$--$0.92$;~\citealp{seth2026circuitkit}), but choose from a candidate pool orders of magnitude smaller.
 The second fit is smaller (median $402$ against $492$ latents; smaller for $160$ of the $175$ targets) but passes about as often as the first ($40\%$ against $43\%$), and where both fits pass, the core alone passes on $48$ of $56$ targets, and its median necessity is $1.0$ in every depth band.
-Which latents a circuit contains is therefore partly an accident of optimisation, while a core of about two thirds of it carries the function.
+% DAN-31 (2026-10-27, reading B): "carries the function" narrowed to the two fits; Rome's near-disjoint alternatives
+% are not tested by a refit; the stable core is not claimed as new (Makou, Certified Circuits).
+Which latents a circuit contains is therefore partly an accident of optimisation, while a core of about two thirds of it carries the function in both fits.
+A refit does not search for near-disjoint alternatives, which a search that penalises overlap with earlier circuits finds for output tasks~\citep{chen2026rome}, so we have not tested them; the contribution-matched null, which excludes the production members, is a substitution test of that kind (\cref{app:nulls}).
+The core is a two-fit counterpart, for latent targets, of earlier stable cores: structurally different extractions of an output circuit share a core that recovers its performance~\citep{makou2026many}, and certified circuits keep only components selected consistently under subsampling of the data~\citep{anani2026certified}.
 
 \begin{table}[h]
 \centering
@@ -1561,7 +1663,7 @@ all   & 175 & 0.54 & 492 & 402 & 297 & 43.4 & 40.0 & 33.1 \\
 \end{tabular}
 \caption{Stability of circuit membership under a refit.
 Fit 1 is the production circuit; fit 2 refits the same target with the training contexts in a different order, on a different GPU; the core is the latents of both, with coefficients refitted on the core alone.
-Jaccard and sizes are medians over targets; pass rates use the protocol-v1 criterion on held-out strongest contexts.}
+Jaccard and sizes are medians over targets; pass rates use the pass criterion on held-out strongest contexts.}
 \label{tab:stable-core}
 \end{table}
 
@@ -1579,18 +1681,18 @@ Non-identifiability sets the boundary condition: each link is one sample from an
 \Cref{alg:ablmask} summarises weighted circuit masking (\cref{sec:ablmask}) as run in the production run.
 
 \begin{algorithm}
-\caption{Weighted circuit masking, WCM[Z+C+A] with rank-keep (one target $f$; protocol v1, \cref{tab:protocol})}
+\caption{Weighted circuit masking, WCM[Z+C+A] with rank-keep (one target $f$; \cref{tab:protocol})}
 \label{alg:ablmask}
 \begin{algorithmic}[1]
 \Require target $f$; activating contexts $\posset$ (train on 32 strongest + 16 mid-band; hold out 16 + 16) and contrast contexts $\negset$ (48 train / 16 held out); $\lambda = 10^{-3}$; $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$; $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$; steps $S = 400$
 \State target $\gets$ natural pre-activation of $f$ at the training anchors (no-grad forward);\quad $\nu \gets \operatorname{mean}(\text{target}^2)$
 \State $r \gets \min(K,\ $rank of $f$ among its site's other latents$)$ at each training anchor, unmodified model
-\State ablation values: C $\gets$ dense site means over the \emph{training} contrast contexts; A $\gets$ over the \emph{training} activating contexts
+\State ablation means: C $\gets$ site means over the 48 \emph{training} contrast contexts; A $\gets$ over the 48 strongest \emph{training} activating contexts (the evaluation's means)
 \State initialise $\theta_s = 4$, $\psi_s = \mathrm{softplus}^{-1}(1)$ for every upstream site $s$
 \For{step $= 0, \ldots, S - 1$}
     \State $T \gets 0.05^{\,\text{step}/(S - 1)}$; \quad gates $m_s \gets \sigma(\theta_s / T)$; \quad coefficients $\alpha_s \gets \mathrm{softplus}(\psi_s)$ \Comment{geometric anneal $1 \rightarrow 0.05$}
     \For{$\pi \in \{\mathrm{Z}, \mathrm{C}, \mathrm{A}\}$} \Comment{same $\theta, \psi$ under all three ablation methods}
-        \State forward with kept latents at $\alpha \times$ live value, closed latents at their $\pi$ ablation value
+        \State forward with kept latents at $\alpha \times$ live value, closed latents at their $\pi$ ablation value; for C and A, the sparsity-preserving fill, straight-through (\cref{app:respect-topk})
         \State $\mathcal{L}_{\pi} \gets$ MSE of $f$'s pre-activation against target; \quad $\mathcal{R}_{\pi} \gets \operatorname{mean}\,\operatorname{relu}(\tau^{(r)}_{\pi} - \preact)^2$
     \EndFor
     \State AdamW step on $\sum_{\pi} \gamma_{\pi}(\mathcal{L}_{\pi} + \gamma_{\mathrm{R}}\mathcal{R}_{\pi})/\nu + \lambda \sum_{s,i} \bigl[\sigma(\theta_{s,i}) + (1 - \sigma(\theta_{s,i}))\,|\alpha_{s,i} - 1|\bigr]$ \Comment{penalties use $\sigma(\theta)$, not $\sigma(\theta / T)$}
@@ -1637,7 +1739,7 @@ Its index samples $2 \times 10^{5}$ sequences, so targets with no activating con
 
 \paragraph{Contrast contexts for WCM.}
 Weighted circuit masking and its evaluation instead select contrast contexts per target at fit time.
-Each of the target's strongest stored contexts $\posset^{\mathrm{top}}$ is represented, read from the index when present and otherwise computed by a forward pass; candidates from the sampled corpus are ranked by their highest cosine similarity to any of them, $\max_{x_p \in \posset^{\mathrm{top}}} \langle r(x_p), r(x) \rangle$, with all of the target's stored activating contexts (strongest and mid-band) excluded; the $8{,}192$ most similar are then run through the model in rank order, and each is kept only if the target is outside its site's Top-K at every position, until 64 are kept.
+Each of the target's strongest stored contexts $\posset^{\mathrm{top}}$ is represented, read from the index when present and otherwise computed by a forward pass; candidates from the retrieval store (the union of every latent's stored nearest neighbours, a subset of the $2\times10^5$-sequence index) are ranked by their highest cosine similarity to any of them, $\max_{x_p \in \posset^{\mathrm{top}}} \langle r(x_p), r(x) \rangle$, with all of the target's stored activating contexts (strongest and mid-band) excluded; the $128n$ most similar for $n$ requested contexts ($8{,}192$ for the 64 of the first protocol; $24{,}576$ for the deduplicated records, which request 192 so that deduplication can refill) are then run through the model in rank order, and each is kept only if the target is outside its site's Top-K at every position, until 64 are kept.
 A target with fewer than 4 kept is skipped ($19$ TuringLLM targets), and one with 4 to 63 uses what it has ($10$ targets).
 The silence check rejects between 14\% and 51\% of the closest candidates on the targets we inspected, so unchecked retrieval would place many contrast contexts where the target fires.
 The same selector with random or maximally dissimilar ranking gives the \emph{random} and \emph{distant} sources of \cref{app:contrast-source}.
@@ -1662,11 +1764,21 @@ At scale (32 targets, paired) the sparsity-preserving variant does not systemati
 It therefore functions as a cleaner protocol rather than a score inflator; but at small node sets and tight Top-K budgets the two variants can disagree on \emph{rankings}, which is why the body's comparisons name their ablation method.
 % data: analysis-restyled/respect-topk-sweep/
 
+% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1). Evidence: exp 090 (20 targets enriched for failures, rule pass 7/20
+% dense -> 15/20 v2) and exp 093 (72 paired targets, 31 -> 50 of 72, +26.4 pp [15.3, 38.9], paired median dZ 0.00).
+% Code: src/circuit/instrument/learned_mask.py (sparse_keep_mask, sparse_code), WCM_VERSION=v2 in 062/driver.py.
+\paragraph{The same fill in training.}
+Weighted circuit masking trains its A and C terms under this fill, defined exactly as the scorer's.
+At each position every member (gate above $\tfrac{1}{2}$) is kept at $\alpha$ times its live value, even when more than $k$ members are active; the remaining budget, $k$ minus the members active there, goes to the non-members with the largest means, at their means; every other latent is zero.
+The selection is not differentiable, so its gradient is passed straight through: the forward pass uses the filled code and the backward pass treats the selection as the identity, so closed gates still receive a gradient.
+The means are the evaluation's own: A over the strongest training contexts that serve as the evaluation's reference, C over the training contrast contexts.
+Trained under the dense mean instead, circuits learn to rely on a background of tens of thousands of weakly active latents that the evaluation's fill removes, so they can pass under a dense mean and fail under the fill.
+
 \subsection{Sources of the Mean Ablation}
 \label{app:floors}
 The empty-circuit baseline $a_{\varnothing}$ is a measured object with its own failure modes.
 Means over \emph{activating} contexts leak target signal into $a_{\varnothing}$ increasingly with depth ($a_{\varnothing}/a_{\mathrm{pos}} = 0/23/30/26\%$ at layers 2/8/9/10); means over the target's \emph{contrast} contexts hold $a_{\varnothing} = 0.0000$ on every target measured, even under the hardest close contrast contexts.
-These pre-v1 measurements, on four targets, are the source of the leakage figure in \cref{sec:eval}.
+These exploratory measurements, on four targets, are the source of the leakage figure in \cref{sec:eval}.
 % data: experiments/005-floor-diagnostic/. APPENDIX CUTS 2026-10-12 (tier 2): the discovery-side and mean-source
 % cross-tab sentences (pre-v1 restoration / path attribution) were cut; text in the notes snapshot.
 
@@ -1678,7 +1790,7 @@ These pre-v1 measurements, on four targets, are the source of the leakage figure
 % Added 2026-10-12 (tier 3, Daniel 4a) as the support for the Limitations scope sentence. Data: experiments/030-cross-sae
 % (2026-08-10, pre-v1: tri-amp transcription with free amplitudes, 400-step anneal, 48/16 held-out split, verified-silent
 % negatives; rows.jsonl; anchor_support.py -> anchor_support.json). A protocol-v1 rerun is planned (Daniel 2026-10-12).
-The method is scoped to Top-K dictionaries because of a pre-v1 test on Pythia-70m with the dense ReLU dictionaries of \citet{marks2025sparse}: six residual-stream targets at layers 2 and 4, an earlier form of weighted circuit masking, and held-out contexts.
+The method is scoped to Top-K dictionaries because of an exploratory test on Pythia-70m with the L1-trained ReLU dictionaries of \citet{marks2025sparse}: six residual-stream targets at layers 2 and 4, an earlier form of weighted circuit masking, and held-out contexts.
 The method replicated: $11$ of $12$ fits (six targets at two sparsity penalties) were faithful under zero and mean ablation ($0.80$--$1.00$) and necessary ($0.81$--$1.0$) on held-out contexts.
 The random-circuit baseline did not: random sets given the same coefficient fitting failed at up to ${\sim}1{,}100$ latents, but at $2{,}000$--$6{,}000$ latents they reproduced the target under zero ablation ($0.71$--$1.00$) while still failing necessity.
 The cause is the encoder's sparsity: $6.5$--$37\%$ of a target's live ReLU latents are nonzero at its anchor, against $0.3\%$ expected under Top-K ($k = 128$ of $40{,}960$), so under ReLU a random latent's fitted coefficient has a nonzero value to scale, and thousands of them can synthesise the target; under Top-K a random latent is almost always zero at the anchor.
@@ -1709,7 +1821,9 @@ The shared normaliser is target-scaled and bounded by construction because its p
 % Moved from sec:ablmask 2026-10-12 (DAN-161 step 5). Pre-v1: experiments/026-floor-isolation R3/R4
 % (w = 0.25); Jaccard 0.13 vs 0.54: 026 R2, single-ablation-method arms at matched size. Claims map #15: rerun under v1
 % before quoting in the main text.
-In pre-v1 calibration the A term roughly halves the smallest passing node set on layer-2 targets and raises the share of layer-9 targets with any passing circuit.
+In exploratory calibration the A term roughly halves the smallest passing node set on layer-2 targets and raises the share of layer-9 targets with any passing circuit.
+% Moved from sec:ablmask 2026-10-26 (DAN-147 stage b); number unchanged.
+A mask trained only under mean ablation over contrast contexts has zero-ablation faithfulness $0.0$ at depth: it learns the difference from the contrast-context mean, never a set that suffices alone.
 % Moved from app:weighted-details ("The budget is part of the method", cut) 2026-10-12: experiments/026-floor-isolation.
 Removing the zero-ablation term from training explodes zero-ablation faithfulness to $36$--$1{,}681$ at depth while the trained ablation methods stay in band: coefficients trained without it calibrate against the mean ablations' background and overshoot by one to three orders of magnitude once that background is removed.
 % APPENDIX CUTS 2026-10-12 (tier 2): the Jaccard 0.13 vs 0.54 pair (hand-picked, size-confounded; audit) was cut.

@@ -1,4 +1,4 @@
-# Protocol v1: frozen method and evaluation specification (DAN-7)
+# Protocol v1: frozen method and evaluation specification (DAN-7); protocol v2 in §12
 
 Drafted 2026-10-07. This document describes **what the production run executed**: the TuringLLM full run of
 15,046 targets in `experiments/062-h100-protocol-v1/` (`out_full/`, finished 2026-09-27; source of every headline
@@ -31,7 +31,8 @@ bootstrap copies it over `config.yaml` (`scripts/pod_bootstrap_global.sh:28`).
 | Pythia-70m and GPT-2 small adaptation (§9) | **OPEN**: DAN-9, DAN-34/35/36, DAN-40/41, DAN-42 |
 | Production location of contexts (DAN-78) and scorer (DAN-73) | **Done** (2026-10-07 / 2026-10-09): both in `src/`, verified identical to the as-run code |
 | Mid-band evaluation padding defect (§3.6, §10) | **Fixed and re-scored** (2026-10-09): 58 of 14,339 mid-band rows; the reported mid-band numbers are unchanged |
-| Exact-duplicate contexts across the train / held-out split (§3.7) | **Measured** (2026-10-09): 25% of held-out strongest rows; effect on the pass rate −0.6 points on a paired 1,800-target re-score |
+| Exact-duplicate contexts across the train / held-out split (§3.7) | **Measured** (2026-10-09): 25% of held-out strongest rows; effect on the pass rate −0.6 points on a paired 1,800-target re-score. **Superseded 2026-10-23** (exp 085): counting anchor-prefix copies and near-duplicates, 66.8% of held-out strongest rows repeat a training-side row; the 1,800-target re-score was incomplete. Fixed at the source in v2 (§12) |
+| **Protocol v2** (§12) | **Decided 2026-10-25** (Daniel): A and C trained under the sparsity-preserving fill; TuringLLM refit on 8k targets from fresh, deduplicated records; public models run under v2. Validation (exp 093) pending |
 
 The run's order of operations per target is contexts, then fit, then eval on held-out strongest, then eval on
 held-out mid-band, then specificity (`driver.py:255-308`). Each step resumes from per-target files. Targets are
@@ -319,7 +320,7 @@ Every row also records the raw reads (`*_raw_tk`, `*_raw_pre`), the per-block a_
 | Rule | As run | Code |
 |---|---|---|
 | **Pass (DAN-8, adopted 2026-09-27 on stage 1)** | Z, A, C (`free0_tk`, `freeM_topk_tk`, `freeN_topk_tk`) all in **[0.8, 1.5]** AND `phi_sup_blind_tk` **≥ 0.9**, on held-out strongest, activation read. A missing (`None`) score fails | `merge.py:28-30, 50-54`; `pass_rule.py:73-75` |
-| Vacuous exclusion | Rows with `vacuous_tk` are dropped from the denominator and counted (10 strongest rows, 23 mid-band rows). An undefined A or C ratio is **not** vacuous: it counts as a fail | `merge.py:57-58, 64-65`; `amp_eval_pass_v2.py:468-469` |
+| Vacuous exclusion | Rows with `vacuous_tk` are dropped from the denominator and counted (10 strongest rows, 23 mid-band rows). An undefined A or C ratio is **not** vacuous: it counts as a fail (**superseded by §12.4**, 2026-11-01: every pass-rule baseline, signed) | `merge.py:57-58, 64-65`; `amp_eval_pass_v2.py:468-469` |
 | Graded companion | worst-of-3 = max over π of \|φ_π − 1\|, reported alongside the rule | `merge.py:66, 75-76` |
 | Near-threshold stratum | `rank_clean ≥ K_TOPK/2 = 64`. `rank_clean` = the median over the 16 held-out strongest anchors of the target's rank among **all** site latents by pre-activation in the clean model (1 = top; uncapped). It is computed in the specificity pass from the clean model only. The stratum stays in the headline rate and is reported separately on both reads (1,142 targets) | `merge.py:32, 137-148`; `specificity.py:203, 209-210, 230`; `pass_rule.py:79-81` |
 
@@ -539,9 +540,219 @@ Consistent with the code (checked):
 - AdamW, lr 0.05 constant, wd 0.05, 400 steps, batch 4.
 - Errors preserved, nodes recomputed, every upstream site edited.
 - The activation read is primary and the pre-activation read is diagnostic.
-- The pass rule: Z, sparsity-preserving A and C in [0.8, 1.5], and necessity ≥ 0.9.
+- The pass rule: Z, sparsity-preserving A and C in [0.75, 1.5] (0.8 until 2026-10-31, §12), and necessity ≥ 0.9.
 - Near-threshold at K/2.
 - The run counts: 42 skipped, 10 vacuous, 665 thin, 1,142 near-threshold.
 - The sweep grids and 190 targets.
 - 1,746 α = 1 targets.
 - The split rule: blocks of 4, position (b + 2) mod 4, ranks 1–2 train.
+
+---
+
+## 12. Protocol v2 (decided 2026-10-25, Daniel; frozen before any v2 production fit)
+
+Protocol v2 changes one thing in the method and rebuilds the TuringLLM data. Everything not named here is as in
+§2–§9, including §9.2 for the public models.
+
+### 12.1 The method change: A and C are trained under the fill they are scored with
+
+**Problem it fixes.** In v1 the A and C training terms used a **dense** mean fill (§4: every non-member latent at its
+mean, no Top-K re-imposed), while the pass rule scores A and C with the **sparsity-preserving** fill. That fill keeps
+every member at α·live and fills only the top (K − #active members) non-member slots per position with their means
+(`_respect_topk_fill`). A dense code has tens of thousands of non-zero entries, whereas every code the SAE produces has
+at most k, so the dense fill is out of distribution for the SAE. Circuits learned to lean on its diffuse background,
+which the scorer then removes. Over the 15k:
+- the rule pass rate is 46.4% (sparsity-preserving A/C) vs 48.7% (dense A/C);
+- deep attention is hit hardest, with A falling from 0.93 (dense) to 0.00 (sparsity-preserving) at L5–7.
+
+**v2.**
+- **The fill:** A and C are trained under the sparsity-preserving fill, defined bit-for-bit as the scorer's.
+- **Gradients:** straight-through (`sparse_grad = "ste"`).
+- **Means:** the training A and C means are computed exactly as the scorer's: the A mean over the 48 strongest-train
+  reference rows and the C mean over the 48 contrast-train rows (`train_means_source = "eval_ref"`).
+- **Unchanged:** the Z term; γ_Z = 1 and γ_A = γ_C = 0.25; rank-keep γ_R = 3e-3; λ = 1e-3 (re-checked with the
+  size-only rule of §9.2); 400 steps; the optimiser; batch; anneal.
+- **The switch:** `WCM_VERSION=v2` in `062/driver.py`, mapping to `train_fill = "sparse"`, `sparse_grad = "ste"`,
+  `train_means_source = "eval_ref"` (`src/config.py`, default-off: v1 is unchanged bit for bit).
+- **Unweighted arms** (Daniel, 2026-10-26): the unweighted (gate-only) comparison arms also run under v2, with every
+  coefficient fixed at exactly 1, so they differ from WCM only in the coefficients.
+
+**Evidence before adoption** (exps 089–092; DAN-183):
+
+| Evidence | Result |
+|---|---|
+| exp 090, 20 targets enriched for failures | rule pass 7/20 (dense) → 15/20 (v2); the 8 earlier failures go 0/8 → 6/8; Z unchanged (paired median ≈ 0); 8/8 passing controls still pass; circuits 0.84–0.86× the size; fit time 1.28× |
+| exp 089 | reweighting the dense terms cannot reach the rule's A/C |
+| Not included | resample R (DAN-184, appendix only), the silent-position term, and the speed-ups (anchor truncation, batched passes); exps 091–092 |
+
+**Validation (exp 093), stated before it runs.** 72 targets, 8 per depth band × kind, seed 20261026, v1 vs v2 paired
+on the same GPU. v2 stays production unless, on this sample:
+- its paired pass rate is lower than v1's (the paired bootstrap 95% CI entirely below 0); or
+- Z falls systematically (paired median ΔZ < −0.05).
+
+**Pass floor 0.75 (Daniel, 2026-10-31; before any production fit).** The band floor moves from 0.8 to 0.75 for Z, A,
+C (and the donor-background pass), on both reads; the 1.5 ceiling and necessity ≥ 0.9 are unchanged. Reason given:
+0.75 is the more appropriate tolerance on judgement, not on the numbers. Seen beforehand (sensitivity only): v1 15k
+46.4% → 49.5%; exp 093 v2 50 → 55 of 72; exp 095 resample-trained 45 → 48 of 72. Code: `src/eval/wcm_eval.py` BAND,
+`062/merge.py`, `083/cmp_common.py`, `paper/tables/common.py`, explorer `stage_circuits.py`. Earlier experiment
+reports in this file keep the 0.8 floor they were scored at. The paper states the rule without this history.
+
+**Two pass rates, both recorded and reported (Daniel, 2026-10-26; stated before any v2 production fit).** For every
+target, the same rule is scored on two reads, and the two are never mixed inside one rule:
+- **Post-Top-K pass rate (headline):** Z, A_sp, C_sp ∈ [0.75, 1.5] and necessity ≥ 0.9 on the activation read (`*_tk`).
+- **Pre-activation pass rate:** the same rule on the pre-activation read (`*_pre`). It asks whether the circuit
+  reproduces the target's input, separately from whether the target then survives the Top-K competition against
+  rival latents.
+
+Both are reported over all targets and for the near-threshold stratum (clean rank ≥ K/2), with a 2×2 split: passes
+both / pre-activation only / neither. On the v1 15k, the near-threshold stratum (1,142 targets, 1,134 of them
+attention) passes 0.8% post-Top-K and **7.0%** under the pre-activation rule as defined below (baseline 0 for Z and
+necessity; `paper/tables/main_result.py`). Only 54.5% of the stratum reach necessity_pre ≥ 0.9: removing the members
+must take the target's input itself down by 90%, whereas the post-Top-K read counts a drop below the cut as complete.
+- *Correction (2026-10-27):* an earlier version of this paragraph quoted 10.9%. That number came from `062/pass_rule.py`,
+  whose pre-activation rule used the empty-circuit Z baseline and the post-Top-K necessity, mixing the reads.
+- The rule below is unchanged.
+
+**The pre-activation read's Z and necessity baseline is 0, "latent off"** (Daniel, 2026-10-26). Z_pre = x / a_pos and
+necessity_pre = (a_pos − x_removed) / a_pos, both computed from the logged raw values (`free0_raw_pre`, `a_pos_pre`,
+`phi_sup_blind_raw_pre`). A and C keep their own mean-ablation baselines.
+- **Why:** with every upstream latent zeroed, a residual site's input goes far off its natural range, and the target's
+  pre-activation comes out at a median ~190× its clean value. The empty-circuit form (x − e0) / (a_pos − e0) is then
+  undefined for 91% of residual targets, whereas the circuit itself stays in range (circuit / clean: median 0.97,
+  p10–p90 0.87–1.04; v1 15k, 10 shards).
+- **Consistency:** the post-Top-K read already sits on a baseline of 0 in practice (median e0_tk = 0.00).
+- **Sensitivity, reported alongside:** for attention and MLP sites, where e0_pre is well defined (median 4–7% of
+  a_pos), the pre-activation pass rate is also reported with the empty-circuit baseline.
+
+### 12.2 TuringLLM data: 8k targets from fresh records
+
+- **Targets:** a seeded (20261026) stratified subset of the 15,046 v1 targets, ~229 per layer × kind cell (8,000 in
+  all). It includes:
+  - the 190 λ-sweep targets;
+  - the 126-target null panel;
+  - the case-study and random-gallery targets.
+
+  Its precision is about ±1.1 points overall and about ±3 per band × kind cell.
+- **Records** (`experiments/094-tl-v2-records/`), built fresh so the held-out leakage of §3.7 cannot occur:
+  - strongest pools deduplicated: exact copies, anchor-prefix copies and near-duplicates (shared run ≥ 32 tokens, or
+    ≥ 50% shared 8-grams), plus corpus twins;
+  - candidates beyond the stores' 64 slots from the exp 086 corpus scan, with the stores' ranking statistic;
+  - a group-aware split: no group of copies straddles train and held-out; there is no document or source-file rule;
+  - contrast contexts by the same close, silence-checked selector, deduplicated by the same rule (exact + near only,
+    since contrast rows have no anchor);
+  - sizes as in v1: 32 strongest + 16 mid-band train, 16 + 16 held-out, 48 / 16 contrast.
+- **Everything the paper quotes is refit or re-scored under v2 on these records:**
+  - the main 8k (mid-band, specificity, α = 1);
+  - the 190-target λ sweep (claim 2);
+  - the stable core;
+  - the harder nulls (DAN-181);
+  - the method comparison (DAN-159);
+  - the case study and the gallery;
+  - the public models (512 each).
+
+  The v1 numbers remain in the record (§1–§11) and are reported only as the v1-vs-v2 comparison.
+
+### 12.3 The resample term R in training, and the donor-background test (Daniel, 2026-10-31; before any production fit)
+
+**Production training adds R** (exps 095, 100; native in `learned_mask.py`, driver `WCM_VERSION=v2cr`; equivalence in
+exp 101; final weights 2026-11-01, `WCM_VERSION=v3`, below). The objective is Z + A + C + R_C:
+- R_C is a resample ablation whose donors are the target's 48 training contrast contexts, one donor redrawn per
+  training row on every forward;
+- it uses the sparsity-preserving donor fill, weight 0.25, λ 1e-3, 400 steps;
+- unweighted arms (α = 1) take the same R through the same sparse path.
+
+Exp 102 (DAN-187) may still change settings (e.g. rank-keep weight, R weight) before the pod. Any change is recorded
+here, with its date, before the pod starts.
+
+**Final production settings (Daniel, 2026-11-01; exp 102; before any production fit): driver `WCM_VERSION=v3`,
+the 082 chain's default.** Everything above holds, with two changes:
+- **R weight γ_R = 1.0** (was 0.25);
+- **rank-keep weight 1e-1** (was 3e-3; mode `keep`, δ 0 as before).
+
+Both apply to every arm of a v3 run: the main fit, every WCM and unweighted λ-sweep arm, the λ pilot, and the
+companions (α = 1, nulls, stable core). Unweighted arms take R through the sparse path at α = 1. Everything else is
+unchanged: Z + A + C + R_C, γ_C = γ_A = 0.25, λ 1e-3, 400 steps, the same donors and donor fill.
+- *Evidence* (exp 102, selection rule stated before any result, the frozen 72-target check panel, floor 0.75):
+  - production pass 48 → 54 (+8 pp, paired 95% CI [+0, +18]);
+  - resample pass 19 → 39 (+28 pp, CI [+17, +39]);
+  - circuits ×1.33 larger (median 702 vs 572);
+  - fit time ×0.97 of v2cr (so about 1.35× v2).
+- *Equivalence:* native v3 fits through the 062 driver reproduce 102's arm `r1.0_rk1e-1` bit for bit on 3 check
+  targets, one per depth band (exp 104 part A).
+- v1 / v2 / v2cr keep rank-keep 3e-3 and are unchanged.
+
+**Donor-background test, reported for every circuit alongside the pass rule** (099's whole-donor test, as run in exp
+100):
+- **Bases:** the 16 held-out strongest activating + 16 held-out contrast contexts.
+- **The ablation:** every latent outside the circuit, at every upstream site, is taken from a donor context's natural
+  sparse code at the same position (073 `ResamplePatcher`):
+  - members at α × live;
+  - the donor's non-member active entries fill the remaining Top-K budget, largest first;
+  - the current stream's SAE error kept live.
+- **Three donor pools:**
+  - A = the 48 strongest-train activating contexts;
+  - C = the 16 held-out contrast contexts (never a training donor);
+  - R = a fixed random-corpus pool filtered against every record (exact / near rule).
+- **Draws:** eight paired draws per pool, one donor per base per draw, seeded per target; the empty circuit is run
+  under the same donors.
+- **Donor recovery** (per pool) = (mean over draws of the circuit's mean anchor read − the same for the empty
+  circuit) / (natural mean anchor read − empty):
+  - pooled over draws before dividing;
+  - undefined when the denominator is ≤ 1e-9, and kept undefined (an undefined score fails).
+- **Resample pass** = the production pass (§6, floor 0.75) AND donor recovery A and C each in [0.75, 1.5]. It is a
+  subset of production passes, so the headline reads "x% pass; y% also pass on real backgrounds".
+- **Reported with it, not inside it:**
+  - R recovery;
+  - the α = 1 and pinned-member variants;
+  - the per-pool empty leak;
+  - the split by whether the donor fires at the base anchor.
+- **Scope:** the test is a robustness diagnostic. It is not recursive causal scrubbing and does not replace the
+  production rule.
+- **Where it runs on the pod:** the 8k main circuits, the 190-target λ sweep (all arms), the without-R comparison arm
+  on the 190 sweep targets (the appendix ablation), and the unweighted arms under R.
+- **The without-R comparison arm (Daniel, 2026-11-01):** v2 at v3's rank-keep 1e-1 (chain T10 `TL_NOR_ARM`
+  default `W_0.001_r0.1`), so the paired comparison with the production `W_0.001` arm differs in R alone. The
+  previous production algorithm (rank-keep 3e-3) is not re-fitted.
+- **The proxy used in dev:** exp 095 / 102 selection used 079's 2-draw `strict_eval` version of the same pools. The
+  pod and the paper use the 8-draw pooled test above.
+
+### 12.4 Vacuous denominators: every pass-rule baseline, signed (Daniel, 2026-11-01; before any production fit)
+
+**Problem it fixes.** The v1 vacuous flag (§5.2, §6) reads only the Z / necessity denominator and is two-sided
+(|a_pos − e0| < 0.05·a_pos), while each pass-rule term is a ratio against its own empty-circuit baseline and is
+undefined whenever that baseline reaches a_pos (e ≥ a_pos). Two cases escape the flag and fail in every arm,
+whatever the circuit:
+- e0 above 1.05·a_pos: zeroing every upstream latent drives a residual or early-MLP target far above its natural
+  value (median 5.6×);
+- eM_topk or eN_topk ≥ a_pos: the sparsity-preserving mean fill alone drives the target, mostly deep attention,
+  above its held-out mean (median 1.17×).
+
+In the v1 15k this is 482 of 15,004 held-out-strongest targets (3.2%; 12% of L8-11 attention), and 3 of 72 on each
+exp 102 panel (exp 105).
+
+**Rule.** On the post-Top-K read, a target is **vacuous** when a_pos ≤ 0 or any pass-rule baseline exceeds
+0.95·a_pos: a_pos − e < 0.05·a_pos for e = e0 (Z and necessity), eM_topk (A) or eN_topk (C).
+- **Population.** Vacuous targets are dropped from the denominator of every pass rate (post-Top-K, pre-activation,
+  and the resample pass) and counted. The exclusion set comes from the post-Top-K read and is shared by both reads.
+- **Scope.** The rule applies identically to held-out strongest and mid-band, and to every model and arm.
+- **Why it is a property of the target.** The baselines are empty-circuit reads on the target's held-out, A-mean
+  and C-mean contexts. They do not depend on the circuit and can be computed before any fit (exp 105: the stored
+  undefined terms are exactly the rows whose baselines fail e < a_pos; baselines are identical across arms).
+- **Relation to v1.** It contains the v1 flag, and replaces the v1 statement (§6, §11 row 15) that an undefined A or
+  C ratio counts as a fail. A term still missing on a non-vacuous target fails.
+- **Reported with it:**
+  - the vacuous count per band × kind and per term (Z/necessity, A, C);
+  - the vacuous targets' pass on their defined terms (descriptive);
+  - the all-targets pass rate counting vacuous targets as fails (a lower bound).
+- **Seen beforehand (sensitivity only):**
+  - v1 15k held-out strongest: 49.5% of 14,994 → 51.4% of 14,453 (all-targets 49.5%);
+  - mid-band: 14.0% → 16.6%;
+  - exp 102: 3 targets per panel excluded in every arm; arm counts, paired differences and the selection-rule
+    winner unchanged.
+- **Code:** `src/eval/wcm_eval.py` (`vacuous_v2`, stored per row as `vacuous_v2` on the public path; `is_vacuous(row)`
+  defaults to this rule and recomputes it from the stored a_pos / e0 / eM_topk / eN_topk reads for rows without the
+  field: rows scored earlier, and TuringLLM rows, which come from the frozen 049 scorer; `rule="v1"` gives the old
+  flag), with the
+  same rule in `062/merge.py:vacuous`, `083/cmp_common.py:vacuous` (also `paper/tables/*`, 098), the donor test's
+  summary and the explorer's `stage_circuits.py`. Tests: `tests/eval/test_wcm_eval.py` (cases + cross-implementation
+  parity).

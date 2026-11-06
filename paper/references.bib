@@ -300,6 +300,37 @@
   year    = {2024}
 }
 
+@inproceedings{ma2025revising,
+  author    = {Ma, George and Pfrommer, Samuel and Sojoudi, Somayeh},
+  title     = {Revising and Falsifying Sparse Autoencoder Feature Explanations},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {38},
+  year      = {2025}
+}
+
+@article{lasy2025memorization,
+  author  = {Lasy, Ilya and Knees, Peter and Woltran, Stefan},
+  title   = {Understanding Verbatim Memorization in {LLMs} Through Circuit Discovery},
+  journal = {arXiv preprint arXiv:2506.21588},
+  year    = {2025}
+}
+
+@misc{eleuther2024autointerp,
+  author       = {{EleutherAI}},
+  title        = {Open Source Automated Interpretability for Sparse Autoencoder Features},
+  howpublished = {\url{https://blog.eleuther.ai/autointerp/}},
+  note         = {Blog post, 30 July 2024},
+  year         = {2024}
+}
+
+@misc{eleuther2024delphi,
+  author       = {{EleutherAI}},
+  title        = {delphi: automated interpretability for sparse autoencoder features},
+  howpublished = {\url{https://github.com/EleutherAI/delphi}},
+  note         = {Software library; non-activating examples from FAISS nearest neighbours},
+  year         = {2024}
+}
+
 @article{oneill2024sparse,
   author  = {O'Neill, Charles and Bui, Thang},
   title   = {Sparse Autoencoders Enable Scalable and Reliable Circuit Identification in Language Models},
@@ -363,11 +394,13 @@
   year      = {2024}
 }
 
-@article{li2024optimal,
-  author  = {Li, Maximilian and Janson, Lucas},
-  title   = {Optimal Ablation for Interpretability},
-  journal = {arXiv preprint arXiv:2409.09951},
-  year    = {2024}
+% DAN-31 (2026-10-27): arXiv -> NeurIPS 2024, checked at proceedings.neurips.cc/paper_files/paper/2024/hash/
+% c55e6792923cc16fd6ed5c3f672420a5-Abstract-Conference.html (no url field, matching the other NeurIPS entries).
+@inproceedings{li2024optimal,
+  author    = {Li, Maximilian and Janson, Lucas},
+  title     = {Optimal Ablation for Interpretability},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
 }
 
 @inproceedings{louizos2018learning,
@@ -419,11 +452,20 @@
   year      = {2024}
 }
 
-@article{yin2026scalable,
-  author  = {Yin, Naiyu and Wei, Dennis and Gao, Tian and Dhurandhar, Amit and Ramamurthy, Karthikeyan Natesan and Yu, Yue},
-  title   = {Scalable Circuit Learning for Interpreting Large Language Models},
-  journal = {arXiv preprint arXiv:2606.16939},
-  year    = {2026}
+% DAN-31 (2026-10-27): arXiv -> ICML 2026 (icml.cc/virtual/2026/poster/79543 checked; title and authors match).
+@inproceedings{yin2026scalable,
+  author    = {Yin, Naiyu and Wei, Dennis and Gao, Tian and Dhurandhar, Amit and Ramamurthy, Karthikeyan Natesan and Yu, Yue},
+  title     = {Scalable Circuit Learning for Interpreting Large Language Models},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026}
+}
+
+% Added 2026-10-31 for the tutor update (docs/tutor-update): the IG baseline's original method.
+@inproceedings{sundararajan2017axiomatic,
+  author    = {Sundararajan, Mukund and Taly, Ankur and Yan, Qiqi},
+  title     = {Axiomatic Attribution for Deep Networks},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2017}
 }
 
 % Added 2026-09-22 (DAN-31); titles and authors checked against arXiv / LessWrong.
@@ -698,7 +740,9 @@
   author    = {McDougall, Callum Stuart and Conmy, Arthur and Rushing, Cody and McGrath, Thomas and Nanda, Neel},
   title     = {Copy Suppression: Comprehensively Understanding a Motif in Language Model Attention Heads},
   booktitle = {Proceedings of the 7th BlackboxNLP Workshop: Analyzing and Interpreting Neural Networks for NLP},
-  year      = {2024}
+  pages     = {337--363},
+  year      = {2024},
+  doi       = {10.18653/v1/2024.blackboxnlp-1.22}
 }
 
 @inproceedings{rushing2024explorations,

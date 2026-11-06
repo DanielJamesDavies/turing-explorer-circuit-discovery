@@ -1,0 +1,10 @@
+{
+ "note": "v2 local run (2026-10-27), DIAGNOSTIC ONLY (not protocol): IOI W at lambda 3e-4 with 3x the protocol's training budget (1200 steps x batch 4 = 4,800 presentations, 3 epochs of the 1,600-item pool), to ask whether the held-out failure at 400 steps is the budget. Run with ARMS=W (the U entry only satisfies the config schema).",
+ "arms": {
+  "W": {"lams": [0.0003], "lr": 0.05},
+  "U": {"lams": [3e-05], "lr": 0.05}
+ },
+ "logit_norm": "gap",
+ "steps": 1200,
+ "n_draws": 0
+}

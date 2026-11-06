@@ -40,6 +40,7 @@ N_PER = int(os.environ.get("N_PER", 5))
 OUT_SC = Path(os.environ.get("OUT_SC", str(HERE / "out_stable_core")))
 SC_TARGETS = os.environ.get("SC_TARGETS")
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 _PERMUTE = {}                                            # key -> permutation of the training rows, set per fit
 
 
@@ -189,7 +190,7 @@ def report():
         x["band"] = x.seed.map(lambda k: RN.band(int(k.split(".")[0])))
         x["kind"] = x.seed.map(lambda k: k.split(".")[1])
         ok = x[HEAD].notna().all(axis=1)
-        x["passed"] = ok & ((x[HEAD] >= 0.8) & (x[HEAD] <= 1.5)).all(axis=1) & (x["phi_sup_blind_tk"] >= 0.9)
+        x["passed"] = ok & ((x[HEAD] >= BAND[0]) & (x[HEAD] <= BAND[1])).all(axis=1) & (x["phi_sup_blind_tk"] >= NEC_MIN)
     f2, core = d[d.stage == "fit2"], d[d.stage == "core"]
     print("targets: %d | fit 2 rows %d | core rows %d" % (d.seed.nunique(), len(f2), len(core)))
     print("\n== membership overlap between the two fits (by band)")

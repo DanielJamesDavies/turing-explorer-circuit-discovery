@@ -44,6 +44,7 @@ import driver  # noqa: E402
 N_NEAR = int(os.environ.get("N_NEAR", 8))
 OUT_AH = Path(os.environ.get("OUT_AH", str(HERE / "out_heads")))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 # capture state for the patched attention: at layer CAP["layer"], per batch row b, contributions at anchor CAP["anc"][b]
 CAP = dict(layer=None, anc=None, u=None, out=None)
@@ -301,7 +302,7 @@ def report():
     d = d[d.get("error", pd.Series(index=d.index, dtype=object)).isna()].drop_duplicates("seed", keep="last")
     tg = pd.read_csv(driver.OUT / "targets.csv", index_col="seed")
     t = tg.loc[d.seed]
-    d["pass"] = (((t[HEAD] >= 0.8) & (t[HEAD] <= 1.5)).all(axis=1) & (t.phi_sup_blind_tk >= 0.9)).values
+    d["pass"] = (((t[HEAD] >= BAND[0]) & (t[HEAD] <= BAND[1])).all(axis=1) & (t.phi_sup_blind_tk >= NEC_MIN)).values
     d["near"] = (t.rank_clean >= 64).values
     d["band"] = d.layer.map(band)
     d["grp"] = d.kind + d["pass"].map({True: " pass", False: " fail"}) + d.near.map({True: " near", False: ""})

@@ -695,6 +695,36 @@ class TestAnchors:
         assert means[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(4.0, abs=1e-5)
         assert pins[(SEED_LAYER, SEED_KIND)][SEED_LATENT] == pytest.approx(4.0, abs=1e-5)
 
+    def test_mean_skip_positions_excludes_bos(self):
+        """A bank with mean_skip_positions = 1 (BOS-prefix families, 2026-11-04) leaves position 0 out of the means,
+        with or without a valid mask; without the attribute every position counts (unchanged)."""
+
+        class _Bank:
+            kinds, d_sae = ["resid"], 2
+
+            def encode(self, x, kind, layer):
+                return x, torch.zeros_like(x, dtype=torch.long)          # latent 0 = the stream value
+
+        class _Inf:
+            def disable_compile(self): pass
+            def enable_compile(self): pass
+
+            def forward(self, tokens, activations_callback=None, **kw):
+                x = torch.ones(tokens.shape[0], tokens.shape[1], 1)
+                x[:, 0] = 100.0                                           # BOS: a huge activation
+                activations_callback(0, (x,))
+
+        tok, site = torch.zeros(3, 4, dtype=torch.long), (0, "resid")
+        bank = _Bank()
+        assert float(collect_site_means(_Inf(), bank, tok, {site})[site][0]) == pytest.approx(103 / 4)
+        bank.mean_skip_positions = 1
+        assert float(collect_site_means(_Inf(), bank, tok, {site})[site][0]) == pytest.approx(1.0)
+        valid = torch.tensor([[1, 1, 1, 0]] * 3)                          # right padding on top of the skip
+        assert float(collect_site_means(_Inf(), bank, tok, {site}, valid=valid)[site][0]) == pytest.approx(1.0)
+        bank.mean_skip_positions = 4
+        with pytest.raises(ValueError, match="mean_skip_positions"):
+            collect_site_means(_Inf(), bank, tok, {site})
+
     def test_collect_site_means_raises_on_missing_site(self):
         bank = ControlledSAEBank()
         inf, _ = _make_stub_inference(bank, (0.0,))

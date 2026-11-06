@@ -1,0 +1,99 @@
+{
+ "family": "gpt2-small",
+ "seed": 20261101,
+ "per_band": 8,
+ "max_try": 40,
+ "min_held": 8,
+ "min_neg": 32,
+ "bands": [
+  [
+   "L0-4",
+   0,
+   4
+  ],
+  [
+   "L5-7",
+   5,
+   7
+  ],
+  [
+   "L8-11",
+   8,
+   11
+  ]
+ ],
+ "kinds": [
+  "attn",
+  "resid_mid",
+  "mlp",
+  "resid"
+ ],
+ "quota": {
+  "L0-4/attn": 2,
+  "L0-4/resid_mid": 2,
+  "L0-4/mlp": 2,
+  "L0-4/resid": 2,
+  "L5-7/resid_mid": 2,
+  "L5-7/mlp": 2,
+  "L5-7/resid": 2,
+  "L5-7/attn": 2,
+  "L8-11/mlp": 2,
+  "L8-11/resid": 2,
+  "L8-11/attn": 2,
+  "L8-11/resid_mid": 2
+ },
+ "cells": {
+  "L0-4/attn": [
+   "1.attn.25685",
+   "3.attn.21059"
+  ],
+  "L0-4/resid_mid": [
+   "1.resid_mid.3180",
+   "2.resid_mid.27561"
+  ],
+  "L0-4/mlp": [
+   "1.mlp.32273",
+   "1.mlp.4404"
+  ],
+  "L0-4/resid": [
+   "0.resid.15998",
+   "2.resid.18816"
+  ],
+  "L5-7/attn": [
+   "6.attn.477",
+   "5.attn.3897"
+  ],
+  "L5-7/resid_mid": [
+   "6.resid_mid.7003",
+   "7.resid_mid.14465"
+  ],
+  "L5-7/mlp": [
+   "6.mlp.6324",
+   "6.mlp.27659"
+  ],
+  "L5-7/resid": [
+   "6.resid.30791",
+   "5.resid.28648"
+  ],
+  "L8-11/attn": [
+   "11.attn.19347",
+   "9.attn.7160"
+  ],
+  "L8-11/resid_mid": [
+   "11.resid_mid.32700",
+   "11.resid_mid.15389"
+  ],
+  "L8-11/mlp": [
+   "11.mlp.14105",
+   "11.mlp.8032"
+  ],
+  "L8-11/resid": [
+   "11.resid.23256",
+   "11.resid.25864"
+  ]
+ },
+ "notes": [],
+ "n": 24,
+ "n_tried": 45,
+ "n_eligible_tried": 24
+}

@@ -24,6 +24,11 @@ ROOT = EXP.parent
 E062 = EXP / "062-h100-protocol-v1"
 RUN062 = E062 / "out_full" / "out"                       # the 15k run: contexts, main circuits, the 190-target sweep
 WEAK_DIRS = ("out_bands", "out_depth", "out_lowlam")       # the weak-penalty WCM arms (paper Fig. 3): 190 targets in union
+# REF_RUN (protocol v2, 2026-10-25): the WCM / unweighted references come from this run directory instead (its
+# main/ and sweep/, e.g. the 8k v2 refit's OUT, whose sweep holds all 8 WCM + 5 unweighted arms); no weak-penalty
+# directories are read then. It is also the driver's default OUT (a v2-marked OUT: the 083 fits run under its version).
+if os.environ.get("REF_RUN"):
+    RUN062, WEAK_DIRS = Path(os.environ["REF_RUN"]), ()
 # Contexts come through driver.Runner.contexts, which honours the driver's CTX_DIR (DAN-157: the rebuilt held-out
 # records, e.g. 062/out_full/out/ctx_v2). Outputs are kept apart per context set: OUT083 defaults to out/ for the
 # as-run records and to out_<CTX_DIR name>/ otherwise, and every row carries the hash of its training contexts.
@@ -42,7 +47,7 @@ KEEP_TOP = int(os.environ.get("KEEP_TOP", 65536))       # ranking entries kept p
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]    # Z, A (sparsity-preserving), C (sparsity-preserving)
 NEC = "phi_sup_blind_tk"
 IND = "phi_cf_alpha_blind_tk"
-BAND = (0.8, 1.5)                                        # DAN-8 (2026-09-27): Z, A, C in BAND and necessity >= NEC_MIN
+BAND = (0.75, 1.5)                                       # DAN-8 (floor 0.75 from 2026-10-31): Z, A, C in BAND, nec >= NEC_MIN
 NEC_MIN = 0.9
 DEPTH_BANDS = (("L0-4", 0, 4), ("L5-7", 5, 7), ("L8-11", 8, 11))
 
@@ -403,12 +408,23 @@ def write_row(fh, row):
 
 
 # ----------------------------------------------------------------------------------------------- pass rule
+VAC_BASE = ("e0_tk", "eM_topk_tk", "eN_topk_tk")   # the pass rule's denominators: Z and necessity, A, C
+
+
 def vacuous(r):
-    return bool(r.get("vacuous_tk"))
+    """Protocol §12.4, as src/eval/wcm_eval.is_vacuous: a_pos_tk <= 0 or any VAC_BASE baseline above 0.95 a_pos_tk;
+    the stored vacuous_v2 when present, the v1 flag vacuous_tk for a row without those reads."""
+    if r.get("vacuous_v2") is not None:
+        return bool(r["vacuous_v2"])
+    ap, es = r.get("a_pos_tk"), [r.get(k) for k in VAC_BASE]
+    if ap is None or any(e is None for e in es):
+        return bool(r.get("vacuous_tk"))
+    ap = float(ap)
+    return bool(ap <= 0 or any(ap - float(e) < 0.05 * ap for e in es))
 
 
 def passes(r):
-    """DAN-8 on the activation read: Z, A, C all in [0.8, 1.5] and necessity >= 0.9; a missing score fails.
+    """DAN-8 on the activation read: Z, A, C all in [0.75, 1.5] and necessity >= 0.9; a missing score fails.
     Apply to non-vacuous rows (the vacuous denominator is excluded and counted, as 062/merge.py does)."""
     for c in HEAD:
         v = r.get(c)

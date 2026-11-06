@@ -40,6 +40,7 @@ os.environ.setdefault("OUT", str(HERE / "out_full" / "out"))
 sys.path.insert(0, str(HERE))
 import driver  # noqa: E402
 import attn_heads as AH  # noqa: E402  (setup_target: the scorer's own preamble)
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 N_PER = int(os.environ.get("N_PER", 60))
 OUT_MR = Path(os.environ.get("OUT_MR", str(HERE / "out_restore")))
@@ -216,7 +217,7 @@ def report_v2():
     recs = []
     for r in rows:
         t = tg.loc[r["seed"]]
-        passes = bool(((t[HEAD] >= 0.8) & (t[HEAD] <= 1.5)).all() and t.phi_sup_blind_tk >= 0.9)
+        passes = bool(((t[HEAD] >= BAND[0]) & (t[HEAD] <= BAND[1])).all() and t.phi_sup_blind_tk >= NEC_MIN)
         nat, a, at = np.array(r["nat"]), np.array(r["alpha"]), np.array(r["attr"])
         nat_all = np.array(r["nat_all"])
         for f in FILLS:
@@ -375,7 +376,7 @@ def report():
     recs = []
     for r in rows:
         t = tg.loc[r["seed"]]
-        passes = bool(((t[HEAD] >= 0.8) & (t[HEAD] <= 1.5)).all() and t.phi_sup_blind_tk >= 0.9)
+        passes = bool(((t[HEAD] >= BAND[0]) & (t[HEAD] <= BAND[1])).all() and t.phi_sup_blind_tk >= NEC_MIN)
         nat, a = np.array(r["nat"]), np.array(r["alpha"])
         for f in FILLS:
             abl = np.array(r["abl_" + f])

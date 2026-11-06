@@ -117,10 +117,11 @@ def run():
             if (name, arm, C.lam_tag(lr), lt) in done:
                 continue
             row = dict(task=name, arm=arm, lr=lr, lam=lt, lam_value=lam, steps=STEPS, logit_norm=LOGIT_NORM,
-                       n_fit_rows=B["n_train"], n_val_rows=B["n_held"])
+                       n_fit_rows=B["n_train"], n_val_rows=B["n_held"], wcm_version=C.WCM_VERSION)
             try:
                 alphas, prov, t_fit, peak = eng.fit(B, arm, lam, lr, STEPS, LOGIT_NORM)
-                row.update(t_fit=round(t_fit, 1), peak_mb_fit=peak)
+                row.update(t_fit=round(t_fit, 1), peak_mb_fit=peak, sparse_fill_calls=prov.get("sparse_fill_calls"),
+                           logit_term_scales=prov.get("logit_term_scales"))
                 t = time.time()
                 row.update(C80_scalars(eng.score(B, alphas)), t_score=round(time.time() - t, 1))
                 ftr.write(json.dumps(dict(task=name, arm=arm, lr=lr, lam=lt, **train_stats(prov))) + "\n"); ftr.flush()
@@ -142,7 +143,8 @@ def C80_scalars(row):
 
 TRAIN_STATS = ("loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_kept", "amp_stats",
                "logit_scale", "dual_norm_zero", "dual_norm_floor", "n_train_pos", "n_holdout_pos", "batch_size_used",
-               "steps", "logit_metric", "floors_valid_masked", "floors_precomputed", "present")
+               "steps", "logit_metric", "floors_valid_masked", "floors_precomputed", "present", "wcm_version",
+               "train_fill", "sparse_fill_calls", "logit_norm", "logit_term_scales", "dual_norm_pos")
 
 
 def train_stats(prov):

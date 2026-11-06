@@ -1,0 +1,49 @@
+{
+  "seed": 20261028,
+  "rule": "first smoke target per cell development; existing second smoke target or seeded smoke40 draw check",
+  "no_scores_used": true,
+  "population_claim": false,
+  "development": [
+    "2.attn.34021",
+    "2.mlp.31672",
+    "2.resid.7349",
+    "6.attn.35411",
+    "6.mlp.209",
+    "6.resid.35910",
+    "10.attn.39376",
+    "10.mlp.23465",
+    "10.resid.8194"
+  ],
+  "check": [
+    "2.attn.37184",
+    "2.mlp.4441",
+    "2.resid.29259",
+    "6.attn.31790",
+    "6.mlp.40351",
+    "5.resid.37507",
+    "10.attn.16498",
+    "10.mlp.40539",
+    "10.resid.38616"
+  ],
+  "targets": [
+    "2.attn.34021",
+    "2.attn.37184",
+    "2.mlp.31672",
+    "2.mlp.4441",
+    "2.resid.7349",
+    "2.resid.29259",
+    "6.attn.35411",
+    "6.attn.31790",
+    "6.mlp.209",
+    "6.mlp.40351",
+    "6.resid.35910",
+    "5.resid.37507",
+    "10.attn.39376",
+    "10.attn.16498",
+    "10.mlp.23465",
+    "10.mlp.40539",
+    "10.resid.8194",
+    "10.resid.38616"
+  ],
+  "frame_sha256": "3d8e4ace0533a066a1a580e758933958559f7b491fcbbbe5928b519a7907ed52"
+}

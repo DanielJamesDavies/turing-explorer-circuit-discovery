@@ -4,7 +4,7 @@ Main run (out/main):
   - bookkeeping: targets done / skipped / failed, thin targets, per-stage timings and a throughput projection
     for the full 15,046-target run (DAN-75)
   - circuits: size distribution (share inside 10^2-10^3), faithfulness under Z / A / C on held-out strongest and
-    mid-band contexts, necessity, sufficiency to induce, and the DAN-8 pass rule (Z, A, C all in [0.8, 1.5] AND
+    mid-band contexts, necessity, sufficiency to induce, and the DAN-8 pass rule (Z, A, C all in [0.75, 1.5] AND
     necessity >= 0.9; vacuous denominators excluded and counted), by layer and by site kind
   - specificity (056): amplifier rate, sibling vs target faithfulness; near-threshold targets (clean rank >= K/2)
 Sweep (out/sweep): per method x lambda medians, per-target natural-scale cost (unweighted / WCM nodes at a
@@ -31,7 +31,7 @@ from family_table import band_label, family  # noqa: E402
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 GPUS = int(os.environ.get("GPUS", 8))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
-BAND = (0.8, 1.5)          # DAN-8 pass rule (2026-09-27): Z, A, C all in BAND and necessity >= NEC_MIN
+BAND = (0.75, 1.5)         # DAN-8 pass rule (2026-09-27; floor 0.75 from 2026-10-31): Z, A, C in BAND, necessity >= NEC_MIN
 NEC_MIN = 0.9
 FAM = family()             # TuringLLM by default: k 128, bands L0-4 / L5-7 / L8-11, 15,046 targets
 N_FULL = FAM["n_full"]
@@ -62,8 +62,26 @@ def passes(df):
     return inb & (df.phi_sup_blind_tk >= NEC_MIN)
 
 
-def vacuous(df):
-    return df.get("vacuous_tk", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+VAC_BASE = ["e0_tk", "eM_topk_tk", "eN_topk_tk"]   # the pass rule's denominators: Z and necessity, A, C
+
+
+def vacuous(df, rule="v2"):
+    """Protocol §12.4 (rule "v2", as src/eval/wcm_eval.is_vacuous): a_pos_tk <= 0 or any baseline in VAC_BASE above
+    0.95 a_pos_tk, one exclusion set for both reads; the stored vacuous_v2 when present, the v1 flag vacuous_tk for a
+    row without those reads. rule "v1": the stored vacuous_tk flag (Z denominator only)."""
+    v1 = df.get("vacuous_tk", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+    if rule == "v1":
+        return v1
+    if not all(c in df for c in ["a_pos_tk"] + VAC_BASE):
+        return v1
+    ap = df["a_pos_tk"].astype(float)
+    have = ap.notna() & df[VAC_BASE].notna().all(axis=1)
+    v2 = (ap <= 0) | (ap.values[:, None] - df[VAC_BASE].astype(float).values < 0.05 * ap.values[:, None]).any(axis=1)
+    out = v1.where(~have, v2)
+    if "vacuous_v2" in df:
+        stored = df["vacuous_v2"]
+        out = stored.where(stored.notna(), out)
+    return out.astype(bool)
 
 
 def headline(df, lines, title):

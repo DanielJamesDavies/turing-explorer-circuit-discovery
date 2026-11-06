@@ -20,9 +20,10 @@ the actual next token) and compares them with the latent circuits. 081 fits them
 scope, a contrastive task metric) and checks them against published circuits. The two share the engine changes, the
 `gap` normaliser and the fit conventions. 081 imports 080's `common.py` for the matched-size helpers.
 
-**Status.** Code, tests, data and task generation are done (CPU). **Nothing has run on the GPU**: prepare, probe,
-calibration, fits and smoke are all pending. 2026-10-21 (Daniel's decision): full datasets with their natural split
-instead of 320-item subsamples, at protocol v1's unchanged budget of 400 steps x batch 4 (see **Splits**).
+**Status.** Code, tests, data and task generation are done (CPU). 2026-10-21 (Daniel's decision): full datasets with
+their natural split instead of 320-item subsamples, at protocol v1's unchanged budget of 400 steps x batch 4 (see
+**Splits**). **2026-10-27: first GPU run, under protocol v2, on IOI, greater-than and some secondary tasks; see
+"v2 local run (2026-10-27)" at the end. 081 now runs under WCM_VERSION=v2 by default.**
 
 ## Model and dictionaries
 
@@ -533,3 +534,133 @@ b1·sites). Extrapolated to **48 masked sites at 400 steps**:
   under `MODEL=turingllm` (factual_known).
 - **Precision.** Fits run in float32 by default (~9.7 GB of dictionaries). On a 16 GB card a deep fit may be tight;
   `DTYPE=bfloat16` is the fallback, and a precision change has to be stated with the results.
+
+## v2 local run (2026-10-27)
+
+The first GPU run of 081, under protocol v2, on the RTX 5070 Ti (float32). It was stopped early (token budget), so it
+covers IOI and greater-than in full and gender_pronoun's W arm only. Tables: `out_v2/tables.md` (from `v2_tables.py`),
+`out_v2/gpt2-small/report.txt` / `report.json` (report.py). Logs: `out_v2/queue*.log`.
+
+**v2 wiring.**
+- `task_common.WCM_VERSION` (env, **default v2**; `WCM_VERSION=v1` reproduces the old fill). It maps to
+  `train_fill="sparse"`, `sparse_grad="ste"`, passed by `engine.engine_kwargs` to `run_learned_mask`. The logit objective
+  uses the same patchers as the latent objective, so the fill reaches its C and A terms. `sparse_fill_calls` = 38,400
+  per 400-step fit (> 0 on every fit; 1,152 in the 12-step smoke). U runs the fill at α = 1.
+- `train_means_source="eval_ref"` holds by construction: `engine.means(B)` is computed once per task and the same
+  tensors go to the fit and to `score_task`. Rows record `train_means_source="scorer"`.
+- `run.py` refuses an OUT whose circuits were fitted under another version (`OUT/WCM_VERSION`). New env knobs:
+  `EVAL_BS` (64 here), `RND_LAMS`. `train.jsonl` now records the per-term curve.
+- **src (additive, default-off):** `learned_mask` `logit_norm="gap_term"`. Each ablation term is divided by its own
+  closed-mask gap², measured under that term's training fill and floored at `LOGIT_GAP_FLOOR`. It needs a logit
+  objective with a dual / triple / pn floor. Provenance: `logit_term_scales`, `dual_norm_pos`. 4 tests
+  (`TestLogitPerTermNorm`). Repo suite: 1815 passed, 3 skipped. 081 + 080: 115 passed. The 081 profile
+  finite-difference test is pinned to v1 (its v2 toy circuit fails the ±1% difference on one member; not investigated).
+
+**Competence** (`out_v2/probe`, held-out). 15 of 17 tasks are competent: IOI (logit diff 3.67, 100% correct) and
+greater-than (probability diff 0.816, 98%).
+- Not competent: `blimp_principle_A_c_command` (63% correct) and `blimp_wh_island` (54%).
+- `blimp_principle_A_case_1` is competent, but it has **no silent contrast candidate**: prepare.py's pool is empty, so
+  it cannot be fitted under the C rule.
+
+**Calibration** (W only, lr 0.05, 400 steps, the training rows re-split 75 / 25; `out_v2/calib_*`).
+- IOI W: λ 3e-4 passed (9,544 latents, Z / A / C 0.90 / 0.91 / 0.90, necessity 1.07); λ 1e-3 reached 0.46; λ 3e-3 gave
+  0.02.
+- **IOI fits are bimodal.** λ 1e-4 collapsed to Z 0.01 at 12.7k latents.
+- U was not calibrated (time). Each task got a hand-written 3-λ grid (`config_v2_ioi.json`,
+  `config_v2_greater_than.json`, `config_v2_small.json`), not calibrate.py's ADOPT.
+
+**Normaliser A/B** (v2, gap vs gap_term, same grid).
+- The rule was fixed before the gap_term rows were read: task-rule passes, then the median over fits of min(Z, A, C).
+  - gap: 1 pass, median 0.198.
+  - gap_term: 1 pass, median 0.052.
+  - So the rule picks **gap**.
+- **IOI: the per-term normaliser is a no-op.** Its closed gaps are zero 17.8, C 17.7, A 18.0 nats², because a
+  contrastive logit difference goes to ~0 under every ablation. Yet the outcomes flipped (gap_term passed at 1e-4 with
+  21k latents and collapsed at 3e-4), which is fit noise, not the normaliser.
+- **Greater-than:** the gaps are 13.6 / 9.9 / 10.0, so gap_term weights A and C 1.37× more. It raised C_sp from 0.12 to
+  0.92 at λ 1e-4, at a cost in Z (0.83 → 0.69).
+- 080's suspected cause (b), a zero gap ~5× the mean gaps, does not arise on contrastive task metrics.
+
+**Does v2 fix the A/C failure on outputs?** On these tasks A and C are not the bottleneck: in every held-out W fit, A
+and C are at or above Z. The paired v1 control (`calib_v1_gap`, the same fits under the dense fill) goes as follows:
+
+| fit | v1 Z / A / C | v2 Z / A / C |
+|---|---|---|
+| IOI 3e-4 | 0.48 / 0.39 / 0.55 | 0.90 / 0.91 / 0.90 |
+| greater-than 1e-4, task metric | 0.01 / 0.00 / 0.00 | 0.83 / 0.74 / 0.12 |
+| greater-than 1e-4, objective | 1.04 / 0.91 / 1.02 | 0.98 / 0.93 / 0.70 |
+| greater-than 3e-4, objective | 1.03 / 0.61 / 0.71 | 0.95 / 1.03 / 1.13 |
+
+This is consistent with v2 helping. But n = 3, and IOI's fit-to-fit noise is of the same size, so it is **not** a
+demonstration.
+
+**Held-out results** (5,000 items each, from disjoint name / noun lists; the full table is in `out_v2/tables.md`).
+- **IOI: nothing passes.**
+  - W: 4,174 latents Z 0.24; 9,460 Z 0.33; 20,961 Z **0.47** (A 0.52, C 0.51, necessity 1.05, accuracy 0.83). Z at
+    α = 1 is ≈ 0.
+  - U: 16k–41k latents, Z 0.04–0.09.
+  - RND (9,460 latents, 3 draws): Z 0.01, pass 0/3.
+  - Calibration's 9.5k pass (same names as the fit pool) did not reproduce on held-out names. The main fit differs
+    too (1,600-item pool, not 1,198), and IOI outcomes are bimodal. A queued diagnostic was not run: re-scoring on
+    training-list items (`v2_insample.py`), and 1,200 steps (`config_v2_ioi_steps1200.json`). One more data point:
+    U's training-batch fit is ~0.6, but its held-out Z is 0.04.
+- **Greater-than: metric mismatch.** The fit reproduces log P(>YY set) − log P(≤YY set); the registered pass rule
+  uses Hanna's probability difference.
+  - On the **task metric**, W fails at every size (11.4k: Z 0.61, A 0.90, C 0.91) and **U passes** (12.3k: 0.88 / 0.88
+    / 0.94; 19.3k: 0.97 / 0.97 / 0.98).
+  - On the **fitted objective**, W passes at 5,011 latents (0.97 / 1.03 / 1.00, necessity 1.00) and at 11.4k. U fails
+    on necessity (0.68–0.78).
+  - W's coefficients reproduce the log-odds without the probability mass on the year tokens (W's task Z at α = 1 is
+    0.00). U cannot rescale, so it keeps the mass.
+  - RND (5,011 latents, 3 draws): task Z 0.00, pass 0/3. On the objective, Z is 0.03–0.07 and A / C are 0.25–0.76.
+  - To act on this, change one of the two: fit the probability difference, or register the rule on the objective.
+- **U / W size** (claim 2):
+  - IOI: neither arm reaches Z 0.8. At similar size, W 0.47 (21k) vs U 0.09 (16k).
+  - Greater-than, task metric: reversed (U reaches 0.8 at ~11.6k, W never does).
+  - Greater-than, objective: W reaches Z 0.8 at ~2.0k and U at ~9.3k, so **4.7×**. The smallest passing W is 5,011;
+    U never passes.
+- **gender_pronoun** (25 held-out items, W only, stopped before U / RND): W passes at every λ, at 564, 1,269 and 2,700
+  latents (smallest: 0.92 / 1.22 / 1.23, necessity 0.96).
+
+**Structure** (the primary W circuit is the best worst-ablation one, since none passes; head-drive enrichment, found at
+≥ 2× the base rate).
+- **IOI** (20,961 latents):
+  - holds: S-inhibition 3.7× (share 0.62 vs base 0.17), induction 4.3×, duplicate-token 5.3×;
+  - fails: name movers 1.07×, previous-token 0.71×;
+  - at END, the top heads by attribution are 7.3, 7.9, 8.3, 8.6 and 8.10 (all four of Wang's S-inhibition heads in the
+    top 5), and backup name mover 9.7 also appears.
+- **Greater-than** (11,393 latents): Hanna's heads 4.3× (head 9.1 alone carries 20% of the anchor head weight), late
+  MLPs 0.52 (≥ 0.5), and YY-concentrated members sit 5 layers before anchor-concentrated ones. All three hold.
+- Caveat: these circuits do not pass, and the attribution is a decomposition of each member's pre-activation, not a
+  head ablation.
+
+**Not run:**
+- the tasks sva_across_pp, sva_simple, factual_known and blimp_anaphor_number_agreement;
+- gender_pronoun U / RND;
+- induction, sva_within_rc, sva_across_rc and the other BLiMP subsets;
+- every W_ZA arm;
+- the diagnostics (`queue_v2_diag.sh`).
+
+**Runtime** (one GPU process at a time):
+
+| item | time |
+|---|---|
+| 400-step fit | 174 s (IOI), 148 s (greater-than), ~145 s (gender); peak 10.9 GB |
+| score, 5,000 items at batch 64 | 352 s (IOI), 216 s (greater-than) |
+| profile | 14–49 s |
+| smoke | 15 min |
+| prepare + probe | 6 min |
+| W calibration, two normalisers | 62 min |
+| v1 control | 14 min |
+| IOI | 81 min |
+| greater-than | 56 min |
+| gender (W only) | ~10 min |
+| **total** | **~4.2 h of GPU time** (15:20–19:31) |
+
+**Resume** (resumable: finished circuits and rows are reloaded, and IOI / greater-than come back in a few minutes):
+```bash
+wsl -e bash -lc 'cd "/mnt/x/Projects/AIs/Turing/Publication/3 Implementation/2" && SKIP_V1=1 bash experiments/081-task-circuits/queue_v2_main.sh >> experiments/081-task-circuits/out_v2/queue_main.log 2>&1 && bash experiments/081-task-circuits/queue_v2_diag.sh >> experiments/081-task-circuits/out_v2/queue_diag.log 2>&1'
+PYTHONPATH=src python -X utf8 experiments/081-task-circuits/v2_tables.py      # refresh out_v2/tables.md
+```
+Note: the stopped gender invocation left an unterminated gzip member at the end of `out_v2/gpt2-small/members.jsonl.gz`
+/ `profiles.jsonl.gz` only if it had written to them. report.py read both cleanly after the stop.

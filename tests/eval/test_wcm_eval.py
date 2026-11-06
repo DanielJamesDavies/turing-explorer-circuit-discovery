@@ -96,8 +96,8 @@ def _row(z=1.0, a=1.0, c=1.0, nec=0.95, vac=False, read="tk", **kw):
 
 class TestPassRule:
     def test_band_and_necessity_edges_inclusive(self):
-        assert W.passes(_row(z=0.8, a=1.5, c=1.0, nec=0.9))
-        assert not W.passes(_row(z=0.79))
+        assert W.passes(_row(z=0.75, a=1.5, c=1.0, nec=0.9))
+        assert not W.passes(_row(z=0.749))
         assert not W.passes(_row(c=1.51))
         assert not W.passes(_row(nec=0.899))
 
@@ -113,9 +113,34 @@ class TestPassRule:
         assert not W.passes(r, read="pre", necessity_read="pre")
 
     def test_vacuity_flag(self):
-        assert W.is_vacuous(_row(vac=True))
+        assert W.is_vacuous(_row(vac=True))                      # no baselines stored: the v1 flag
         assert not W.is_vacuous(_row(vac=None))
         assert not W.is_vacuous({})
+        assert W.is_vacuous(_row(vac=True), rule="v1") and not W.is_vacuous(_row(), rule="v1")
+        with pytest.raises(ValueError):
+            W.is_vacuous(_row(), rule="v3")
+
+    @pytest.mark.parametrize("ap,e0,em,en,want", [
+        (1.0, 0.0, 0.5, 0.5, False),
+        (1.0, 0.96, 0.0, 0.0, True),         # v1's case: e0 within 5% below a_pos
+        (1.0, 1.2, 0.0, 0.0, True),          # e0 far above a_pos (v1's two-sided flag misses it)
+        (1.0, 0.0, 1.0, 0.0, True),          # A baseline reaches a_pos: A undefined
+        (1.0, 0.0, 0.0, 0.96, True),         # C denominator positive but below 5% of a_pos
+        (1.0, 0.0, 0.0, 0.94, False),
+        (1.0, -0.5, -0.5, -0.5, False),      # a negative baseline is a wide denominator
+        (0.0, -1.0, -1.0, -1.0, True),       # a_pos <= 0
+        (-1.0, -2.0, -2.0, -2.0, True),
+    ])
+    def test_vacuous_v2(self, ap, e0, em, en, want):
+        assert W.vacuous_v2(ap, [e0, em, en]) is want
+        r = _row(vac=False, a_pos_tk=ap, e0_tk=e0, eM_topk_tk=em, eN_topk_tk=en)
+        assert W.is_vacuous(r) is want and W.is_vacuous(r, read="pre") is want   # one set for both reads
+        assert W.is_vacuous(dict(r, vacuous_v2=not want)) is (not want)         # the stored flag wins
+
+    def test_vacuous_v2_falls_back_to_v1_when_a_read_is_missing(self):
+        r = _row(vac=True, a_pos_tk=1.0, e0_tk=0.0, eM_topk_tk=None, eN_topk_tk=0.0)
+        assert W.is_vacuous(r) and not W.is_vacuous(dict(r, vacuous_tk=False))
+        assert not W.is_vacuous(dict(r, vacuous_tk=False, eM_topk_tk=float("nan")))
 
     def test_worst_deviation(self):
         assert W.worst_deviation(_row(z=0.7, a=1.2, c=1.0)) == pytest.approx(0.3)
@@ -144,6 +169,28 @@ class TestPassRule:
         assert list(M.passes(ok)) == [W.passes(r) for r in rows if not W.is_vacuous(r)]
         worst = (ok[M.HEAD] - 1).abs().max(axis=1)
         assert list(worst) == pytest.approx([W.worst_deviation(r) for r in rows if not W.is_vacuous(r)])
+
+    def test_vacuous_v2_matches_merge_and_083(self):
+        """merge.py (pandas) and 083 cmp_common re-implement §12.4: same set as is_vacuous on random rows, with
+        missing reads (v1 fallback) and stored flags mixed in."""
+        pd = pytest.importorskip("pandas")
+        M = _load(EXP / "062-h100-protocol-v1" / "merge.py", "_merge_062")
+        C = _load(EXP / "083-v1-comparison" / "cmp_common.py", "_cmp_083")
+        g = torch.Generator().manual_seed(5)
+        rows = []
+        for j in range(600):
+            ap, e0, em, en = (torch.rand(4, generator=g) * 1.4 - 0.2).tolist()
+            r = _row(vac=bool(j % 13 == 0), a_pos_tk=ap, e0_tk=e0, eM_topk_tk=em, eN_topk_tk=en)
+            if j % 7 == 0:
+                r["eM_topk_tk"] = None
+            if j % 19 == 0:
+                r["vacuous_v2"] = bool(j % 2)
+            rows.append(r)
+        want = [W.is_vacuous(r) for r in rows]
+        assert 0 < sum(want) < len(rows)
+        assert list(M.vacuous(pd.DataFrame(rows))) == want
+        assert [C.vacuous(r) for r in rows] == want
+        assert list(M.vacuous(pd.DataFrame(rows), rule="v1")) == [W.is_vacuous(r, rule="v1") for r in rows]
 
 
 # =============================================================================================== Part 3
@@ -263,7 +310,11 @@ def _experiment_scorer(monkeypatch, inf, bank, probe, split):
     return V
 
 
+SRC_ONLY_FIELDS = {"vacuous_v2"}        # added in src after the 049 scorer was frozen (protocol §12.4)
+
+
 def _assert_rows_equal(a, b):
+    a, b = ({k: v for k, v in r.items() if k not in SRC_ONLY_FIELDS} for r in (a, b))
     assert set(a) == set(b), "fields differ: %s" % sorted(set(a) ^ set(b))
     for f in a:
         if f in W.TIMING_FIELDS:
@@ -336,6 +387,8 @@ class TestScorerRow:
         assert (r["n_activator"], r["n_inhibitor"], r["inhibitor_mass_share"]) == (r["n"], 0, None)
         assert "phi_pin_alpha_zero_tk" in r and r["n"] == 15 and r["n_member_sites"] == 5
         assert r["thin"] is True and r["ctr_source"] == "close" and r["ctr_fallback"] is None
+        assert r["vacuous_v2"] == W.vacuous_v2(r["a_pos_tk"], [r[k + "_tk"] for k in W.VACUOUS_BASELINES])
+        assert W.is_vacuous(r) == r["vacuous_v2"] == W.is_vacuous({k: v for k, v in r.items() if k != "vacuous_v2"})
 
     def test_all_members_at_alpha_one_is_the_natural_run(self):
         """Keeping every latent at every upstream site with alpha = 1 is the identity edit: free0 = 1 exactly."""
@@ -589,7 +642,7 @@ class TestOutputScorer:
         assert W.ratio(-2.0, -3.0, -1.0) == 0.5 and W.ratio(-2.0, -1.0, -1.0) is None      # the shared guard
         row = {"out_free0": 0.8, "out_freeM_topk": 1.5, "out_freeN_topk": 1.0, "out_phi_sup_blind": 0.9}
         assert W.passes_output(row)
-        assert not W.passes_output(dict(row, out_freeN_topk=0.79))
+        assert not W.passes_output(dict(row, out_freeN_topk=0.749))
         assert not W.passes_output(dict(row, out_phi_sup_blind=None))
         assert not W.passes_output(dict(row, out_freeM_topk=float("nan")))
 
@@ -747,7 +800,7 @@ class TestTaskScorer:
     def test_pass_rule(self):
         row = {"task_free0": 0.8, "task_freeM_topk": 1.5, "task_freeN_topk": 1.0, "task_nec": 0.9}
         assert W.passes_task(row)
-        assert not W.passes_task(dict(row, task_freeN_topk=0.79))
+        assert not W.passes_task(dict(row, task_freeN_topk=0.749))
         assert not W.passes_task(dict(row, task_nec=None))
         assert not W.passes_task(dict(row, task_freeM_topk=float("nan")))
         assert W.passes_task({k.replace("task", "obj"): v for k, v in row.items()}, "obj")

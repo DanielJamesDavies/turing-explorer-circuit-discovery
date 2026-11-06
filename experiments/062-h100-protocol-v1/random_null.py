@@ -189,7 +189,8 @@ def report():
     rn = pd.DataFrame(driver.read_jsonl_all(OUT_RN, "random"))
     rn = rn[rn.get("error", pd.Series(index=rn.index, dtype=object)).isna()]
     rn = rn[rn.get("skip", pd.Series(index=rn.index, dtype=object)).isna()]
-    passes = lambda d: (((d[HEAD] >= 0.8) & (d[HEAD] <= 1.5)).all(axis=1)) & (d.phi_sup_blind_tk >= 0.9)
+    from merge import BAND, NEC_MIN
+    passes = lambda d: (((d[HEAD] >= BAND[0]) & (d[HEAD] <= BAND[1])).all(axis=1)) & (d.phi_sup_blind_tk >= NEC_MIN)
     ev = [json.loads(l) for f in glob.glob(str(driver.OUT / "main" / "eval.shard*.jsonl")) for l in open(f)]
     ev = pd.DataFrame([r for r in ev if r.get("held") == "strong" and "error" not in r
                        and r.get("seed") in set(rn.seed)]).drop_duplicates("seed", keep="last")

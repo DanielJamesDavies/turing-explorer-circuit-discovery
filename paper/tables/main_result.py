@@ -1,0 +1,154 @@
+"""TABLE tab:main-result (DAN-148): the main run by site kind x depth band, as the LaTeX body of the table in
+paper/main.tex (sec:main-result), plus the numbers the text and caption quote.
+
+Per row (each site kind x depth band, then all circuits): n = non-vacuous circuits on the held-out strongest contexts;
+the headline (post-Top-K) pass rate with its 95% Wilson interval; the pre-activation pass rate (protocol-v1.md section
+12.1: same rule, Z and necessity measured from 0); medians of Z / A / C faithfulness (free0_tk, freeM_topk_tk,
+freeN_topk_tk), necessity (phi_sup_blind_tk) and circuit size (n). Rule, vacuous exclusion and bands come from
+062/merge.py. Vacuous circuits are excluded from every column and counted.
+
+  python -X utf8 paper/tables/main_result.py                                   # v2 TuringLLM (094 out_v2)
+  python -X utf8 paper/tables/main_result.py --family pythia-70m               # 082 out_pythia-70m
+  python -X utf8 paper/tables/main_result.py --out experiments/062-h100-protocol-v1/out_full/out --tag v1-validation
+      (the v1 15k run: validation only, its numbers are NOT for the paper; it must print 46.4% overall)
+
+Writes paper/tables/out/<tag>/: main_result_body.tex (the rows between \\midrule and \\bottomrule, ready to replace
+the \\mrrow placeholder rows), main_result.csv, main_result_numbers.md (n per band with intervals, the pre-activation
+rates incl. the near-threshold stratum, and the caption's excluded counts).
+"""
+import argparse
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+import common as K
+
+
+def load(M, out):
+    ev = K.clean(M.read(Path(out) / "main" / "eval.*.jsonl"))
+    if ev.empty:
+        raise SystemExit("no eval rows under %s/main" % out)
+    ev = ev.drop_duplicates(["seed", "held"], keep="last")
+    s = K.add_site(ev[ev.held == "strong"], M)
+    vac = M.vacuous(s)
+    st = M.read(Path(out) / "main" / "status.*.jsonl")
+    skipped = errors = 0
+    if not st.empty:
+        st = st.drop_duplicates("seed", keep="last")
+        skipped = int(st["skip"].notna().sum()) if "skip" in st else 0
+        errors = int(st["error"].notna().sum()) if "error" in st else 0
+    s = s[~vac].copy()
+    s["passes"] = M.passes(s)
+    s["passes_pre"] = K.pre_passes(s)
+    tg = Path(out) / "targets.csv"                                # merge.py's per-target table (rank_clean), if built
+    if tg.exists():
+        rank = pd.read_csv(tg, index_col="seed")["rank_clean"]
+        s["near"] = s.seed.map(rank) >= M.K_TOPK / 2
+    else:
+        s["near"] = np.nan
+    return s, dict(vacuous=int(vac.sum()), skipped=skipped, errors=errors, scored=len(s) + int(vac.sum()))
+
+
+def summary(g, M):
+    k, n = int(g.passes.sum()), len(g)
+    lo, hi = K.wilson(k, n)
+    med = lambda c: float(pd.to_numeric(g[c], errors="coerce").median()) if n else float("nan")  # noqa: E731
+    return dict(n=n, pass_k=k, pass_pct=100 * k / n if n else np.nan, ci_lo=100 * lo, ci_hi=100 * hi,
+                pre_pct=100 * g.passes_pre.mean() if n else np.nan, Z=med(M.HEAD[0]), A=med(M.HEAD[1]),
+                C=med(M.HEAD[2]), necessity=med("phi_sup_blind_tk"), size=med("n"))
+
+
+def rows(s, M):
+    kinds = [k for k in K.KIND_ORDER if k in set(s.kind)] + sorted(set(s.kind) - set(K.KIND_ORDER))
+    out = []
+    for kind in kinds:
+        for name, lo, hi in M.BANDS:
+            g = s[(s.kind == kind) & (s.depth == name)]
+            out.append(dict(kind=kind, band=name, lo=lo, hi=hi, **summary(g, M)))
+    n_layer = M.FAM["n_layer"]
+    out.append(dict(kind="all", band="all", lo=0, hi=n_layer - 1, **summary(s, M)))
+    return pd.DataFrame(out)
+
+
+def body(t):
+    lines, prev = [], None
+    for r in t.to_dict("records"):
+        if r["kind"] == "all":
+            lines.append("\\midrule")
+            label = "all"
+        else:
+            if prev is not None and r["kind"] != prev:
+                lines.append("\\addlinespace[1pt]")
+            label = K.KIND_LABEL.get(r["kind"], r["kind"]) if r["kind"] != prev else ""
+            prev = r["kind"]
+        pass_cell = K.DASH if K.missing(r["pass_pct"]) else "%.1f [%.1f, %.1f]" % (r["pass_pct"], r["ci_lo"], r["ci_hi"])
+        lines.append("%s & %s & %s & %s & %s & %s & %s & %s & %s & %s \\\\" % (
+            label, K.band_tex(r["lo"], r["hi"]), K.tex_int(r["n"]), pass_cell, K.tex_num(r["pre_pct"], 1),
+            K.tex_num(r["Z"]), K.tex_num(r["A"]), K.tex_num(r["C"]), K.tex_num(r["necessity"]), K.tex_int(r["size"])))
+    return lines
+
+
+def numbers(s, t, counts, M, args):
+    pct = lambda x: 100 * float(np.mean(x)) if len(x) else float("nan")  # noqa: E731
+
+    def rate(g, col="passes"):
+        k, n = int(g[col].sum()), len(g)
+        lo, hi = K.wilson(k, n)
+        return "%.1f%% (%d/%d; 95%% Wilson %.1f-%.1f)" % (pct(g[col]), k, n, 100 * lo, 100 * hi)
+
+    L = ["# tab:main-result numbers (%s, OUT = %s)" % (args.family, args.out), "",
+         "Generated by paper/tables/main_result.py; tag %s." % args.tag, "",
+         "## Caption counts", "",
+         "- circuits scored on held-out strongest: %d; vacuous denominators excluded: %d; non-vacuous n: %d"
+         % (counts["scored"], counts["vacuous"], len(s)),
+         "- targets skipped (status rows with skip): %d; failed (error): %d" % (counts["skipped"], counts["errors"]), "",
+         "## Headline (post-Top-K) pass rate", "", "- all: " + rate(s)]
+    L += ["- %s: %s" % (b, rate(s[s.depth == b])) for b, _, _ in M.BANDS]
+    L += ["- %s: %s" % (k, rate(s[s.kind == k])) for k in K.KIND_ORDER if k in set(s.kind)]
+    L += ["", "## Pre-activation pass rate (baseline 0; protocol section 12.1)", "", "- all: " + rate(s, "passes_pre")]
+    L += ["- %s: %s" % (b, rate(s[s.depth == b], "passes_pre")) for b, _, _ in M.BANDS]
+    if s.near.notna().any():
+        near, rest = s[s.near == True], s[s.near == False]          # noqa: E712
+        L += ["- near-threshold stratum (clean rank >= K/2), %d targets: post-Top-K %s; pre-activation %s"
+              % (len(near), rate(near), rate(near, "passes_pre")),
+              "- outside the stratum: post-Top-K %s; pre-activation %s" % (rate(rest), rate(rest, "passes_pre")),
+              "- near-threshold 2x2: both %.1f%%, pre-activation only %.1f%%, post-Top-K only %.1f%%, neither %.1f%%"
+              % (pct(near.passes & near.passes_pre), pct(~near.passes & near.passes_pre),
+                 pct(near.passes & ~near.passes_pre), pct(~near.passes & ~near.passes_pre))]
+    else:
+        L += ["- near-threshold stratum: OUT/targets.csv not found (run 062/merge.py on this OUT first)"]
+    L += ["", "## Sizes", "",
+          "- median size %d (passing %d); inside 10^2-10^3: %.1f%%" % (
+              s.n.median(), s[s.passes].n.median(), pct((s.n >= 100) & (s.n <= 1000))), "",
+          "## Table rows", "", t.round(3).to_markdown(index=False)]
+    return L
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--family", default="turingllm")
+    ap.add_argument("--out", default=None, help="driver OUT (default: the v2 OUT of the family)")
+    ap.add_argument("--tag", default=None, help="output folder under paper/tables/out (default: <family>-v2)")
+    args = ap.parse_args()
+    args.out = Path(args.out) if args.out else K.DEFAULT_OUT[args.family]
+    if not args.out.is_absolute():
+        args.out = K.ROOT / args.out
+    args.tag = args.tag or "%s-v2" % args.family
+    M = K.merge_module(args.family, args.out)
+    s, counts = load(M, args.out)
+    t = rows(s, M)
+    dest = K.HERE / "out" / args.tag
+    dest.mkdir(parents=True, exist_ok=True)
+    tex = ["%% generated by paper/tables/main_result.py from %s (family %s); rows of tab:main-result"
+           % (args.out.relative_to(K.ROOT) if K.ROOT in args.out.parents else args.out, args.family)] + body(t)
+    (dest / "main_result_body.tex").write_text("\n".join(tex) + "\n", encoding="utf-8")
+    t.to_csv(dest / "main_result.csv", index=False)
+    md = numbers(s, t, counts, M, args)
+    (dest / "main_result_numbers.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    print("\n".join(md[:25]))
+    print("\nwrote %s" % dest)
+
+
+if __name__ == "__main__":
+    main()

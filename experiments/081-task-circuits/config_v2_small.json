@@ -1,0 +1,10 @@
+{
+ "note": "v2 local run (2026-10-27): the secondary tasks (small held-out sets), NOT calibrated on their own (time budget): IOI's W grid and a U grid 10x below it. logit_norm gap (the calibration A/B's pick, see README).",
+ "arms": {
+  "W": {"lams": [0.0001, 0.0003, 0.001], "lr": 0.05},
+  "U": {"lams": [1e-05, 3e-05, 0.0001], "lr": 0.05}
+ },
+ "logit_norm": "gap",
+ "steps": 400,
+ "n_draws": 2
+}

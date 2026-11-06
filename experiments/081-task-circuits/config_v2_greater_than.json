@@ -1,0 +1,10 @@
+{
+ "note": "v2 local run (2026-10-27), written by hand from out_v2/calib_gap (W only; calibration split = greater-than training rows re-split 75/25). W task Z (Hanna's probability difference): 1e-4 0.83 (3.7k latents), 3e-4 0.45, 1e-3 0.28, 3e-3 0.08; the fitted log-odds objective is reproduced far better (obj Z 0.93-0.98). The grid is moved one step down. U was not calibrated (time budget): its grid is placed ~10x below W's. logit_norm gap = the calibration A/B's pick (see README).",
+ "arms": {
+  "W": {"lams": [3e-05, 0.0001, 0.0003], "lr": 0.05},
+  "U": {"lams": [3e-06, 1e-05, 3e-05], "lr": 0.05}
+ },
+ "logit_norm": "gap",
+ "steps": 400,
+ "n_draws": 3
+}

@@ -44,3 +44,21 @@ def target_latent_activations(
 
     is_target = top_indices == int(latent_idx)
     return torch.where(is_target, top_acts, torch.zeros_like(top_acts)).amax(dim=-1)
+
+
+# Per-dictionary activation (2026-11-04, exp 107 arena D): a dictionary whose SAE carries a ``threshold`` buffer
+# [d_sae] is JumpReLU (Gemma Scope, the PLT transcoders): a latent fires at pre > threshold, c = pre * (pre > threshold).
+# Every other dictionary is ReLU / Top-K (fires at pre > 0), unchanged. The post-Top-K read already comes from
+# bank.encode (the dictionary's own activation); these serve the reads that start from a pre-activation.
+def seed_threshold(bank, layer: int, kind: str, idx: int) -> float | None:
+    """Latent ``idx``'s activation threshold at (layer, kind); None = ReLU."""
+
+    saes = getattr(bank, "saes", None)
+    thr = None if saes is None else getattr(saes[kind][layer], "threshold", None)
+    return None if thr is None else float(thr[int(idx)])
+
+
+def seed_activation(pre: torch.Tensor, thr: float | None) -> torch.Tensor:
+    """The dictionary's activation of a pre-activation: relu(pre) (``thr`` None) or pre * (pre > thr) (JumpReLU)."""
+
+    return torch.relu(pre) if thr is None else pre * (pre > thr).to(pre.dtype)

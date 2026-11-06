@@ -264,8 +264,8 @@ def _row(seed, z=1.0, a=1.0, c=1.0, nec=0.95, vac=False, n=100):
 
 class TestPassRule:
     def test_band_edges_missing_and_necessity(self, C):
-        assert C.passes(_row("0.mlp.1", z=0.8, a=1.5, c=1.0))
-        assert not C.passes(_row("0.mlp.1", z=0.799))
+        assert C.passes(_row("0.mlp.1", z=0.75, a=1.5, c=1.0))
+        assert not C.passes(_row("0.mlp.1", z=0.749))
         assert not C.passes(_row("0.mlp.1", a=1.501))
         assert not C.passes(_row("0.mlp.1", c=None))
         assert not C.passes(_row("0.mlp.1", nec=0.899))

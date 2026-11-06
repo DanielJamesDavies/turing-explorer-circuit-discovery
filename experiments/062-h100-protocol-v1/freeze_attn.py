@@ -40,6 +40,7 @@ N_ATTN = int(os.environ.get("N_ATTN", 50))
 N_CTRL = int(os.environ.get("N_CTRL", 8))
 OUT_FZ = Path(os.environ.get("OUT_FZ", str(HERE / "out_freeze")))
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 ARMS = ("none", "target", "all")
 
 STATE = dict(arm=None, mode=None, keys=None, layers=set(), store={}, hits=0, misses=0)
@@ -179,7 +180,7 @@ def report():
     d = pd.DataFrame([json.loads(l) for l in open(OUT_FZ / "freeze.jsonl")])
     d = d[d.get("error", pd.Series(index=d.index, dtype=object)).isna()]
     d = d[~d.get("vacuous_tk", pd.Series(False, index=d.index)).fillna(False).astype(bool)]
-    d["pass"] = ((d[HEAD] >= 0.8) & (d[HEAD] <= 1.5)).all(axis=1) & (d.phi_sup_blind_tk >= 0.9)
+    d["pass"] = ((d[HEAD] >= BAND[0]) & (d[HEAD] <= BAND[1])).all(axis=1) & (d.phi_sup_blind_tk >= NEC_MIN)
     d["kind"] = d.seed.str.split(".").str[1]
     d["band"] = d.seed.map(lambda k: band(int(k.split(".")[0])))
     print("replay misses (should be 0): %d of %d" % (d.replay_misses.fillna(0).sum(),

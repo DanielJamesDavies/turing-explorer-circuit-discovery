@@ -830,6 +830,31 @@ class LearnedMaskConfig(BaseModel):
     # top (convex pull toward rank 1; rank_temp = soft-rank temperature as a
     # fraction of the seed's clean pre-activation)
     rank_mode: str = "cut"
+    # "cut" only: the rank the seed must stay within (beat the rank_cut_k-th
+    # largest OTHER latent). None = the bank's k (stay in the Top-K),
+    # unchanged. Smaller = a margin below the cut (2026-11-02, exp 107 latent
+    # pilot: near-threshold attention seeds held their clean rank in training
+    # but were censored at scoring).
+    rank_cut_k: Optional[int] = None
+    # (2026-11-02, exp 107 latent pilot; all off by default) the rank term's
+    # multiplier inside the zero ablation's term; the censored-activation data
+    # term's soft Top-K temperature (fraction of the clean seed; None = off);
+    # the rival term's weight (site latents rising above clean AND the seed)
+    rank_zero_mult: float = 1.0
+    censor_temp: Optional[float] = None
+    rival_weight: float = 0.0
+    # adaptive λ (exp 107 option B; None = off): keep each ablation term's
+    # training faithfulness in [1 - eps, 1 + 2 eps]; the log-λ step; the end
+    # of the adapting window (it opens at 25% of the run)
+    lam_adapt_eps: Optional[float] = None
+    lam_adapt_rate: float = 0.02
+    lam_adapt_frac: float = 0.7
+    lam_adapt_up: float = 30.0          # the range: lam x [1 / down, up]
+    lam_adapt_down: float = 30.0
+    # necessity term (2026-11-03; 0.0 = off): members removed, the seed must
+    # fall necessity_target of the way to the zero empty circuit (hinge)
+    necessity_weight: float = 0.0
+    necessity_target: float = 0.95
     rank_temp: float = 0.05
     # "top": exponent of ((rank - 1) / k)^p; higher = flatter near rank 1
     rank_power: float = 2.0
@@ -882,7 +907,8 @@ class LearnedMaskConfig(BaseModel):
     # actual next token) at each anchor, against the full model's (engine
     # objective "logit"); the hop reads the probe's target_tokens. rank_weight
     # must be 0 for "logit" (rank-keep concerns the target's rank; the engine
-    # raises otherwise).
+    # raises otherwise; a behavioural version was tried and removed 2026-11-01,
+    # experiment 107).
     mask_objective: str = "pos"       # pos | logit
     # logit only: which sites are maskable. "upstream" = the sites causally
     # upstream of the target's site, exactly the latent circuit's scope; the
@@ -893,6 +919,67 @@ class LearnedMaskConfig(BaseModel):
     # raw nats^2 (025); "gap" = mean (log p_full - log p_zero-empty)^2 over the
     # training contexts, the analogue of pos's mean(target^2).
     logit_norm: str = "none"          # none | gap
+    # PROTOCOL V2 (2026-10-25, experiments 090-093; all three default to
+    # protocol v1, bit-identical). train_fill: the fill the A and C TRAINING
+    # terms (the mean-floored patchers; the Z term is untouched) run under.
+    # "dense" = every non-member at its mean (v1). "sparse" = the pass rule's
+    # sparsity-preserving fill (CircuitOnlyPatcher respect_topk): members at
+    # alpha x live (never evicted), the top (K - #active members) non-members
+    # by mean at their mean per position, the rest 0. Needs a mean floor; an
+    # unweighted (gate-only) fit runs it at alpha = 1 exactly.
+    train_fill: str = "dense"         # dense | sparse
+    # train_fill="sparse" only: the backward through the keep mask. "ste" =
+    # forward sparse, backward as if nothing were dropped (straight-through,
+    # 090 arm sp_ste, v2); "hard" = gradients only through kept entries.
+    sparse_grad: str = "ste"          # ste | hard
+    # The A and C training means. "fit" = the engine's own (A over the fit's
+    # training rows, C over its contrast-train rows; v1). "eval_ref" = the
+    # scorer's: A over the 48 strongest-train reference rows, C over the 48
+    # contrast-train rows, computed by the scorer's call on the scorer's slice
+    # (the caller supplies the rows as method._train_means_ref; see
+    # protocol_contexts.eval_reference).
+    train_means_source: str = "fit"   # fit | eval_ref
+    # RESAMPLE TERM (2026-10-31, experiment 101; the native port of 079 /
+    # 095's "R"; 0.0 = off, bit-identical). resample_weight: gamma_R of the
+    # donor-resample data term (engine resample_weight; 095's v2CR = 0.25).
+    # resample_pool: whose contexts are the donors; the caller supplies the
+    # rows per fit as method._resample_donors (062 driver.Runner.fit, from
+    # protocol_contexts.eval_reference): "contrast" = the 48 contrast-train
+    # rows (R_C, 095), "activating" = the 48 strongest-train rows (R_A).
+    # resample_k: donor draws per training row per step (term entered k times
+    # at gamma_R / k). resample_seed: the donor generator's seed (079's).
+    resample_weight: float = 0.0
+    resample_pool: str = "contrast"   # contrast | activating
+    resample_k: int = 1
+    resample_seed: int = 20261017
+
+    @field_validator("resample_pool")
+    @classmethod
+    def validate_resample_pool(cls, v: str) -> str:
+        if v not in ("contrast", "activating"):
+            raise ValueError(f"resample_pool must be 'contrast' or 'activating', got {v!r}")
+        return v
+
+    @field_validator("train_fill")
+    @classmethod
+    def validate_train_fill(cls, v: str) -> str:
+        if v not in ("dense", "sparse"):
+            raise ValueError(f"train_fill must be 'dense' or 'sparse', got {v!r}")
+        return v
+
+    @field_validator("sparse_grad")
+    @classmethod
+    def validate_sparse_grad(cls, v: str) -> str:
+        if v not in ("ste", "hard"):
+            raise ValueError(f"sparse_grad must be 'ste' or 'hard', got {v!r}")
+        return v
+
+    @field_validator("train_means_source")
+    @classmethod
+    def validate_train_means_source(cls, v: str) -> str:
+        if v not in ("fit", "eval_ref"):
+            raise ValueError(f"train_means_source must be 'fit' or 'eval_ref', got {v!r}")
+        return v
 
     @field_validator("mask_objective")
     @classmethod
@@ -982,7 +1069,7 @@ class LearnedMaskConfig(BaseModel):
     @field_validator("lr_schedule")
     @classmethod
     def validate_lr_schedule(cls, v: str) -> str:
-        allowed = ("constant", "cosine", "linear", "cosine_up", "linear_up")
+        allowed = ("constant", "cosine", "linear", "cosine_up", "linear_up", "geometric")
         if v not in allowed:
             raise ValueError(f"lr_schedule must be one of {allowed}, got {v!r}")
         return v

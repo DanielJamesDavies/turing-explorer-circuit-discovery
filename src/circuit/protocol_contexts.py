@@ -453,6 +453,22 @@ def eval_probe(rec: dict, held: str, device, holdout_frac: Optional[float] = Non
                       hf, neg=neg, n_neg_train=n_ntr)
 
 
+def eval_reference(rec: dict, device, split: str = "explicit", holdout_frac: Optional[float] = None,
+                   n_seq: int = 64) -> Tuple[torch.Tensor, torch.Tensor]:
+    """(A reference rows, C reference rows): the rows the scorers average their A and C means over, sliced exactly as
+    they slice them from the held-out-strongest eval probe (amp_eval_pass_v2.score_circuit / eval.wcm_eval.
+    score_circuit): the first n_train of the first n_seq activating rows (split "explicit": metadata n_train, the 48
+    strongest-train rows; "as_run": the 3:1 rule) and the first n_neg_train of the first n_seq contrast rows (the 48
+    contrast-train rows). Protocol v2's train_means_source="eval_ref" trains against these means."""
+    from eval.wcm_eval import contrast_split, eval_split
+    hf = _engine_holdout(holdout_frac)
+    pd_ = eval_probe(rec, "strong", device, hf)
+    pt, nt = pd_.pos_tokens[:n_seq], pd_.neg_tokens[:n_seq]
+    n_tr = eval_split(int(pt.shape[0]), pd_.metadata, split, hf)
+    n_ntr = contrast_split(int(nt.shape[0]), pd_.metadata, hf)
+    return pt[:n_tr], nt[:n_ntr]
+
+
 class FixedSelector:
     """A NegContextSelector stand-in that always returns the given contrast tokens (the eval pass re-selects through
     M0._neg_context_selector(); under protocol v1 it must get the record's stratified close set instead)."""

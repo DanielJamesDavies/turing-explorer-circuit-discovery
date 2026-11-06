@@ -23,6 +23,8 @@ the run moves on; error rows are retried on resume. Circuits on disk are reloade
   env: MODEL (gpt2-small)  OUT (out/<MODEL>)  CONFIG (config_main_<MODEL>.json)  TASKS (default: the competent
        ones)  ARMS (W,U,RND,W_ZA)  N_DRAWS (the config's, else 5)  NO_PROFILE=1  LIMIT (first N tasks)  FORCE_TASKS=1
        HELDOUT_N (score on the first N held-out items only; smoke.sh)  PROFILE_N (held-out items per profile; 256)
+       RND_LAMS (the W lambdas that get random-null draws; default all)  WCM_VERSION (v2 default; task_common)
+       EVAL_BS (scorer batch; 16)
 Training (2026-10-21): every fit draws its steps x batch presentations from the task's whole training pool, without
 replacement within an epoch (engine.presentations); A / C are the whole training / contrast pools' means, computed
 once per task (engine.means).
@@ -44,6 +46,9 @@ os.environ["OUT"] = str(OUT)
 CONFIG = Path(os.environ.get("CONFIG", str(HERE / ("config_main_%s.json" % C.MODEL))))
 ARMS = [a for a in os.environ.get("ARMS", "W,U,RND,W_ZA").split(",") if a]
 LIMIT = int(os.environ["LIMIT"]) if os.environ.get("LIMIT") else None
+# (2026-10-27) RND_LAMS: draw the random null only at these W lambdas (comma list; default every W lambda)
+RND_LAMS = ({C.lam_tag(float(x)) for x in os.environ["RND_LAMS"].split(",") if x}
+            if os.environ.get("RND_LAMS") else None)
 for _a in ARMS:
     assert _a in C.ARMS, "unknown arm %r (task_common.ARMS)" % _a
 
@@ -91,7 +96,10 @@ def save_circuit(path, alphas, prov, extra):
     path.parent.mkdir(parents=True, exist_ok=True)
     keep = {k: prov.get(k) for k in ("loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_kept",
                                      "amp_stats", "logit_scale", "logit_metric", "support_n", "steps",
-                                     "floors_valid_masked", "floors_precomputed", "present")}
+                                     "floors_valid_masked", "floors_precomputed", "present", "wcm_version",
+                                     "train_fill", "sparse_grad", "sparse_fill_calls", "train_means_source",
+                                     "logit_norm", "logit_term_scales", "dual_norm_zero", "dual_norm_floor",
+                                     "dual_norm_pos")}
     path.write_text(json.dumps(dict(alphas=C.alphas_to_json(alphas), fit=keep, **extra)) + "\n")
 
 
@@ -123,8 +131,15 @@ def main():
     n_draws = int(os.environ.get("N_DRAWS", cfg.get("n_draws", C.N_DRAWS)))
     names = task_list()
     OUT.mkdir(parents=True, exist_ok=True)
+    # circuits on disk are reloaded, not refitted: never mix WCM versions in one OUT (no marker = v1, pre-2026-10-27)
+    marker = OUT / "WCM_VERSION"
+    have = marker.read_text().strip() if marker.exists() else ("v1" if (OUT / "circuits").is_dir() else None)
+    if have is not None and have != C.WCM_VERSION:
+        sys.exit("OUT %s holds WCM %s circuits; this process runs WCM_VERSION=%s (use a fresh OUT)"
+                 % (OUT, have, C.WCM_VERSION))
+    marker.write_text(C.WCM_VERSION + "\n")
     (OUT / "run_config.json").write_text(json.dumps(dict(cfg, config_path=str(CONFIG), arms_run=ARMS, tasks=names,
-                                                         n_draws=n_draws), indent=1))
+                                                         n_draws=n_draws, wcm_version=C.WCM_VERSION), indent=1))
     p_eval = OUT / "eval.jsonl"
     done = done_keys(p_eval)
     prof_done = set()
@@ -139,9 +154,9 @@ def main():
     fe, ft, fs = open(p_eval, "a"), open(OUT / "train.jsonl", "a"), open(OUT / "status.jsonl", "a")
     fm = gzip.open(OUT / "members.jsonl.gz", "at")
     fp = gzip.open(OUT / "profiles.jsonl.gz", "at")
-    log("%d tasks (%s) | arms %s | W %s lr %g | U %s lr %g | %d steps | logit_norm %s | %d draws | out %s" % (
-        len(names), ",".join(names), ",".join(ARMS), cfg["arms"]["W"]["lams"], cfg["arms"]["W"]["lr"],
-        cfg["arms"]["U"]["lams"], cfg["arms"]["U"]["lr"], steps, norm, n_draws, OUT))
+    log("%d tasks (%s) | arms %s | W %s lr %g | U %s lr %g | %d steps | logit_norm %s | %d draws | WCM %s | out %s"
+        % (len(names), ",".join(names), ",".join(ARMS), cfg["arms"]["W"]["lams"], cfg["arms"]["W"]["lr"],
+           cfg["arms"]["U"]["lams"], cfg["arms"]["U"]["lr"], steps, norm, n_draws, C.WCM_VERSION, OUT))
     eng = E.Engine(C.MODEL)
 
     def one(task, B, arm, lam, lr, draw=-1, support=None, extra=None):
@@ -150,7 +165,8 @@ def main():
         key = (task, arm, lt, draw)
         path = circuit_path(task, arm, lt, draw)
         row = dict(task=task, family=B["family"], arm=arm, lam=lt, lam_value=lam, lr=lr, steps=steps, draw=draw,
-                   logit_norm=norm, weighted=bool(C.ARMS[arm]["weighted"]), **(extra or {}))
+                   logit_norm=norm, weighted=bool(C.ARMS[arm]["weighted"]), wcm_version=C.WCM_VERSION,
+                   **(extra or {}))
         alphas = None
         try:
             if path.exists():
@@ -160,13 +176,17 @@ def main():
                 alphas, prov, t_fit, peak = eng.fit(B, arm, lam, lr, steps, norm, support=support)
                 save_circuit(path, alphas, prov, dict(task=task, arm=arm, lam=lam, lr=lr, steps=steps, draw=draw,
                                                       t_fit=round(t_fit, 1)))
-                row.update(t_fit=round(t_fit, 1), peak_mb_fit=peak, fresh_fit=True)
+                row.update(t_fit=round(t_fit, 1), peak_mb_fit=peak, fresh_fit=True,
+                           sparse_fill_calls=prov.get("sparse_fill_calls"))
                 tr = dict(task=task, arm=arm, lam=lt, draw=draw, **{k: prov.get(k) for k in (
                     "loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_kept", "amp_stats",
-                    "logit_scale", "dual_norm_zero", "dual_norm_floor", "n_train_pos", "n_holdout_pos", "present")})
+                    "logit_scale", "dual_norm_zero", "dual_norm_floor", "n_train_pos", "n_holdout_pos", "present",
+                    "wcm_version", "train_fill", "sparse_fill_calls", "logit_term_scales", "dual_norm_pos")})
                 curve = prov.get("curve") or {}
                 tr["curve_loss"] = [float("%.4g" % v) for v in (curve.get("loss") or [])]
                 tr["curve_n"] = curve.get("n_members")
+                tr["curve_terms"] = {k: [float("%.4g" % x) for x in (v or [])[::10]]
+                                     for k, v in (curve.get("terms") or {}).items()}
                 ft.write(json.dumps(tr) + "\n"); ft.flush()
             if key not in done:
                 t = time.time()
@@ -228,7 +248,7 @@ def main():
                 live = active_pool(eng, B, task)
                 st["n_active"] = sum(len(v) for v in live.values())
                 for lt, (lam, al) in w_alphas.items():
-                    if not al:
+                    if not al or (RND_LAMS is not None and lt not in RND_LAMS):
                         continue
                     counts = C.site_counts(al)
                     rng = random.Random("%s-%s-null" % (task, lt))

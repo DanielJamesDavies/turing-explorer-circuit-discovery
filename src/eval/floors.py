@@ -109,9 +109,25 @@ def collect_site_anchors(
         actual per-position clean value. This is the correct pin for
         position-aware / allowed-set circuits (a collapsed pin discards the
         position axis the seed reads); stored on CPU to bound memory.
+
+    BOS (2026-11-04, exp 107 arenas A / D): a bank with
+    ``mean_skip_positions`` = n > 0 (a BOS-prefix family: Gemma's BOS, as
+    Pythia's, carries huge activations and is never edited) excludes the first
+    n positions from the means, on top of ``valid``. Banks without it: every
+    position, unchanged. Only for site models whose sites SEE those positions
+    (a site model that already hides BOS from every site, arena A's, must not
+    set it: its activations start at position 1).
     """
 
     kind_to_idx = {k: i for i, k in enumerate(sae_bank.kinds)}
+    skip = int(getattr(sae_bank, "mean_skip_positions", 0) or 0)
+    if skip > 0:
+        B0, T0 = int(tokens.shape[0]), int(tokens.shape[1])
+        if T0 <= skip:
+            raise ValueError(f"mean_skip_positions={skip} leaves no position of a length-{T0} prompt")
+        keep = torch.ones(B0, T0, dtype=torch.bool)
+        keep[:, :skip] = False
+        valid = keep if valid is None else (valid[:B0, :T0].to(torch.bool).cpu() & keep)
     means: Dict[Site, torch.Tensor] = {}
     pins: Dict[Site, torch.Tensor] = {}
     argmax_cpu = argmax.detach().cpu() if argmax is not None else None

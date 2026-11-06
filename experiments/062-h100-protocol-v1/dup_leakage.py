@@ -23,6 +23,7 @@ HERE = Path(__file__).parent
 CTX = HERE / "out_full" / "out" / "ctx"
 OUT = HERE / "out_dup_leakage"
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
+from merge import BAND, NEC_MIN  # noqa: E402  (the DAN-8 pass rule)
 
 
 def rows_of(t):
@@ -67,7 +68,7 @@ def report():
     e = pd.DataFrame(list(ev.values()))
     e = e[~e["vacuous_tk"].fillna(False).astype(bool)]
     ok = e[HEAD].notna().all(axis=1)
-    e["passed"] = ok & ((e[HEAD] >= 0.8) & (e[HEAD] <= 1.5)).all(axis=1) & (e["phi_sup_blind_tk"] >= 0.9)
+    e["passed"] = ok & ((e[HEAD] >= BAND[0]) & (e[HEAD] <= BAND[1])).all(axis=1) & (e["phi_sup_blind_tk"] >= NEC_MIN)
     d = d.merge(e[["seed", "passed"]], on="seed")
     d["band"] = d.seed.map(lambda k: "L0-4" if int(k.split(".")[0]) <= 4 else ("L5-7" if int(k.split(".")[0]) <= 7 else "L8-11"))
     d["kind"] = d.seed.map(lambda k: k.split(".")[1])

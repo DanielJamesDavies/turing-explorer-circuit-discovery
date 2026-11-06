@@ -449,6 +449,24 @@ class TestLrSchedule:
         floored = self._prov("cosine", lr_min_frac=0.5)["lr_sum"]
         assert floored > bare
 
+    def test_geometric_tracks_the_anneal(self):
+        """lr * lr_min_frac**frac: peak at step 0, lr_min_frac * lr at the
+        last step, sum = the geometric series."""
+        steps, lr, f = 100, 0.2, 0.05
+        prov = self._prov("geometric", lr_min_frac=f)
+        want = sum(lr * f ** (t / (steps - 1)) for t in range(steps))
+        assert prov["lr_sum"] == pytest.approx(want, rel=1e-3)
+        assert prov["lr_schedule"] == "geometric"
+
+    def test_geometric_accepts_warmup(self):
+        """warm-up ramps lr_floor -> lr, then the geometric decay runs over the
+        rest of the run (2026-11-03: the x3.15 peak's early spikes)."""
+        prov = self._prov("geometric", lr_min_frac=0.05, warmup_frac=0.1)
+        steps, lr, f, nw = 100, 0.2, 0.05, 10
+        want = sum(lr * f + (lr - lr * f) * (t + 1) / nw for t in range(nw))
+        want += sum(lr * f ** ((t - nw) / (steps - nw - 1)) for t in range(nw, steps))
+        assert prov["lr_sum"] == pytest.approx(want, rel=1e-3)
+
     def test_invalid_schedule_raises(self):
         with pytest.raises(ValueError, match="lr_schedule"):
             self._prov("exponential")
@@ -740,6 +758,270 @@ class TestActiveInit:
         # latents other than 0 and 3 never fire on the probes; from theta_lo
         # with zero data gradient they cannot cross keep_threshold upward
         assert member_idx <= {0, 3}, member_idx
+
+
+class TestWarmState:
+    """warm_state / return_state (2026-11-02): a lambda path fits each lambda
+    from the previous fit's final raw parameters."""
+
+    def test_state_returned_only_on_request(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, prov = _run("pos", bank, inf, pt, nt, pa)
+        assert "final_state" not in prov
+        _, prov = _run("pos", bank, inf, pt, nt, pa, return_state=True,
+                       free_amplitude=True)
+        st = prov["final_state"]
+        assert set(st) == {"theta", "amp"}
+        assert tuple(st["theta"][SITE].shape) == (D,)
+        assert tuple(st["amp"][SITE].shape) == (D,)
+
+    def test_warm_at_the_default_init_is_bit_identical(self):
+        bank, inf, pt, nt, pa = _setup()
+        ref, p_ref = _run("pos", bank, inf, pt, nt, pa)
+        warm = {"theta": {SITE: torch.full((D,), 4.0)}}
+        got, p_got = _run("pos", bank, inf, pt, nt, pa, warm_state=warm)
+        assert got == ref
+        assert p_got["loss_final"] == p_ref["loss_final"]
+
+    def test_warm_start_resumes_the_previous_solution(self):
+        """From a finished fit's state at a negligible lr, training cannot
+        move: the selection and the amplitudes are the previous fit's."""
+        bank, inf, pt, nt, pa = _setup()
+        ref, prov = _run("pos", bank, inf, pt, nt, pa, return_state=True,
+                         free_amplitude=True)
+        got, p2 = _run("pos", bank, inf, pt, nt, pa, free_amplitude=True,
+                       warm_state=prov["final_state"], lr=1e-9, steps=2)
+        assert set(got) == set(ref)
+        assert p2["amp_kept"] == prov["amp_kept"]
+
+    def test_closed_start_differs_from_the_open_start(self):
+        """A warm state with every gate shut starts at the empty circuit."""
+        bank, inf, pt, nt, pa = _setup()
+        _, p_open = _run("pos", bank, inf, pt, nt, pa, steps=2)
+        _, p_shut = _run("pos", bank, inf, pt, nt, pa, steps=2,
+                         warm_state={"theta": {SITE: torch.full((D,), -8.0)}})
+        assert p_shut["loss_initial"] > p_open["loss_initial"]
+
+    def test_anneal_t0_default_is_bit_identical_and_recorded(self):
+        bank, inf, pt, nt, pa = _setup()
+        ref, p_ref = _run("pos", bank, inf, pt, nt, pa, binarize="anneal")
+        got, p_got = _run("pos", bank, inf, pt, nt, pa, binarize="anneal",
+                          anneal_t0=1.0)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+        assert p_got["anneal_t0"] == 1.0
+        _, p_hold = _run("pos", bank, inf, pt, nt, pa, binarize="anneal",
+                         anneal_t0=0.05)
+        assert p_hold["anneal_t0"] == 0.05
+        assert p_hold["loss_initial"] != p_ref["loss_initial"]
+        with pytest.raises(ValueError, match="anneal_t0"):
+            _run("pos", bank, inf, pt, nt, pa, binarize="anneal",
+                 anneal_t0=2.0)
+
+    def test_bad_warm_state_raises(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="keys"):
+            _run("pos", bank, inf, pt, nt, pa, warm_state={"thetas": {}})
+        with pytest.raises(ValueError, match="free_amplitude"):
+            _run("pos", bank, inf, pt, nt, pa,
+                 warm_state={"amp": {SITE: torch.zeros(D)}})
+        with pytest.raises(ValueError, match="shape"):
+            _run("pos", bank, inf, pt, nt, pa,
+                 warm_state={"theta": {SITE: torch.zeros(D + 1)}})
+
+
+class TestRankCutK:
+    """rank_cut_k (2026-11-02): the "cut" rank mode against the rank_cut_k-th
+    rival instead of the k-th; None = the bank's k, unchanged."""
+
+    class _KBank(_Bank):
+        k = D
+
+    def test_cut_k_equal_to_bank_k_is_bit_identical(self):
+        bank = self._KBank()
+        _, _, pt, nt, pa = _setup()
+        inf = _setup()[1]
+        kw = dict(rank_weight=0.5, rank_mode="cut")
+        ref, p_ref = _run("pos", bank, inf, pt, nt, pa, **kw)
+        got, p_got = _run("pos", bank, inf, pt, nt, pa, rank_cut_k=D, **kw)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+        assert p_got["rank_cut_k"] == D and p_ref["rank_cut_k"] is None
+
+    def test_bad_rank_cut_k_raises(self):
+        bank = self._KBank()
+        _, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="rank_cut_k"):
+            _run("pos", bank, inf, pt, nt, pa, rank_weight=0.5, rank_mode="keep", rank_cut_k=2)
+        with pytest.raises(ValueError, match="rank_cut_k"):
+            _run("pos", bank, inf, pt, nt, pa, rank_weight=0.5, rank_mode="cut", rank_cut_k=D + 1)
+
+
+class TestCensorRivalZeroMult:
+    """censor_temp / rival_weight / rank_zero_mult (2026-11-02) and the
+    censored-share diagnostic: off = bit-identical; on = runs and changes the
+    fit; bad values refused. k = 2 < D, so the Top-K cut is a real rival (with
+    k = D the K-th OTHER latent is -inf and the soft gate is exactly 1)."""
+
+    class _KBank(_Bank):
+        k = 2
+
+    def _go(self, **kw):
+        bank = self._KBank()
+        _, inf, pt, nt, pa = _setup()
+        base = dict(rank_weight=0.5, rank_mode="cut")
+        base.update(kw)
+        return _run("pos", bank, inf, pt, nt, pa, **base)
+
+    def test_defaults_are_bit_identical(self):
+        ref, p_ref = self._go()
+        got, p_got = self._go(censor_temp=None, rival_weight=0.0, rank_zero_mult=1.0)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+
+    def test_censored_share_is_logged(self):
+        _, prov = self._go()
+        cens = prov["curve"].get("censored")
+        assert cens and all(len(v) == len(prov["curve"]["loss"]) for v in cens.values())
+        assert all(0.0 <= x <= 1.0 for v in cens.values() for x in v)
+
+    def test_censor_and_rival_run_and_change_the_loss(self):
+        _, p_ref = self._go()
+        # the toy seed sits far above the cut ((2 - 0) / (0.05 x 2) = 20: the soft gate rounds to 1, by design
+        # unchanged), so a large temperature is needed to see the gate act
+        _, p_c = self._go(censor_temp=5.0)
+        _, p_r = self._go(rival_weight=1.0)
+        assert p_c["censor_temp"] == 5.0 and p_r["rival_weight"] == 1.0
+        assert p_c["loss_initial"] != p_ref["loss_initial"] or p_c["loss_final"] != p_ref["loss_final"]
+        _, p_c0 = self._go(censor_temp=0.05)
+        assert p_c0["loss_final"] == pytest.approx(p_ref["loss_final"], rel=1e-6)
+
+    def test_bad_values_raise(self):
+        with pytest.raises(ValueError, match="censor_temp"):
+            self._go(censor_temp=0.0)
+        with pytest.raises(ValueError, match="rival_weight"):
+            self._go(rival_weight=-1.0)
+
+
+class TestJumpReLUThreshold:
+    """Per-dictionary activation (2026-11-04, arena D): an SAE with a
+    ``threshold`` buffer is JumpReLU; the censored term's cut never sits below
+    the seed's threshold. No threshold = ReLU, bit-identical."""
+
+    def _go(self, thr=None, **kw):
+        bank = _Bank()
+        if thr is not None:
+            bank._sae.threshold = torch.full((D,), float(thr))
+        _, inf, pt, nt, pa = _setup()
+        return _run("pos", bank, inf, pt, nt, pa, **kw)
+
+    def test_helpers(self):
+        from sae.dense import seed_activation, seed_threshold
+        pre = torch.tensor([-1.0, 0.0, 0.5, 2.0])
+        assert torch.equal(seed_activation(pre, None), torch.relu(pre))
+        assert torch.equal(seed_activation(pre, 1.0), torch.tensor([0.0, 0.0, 0.0, 2.0]))
+        bank = _Bank()
+        assert seed_threshold(bank, 0, "attn", 3) is None
+        bank._sae.threshold = torch.arange(D, dtype=torch.float32)
+        assert seed_threshold(bank, 1, "resid", 3) == 3.0
+        assert seed_threshold(object(), 0, "attn", 0) is None          # a bank without saes: ReLU
+
+    def test_no_censor_ignores_the_threshold(self):
+        ref, p_ref = self._go()
+        got, p_got = self._go(thr=1e3)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+
+    def test_threshold_moves_the_censored_cut(self):
+        _, p_ref = self._go(censor_temp=5.0)
+        _, p_zero = self._go(thr=-1e3, censor_temp=5.0)            # below every cut: unchanged
+        _, p_high = self._go(thr=1e3, censor_temp=5.0)             # above every pre: both sides gated to ~0
+        assert p_zero["loss_final"] == p_ref["loss_final"]
+        assert p_high["loss_initial"] != p_ref["loss_initial"]
+
+
+class TestAdaptiveLambda:
+    """lam_adapt_eps (2026-11-02, option B): off = bit-identical; on = λ moves
+    with the worst ablation term's error, stays in [λ/30, 30λ], holds after
+    lam_adapt_frac, and is recorded."""
+
+    def _go(self, **kw):
+        bank, inf, pt, nt, pa = _setup()
+        return _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt, mask_floor_source="dual", **kw)
+
+    def test_off_is_bit_identical(self):
+        ref, p_ref = self._go()
+        got, p_got = self._go(lam_adapt_eps=None)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+        assert "lambda" not in p_got["curve"] and p_got["lambda_final"] == 0.05
+
+    def test_lambda_moves_within_bounds_and_holds(self):
+        _, p_lo = self._go(lam_adapt_eps=1e3, lam_adapt_rate=0.2, lam_adapt_frac=0.5)   # every f inside the band: up
+        lam = p_lo["curve"]["lambda"]
+        assert len(lam) == 120 and lam[-1] > 0.05 and max(lam) <= 0.05 * 30 + 1e-12
+        assert lam[0] == lam[29] == 0.05                                   # the window opens at 25% (step 30)
+        assert lam[-1] == lam[60] == lam[100]                              # and closes at lam_adapt_frac
+        _, p_hi = self._go(lam_adapt_eps=1e-12, lam_adapt_rate=0.2)        # errors far over eps: down
+        assert p_hi["curve"]["lambda"][-1] < 0.05 and min(p_hi["curve"]["lambda"]) >= 0.05 / 30 - 1e-12
+        assert p_hi["lambda_final"] == pytest.approx(p_hi["curve"]["lambda"][-1])
+
+    def test_range_caps(self):
+        _, p_up = self._go(lam_adapt_eps=1e3, lam_adapt_rate=0.5, lam_adapt_up=2.0)
+        assert max(p_up["curve"]["lambda"]) <= 0.05 * 2.0 + 1e-12
+        _, p_dn = self._go(lam_adapt_eps=1e-12, lam_adapt_rate=0.5, lam_adapt_down=1.0)   # raise-only
+        assert min(p_dn["curve"]["lambda"]) == pytest.approx(0.05)
+        assert p_dn["lam_adapt_range"] == [1.0, 30.0]
+
+    def test_bad_settings_raise(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="lam_adapt_up"):
+            self._go(lam_adapt_eps=0.1, lam_adapt_up=0.5)
+        with pytest.raises(ValueError, match="lam_adapt_eps"):
+            _run("pos", bank, inf, pt, nt, pa, lam_adapt_eps=0.02)        # single floor
+        with pytest.raises(ValueError, match="lam_adapt"):
+            self._go(lam_adapt_eps=0.02, lam_adapt_frac=0.0)
+
+
+class TestNecessityTerm:
+    """necessity_weight (2026-11-03): off = bit-identical; on = an inverted
+    (members-removed) forward with a one-sided hinge, recorded as its own
+    term; bad settings refused."""
+
+    def _go(self, **kw):
+        bank, inf, pt, nt, pa = _setup()
+        return _run("pos", bank, inf, pt, nt, pa, neg_tokens=nt, mask_floor_source="dual", **kw)
+
+    def test_off_is_bit_identical(self):
+        ref, p_ref = self._go()
+        got, p_got = self._go(necessity_weight=0.0)
+        assert got == ref and p_got["loss_final"] == p_ref["loss_final"]
+        assert "necessity" not in p_got["curve"].get("terms", {})
+
+    def test_on_runs_and_is_recorded(self):
+        _, p = self._go(necessity_weight=1.0)
+        assert p["necessity_weight"] == 1.0 and p["necessity_target"] == 0.95
+        nec = p["curve"]["terms"]["necessity"]
+        assert len(nec) == len(p["curve"]["loss"]) and all(v >= 0 for v in nec)
+
+    def test_inverted_patcher_removes_members(self):
+        """invert: m = 1 everywhere removes every latent (as the zero empty
+        circuit); m = 0 everywhere is the identity."""
+        from circuit.instrument.learned_mask import LearnedMaskPatcher
+        bank = _Bank()
+        x = torch.randn(2, 3, D)
+        w, b = torch.zeros(D), torch.zeros(())
+        for theta, expect in ((40.0, "removed"), (-40.0, "identity")):
+            p = LearnedMaskPatcher(bank, {SITE: torch.full((D,), theta)}, SEED_LAYER, SEED_KIND, w, b, tap_seed=False)
+            p.invert = True
+            out = p.transform(SITE[0], SITE[1], x)
+            if expect == "identity":
+                assert torch.allclose(out, x)
+            else:
+                dense = torch.relu(x)
+                assert torch.allclose(out, x - bank.decode(dense, SITE[1], SITE[0], add_bias=False), atol=1e-6)
+
+    def test_bad_settings_raise(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="necessity_weight"):
+            _run("pos", bank, inf, pt, nt, pa, necessity_weight=1.0)          # single floor
+        with pytest.raises(ValueError, match="necessity_target"):
+            self._go(necessity_weight=1.0, necessity_target=1.5)
 
 
 class TestSiteLambdaWeights:
@@ -1713,10 +1995,14 @@ class TestLogitFloorsAndNorm:
         assert seen == [True, True, True]
 
     def test_rank_keep_still_refused_and_bad_norm_raises(self):
+        """Rank-keep is latent-only, in every mode (a behavioural "keep" was tried and removed, 2026-11-01)."""
         bank, inf, pt, nt, pa = _setup()
-        with pytest.raises(ValueError, match="rank_weight"):
-            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), mask_floor_source="triple",
-                 neg_tokens=nt, rank_weight=3e-3)
+        for mode in ("cut", "keep", "top"):
+            with pytest.raises(ValueError, match="rank_weight"):
+                _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), mask_floor_source="triple",
+                     neg_tokens=nt, rank_weight=3e-3, rank_mode=mode)
+        with pytest.raises(ValueError, match="offtarget_weight"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), offtarget_weight=1.0)
         with pytest.raises(ValueError, match="logit_norm"):
             _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), logit_norm="relative")
 
@@ -1724,6 +2010,124 @@ class TestLogitFloorsAndNorm:
         bank, inf, pt, nt, pa = _setup()
         with pytest.raises(ValueError, match="dual"):
             _run("negctx", bank, inf, pt, nt, pa, mask_floor_source="triple", neg_tokens=nt, target_act=2.0)
+
+
+class TestLogitResampleTerm:
+    """Experiment 107 (2026-11-01, Daniel): the behavioural WCM = Z + A + C + R (no rank-keep). R (resample_weight) on
+    the logit objective: the donor patcher over the same gates, floor = a drawn donor context's code, one draw per
+    forward of _forward_logits. Stub (TestLogitFloorsAndNorm): logits = (0, 2 x0, 0, 0), natural x0 = 2, target 1."""
+
+    _tok = TestLogitFloorsAndNorm._tok
+
+    def test_resample_off_is_unchanged(self):
+        bank, inf, pt, nt, pa = _setup()
+        kw = dict(target_tokens=self._tok(pa), mask_floor_source="triple", neg_tokens=nt, steps=5)
+        a, ma = _run("logit", bank, inf, pt, nt, pa, **kw)
+        b, mb = _run("logit", bank, inf, pt, nt, pa, resample_weight=0.0, resample_tokens=nt, **kw)
+        assert a == b and ma["curve"] == mb["curve"]
+
+    def test_resample_term_on_the_logit_objective(self, monkeypatch):
+        import circuit.instrument.learned_mask as LM
+        taps, draws = [], []
+        orig = LM.LearnedMaskPatcher
+
+        class Rec(orig):
+            def __init__(self, bank_, thetas, *a, tap_seed=True, **k):
+                super().__init__(bank_, thetas, *a, tap_seed=tap_seed, **k)
+                if any(t.requires_grad for t in thetas.values()):
+                    taps.append(tap_seed)
+
+        monkeypatch.setattr(LM, "LearnedMaskPatcher", Rec)
+        orig_draw = LM.DonorPool.draw
+        monkeypatch.setattr(LM.DonorPool, "draw", lambda self, B: (draws.append(int(B)), orig_draw(self, B)))
+        bank, inf, pt, nt, pa = _setup()
+        kw = dict(target_tokens=self._tok(pa), mask_floor_source="triple", neg_tokens=nt, steps=4)
+        _, off = _run("logit", bank, inf, pt, nt, pa, **kw)
+        taps.clear()
+        _, on = _run("logit", bank, inf, pt, nt, pa, resample_weight=1.0, resample_tokens=nt, **kw)
+        assert taps == [False, False, False, False]               # Z, C, A and the donor patcher: no seed tap
+        assert list(on["curve"]["terms"]) == ["zero", "floor", "pos", "resample"]
+        assert on["resample_draws"] == 4 and len(draws) == 4      # one draw per forward of the donor term
+        assert on["curve"]["terms"]["zero"][0] == off["curve"]["terms"]["zero"][0]
+        assert on["curve"]["loss"] != off["curve"]["loss"]
+
+    def test_resample_term_weight_by_hand(self):
+        """Gates shut, donors = the neg stream (latent 5 = 1 -> x0 = -1 -> logits (0, -2, 0, 0)): the R term is
+        gamma_R * (lp(0, -2, 0, 0) - lp(0, 4, 0, 0))^2 under the raw scale, i.e. the closed C gap."""
+        bank, inf, pt, nt, pa = _setup()
+        _, m = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), theta_init=-40.0, steps=1,
+                    mask_floor_source="dual", neg_tokens=nt, resample_weight=0.5, resample_tokens=nt)
+        gap = (TestLogitFloorsAndNorm._lp([0, -2, 0, 0]) - TestLogitFloorsAndNorm._lp([0, 4, 0, 0])) ** 2
+        assert m["curve"]["terms"]["resample"][0] == pytest.approx(0.5 * gap, rel=1e-4)
+
+
+class TestLogitPerTermNorm:
+    """Experiment 081 (2026-10-27): logit_norm="gap_term", each ablation term divided by its OWN closed-mask gap^2
+    (zero / C floor / A floor), each floored at LOGIT_GAP_FLOOR and measured under the term's training fill. On the
+    stub (see TestLogitFloorsAndNorm): natural logits (0, 4, 0, 0); closed zero -> 0; closed C (negctx) floor ->
+    (0, -2, 0, 0); closed A (posctx) floor = the pos stream's own mean code -> the natural logits, so the A gap is ~0
+    and its scale is the floor. Default-off: "none" / "gap" are covered unchanged by the tests above."""
+
+    _tok = TestLogitFloorsAndNorm._tok
+    _lp = staticmethod(TestLogitFloorsAndNorm._lp)
+
+    def test_each_term_is_divided_by_its_own_gap(self):
+        from circuit.instrument.learned_mask import LOGIT_GAP_FLOOR
+        bank, inf, pt, nt, pa = _setup()
+        kw = dict(target_tokens=self._tok(pa), mask_floor_source="triple", neg_tokens=nt, steps=3)
+        _, raw = _run("logit", bank, inf, pt, nt, pa, **kw)
+        _, gt = _run("logit", bank, inf, pt, nt, pa, logit_norm="gap_term", **kw)
+        nat = self._lp([0, 4, 0, 0])
+        want = {"zero": (nat - self._lp([0, 0, 0, 0])) ** 2, "floor": (nat - self._lp([0, -2, 0, 0])) ** 2,
+                "pos": LOGIT_GAP_FLOOR}
+        sc = gt["logit_term_scales"]
+        assert set(sc) == {"zero", "floor", "pos"}
+        for k, v in want.items():
+            assert sc[k] == pytest.approx(v, rel=1e-4), k
+        assert gt["logit_norm"] == "gap_term" and gt["logit_scale"] == pytest.approx(sc["zero"])
+        assert gt["dual_norm_pos"] is not None and gt["dual_norm_pos"] < LOGIT_GAP_FLOOR
+        for term in ("zero", "floor", "pos"):        # step 0: same thetas, so only the weight differs
+            assert raw["curve"]["terms"][term][0] == pytest.approx(gt["curve"]["terms"][term][0] * sc[term],
+                                                                   rel=1e-4, abs=1e-9), term
+        assert raw["logit_term_scales"] is None and raw["dual_norm_pos"] is None
+
+    def test_dual_has_no_a_term_scale(self):
+        bank, inf, pt, nt, pa = _setup()
+        _, gt = _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), mask_floor_source="dual",
+                     neg_tokens=nt, steps=2, logit_norm="gap_term")
+        assert set(gt["logit_term_scales"]) == {"zero", "floor"}
+
+    def test_closed_gaps_use_the_training_fill(self, monkeypatch):
+        """Under train_fill="sparse" the floored closed-mask passes of gap_term run the sparse fill; under "gap" the
+        closed C pass stays dense (the diagnostic, unchanged)."""
+        import circuit.instrument.learned_mask as LM
+        seen = []
+        orig = LM.LearnedMaskPatcher
+
+        class Rec(orig):
+            def __init__(self, bank_, thetas, *a, **k):
+                super().__init__(bank_, thetas, *a, **k)
+                if not any(t.requires_grad for t in thetas.values()) and self.floors:
+                    seen.append(self.train_fill)
+
+        monkeypatch.setattr(LM, "LearnedMaskPatcher", Rec)
+        bank, inf, pt, nt, pa = _setup()
+        bank.k = D
+        kw = dict(target_tokens=self._tok(pa), mask_floor_source="triple", neg_tokens=nt, steps=2,
+                  train_fill="sparse", free_amplitude=True)
+        _, gt = _run("logit", bank, inf, pt, nt, pa, logit_norm="gap_term", **kw)
+        assert "sparse" in seen and gt["sparse_fill_calls"] > 0 and set(gt["logit_term_scales"]) == {
+            "zero", "floor", "pos"}
+        seen.clear()
+        _run("logit", bank, inf, pt, nt, pa, logit_norm="gap", **kw)
+        assert seen == ["dense"]
+
+    def test_refused_without_a_multi_term_logit_floor(self):
+        bank, inf, pt, nt, pa = _setup()
+        with pytest.raises(ValueError, match="gap_term"):
+            _run("logit", bank, inf, pt, nt, pa, target_tokens=self._tok(pa), logit_norm="gap_term")
+        with pytest.raises(ValueError, match="gap_term"):
+            _run("pos", bank, inf, pt, nt, pa, mask_floor_source="triple", neg_tokens=nt, logit_norm="gap_term")
 
 
 class TestLogitSetMetricAndValidFloors:

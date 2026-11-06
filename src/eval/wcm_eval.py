@@ -67,7 +67,7 @@ from eval.counterfactual_faithfulness import CounterfactualInterventionPatcher
 from eval.floors import collect_site_anchors, collect_site_means
 from model.hooks import multi_patch
 from pipeline.component_index import component_idx
-from sae.dense import sparse_topk_to_dense, target_latent_activations
+from sae.dense import seed_activation, seed_threshold, sparse_topk_to_dense, target_latent_activations
 
 Site = Tuple[int, str]
 Alphas = Dict[Site, Dict[int, float]]
@@ -79,9 +79,12 @@ EVAL_BATCH = 16                  # sequences per forward; also the largest held-
 MIN_POS = 8                      # fewer activating contexts: skip "thin_probes"
 HOLDOUT_FRAC = 0.25              # the engine split rule: n_hold = round(n * 0.25), train = the first n - n_hold
 VACUOUS_REL = 0.05               # vacuous denominator: |a_pos - e0| < 0.05 |a_pos|
+VACUOUS_BASELINES = ("e0", "eM_topk", "eN_topk")        # the pass rule's denominators: Z and necessity, A, C (§12.4)
+VACUOUS_RULES = ("v2", "v1")
 
-# DAN-8 pass rule (adopted 2026-09-27): Z, A, C all in BAND and necessity >= NEC_MIN, held-out strongest
-BAND = (0.8, 1.5)
+# DAN-8 pass rule (adopted 2026-09-27; floor 0.8 -> 0.75 on 2026-10-31, before the production run): Z, A, C all in
+# BAND and necessity >= NEC_MIN, held-out strongest
+BAND = (0.75, 1.5)
 NEC_MIN = 0.9
 FAITH = ("free0", "freeM_topk", "freeN_topk")           # Z, A (sparsity-preserving), C (sparsity-preserving)
 NECESSITY = "phi_sup_blind"
@@ -110,6 +113,12 @@ def vacuous(a_pos: float, e0: float, rel: float = VACUOUS_REL) -> bool:
     """A vacuous denominator: the empty circuit already sits within rel x a_pos of a_pos (relative to a_pos; v1's
     rule relative to e0 never fired, e0_tk is usually 0)."""
     return bool(abs(a_pos - e0) < rel * abs(a_pos))
+
+
+def vacuous_v2(a_pos: float, baselines: Iterable[float], rel: float = VACUOUS_REL) -> bool:
+    """Protocol §12.4 (exp 105): vacuous when a_pos <= 0 or any pass-rule baseline e exceeds (1 - rel) a_pos (signed).
+    A function of the empty-circuit reads only, so of the target and its contexts, never of the circuit."""
+    return bool(a_pos <= 0 or any(a_pos - e < rel * a_pos for e in baselines))
 
 
 def split_n(n: int, holdout_frac: float = HOLDOUT_FRAC) -> int:
@@ -190,6 +199,8 @@ def _tap(p: Any, bank: Any, x: torch.Tensor, site: Site) -> torch.Tensor:
     with torch.no_grad():
         ta, ti = bank.encode(x.detach(), site[1], site[0])
         p.tap_tk = target_latent_activations(ta, ti, p.seed_idx).detach()
+    if not hasattr(p, "seed_thr"):                         # the "pre" read's activation (JumpReLU threshold / ReLU)
+        p.seed_thr = seed_threshold(bank, site[0], site[1], p.seed_idx)
     return pre
 
 
@@ -305,7 +316,7 @@ def read_target(inference: Any, make_patcher: Callable[[int, int], Any], tokens:
                 pre = p.seed_pre
                 rr = torch.arange(B, device=pre.device)
                 anc = anchors[s0:s0 + B].to(pre.device).clamp(0, pre.shape[1] - 1)
-                pres.append(torch.relu(pre[rr, anc]).float())
+                pres.append(seed_activation(pre[rr, anc], getattr(p, "seed_thr", None)).float())
                 tks.append(p.tap_tk[rr, anc].float())
                 edited |= getattr(p, "edited", set())
     finally:
@@ -453,7 +464,8 @@ def score_circuit(
     neg_tk = torch.cat([b for _, b in neg_full], 0)
     na_ho = neg_pre.argmax(dim=1).cpu()
     rr = torch.arange(neg_pre.shape[0], device=neg_pre.device)
-    A_BASE = {"pre": float(torch.relu(neg_pre[rr, na_ho.to(neg_pre.device)]).float().mean()),
+    A_BASE = {"pre": float(seed_activation(neg_pre[rr, na_ho.to(neg_pre.device)],
+                                           getattr(p0, "seed_thr", None)).float().mean()),
               "tk": float(neg_tk[rr, na_ho.to(neg_tk.device)].float().mean())}
     pins_tr = {s: pins_tr[s].cpu() for s in alphas if s in pins_tr}
     inject = {s: {i: float(a * float(pins_tr[s][i])) for i, a in d.items()} for s, d in alphas.items() if s in pins_tr}
@@ -489,6 +501,7 @@ def score_circuit(
         put(k_, r)
     for rd in ("tk", "pre"):
         row["vacuous_" + rd] = vacuous(a_pos[rd], E["e0"][rd])
+    row["vacuous_v2"] = vacuous_v2(a_pos["tk"], [E[k]["tk"] for k in VACUOUS_BASELINES])   # §12.4, both reads
 
     # 1. faithfulness at the fitted gains: Z, dense / sparsity-preserving A and C
     runs = {"free0": (None, False, "e0"), "freeM_dense": (means_tr, False, "eM_dense"),
@@ -1132,10 +1145,25 @@ def faith_fields(read: str = "tk") -> Tuple[str, str, str]:
     return tuple("%s_%s" % (f, read) for f in FAITH)
 
 
-def is_vacuous(row: Mapping[str, Any], read: str = "tk") -> bool:
-    """The row's vacuous-denominator flag (Z denominator only); a missing flag counts as not vacuous. An undefined
-    A or C ratio is NOT vacuous: it fails the pass rule."""
-    return bool(row.get("vacuous_" + read) or False)
+def is_vacuous(row: Mapping[str, Any], read: str = "tk", rule: str = "v2") -> bool:
+    """Whether the row is dropped from pass-rate denominators.
+
+    rule="v2" (protocol §12.4, the default): vacuous_v2 on the post-Top-K reads, one exclusion set for both reads. It
+    is recomputed from the stored a_pos_tk / e0_tk / eM_topk_tk / eN_topk_tk when the row has no vacuous_v2 field, so
+    rows scored before §12.4 are re-classified without rescoring; a row without those reads falls back to its
+    vacuous_tk flag. A term still undefined on a non-vacuous row fails the pass rule.
+    rule="v1": the stored vacuous_<read> flag (Z denominator only, two-sided); a missing flag counts as not vacuous."""
+    if rule not in VACUOUS_RULES:
+        raise ValueError("rule must be one of %s, got %r" % (VACUOUS_RULES, rule))
+    if rule == "v1":
+        return bool(row.get("vacuous_" + read) or False)
+    if row.get("vacuous_v2") is not None:
+        return bool(row["vacuous_v2"])
+    ap = _num(row.get("a_pos_tk"))
+    es = [_num(row.get(k + "_tk")) for k in VACUOUS_BASELINES]
+    if ap is None or any(e is None for e in es):
+        return bool(row.get("vacuous_tk") or False)
+    return vacuous_v2(ap, es)
 
 
 def passes(row: Mapping[str, Any], read: str = "tk", band: Tuple[float, float] = BAND, nec_min: float = NEC_MIN,
@@ -1161,10 +1189,11 @@ def worst_deviation(row: Mapping[str, Any], read: str = "tk", skipna: bool = Tru
     return max(vals) if vals else None
 
 
-def pass_summary(rows: Iterable[Mapping[str, Any]], read: str = "tk", **rule: Any) -> Dict[str, Any]:
+def pass_summary(rows: Iterable[Mapping[str, Any]], read: str = "tk", vacuous_rule: str = "v2",
+                 **rule: Any) -> Dict[str, Any]:
     """Pass rate over the non-vacuous rows (vacuous ones dropped from the denominator and counted)."""
     rows = list(rows)
-    vac = [is_vacuous(r, read) for r in rows]
+    vac = [is_vacuous(r, read, vacuous_rule) for r in rows]
     scored = [r for r, v in zip(rows, vac) if not v]
     n_pass = sum(passes(r, read, **rule) for r in scored)
     return dict(n=len(rows), n_vacuous=int(sum(vac)), n_scored=len(scored), n_pass=int(n_pass),
@@ -1172,6 +1201,7 @@ def pass_summary(rows: Iterable[Mapping[str, Any]], read: str = "tk", **rule: An
 
 
 __all__ = ["score_circuit", "read_target", "eval_split", "split_n", "frac", "ratio", "necessity", "vacuous",
+           "vacuous_v2", "VACUOUS_BASELINES",
            "circuit_alphas", "circuit_key", "seed_of", "site_encoder", "neg_ctx_store_fallback", "passes",
            "is_vacuous", "worst_deviation", "pass_summary", "faith_fields", "BAND", "NEC_MIN", "FAITH", "NECESSITY",
            "INDUCE", "READS", "SPLITS", "TIMING_FIELDS",

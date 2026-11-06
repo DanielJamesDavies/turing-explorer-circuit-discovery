@@ -325,6 +325,29 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             logger.note("mask: floor %r needs negctx but seed has none — "
                         "skipped" % cfg.mask_floor_source)
             return {}, 0.0, 0.0
+        # PROTOCOL V2 means (train_means_source="eval_ref"): the A / C training
+        # means are the scorer's, computed by the scorer's own call on the
+        # scorer's reference rows, which the caller supplies per fit as
+        # self._train_means_ref = (A rows, C rows) (062 driver.Runner.fit, from
+        # protocol_contexts.eval_reference). "fit" (default): the engine builds
+        # its own, unchanged.
+        means_kw: Dict[str, Any] = {}
+        if cfg.train_means_source == "eval_ref":
+            means_kw = self._eval_ref_means(sites, cfg)
+        elif cfg.train_means_source != "fit":
+            raise ValueError("train_means_source must be 'fit' or 'eval_ref', got %r" % (cfg.train_means_source,))
+        # RESAMPLE TERM (resample_weight > 0, 2026-10-31): the donor contexts
+        # of cfg.resample_pool, supplied by the caller per fit as
+        # self._resample_donors (062 driver.Runner.fit). Off: nothing is passed,
+        # so the engine call is the one above, unchanged.
+        rs_kw: Dict[str, Any] = {}
+        if float(getattr(cfg, "resample_weight", 0.0)) > 0:
+            donors = getattr(self, "_resample_donors", None)
+            if donors is None:
+                raise ValueError("resample_weight > 0 needs the donor contexts: set method._resample_donors per fit "
+                                 "(the 062 driver does, from circuit.protocol_contexts.eval_reference)")
+            rs_kw = dict(resample_weight=float(cfg.resample_weight), resample_tokens=donors,
+                         resample_k=int(cfg.resample_k), resample_seed=int(cfg.resample_seed))
         scores, prov = run_learned_mask(
             self.inference, self.sae_bank,
             objective=objective, sites=sites, **logit_kw,
@@ -345,6 +368,17 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             rank_weight=cfg.rank_weight,
             rank_delta=cfg.rank_delta,
             rank_mode=cfg.rank_mode,
+            rank_cut_k=cfg.rank_cut_k,
+            rank_zero_mult=cfg.rank_zero_mult,
+            censor_temp=cfg.censor_temp,
+            rival_weight=cfg.rival_weight,
+            lam_adapt_eps=cfg.lam_adapt_eps,
+            lam_adapt_rate=cfg.lam_adapt_rate,
+            lam_adapt_frac=cfg.lam_adapt_frac,
+            lam_adapt_up=cfg.lam_adapt_up,
+            lam_adapt_down=cfg.lam_adapt_down,
+            necessity_weight=cfg.necessity_weight,
+            necessity_target=cfg.necessity_target,
             rank_temp=cfg.rank_temp,
             rank_power=cfg.rank_power,
             floors_train_only=cfg.floors_train_only,
@@ -363,13 +397,42 @@ class AblationGradientDiscovery(GradientDiscoveryBase):
             code_dtype=cfg.code_dtype,
             lr_schedule=cfg.lr_schedule, lr_min_frac=cfg.lr_min_frac,
             warmup_frac=cfg.warmup_frac,
+            train_fill=cfg.train_fill, sparse_grad=cfg.sparse_grad,
+            **means_kw,
+            **rs_kw,
             logger=logger,
         )
+        prov["train_means_source"] = cfg.train_means_source
+        if rs_kw:
+            prov["resample_pool"] = cfg.resample_pool
         self._pending_inhibitors = {}
         self._stash_amplitudes(prov)
         self.last_mask_provenance = prov     # training curve + fit stats, for callers that log them
         return scores, float(prov.get("loss_initial") or 0.0), float(
             prov.get("loss_final") or 0.0)
+
+    def _eval_ref_means(self, sites, cfg) -> Dict[str, Any]:
+        """train_means_source="eval_ref": {floor_means: C, pos_floor_means: A}
+        over the caller's reference rows, with the scorers' own calls
+        (amp_eval_pass_v2 / eval.wcm_eval: means_tr = collect_site_anchors(
+        strongest-train rows)[0], means_neg = collect_site_means(contrast-train
+        rows); collect_site_means is that same forward, and a site's mean does
+        not depend on which other sites are collected)."""
+        from eval.floors import collect_site_means
+        ref = getattr(self, "_train_means_ref", None)
+        if ref is None:
+            raise ValueError("train_means_source='eval_ref' needs the scorer's reference rows: set "
+                             "method._train_means_ref = (A rows, C rows) per fit (the 062 driver does, from "
+                             "circuit.protocol_contexts.eval_reference)")
+        if cfg.mask_floor_source not in ("negctx", "dual", "triple", "pn"):
+            raise ValueError("train_means_source='eval_ref' is defined for the contrast-floored sources (C mean, "
+                             "plus the A mean under triple / pn), got %r" % (cfg.mask_floor_source,))
+        pos_ref, neg_ref = ref
+        S = set(sites)
+        out = {"floor_means": collect_site_means(self.inference, self.sae_bank, neg_ref, S)}
+        if cfg.mask_floor_source in ("triple", "pn"):
+            out["pos_floor_means"] = collect_site_means(self.inference, self.sae_bank, pos_ref, S)
+        return out
 
     def _run_restoration_hop(
         self,

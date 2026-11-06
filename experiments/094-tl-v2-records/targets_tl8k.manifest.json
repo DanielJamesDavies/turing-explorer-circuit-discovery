@@ -1,0 +1,212 @@
+{
+ "seed": 20261026,
+ "n_total": 8000,
+ "n_frame": 15046,
+ "n_cells": 35,
+ "rule": "water-filled equal quota per layer x kind cell; must-includes first; rest seeded permutation (numpy default_rng(20261026)); stable core 128 stratified round-robin",
+ "quota_q": [
+  [
+   134,
+   1
+  ],
+  [
+   231,
+   22
+  ],
+  [
+   232,
+   12
+  ]
+ ],
+ "quota": {
+  "0.mlp": 232,
+  "0.resid": 232,
+  "1.attn": 134,
+  "1.mlp": 231,
+  "1.resid": 231,
+  "2.attn": 231,
+  "2.mlp": 232,
+  "2.resid": 231,
+  "3.attn": 231,
+  "3.mlp": 231,
+  "3.resid": 231,
+  "4.attn": 231,
+  "4.mlp": 231,
+  "4.resid": 232,
+  "5.attn": 231,
+  "5.mlp": 231,
+  "5.resid": 232,
+  "6.attn": 231,
+  "6.mlp": 231,
+  "6.resid": 231,
+  "7.attn": 232,
+  "7.mlp": 231,
+  "7.resid": 232,
+  "8.attn": 231,
+  "8.mlp": 231,
+  "8.resid": 232,
+  "9.attn": 231,
+  "9.mlp": 231,
+  "9.resid": 232,
+  "10.attn": 231,
+  "10.mlp": 232,
+  "10.resid": 232,
+  "11.attn": 232,
+  "11.mlp": 231,
+  "11.resid": 231
+ },
+ "cell_sizes": {
+  "5.mlp": 455,
+  "2.resid": 455,
+  "4.resid": 455,
+  "4.mlp": 455,
+  "2.mlp": 455,
+  "6.mlp": 455,
+  "5.resid": 455,
+  "0.mlp": 455,
+  "11.mlp": 455,
+  "10.attn": 436,
+  "3.attn": 406,
+  "10.mlp": 455,
+  "7.resid": 455,
+  "2.attn": 299,
+  "7.attn": 383,
+  "3.mlp": 455,
+  "11.attn": 439,
+  "11.resid": 455,
+  "3.resid": 455,
+  "6.attn": 429,
+  "4.attn": 450,
+  "8.resid": 455,
+  "9.attn": 447,
+  "8.attn": 346,
+  "9.mlp": 455,
+  "6.resid": 455,
+  "8.mlp": 455,
+  "5.attn": 357,
+  "1.attn": 134,
+  "1.mlp": 455,
+  "7.mlp": 455,
+  "9.resid": 455,
+  "10.resid": 455,
+  "1.resid": 455,
+  "0.resid": 455
+ },
+ "kept_per_cell": {
+  "0.mlp": 232,
+  "0.resid": 232,
+  "1.attn": 134,
+  "1.mlp": 231,
+  "1.resid": 231,
+  "2.attn": 231,
+  "2.mlp": 232,
+  "2.resid": 231,
+  "3.attn": 231,
+  "3.mlp": 231,
+  "3.resid": 231,
+  "4.attn": 231,
+  "4.mlp": 231,
+  "4.resid": 232,
+  "5.attn": 231,
+  "5.mlp": 231,
+  "5.resid": 232,
+  "6.attn": 231,
+  "6.mlp": 231,
+  "6.resid": 231,
+  "7.attn": 232,
+  "7.mlp": 231,
+  "7.resid": 232,
+  "8.attn": 231,
+  "8.mlp": 231,
+  "8.resid": 232,
+  "9.attn": 231,
+  "9.mlp": 231,
+  "9.resid": 232,
+  "10.attn": 231,
+  "10.mlp": 232,
+  "10.resid": 232,
+  "11.attn": 232,
+  "11.mlp": 231,
+  "11.resid": 231
+ },
+ "must_includes": {
+  "sweep190": {
+   "n": 190,
+   "in_8k": 190
+  },
+  "nulls126": {
+   "n": 126,
+   "in_8k": 126
+  },
+  "case6": {
+   "n": 6,
+   "in_8k": 6
+  },
+  "gallery9": {
+   "n": 9,
+   "in_8k": 9
+  },
+  "asrun1000": {
+   "n": 1000,
+   "in_8k": 1000
+  },
+  "stable128": {
+   "n": 128,
+   "in_8k": 128
+  },
+  "gate64": {
+   "n": 64,
+   "in_8k": 64
+  }
+ },
+ "must_include_union": 1189,
+ "asrun1000_included": true,
+ "overlaps": {
+  "sweep190&nulls126": 126,
+  "sweep190&case6": 1,
+  "sweep190&gallery9": 0,
+  "sweep190&asrun1000": 12,
+  "sweep190&stable128": 1,
+  "sweep190&gate64": 1,
+  "nulls126&case6": 0,
+  "nulls126&gallery9": 0,
+  "nulls126&asrun1000": 9,
+  "nulls126&stable128": 1,
+  "nulls126&gate64": 1,
+  "case6&gallery9": 0,
+  "case6&asrun1000": 1,
+  "case6&stable128": 0,
+  "case6&gate64": 0,
+  "gallery9&asrun1000": 2,
+  "gallery9&stable128": 0,
+  "gallery9&gate64": 0,
+  "asrun1000&stable128": 13,
+  "asrun1000&gate64": 9,
+  "stable128&gate64": 0
+ },
+ "inputs": {
+  "full": {
+   "path": "experiments/062-h100-protocol-v1/targets_full.txt",
+   "md5": "cdb4858033da6fb8e8552c6c1f77818c"
+  },
+  "nulls126": {
+   "path": "experiments/084-harder-nulls/targets_turingllm_nulls.txt",
+   "md5": "203c081fb59a26845ee95f25cdd61d94"
+  },
+  "asrun1000": {
+   "path": "experiments/086-heldout-rebuild/targets_asrun1000.txt",
+   "md5": "61527386733df1ab4f89a0f5581f6d97"
+  }
+ },
+ "sweep_source": "experiments/062-h100-protocol-v1/out_full/out/sweep",
+ "files": {
+  "targets_tl8k.txt": "84cb8370fd6e31e78bfbbfbc823507aa",
+  "targets_tl8k_sweep190.txt": "963dcb25f886b51e7191772bb08d1b22",
+  "targets_tl8k_nulls126.txt": "203c081fb59a26845ee95f25cdd61d94",
+  "targets_tl8k_case6.txt": "be534f1580ef6d6a2408a70a29607556",
+  "targets_tl8k_gallery9.txt": "f3af7d455e4d98c48a08f43f8278e06c",
+  "targets_tl8k_asrun1000.txt": "61527386733df1ab4f89a0f5581f6d97",
+  "targets_tl8k_stable128.txt": "73f3031ba10372ca9eb3a9945af145b4",
+  "targets_tl8k_gate64.txt": "a6f57406ac4dd60d0dfd95aec886dd78"
+ }
+}

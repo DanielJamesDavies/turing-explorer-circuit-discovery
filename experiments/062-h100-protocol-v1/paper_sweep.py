@@ -26,6 +26,7 @@ from analysis.style import (BLUE, CATEGORICAL, INK, INK_MUTED, SURFACE, configur
                             grouped_bar_geometry, round_bars, save_figure, styled_legend, tint)
 sys.path.insert(0, str(HERE))
 from family_table import band_label, family  # noqa: E402
+from merge import BAND  # noqa: E402  (the pass band, for shading)
 
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 FIGS = ROOT / "paper" / "figures"
@@ -64,7 +65,7 @@ def pass_curve(rows, weighted):
 
 def body(plt, sw):
     """BODY FIGURE (2026-09-28, replaces the Z / A / C bars, which now live in the appendix as zac_bars()).
-    Left: the share of targets that PASS the paper's criterion (DAN-8: Z, A, C in [0.8, 1.5] and necessity >= 0.9),
+    Left: the share of targets that PASS the paper's criterion (DAN-8: Z, A, C in merge.BAND and necessity >= 0.9),
     WCM vs unweighted at the production price lambda = 1e-3, grouped bars per depth band, value on every bar and the
     ratio above each pair. The criterion is conjunctive, which is where unweighted circuits fail: their per-score
     medians look only somewhat lower, but they almost never hold all of them at once past layer 4.
@@ -178,7 +179,7 @@ def grid(plt, sw):
         rows = sw[sw.depth == band]
         for cidx, (col, label) in enumerate(HEAD):
             ax = axes[r, cidx]
-            ax.axhspan(0.8, 1.5, color=tint(INK_MUTED, 0.85), zorder=0)      # the DAN-8 pass band
+            ax.axhspan(*BAND, color=tint(INK_MUTED, 0.85), zorder=0)         # the DAN-8 pass band
             ax.axhline(1.0, color=INK_MUTED, lw=1.0, ls=(0, (3, 3)), zorder=1)
             for weighted, color, name in ARMS:
                 c = curve(rows, weighted)
