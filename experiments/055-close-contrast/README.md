@@ -38,7 +38,7 @@ node overlap (Jaccard) between arms.
 The matrix matters because each arm wins the metric it trained on (the home-turf effect seen throughout this
 programme), so no arm may be judged on its own contrast set alone.
 
-## Results (2026-09-22/23; `results/summary.md`)
+## Results (`results/summary.md`)
 
 Headline scores are the three faithfulness ratios on held-out contexts, activation read: free0 (Z), freeM_topk (A,
 sparsity-preserving), freeN_topk (C, sparsity-preserving, on close contrast contexts). "All 3" = all three in
@@ -64,7 +64,7 @@ ratio, and 10.attn.16967 is Top-K-censored (see 056).
 0.56–0.60 against 0.66 for a same-C refit (the noise floor), and every headline median moves by ≤ 0.04 against
 close. What the source does change is robustness off the training set: each arm is best on the contrast set it
 trained on (dense freeN, the home-turf effect), and the old circuits are worst everywhere but the store. Decision
-(Daniel, 2026-09-23): **adopt close** (NegContextSelector) now; keep the existing 15k fits for now; refit the 15k
+(Daniel): **adopt close** (NegContextSelector) now; keep the existing 15k fits for now; refit the 15k
 later, since publishing on the broken C "feels off".
 
 **Floor weights.** Equal weights (γ_C = γ_A = 1) reach the same or slightly better all-three count at 24% fewer nodes

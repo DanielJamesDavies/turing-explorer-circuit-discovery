@@ -1,4 +1,4 @@
-# cf-mask v2 (D3.2-lite) — 4-seed probe (2026-08-02)
+# cf-mask v2 (D3.2-lite) — 4-seed probe
 
 Engine: three new default-off knobs in run_learned_mask (all unit-tested,
 mask suite 82 green): scale_normalize (data term / target_act^2, delta
@@ -57,7 +57,7 @@ D2.3's convention. rows.jsonl (20 rows).
 ## Bottom line
 
 As a driver-FINDER the cf-mask does not currently beat AMPC anywhere
-(ties on the control at 30x the compute). Its unique value today: the
+(ties on the control at 30x the compute). Its unique value: the
 L9-attn transferability certificate, the p_gate/p_inject decomposition,
 and per-latent values where uniform alpha is wrong — worth revisiting
 only after a per-seed lambda_inj calibration arc, and worth citing now
@@ -89,7 +89,7 @@ semantics you train" — and the baseline any future tri-objective
 the (P2*) intersection object) would have to beat on BOTH columns at
 once.
 
-## !! RETRACTION (2026-08-02, from 020-cfmask) !!
+## !! RETRACTION (from 020-cfmask) !!
 
 The headline numbers in this file are STEP-400 readings of runs whose cf
 decays monotonically after converging around step 100-250. The

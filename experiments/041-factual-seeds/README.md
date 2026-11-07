@@ -1,6 +1,6 @@
 # Concept circuits: can a validated circuit be read as knowledge?
 
-**Question (Daniel, 2026-08-26):** if a latent stands for a concept, and
+**Question (Daniel):** if a latent stands for a concept, and
 our circuits are causally validated, then a circuit is a causal graph
 over CONCEPTS -- "these concepts compose into that one". Can we read
 knowledge out of a model that way? Test case: a WW2-like latent should

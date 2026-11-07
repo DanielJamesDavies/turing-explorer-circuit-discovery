@@ -1,22 +1,22 @@
 # 071 — Contrast-context sweep (DAN-64)
 
-2026-10-10 (redesigned from the 2026-10-09 8-arm version; renamed from `065-contrast-sweep`, which clashed with
-`065-circuit-describer`). Does the contrast source WCM trains its C term on matter? Four training sources, all
+Redesigned from an earlier 8-arm version; renamed from `065-contrast-sweep`, which clashed with
+`065-circuit-describer`. Does the contrast source WCM trains its C term on matter? Four training sources, all
 post-Top-K silent: **close** (protocol v1 production), **random**, **distant**, and **fused** (an explicit mix of
-the three, added 2026-10-11). close, random and distant are also the three eval sets. Everything else is protocol v1
-as the 15k run executed it (`paper/protocol-v1.md`): activating contexts, split, γ, rank-keep, λ policy, steps,
+the three, added later). close, random and distant are also the three eval sets. Everything else is protocol v1
+as the 15k run executed it (`paper/protocol.md`): activating contexts, split, γ, rank-keep, λ policy, steps,
 scorer, pass rule.
 
 This is a **test of contrast sources, not a production decision**. There is no decision rule and no winner: the
 report gives the 4 × 3 train-source × eval-source table and its descriptive statistics (section 4).
 
 **Status:**
-- **Three-arm design (2026-10-10):** 19 unit tests, a CPU dry run (`out_dry2/`, 1.attn.17708, 155 s: all three sets
+- **Three-arm design:** 19 unit tests, a CPU dry run (`out_dry2/`, 1.attn.17708, 155 s: all three sets
   64 + 32 reserve, fire rate 0, overlaps 0, similarity close 0.886 > random 0.680 > distant 0.228, close re-selection
   Jaccard 0.969 on CPU), and the local RTX smoke (`out_smoke2/smoke.md`, 8 targets, all checks ok). On those 8
   targets, circuits trained on close generalise poorly to the random and distant eval sets; those trained on random
   do well on all three.
-- **fused arm (2026-10-11):** code written and CPU-checked. 28 unit tests pass. Two CPU dry runs on 1.attn.17708,
+- **fused arm:** code written and CPU-checked. 28 unit tests pass. Two CPU dry runs on 1.attn.17708,
   `MODE=sets`:
   - `out_dry3/` (144 s, all four sets built; fused there is the superseded `071-fused-v1` merged-then-split
     version). All four sets are 64 (48 + 16) + 32 reserve, fire rate 0, with no activating overlap. All cross-set
@@ -219,7 +219,7 @@ Pod time on 4×H100 with 16 processes under MPS, at ~50 s per fit per process (D
 | Sets + contamination reads | 280 × ~15 = 4,200 | 0.07 h |
 | Start-up (stagger 16 × 20 s, store loading) | | 0.1 h |
 | Shard imbalance (deep targets dominate: L11 fits ~6× L0; ~17-18 targets per shard) | | ~0.35 h |
-| **Run** | | **~3.65 h (3.9 h), ~$51–55 at $14/h** |
+| **Run** | | **~3.65 h (3.9 h), ~15 GPU-h on 4 GPUs** |
 
 With ~30 min of bootstrap and pod smoke, the session is **~4.2–4.4 h, ~$59–62**. The three-arm design was
 ~3.2–3.4 h, ~$45–48, so fused adds ~1 h, ~$14. (The old 8-arm design was ~7.5 h, ~$105.) If needed,
@@ -260,7 +260,7 @@ wsl -e bash -lc 'cd "/mnt/x/Projects/AIs/Turing/Publication/3 Implementation/2" 
 
    Expect 280 and 280, then 48. Each command decompresses the whole 1.9 GB tarball once. The second extracts the
    15k run's eval rows. The pod smoke's production re-score check needs them, and without them it is skipped
-   silently (2026-10-11 pod: it then matched bitwise, 0.0000 on every score).
+   silently (on the first pod it then matched bitwise, 0.0000 on every score).
 4. **Pod smoke** (1 GPU, ~12 min): 2 targets, all 4 arms, λ 1e-3, the full 3-set battery and the random baseline
    (all 4 arms) on 2.mlp.10238. This is where the production re-score check is binding (H100), and it gives the
    H100 timings for section 5.

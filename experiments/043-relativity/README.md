@@ -1,4 +1,4 @@
-# Relativity concept circuits on TuringLLM (2026-08-27)
+# Relativity concept circuits on TuringLLM
 
 Daniel's question: can we read KNOWLEDGE out of causal circuits, where a
 latent stands for a concept? Moved from Gemma to TuringLLM because
@@ -21,7 +21,7 @@ training data and can decode it.
    * SPECIFICITY (anchor vs all other positions in the same window).
    Accumulated with `index_add_` on dense [n_comp, d_sae] buffers -- the
    obvious per-element Python loop leaves the GPU at 8% util.
-3. `runner.py` -- the 2026-08-09 panel runner with ONE change: seeds
+3. `runner.py` -- the panel runner with ONE change: seeds
    come from step 2 instead of the discovery candidate pool. Arms,
    triple floor, held-out split, nulls and scoring are untouched, so
    these circuits are comparable to the panel's. Also patched to DUMP
@@ -103,7 +103,7 @@ i.e. relativity = {the observational domain where GR applies} +
 * Circuits are corpus-conditioned: fitted on the seed's top-64
   contexts, so the decomposition describes the concept AS USED THERE.
 
-## Edge audit (2026-08-27): from vibes to named causal edges
+## Edge audit: from vibes to named causal edges
 
 `edge_audit.py` -- per-member causal weights inside a fitted circuit
 (the mask is the SEARCH over 1.5M latents; this is the VERIFICATION of
@@ -163,7 +163,7 @@ BOTH circuits but its contexts are junk ("adventure tourism",
 mean-fill artifact or genuine stabilizer role; must be nulled before
 any graph claim uses it.
 
-## The relativity concept-formation ladder (2026-08-27, chain audits)
+## The relativity concept-formation ladder (chain audits)
 
 Two more circuits fitted for the chain links (both PASS both bands;
 their nulls fail catastrophically -- zero-fill F0 27-78 with FMd=0 and

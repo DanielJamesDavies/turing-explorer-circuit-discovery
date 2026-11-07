@@ -45,7 +45,12 @@ desktop.ini
 AGENTS.md
 /analysis-restyled
 /analysis-regenerated
+# Private working notes and agent planning (kept locally; the public method spec is paper/protocol.md)
 /dev-notes
+/agent-planning
+# Local backup layout (machine and volume names) and the pre-cut full draft kept for reference
+/BACKUPS.md
+/paper/notes/main-before-appendix-cuts-*.tex
 # experiments/: code, READMEs and small result files are TRACKED (the
 # evidence behind the paper). Heavy/regenerable artifacts are not.
 /experiments/**/*.pt
@@ -136,5 +141,16 @@ AGENTS.md
 /experiments/049-circuit-graph/results_full/interesting_circuits.csv
 /experiments/049-circuit-graph/results_full/run_stats_per_circuit.csv
 /experiments/049-circuit-graph/results_full/seed_seed_edges.csv
-/experiments/052-gemma3-270m/latent_circuits_*.jsonl
-/experiments/065-circuit-describer/results/runs/
+# (052 / 065: only the large files; the smaller ones in the same folders stay tracked)
+/experiments/052-gemma3-270m/latent_circuits_amr.jsonl
+/experiments/052-gemma3-270m/latent_circuits_amr_lam1.0.jsonl
+/experiments/052-gemma3-270m/latent_circuits_amr_lam1e-1.jsonl
+/experiments/052-gemma3-270m/latent_circuits_amr_lam1e-2.jsonl
+/experiments/052-gemma3-270m/latent_circuits_clean_lam1.0.jsonl
+/experiments/052-gemma3-270m/latent_circuits_clean_lam1e-1.jsonl
+/experiments/052-gemma3-270m/latent_circuits_clean_lam1e-2.jsonl
+/experiments/052-gemma3-270m/latent_circuits_clean_lam1e-2_deltaform.jsonl
+/experiments/052-gemma3-270m/latent_circuits_clean_lam1e-3_deltaform.jsonl
+/experiments/065-circuit-describer/results/runs/20261001-134520_63860.jsonl
+/experiments/065-circuit-describer/results/runs/20261001-185127_38604.jsonl
+/experiments/065-circuit-describer/results/runs/20261002-103702_61004.jsonl

@@ -1,8 +1,8 @@
 # Learned-mask: code_dtype verification + lr-schedule setup
 
-Status at 2026-07-28 (paused overnight). Nothing here is committed.
+Status: paused overnight. Nothing here is committed.
 
-## 1. bf16 vs fp32 — RESOLVED 2026-07-29: solution is non-unique, dtype is fine
+## 1. bf16 vs fp32 — RESOLVED: solution is non-unique, dtype is fine
 
 `determinism_check.py` at L8, each dtype run twice:
 
@@ -78,7 +78,7 @@ readings remain open:
   every learned-mask number produced since the switch needs redoing.
 
 `determinism_check.py` runs fp32 twice and stream twice at L8 and prints the
-pairwise Jaccard matrix. **Run this first tomorrow** — it gates the schedule
+pairwise Jaccard matrix. **Run this first** — it gates the schedule
 experiment, because a schedule difference smaller than the run-to-run noise
 floor is not a result.
 
@@ -94,7 +94,7 @@ earlier VRAM postmortem: the ~1 GB is what keeps L10 on the right side of
 it. Independent of how the selection question resolves, stream earns its
 place at L10 on throughput.
 
-## 3. lr schedule — RESOLVED 2026-07-29: decay is the wrong direction, keep constant
+## 3. lr schedule — RESOLVED: decay is the wrong direction, keep constant
 
 All arms at sum(lr) = 20.00 exactly (peak lr doubled for non-constant), so
 schedule SHAPE is the only variable. AdamW, wd 0.05, lambda 1e-4, 400 steps.
@@ -142,7 +142,7 @@ confident the surviving members are, but not how many survive. What governs
 size remains unexplained — three stories have now failed, so the next claim
 about it should come with a measurement attached.
 
-## 3b. RESOLVED 2026-07-29: lr is a BUDGET DIAL. Shape does not matter.
+## 3b. RESOLVED: lr is a BUDGET DIAL. Shape does not matter.
 
 Warmup-then-cosine, peak 0.30, floor 0.01, 10% warmup (40 steps) — the
 conventional recipe the earlier arms never tested. sum(lr) = 62.15 = **3.11x**
@@ -202,14 +202,14 @@ harder at eval than training assumed). Within the hot arms it is monotone
 3/3: m_kept 0.801/0.737/0.702 -> overshoot 0.024/0.047/0.204. NOT a complete
 story — constant at L10 has similar m_kept (0.717) and UNDERshoots — so treat
 as the leading candidate, not the explanation. Three mechanisms already died
-today (§3).
+(§3).
 
 **Action this motivates: straight-through binarisation** (already queued as
 the principled soft/hard fix) is now the highest-value next build, not a
 nice-to-have. If the overshoot is the soft/hard gap, STB should keep the 4x
 compression AND land on 1.0.
 
-## 3c. THE COMPRESSION RESULT (2026-07-29): lambda sweep at hotflat lr
+## 3c. THE COMPRESSION RESULT: lambda sweep at hotflat lr
 
 Independent variable is **lambda**, not lr. lr scales the data gradient, the
 L1 term AND the decay together, so it cannot say which compresses; the L1

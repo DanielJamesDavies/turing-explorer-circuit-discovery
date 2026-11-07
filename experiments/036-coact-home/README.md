@@ -1,6 +1,6 @@
 # The coact arc: how strong can a correlational baseline get?
 
-2026-08-12. Synthesis of a three-bank investigation; the per-bank data
+Synthesis of a three-bank investigation; the per-bank data
 lives in `035-transcoder-compare/` (Llama TopK skip-transcoders),
 `037-gemmascope/` (Gemma-2 JumpReLU), and this dir (home bank,
 TuringLLM k=128/40,960). In the paper as appendix

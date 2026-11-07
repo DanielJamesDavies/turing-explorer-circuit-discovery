@@ -1,4 +1,4 @@
-# error-node-mode (2026-07-23)
+# error-node-mode
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 

@@ -41,7 +41,7 @@ The run resumes: (target, arm) rows already in `out/rows.jsonl` are skipped, fit
 are reloaded with their `out/fits.jsonl` timing. `ARMS=t3_ZAR` (etc.) runs one arm; `ARMS=t12_both` runs tests 1 + 2
 together (not in the default list).
 
-## Results (2026-10-25; full tables in `out/tables.md`, rows in `out/rows.jsonl`, fit stats in `out/fits.jsonl`)
+## Results (full tables in `out/tables.md`, rows in `out/rows.jsonl`, fit stats in `out/fits.jsonl`)
 
 **Noise floor first.** 090 refits are bit-deterministic at fixed shapes, but ANY kernel-shape change (bf16 autocast,
 different batch / sequence shapes pick different matmul / attention kernels) moves the step-0 data terms by ~10%

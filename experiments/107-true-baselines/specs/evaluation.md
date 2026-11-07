@@ -1,6 +1,6 @@
 # 107 spec: how circuit-discovery methods are compared (evaluation protocol)
 
-Written 2026-11-01 by `spec-eval`. This is the comparison and evaluation protocol for experiment 107. The per-method
+Written by `spec-eval`. This is the comparison and evaluation protocol for experiment 107. The per-method
 algorithms (SFC, Ge et al., CircuitLasso) are in their own spec files. Here: metric definitions, ablations, curves, area
 statistics, train/held-out practice, efficiency reporting, a recommended protocol for arenas A/B/C, and pitfalls.
 
@@ -8,7 +8,7 @@ statistics, train/held-out practice, efficiency reporting, a recommended protoco
 `[inferred]` is my reading where the source is silent; `[ours]` is a recommendation of ours, not established practice.
 Line numbers for code were read from the raw file at the stated SHA.
 
-**Sources** (all read through WebFetch, 2026-11-01):
+**Sources** (all read through WebFetch):
 - MIB: Mueller et al. 2025, arXiv 2504.13151; circuit-track code github.com/hannamw/MIB-circuit-track, main =
   `b759df34433c9e31043ba9e02908ce0bf20e894f` (2025-06-30), the same commit pinned as the submodule of
   github.com/aaronmueller/mib.

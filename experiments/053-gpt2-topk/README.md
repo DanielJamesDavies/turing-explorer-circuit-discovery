@@ -1,6 +1,6 @@
-# GPT-2 small + OpenAI v5 TopK SAEs (2026-09-20)
+# GPT-2 small + OpenAI v5 TopK SAEs
 
-**Why this substrate.** 033's phi_pin control (2026-09-20) showed the method's
+**Why this substrate.** 033's phi_pin control showed the method's
 free and pinned faithfulness AGREE on genuine Top-K dictionaries (pin0 median
 0.789, 24/28 seeds >= 0.5, no depth decay) and COLLAPSE on Gemma Scope 2's
 uncapped JumpReLU (phi_pin 0.00-0.39 against free0 0.67-1.13, every circuit).
@@ -11,7 +11,7 @@ public set that is **Top-K AND covers every site kind**, so the full three-kind
 Pythia-410M was considered and dropped: no examples/dashboards exist for either
 its residual (Lawson) or MLP (EleutherAI) SAEs, and it has no attention SAEs.
 
-## Verified, not assumed (2026-09-20)
+## Verified, not assumed
 
 Repos `jbloom/GPT2-Small-OAI-v5-{32k,128k}-{resid-post,resid-mid,mlp-out,
 attn-out}-SAEs`, 12 layers each. Weights W_enc [768, 32768], W_dec [32768, 768],
@@ -73,7 +73,7 @@ Treat the auto-interp labels as hints only (3 of 8 were wrong without
 activation gating in the concept-circuits work).
 
 ## Step 3 — first panel (`fit_latent_seed.py`, `latent_circuits_lam1e-3.jsonl`,
-`panel_lam1e-3.log`, 2026-09-20)
+`panel_lam1e-3.log`)
 
 lam 1e-3, theta0 4 (open start — Top-K, so no cap/clamp and ERROR_MODE=current),
 triple floor, 1 fitted null, positives from Neuronpedia, negatives mined:
@@ -130,7 +130,7 @@ triple floor, 1 fitted null, positives from Neuronpedia, negatives mined:
   in band, members spread over all four kinds. Faithfulness and necessity are
   not in doubt; phi_pin and phi_cf are.
 
-## Step 5 — DEDUPE (a real bug) and what the members are (2026-09-20)
+## Step 5 — DEDUPE (a real bug) and what the members are
 
 **Neuronpedia contexts are NOT distinct.** OpenWebText boilerplate repeats, so a
 latent's ~45 contexts contain duplicates at 3-33%: resid-post 9 #2000 has 42

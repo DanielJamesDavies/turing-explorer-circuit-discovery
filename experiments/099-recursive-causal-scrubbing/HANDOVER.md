@@ -1,7 +1,5 @@
 # WCM causal-scrubbing research handover
 
-Written 30 October 2026. The experiment campaign and original plan are dated 28 October 2026.
-
 This document records the work performed in this chat, the interpretation agreed with the user, and what another agent needs to continue. It describes completed evidence; the next experiments below have not been run. Repository-relative paths are relative to:
 
 ```text
@@ -249,7 +247,7 @@ The initial recursive run in `out/recursive_two_cut` used seven references and 1
 ## Provenance and workspace cautions
 
 - Exact executed sources are retained in run `source_snapshot/` directories. The panel has 313 source files. Manifests also fingerprint contexts/configuration; checkpoint content hashes are in `out/weight_fingerprints.json`.
-- The panel's during-run source check passed. After execution, `run_panel.py` was changed to accept `--out` and `--records` so reproductions can use fresh paths. This is documented in `out/panel18/post_run_edits.json`; the executed launcher is preserved in its snapshot. Do not overwrite the original provenance to match today's source.
+- The panel's during-run source check passed. After execution, `run_panel.py` was changed to accept `--out` and `--records` so reproductions can use fresh paths. This is documented in `out/panel18/post_run_edits.json`; the executed launcher is preserved in its snapshot. Do not overwrite the original provenance to match the current source.
 - New/changed experimental settings should use a fresh output directory. Manifest mismatch guards deliberately reject incompatible cache reuse.
 - `run_recursive_model.py` still defaults to the **initial** first-three run, old smoke records, 16 draws and four references per class. Pass the explicit arguments below for a full-panel follow-up.
 - `run_panel.py --records` changes the record destination, but its build log directory remains `out/records/build`. For this panel, reuse already audited records. If fully isolating new record construction, inspect/fix that launcher path first and record the change.

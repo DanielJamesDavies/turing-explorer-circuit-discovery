@@ -1,4 +1,4 @@
-"""RUNNING-EXAMPLE variant of the 2026-08-09 tri-amp panel runner:
+"""RUNNING-EXAMPLE variant of the tri-amp panel runner:
 one seed only — the paper's running example (L3 resid, comp 11,
 latent 35381, "temperature as a thermodynamic state variable") — under
 the IDENTICAL held-out protocol and arm specs (shallow-band config:

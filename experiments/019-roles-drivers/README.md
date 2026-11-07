@@ -1,4 +1,4 @@
-# D2.2(a,b) — Roles for drivers + the rankings archive (2026-08-01)
+# D2.2(a,b) — Roles for drivers + the rankings archive
 
 11 seeds (full D1 panel), arms R (abl-restoration PA) and D (cf-ig_mean
 PA) discovered once each with negative_roles="include", exam per K in

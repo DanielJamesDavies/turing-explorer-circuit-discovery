@@ -112,7 +112,7 @@ idiosyncratic set; mean-ablation selects a common one.**
 
 ## R3 — `triple` (zero + negctx + posctx) beats dual by ~2x
 
-Built 2026-08-05 on Daniel's suggestion; `triple_floor_weight` 0.25 on
+Built on Daniel's suggestion; `triple_floor_weight` 0.25 on
 the third term. Full 8-arm panel, smallest ALL-PASS circuit:
 
 | arm | smallest ALL-PASS | passes |
@@ -300,7 +300,7 @@ Sweeping `triple_floor_weight` at both depths.
 
 w=0.10 wins 3/4; w=0.50 wins the fourth and by a lot (645 vs ~1,010 for
 everything else). 7490 is the seed that resisted every other
-intervention today — a HEAVIER posctx term is the first thing to move it.
+intervention — a HEAVIER posctx term is the first thing to move it.
 w=0.05 is barely better than dual, so the threshold between 0.05 and 0.10
 is sharp.
 
@@ -718,7 +718,7 @@ before headline use: cf/sup under amp semantics, and the framing
 obligation that a set+coefficients is a different object from a set.
 
 
-## NAMING (settled with Daniel, 2026-08-05)
+## NAMING (settled with Daniel)
 
 The winning configuration — `objective="pos"` + `mask_floor_source=
 "triple"` + `free_amplitude=True` — is the **TRI-AMP MASK** (codebase
@@ -782,7 +782,7 @@ null needs more draws. That is the full evidence state for the paper.
 ## R18 — the amp-cf overshoot is NOT under-training: two-phase amplitude
 ## training buys nothing consistent (amp_twophase.py, amp_twophase_c8.jsonl)
 
-Question (Daniel, 2026-08-06): the alphas train in the same 400 joint
+Question (Daniel): the alphas train in the same 400 joint
 steps as the gates — are they under-trained, and would a second,
 amplitude-only phase on the frozen membership calibrate them better
 (ampF0/ampFMd closer to 1, cf_amp overshoot shrinking)?
@@ -864,7 +864,7 @@ joint remains the house schedule; two-phase is retired.
 ## R19 — the step-count response surface: steps is a sparsity dial that
 ## SPENDS drive calibration (amp_stepsweep.py, amp_stepsweep_c8/c29.jsonl)
 
-Motivation (Daniel, 2026-08-06): steps is the main compute lever (a
+Motivation (Daniel): steps is the main compute lever (a
 tri-amp step is 3 floored forwards); map evals/size/time over the
 joint budget. Full independent discoveries per arm at the decision
 cells; scoring as R15-R17. Wall-clock is linear at ~0.06 s/step (L2:
@@ -1020,7 +1020,7 @@ larger circuits. Choose per claim, and report which was used.
 
 ## R21 — the no-zero control: amplitudes CANNOT substitute for the zero
 ## term (amp_pnfloor.py, amp_pnfloor_c8/c29.jsonl; "pn" floor added to
-## the engine 2026-08-06, 130 tests green)
+## the engine, 130 tests green)
 
 Question (Daniel): with free amplitudes, does the zero floor still earn
 its place — training can set alpha->0, so is "member at alpha 0" not
@@ -1069,7 +1069,7 @@ as the production floor. "pn" stays in the engine as the documented
 ablation control.
 
 ## R22 — single-floor amp arms: posctx-only and zero-only vs tri-amp
-## (amp_singlefloor.py, amp_singlefloor_c8/c29.jsonl, 2026-09-13)
+## (amp_singlefloor.py, amp_singlefloor_c8/c29.jsonl)
 
 Question (Daniel): "if amplitudes work as intended, do we even need a
 zero or negctx floor? Compare tri floor to just pos floor." R21 kept

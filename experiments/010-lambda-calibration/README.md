@@ -1,4 +1,4 @@
-# Lambda calibration + the prior graveyard (2026-07-30)
+# Lambda calibration + the prior graveyard
 
 One question drove this folder: **how should the mask's sparsity be set per
 seed, and can anything cheaper than measurement do it?** The answer settled
@@ -69,7 +69,7 @@ product steps*lr*lambda. Graphs: steps_curve_*.png.
    with geometric-mean normalisation propagating one degenerate site into
    250x prices everywhere else (site_weights_ab_broken_weights.jsonl).
 
-## TWO ENGINEERING LESSONS (recurred twice each today)
+## TWO ENGINEERING LESSONS (each recurred twice)
 
 * **Unbounded scales degenerate at their extremes**: the dual normaliser
   annihilated its own loss term (ratio 1.9e8 at L10); the zero site-weight

@@ -1,4 +1,4 @@
-"""FRESH TuringLLM CONTEXT RECORDS for the protocol-v2 refit (Daniel, 2026-10-25): leakage fixed at the source.
+"""FRESH TuringLLM CONTEXT RECORDS for the protocol-v2 refit: leakage fixed at the source.
 
 The 062 records split pools that held corpus twins and near copies (085: 66.8% of held-out strongest rows repeat a
 training-side row). These records are built new, for new fits (the 8k refit), so the fix goes into the POOLS: every

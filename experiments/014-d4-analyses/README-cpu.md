@@ -1,4 +1,4 @@
-# D4.3 + D4.4 + D3.4 — CPU analyses over the archives (2026-08-02)
+# D4.3 + D4.4 + D3.4 — CPU analyses over the archives
 
 No GPU, no rediscovery: reads the 24-seed R rankings (D2.2), abl-mask
 member lists (D3.6), direct-mass weights (D1) and the learned brake sets

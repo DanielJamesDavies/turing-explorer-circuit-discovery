@@ -1,4 +1,4 @@
-# Eval-substrate sensitivity check (2026-08-01)
+# Eval-substrate sensitivity check
 
 Question (Daniel's): do the frozen exam's cf numbers depend on its
 store-built negatives? Held the CIRCUITS fixed (R top-64 / top-1024

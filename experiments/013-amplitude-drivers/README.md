@@ -1,4 +1,4 @@
-# D2.3 — Amplitude as a driver knob (2026-08-01)
+# D2.3 — Amplitude as a driver knob
 
 No rediscovery: AR uses D2.2's archived restoration rankings, AC16 uses
 D1's saved direct weights; alpha fitted with D1's exact AMPC recipe

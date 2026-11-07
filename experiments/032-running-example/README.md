@@ -1,4 +1,4 @@
-# Running-example tri-amp run (2026-08-10)
+# Running-example tri-amp run
 
 Single-seed variant of `029-panel/runner.py` for the paper's
 running example: the temperature seed (L3 resid, comp 11, latent

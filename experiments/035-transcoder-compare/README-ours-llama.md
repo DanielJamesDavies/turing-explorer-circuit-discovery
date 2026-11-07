@@ -1,6 +1,6 @@
 # Our tri-amp side on Llama-3.2-1B + EleutherAI TopK skip-transcoders
 
-2026-08-11. Second cross-architecture replication, and the setup that
+Second cross-architecture replication, and the setup that
 also serves as the substrate for the circuit-tracer comparison (both
 sides run on the *same* model and the *same* transcoder features — see
 `check_agreement.py`, which passes on all 16 layers at 2.4e-7–1.3e-6

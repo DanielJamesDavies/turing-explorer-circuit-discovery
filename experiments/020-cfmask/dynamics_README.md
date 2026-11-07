@@ -1,4 +1,4 @@
-# cf-mask training dynamics — why cf wins and free0 never moves (2026-08-02)
+# cf-mask training dynamics — why cf wins and free0 never moves
 
 Six instrumented 400-step runs (engine gained a diagnostics-only
 `step_hook`; 3 new tests, mask suite 85 green). Per-step: losses, lr,

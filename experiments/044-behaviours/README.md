@@ -1,6 +1,6 @@
 # Tri-amp circuits on SFC-style unsupervised behaviours
 
-Goal (Daniel, 2026-08-30): replicate the behaviour-data method of
+Goal (Daniel): replicate the behaviour-data method of
 Sparse Feature Circuits (Marks et al., ICLR 2025 — who use the quanta
 clustering of Michaud et al. 2023), then fit tri-amp masks on a few
 behaviours and analyse the results.
@@ -51,7 +51,7 @@ behaviours and analyse the results.
    across 2 nulls × 3 clusters. Membership identity, not amplitude
    mass, carries the recovery.
 
-## PICKUP (2026-08-31, run cancelled for the night at Daniel's request)
+## PICKUP (run cancelled at Daniel's request)
 
 Expansion batch (`CLUSTERS=49,79,17,47,75,15,9,61 LAM=3e-3 ...
 behaviour_runner.py`, runner now fixed to score zero-fill WITH

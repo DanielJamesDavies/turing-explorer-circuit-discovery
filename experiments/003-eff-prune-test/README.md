@@ -1,4 +1,4 @@
-# eff-prune-test (2026-07-23)
+# eff-prune-test
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 

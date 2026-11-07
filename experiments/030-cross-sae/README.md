@@ -1,5 +1,4 @@
 # Cross-SAE replication: Pythia-70m-deduped + Marks et al. ReLU dictionaries
-# (2026-08-10)
 
 The paper's last run gate. Different model (Pythia-70m-deduped),
 different corpus (wikitext-103), different SAE architecture (ReLU+L1
@@ -70,7 +69,7 @@ valid there only at compact n (state the regime); drive evals are
 compact-only on dense SAEs. 6 seeds, 2 layers, resid-only — a wider
 panel is future work.
 
-## Mechanism follow-up (2026-08-10 late): ANCHOR SUPPORT is the cause;
+## Mechanism follow-up: ANCHOR SUPPORT is the cause;
 ## eval-time top-k projection is NOT a repair (a recorded negative)
 
 Two tests of *why* the dense null passes reconstruction at mid n.

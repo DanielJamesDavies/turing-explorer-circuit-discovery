@@ -1,6 +1,6 @@
-# Arena D: attribution graphs (D1) and Caples masks (D2) on Gemma-2-2B, plus the WCM adapters (plan, 2026-11-03)
+# Arena D: attribution graphs (D1) and Caples masks (D2) on Gemma-2-2B, plus the WCM adapters (plan)
 
-## Status, 2026-11-06 (agent `hardstop`, CPU only): the AG graphs are saved
+## Status 5, newest (agent `hardstop`, CPU only): the AG graphs are saved
 
 - `pod_stage_d.sh`'s `ag_*` jobs now run **`ag_tasks_graphs.py`**: `ag_tasks.py` unchanged, plus every attribution
   graph saved as `out/pod/ag_tasks/<task>/held/p<id>.graph.pt`. The adjacency is float16 (~0.1 GB each, ~16 GB for
@@ -17,23 +17,23 @@
   - Global volume: +≤ 16 GB. The runbook's "≥ 40 GB free" for the main archives becomes **≥ 60 GB free**.
 - Tested on CPU: P5 on a fake work dir with one graph gives both archives verified and no graph in the results tgz.
 
-## Status, 2026-11-05 late afternoon (plan D8 / D9 built; CPU dry runs only, nothing downloaded, nothing remote)
+## Status 4 (plan D8 / D9 built; CPU dry runs only, nothing downloaded, nothing remote)
 
 - **D8 `pod_stage_d.sh`** (header = the full stage list): P0 asset checks (prints the clone / `setup_env.sh FETCH=1`
-  commands for approval, exit 2), P1 env gate, P2 gate on GPUs 0,1 (the halves in parallel; `DW_GATE_GPUS` default since 2026-11-06, `DW_GATE_GPUS=0` = GPU 0 alone), P3 one shared
+  commands for approval, exit 2), P1 env gate, P2 gate on GPUs 0,1 (the halves in parallel; `DW_GATE_GPUS` default since status 5, `DW_GATE_GPUS=0` = GPU 0 alone), P3 one shared
   job queue over the 8 GPUs (flock; resumable per job via each runner's own resume), P4 caples_fidelity + `score_d.py
   all`, P5 summary (`pod_summary_d.py`) + tgz + md5 on `/workspace/results`, also after a failure. `STOP_EPOCH` = no new
   unit; a hard kill `DW_HARD_GRACE` later. `pod_checks_d.py`: google fp32 → bf16 vs unsloth tensor by tensor; pod vs
   local Caples means. Queue tested on CPU (fake jobs: 4 "GPUs", resume, failure, STOP_EPOCH).
 - **Found while wiring:** (1) `chain.sh` exports `WCM_VERSION=v4`, which 081's `task_common` refuses (v1 / v2 only):
   `wcm_gemma.py` would have exited at import inside the chain. The stage pins `WCM_VERSION=v2` (= 081's default, what
-  arena C's adopted runs and tonight's smoke use) and drops the chain's `PYTHONPATH=src`. (2) The chain's STOP_POD
+  arena C's adopted runs and the GPU-night smoke use) and drops the chain's `PYTHONPATH=src`. (2) The chain's STOP_POD
   required every arena to succeed, so a failed arena A kept the pod up; fixed in D9. (3) `score_d.py` covers the
   residual family only: D1's rows are ours = `wcm_gemma.py`'s eval.jsonl, theirs = ag_tasks.py's completeness /
   replacement; our scoring of AG circuits and their metric on WCM-PLT circuits have no runner yet (open).
-- **D9:** `082/chain.sh` `arena_d_stage` after arena A (`ARENA_D=1`, off by default); runbook entry 2026-11-05.
+- **D9:** `082/chain.sh` `arena_d_stage` after arena A (`ARENA_D=1`, off by default); runbook entry.
 
-## Status, 2026-11-05 afternoon (plan D5 built, D6 written, D7 script ready; CPU only, no GPU, nothing downloaded)
+## Status 3 (plan D5 built, D6 written, D7 script ready; CPU only, no GPU, nothing downloaded)
 
 - **D5 built, CPU dry runs pass:** `run_caples.sh` (grids A / B / C / D / dense, one `git clone --local --no-hardlinks`
   copy per grid, HEAD + clean-tree check, the copy's committed `masks/` moved aside so every JSON there is ours; DRY_RUN
@@ -58,7 +58,7 @@
   identity transform, plain call). Skips on CPU. **D7:** `run_pilot_d.sh` (steps, sampler, watchdog, summary in its
   header; `DRY_RUN=1` clean).
 
-## Status, 2026-11-05 night (plan items D1-D3 built; CPU only, no GPU, nothing downloaded)
+## Status 2 (plan items D1-D3 built; CPU only, no GPU, nothing downloaded)
 
 - **D1 (engine changes wired):** `GemmaSAEBank.mean_skip_positions` = 1 for both families (0 for any other family);
   `JumpReLUSAE.threshold` is what `sae.dense.seed_threshold` reads. Tests: seed_threshold reads the buffer and
@@ -83,7 +83,7 @@
   sae-lens 5.3.3 JumpReLU SAEs): max |LD ours − theirs| = 3e-8 for the model, error-dropped and mean-error forwards;
   their `exact` means = ours (1e-4); their `theirs` means = the running-mean recursion (n = batch index + 1) over our
   per-prompt codes, and differ from exact (the bug is visible).
-- **Daniel's decisions, 2026-11-05 (applied):**
+- **Daniel's decisions (applied):**
   1. *D2-WCM held-out subset (ours), deduplicated.* Rule: walk `rc_test.json` in file order under their filter (both
      prefixes 7 tokens); drop every record whose clean or patch prefix equals a clean or patch prefix of the 1,344
      training prompts or of the 640-prompt mean set (a full prompt = prefix + answer, so full-prompt repeats are
@@ -103,13 +103,13 @@
 - **Test count:** 9 original + 2 × seed_threshold + 2 × BOS means + splice-once + 3 tiny fits + pooled refusal +
   held-out dedup + test 4 = 20 CPU tests, all pass; `test_real_caples_mode_ld_gpu` (marked `gpu`) skips unless
   `ARENA_D_CAPLES_PT` and CUDA are set.
-- **For Thursday night (D6 / D7, GPU):** (1) `caples_means.py --hf-model unsloth/gemma-2-2b --dtype bfloat16 --device
+- **For the GPU night (D6 / D7):** (1) `caples_means.py --hf-model unsloth/gemma-2-2b --dtype bfloat16 --device
   cuda` (labelled smoke; the pod runs it fp32 on `google/gemma-2-2b`), then `ARENA_D_CAPLES_PT=<that file> pytest -m gpu
   -k real_caples` (real test 4, bound 1e-2 fp32 / 0.15 bf16, stack noise); (2) D6 identity test (not yet written);
   (3) tiny real-model WCM fits on both families for timings. On the pod `caples_means.py` must run before
   `wcm_gemma.py run --mode caples`.
 - **Open for Daniel:** none from D1-D3 (both decisions above applied).
-- **D4 (scorer, `score_d.py` + `test_score_d.py`, 2026-11-05, CPU only):** every circuit scored both ways.
+- **D4 (scorer, `score_d.py` + `test_score_d.py`, CPU only):** every circuit scored both ways.
   *Ours* (`.venv`): our own per-position patcher on the deduplicated held-out subset, substrates native (error live)
   and Caples (`decode(ĉ) + ε̄`, ε̄ and the C fill = caples_means.py's file, "theirs" default, "exact" optional row);
   fields as score_task (`task_*`). *Theirs* (`caples107`, `score_d.py theirs`): their `SAEMasks` +
@@ -144,7 +144,7 @@
   sizes = their total_density; a corrupted run JSON is refused. The tiny model's LD is ~0, so ratio fields (Z / A / C
   ratios, necessity) are mostly None there; real numbers wait for the GPU night. Existing 20 adapter tests still pass.
 
-## Status, 2026-11-03 night (Daniel approved the local downloads and venvs ~22:00; CPU only, no GPU)
+## Status 1 (Daniel approved the local downloads and venvs; CPU only, no GPU)
 
 **Downloaded (only the approved list):**
 - `google/gemma-scope-2b-pt-res` @ `fd571b47` `layer_0/width_16k/average_l0_105/params.npz` (302,131,416 B) into the
@@ -202,18 +202,18 @@ test (needs the 2B model in RAM; first GPU night or pod).
    never edit position 0, but pooled A / C means must also exclude it; if the 081 engine's pooled means cannot skip
    position 0 without a src change, that is a proposal (arena A has the same BOS question, its §5 [decide]).
 
-Status: **plan and inventory only. Nothing downloaded, installed or run.** Stretch goal for the rented 8×H100 pod on
-Saturday 2026-11-07. Linear: DAN-201 (D1), DAN-202 (D2), DAN-203 (WCM adapter), parent DAN-188. Method details are in
+Status: **plan and inventory only. Nothing downloaded, installed or run.** Stretch goal for the rented 8×H100 pod.
+Linear: DAN-201 (D1), DAN-202 (D2), DAN-203 (WCM adapter), parent DAN-188. Method details are in
 `../specs/attribution-graphs.md` and `../specs/caples.md`; this file only adds what those specs leave open: what to
 download, what fits where, the adapter design, the environments, and the pod stage. Where this file and a spec
 disagree on a method fact, the spec is the source, except for the four corrections in §0, which were checked against
-the code and the authors' saved files on 2026-11-03.
+the code and the authors' saved files.
 
-## 0. New findings that change the plan (checked 2026-11-03)
+## 0. New findings that change the plan
 
 1. **Gated weights.** No HF token is configured in the HF cache or environment (`get_token()` is None), so every
-   gated call must pass Daniel's read token explicitly as `HF_TOKEN` from an environment variable. **Resolved
-   2026-11-03 night: access to `google/gemma-2-2b` = yes** (status section above). On the pod, export `HF_TOKEN` in
+   gated call must pass Daniel's read token explicitly as `HF_TOKEN` from an environment variable. **Resolved:
+   access to `google/gemma-2-2b` = yes** (status 1 above). On the pod, export `HF_TOKEN` in
    the shell, never in a file.
 2. **Caples' 2B configuration keeps a mean error term.** `scripts/sae_gap.sh` passes `--use_mean_error`: every SAE site
    outputs `decode(c') + ε̄`, where ε̄ is the per-position mean SAE error over 640 corrupted prompts (running mean, same
@@ -346,7 +346,7 @@ fp32. BOS is position 0 in every prompt.
 - **Write** y ← y + (ĉ − c) W_dec at the `post_feedforward_layernorm` output (TL `hook_mlp_out`). The real MLP runs, so
   the transcoder error stays live; all gates open ⇒ the stream is unchanged bitwise.
 - **Fitting a read/write-split site into the engine's one-tensor site contract without changing `src/`
-  (implemented 2026-11-03, `wcm_gemma.GemmaPLTSiteModel`):** arena A's mechanism (arena_a/README.md §5): the hook
+  (implemented in `wcm_gemma.GemmaPLTSiteModel`):** arena A's mechanism (arena_a/README.md §5): the hook
   calls `on_site(L, "tc", x_n)` and adds `(y − x_n)` (the engine's x + decode(ĉ) − decode(c), minus x) to the
   `post_feedforward_layernorm` output. One mechanism for GPT-2 (DAN-195) and Gemma; no src change. (The earlier
   concatenation idea, z = [x_n, y], is dropped: it doubled `family.d_model`.) Arena A's risk 2 applies: the edit is
@@ -431,7 +431,7 @@ in §1. HF downloads use `HF_HUB_ENABLE_HF_TRANSFER` only if `hf_transfer` is in
 
 ## 7. Smoke plan
 
-Before Saturday (each item needs Daniel's go for the installs / downloads; GPU items need a free night):
+Before the pod (each item needs Daniel's go for the installs / downloads; GPU items need a free night):
 1. CPU, no weights: build `ct107` / `caples107`; run circuit-tracer's CPU dummy-Gemma exactness tests; import
    sae-lens 5.3.3 and resolve the five SAE ids from its directory (must give L0 105/70/82/74/73).
 2. CPU, cached weights: WCM adapter tests §4.3 items 1, 2 (PLT), 5; `caples_smoke.py` on CPU in bf16 (needs the 302 MB
@@ -464,7 +464,7 @@ GPU-h, ~4-5 h wall. The first timing pilot replaces these numbers.
 
 ## 9. What a pod stage would call
 
-**Built 2026-11-05 as `arena_d/pod_stage_d.sh`** (its header is the current stage list; the chain runs it with
+**Built as `arena_d/pod_stage_d.sh`** (its header is the current stage list; the chain runs it with
 `ARENA_D=1` after arena A). The original sketch:
 
 ```
@@ -479,7 +479,7 @@ then:    score_d.py (both evaluations for every row) → out/curves_d.md
 
 Each job writes `out/<row>/…jsonl` with one line per finished unit, so a restart skips finished work.
 
-## 10. What can and cannot be validated before Saturday
+## 10. What can and cannot be validated before the pod
 
 **Can** (given approval for the venvs and the 305 MB of downloads, and a GPU night): environment resolution and
 imports; circuit-tracer's own CPU exactness tests; sae-lens SAE-id resolution; WCM adapter identity / parity tests on
@@ -489,16 +489,16 @@ timings on the 5070 Ti.
 **Cannot:** anything on `google/gemma-2-2b` (no token here; access unknown); Caples' script unmodified (needs those
 weights and > 16 GB in fp32); fp32 AG and their `test_gemma_2_2b`; whether google's fp32 cast to bf16 equals the
 unsloth file; the CLT; H100 timings; the anchor grids A-C. The WCM adapters (DAN-203) and the transcoder site
-(DAN-195) are not written yet; arena D will only be pod-ready if they are built and pass §4.3 by Friday.
+(DAN-195) are not written yet; arena D will only be pod-ready if they are built and pass §4.3 before the pod.
 
-## 11. Biggest risks for Saturday
+## 11. Biggest risks for the pod
 
-1. **Gated weights:** access confirmed (2026-11-03); the remaining risk is only getting `HF_TOKEN` into the pod
+1. **Gated weights:** access confirmed; the remaining risk is only getting `HF_TOKEN` into the pod
    shell. Without it, D2 as published cannot run (TL loads the model by name) and D1 falls back to the unsloth bf16
    mirror (038's route, labelled).
 2. **Build time:** DAN-203 (two families, the split-site trick, the Caples substrate mode, per-position scoring) and
-   the D1 evaluation code are about a week of work in the 107 README's estimate; four days remain, shared with arenas C
-   and A. Recommended scope if short: D2 only (Caples grids + D2-WCM on the rc task), then D1 tasks.
+   the D1 evaluation code are about a week of work in the 107 README's estimate; the plan had four days before the pod,
+   shared with arenas C and A. Recommended scope if short: D2 only (Caples grids + D2-WCM on the rc task), then D1 tasks.
 3. **Overwriting the authors' anchors** if their script is run in `third_party/` (§0.4).
 4. **Anchor ambiguity and noise:** the committed grid A is mostly empty circuits below λ 0.5; the informative anchors
    (B, C) come from uncommitted CLI arguments; no seed.

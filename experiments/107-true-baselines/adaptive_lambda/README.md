@@ -1,6 +1,6 @@
-# Adaptive λ: easy targets small, hard targets the smallest size that still passes (2026-11-02/03)
+# Adaptive λ: easy targets small, hard targets the smallest size that still passes
 
-Daniel, 2026-11-02: "take into consideration the strength of targets / topk position / loss curves, so the easiest
+Daniel: "take into consideration the strength of targets / topk position / loss curves, so the easiest
 targets can reach small sizes with good evals and harder targets reach the smallest sizes they can with good evals";
 then "build B and C and run them on some targets"; the criterion throughout: failing → passing may cost size, but
 **targets that already pass must not grow**. Every fit here: 062 driver, MODE=main, `WCM_VERSION=v3`, 400 steps,

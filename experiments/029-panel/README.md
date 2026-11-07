@@ -1,4 +1,4 @@
-# Depth-stratified tri-amp panel (2026-08-09)
+# Depth-stratified tri-amp panel
 
 The run that takes the weighted-circuit claims from 3-4 in-sample seeds
 at two layers to a stratified, held-out-scored panel. 22 seeds:
@@ -23,8 +23,8 @@ every reported metric read on held-out. Data: rows.jsonl (runner.py).
    generalises across every layer and host kind tested.
 4. **The null is immaculate at scale: 0/124 draws pass anything.**
    ampF0 0.00-48,665 (median ~21); ampFMd never in band jointly; and
-   the drive null's July heavy tail VANISHED on held-out probes — max
-   cf_amp over 124 draws is 0.042. The 0.895 July outlier was an
+   the drive null's earlier heavy tail VANISHED on held-out probes — max
+   cf_amp over 124 draws is 0.042. The earlier 0.895 outlier was an
    in-sample artifact. Weighted-circuit faithfulness and drive are
    both properties of the selected membership.
 5. **Budget-drive replication:** deep cf_amp overshoots at 400 steps
@@ -41,7 +41,7 @@ every reported metric read on held-out. Data: rows.jsonl (runner.py).
   drives broadly (cf 0.86-1.7, deep overshoot); **mlp drives weakly**
   (best 0.88; two seeds negative); **attn is bimodal** (one seed
   drives at bare clean values, one cannot be driven at all —
-  injection suppresses, cf -0.37). Echoes the July L9-attn wall.
+  injection suppresses, cf -0.37). Echoes the earlier L9-attn wall.
 - **L8 (never run before) behaves like its neighbours** for
   reconstruction; its first seed posts the panel's largest drive
   overshoot (cf_amp 3.44 at bare 1.19 — already-driving seed).
@@ -53,5 +53,5 @@ every reported metric read on held-out. Data: rows.jsonl (runner.py).
 
 Quote triamp400 as the compact arm (17/21, n~224/471 med), triamp100
 as the drive arm; medians per band; the vacuous seed excluded with the
-guard stated; all numbers HELD-OUT. The July in-sample numbers remain
+guard stated; all numbers HELD-OUT. The earlier in-sample numbers remain
 quotable as calibration history only.

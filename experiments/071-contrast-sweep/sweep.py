@@ -1,6 +1,6 @@
 """DAN-64 CONTRAST-CONTEXT SWEEP: does the contrast source WCM trains its C term on matter? Four sources, all post-Top-K
 silent: close (the production set), random, distant, and fused (a mix of the three; a training arm only). Everything
-else is protocol v1 (paper/protocol-v1.md).
+else is protocol v1 (paper/protocol.md).
 
 Per target, in one process per shard (SHARD=i/k), resumable at every step:
   1. contexts  the 15k run's cached record, copied read-only from SRC_OUT/ctx/<key>.pt into OUT/ctx (as 062's
@@ -61,7 +61,7 @@ EXP = HERE.parent
 D062 = EXP / "062-h100-protocol-v1"
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
 # Before 062's driver (and through it the scorer) is imported: the driver reads OUT; the scorer reads EVAL_SPLIT and
-# CTR_SOURCE at import. "explicit" scores the exact held-out set (protocol-v1.md 3.6); a CTR_SOURCE other than
+# CTR_SOURCE at import. "explicit" scores the exact held-out set (protocol.md 3.6); a CTR_SOURCE other than
 # "store" makes the scorer read the contrast set through the injected FixedSelector, i.e. the set given here.
 os.environ["OUT"] = str(OUT)
 os.environ["EVAL_SPLIT"] = "explicit"

@@ -1,6 +1,6 @@
 # 099: clean support robustness and a recursive-scrubbing pilot
 
-Started 28 October 2026, following `agent-planning/causal-scrubbing-pilot-2026-10-28.md`.
+Follows `agent-planning/causal-scrubbing-pilot-2026-10-28.md`.
 Production discovery code and manuscript are not modified by this experiment.
 
 There are two different experiments here:

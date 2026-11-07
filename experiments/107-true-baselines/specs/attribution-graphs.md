@@ -1,13 +1,13 @@
 # Spec: attribution graphs (Ameisen et al. 2025) and `circuit-tracer`, as published and as coded
 
-Written 2026-11-01 by `spec-ag` for 107 **arena D** (Gemma-2-2B). This file describes what the paper and the official
+Written by `spec-ag` for 107 **arena D** (Gemma-2-2B). This file describes what the paper and the official
 library do. It does not describe what we think they should do. Anything we would change is labelled **our adaptation**.
 
 ## 0. Sources read, and how to read the tags
 
 - **Methods paper:** Ameisen, Lindsey, Pearce, Gurnee, Turner, Chen et al., "Circuit Tracing: Revealing Computational
-  Graphs in Language Models", transformer-circuits.pub/2025/attribution-graphs/methods.html. Read through WebFetch on
-  2026-11-01: §2 (replacement model), §3 (attribution graphs), §5 (evaluations), §7 (limitations), Appendices
+  Graphs in Language Models", transformer-circuits.pub/2025/attribution-graphs/methods.html. Read through WebFetch:
+  §2 (replacement model), §3 (attribution graphs), §5 (evaluations), §7 (limitations), Appendices
   "Attribution Graph Computation", "Graph Pruning", "Iterative Patching", "Details of Interventions". The page has no
   numbered headings; the numbers below are page order (§2 replacement model, §3 graphs, §5.1 CLT evaluation, §5.2 graph
   evaluation, §5.3 mechanistic faithfulness). WebFetch returns a model's paraphrase of the page, so **every paper number

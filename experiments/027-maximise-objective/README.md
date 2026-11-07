@@ -1,4 +1,4 @@
-# objective='maximise' — an unbounded driver objective (2026-08-05)
+# objective='maximise' — an unbounded driver objective
 
 Daniel: "is there a way to change the objective from loss from the value
 at that sequence to just maximise the seed value?"

@@ -1,6 +1,6 @@
 # 056 — Specificity: mechanism for the target, or concept amplifier?
 
-**The concern (Daniel, 2026-09-23).** Faithfulness, necessity and the random-circuit baseline all read the target
+**The concern (Daniel).** Faithfulness, necessity and the random-circuit baseline all read the target
 alone. A circuit that restores the target by pushing up its whole neighbourhood (concept, topic, context type) passes
 all three, yet it is a concept amplifier rather than a mechanism for that latent. The one place this leaks through is
 the activation read: if the circuit lifts the target's rivals, the target loses its Top-K place even when its
@@ -38,7 +38,7 @@ PYTHONPATH=src python experiments/056-specificity/specificity.py
 Estimated cost: 3 arms × 16 targets × (clean + 3 × (empty + circuit)) held-out runs plus one train run each. With
 the engine start-up this should take about 15–20 minutes locally.
 
-## Results (2026-09-23; 3 arms × 16 targets × 3 ablations, `results/specificity.jsonl`, `results/summary.md`)
+## Results (3 arms × 16 targets × 3 ablations, `results/specificity.jsonl`, `results/summary.md`)
 
 **Most circuits are target-specific.** Median target faithfulness (pre-activation) 0.82–1.04 against siblings
 0.27–0.36 and other active site latents 0.09–0.29, in every arm and ablation. About half the targets are clean:
@@ -68,7 +68,7 @@ circuit's switch-ons. The target still stays in the Top-K for most targets, but 
 Equal weights (eq2) do not fix it: they rescue 2.attn.33479's Top-K place but inflate 6.resid.18234 and
 10.attn.16967 further.
 
-## Fix: an off-target term in WCM's loss (2026-09-23)
+## Fix: an off-target term in WCM's loss
 
 **Why the objective allows it.** WCM's loss reads the target's pre-activation only, w_t·x + b_t, which constrains
 the stream at the target's site along one direction of 1,024. Everything else there is free, so the cheapest route
@@ -110,15 +110,15 @@ results move non-monotonically with γ_S (7.mlp.28744 switch-ons 111 → 1,080 �
   the C failure comes with few switch-ons (45–91), so it is not rival inflation.
 - 10.attn.16967: partial at best (in Top-K on 40% of anchors, activation faithfulness 0.5–0.7).
 
-**Decision (2026-09-23):** cut mode becomes part of WCM, provisional γ_S = 3e-3; the weight is settled in the DAN-64
+**Decision:** cut mode becomes part of WCM, provisional γ_S = 3e-3; the weight is settled in the DAN-64
 grid; specificity (switch-ons vs the empty circuit, sibling ratio, Top-K membership) joins the evaluation battery.
 
 **Implications (first pass, before the fix).** (1) The evaluation battery needs specificity: switch-ons relative to the empty circuit, the sibling
 ratio, and the target's Top-K membership. (2) Next test: the firing-margin objective (`margin_topk`, built
-2026-08-30), which penalises lifting rivals because they raise the Top-K cut. (3) If that fails, a one-sided
+earlier), which penalises lifting rivals because they raise the Top-K cut. (3) If that fails, a one-sided
 off-target loss term measured against the empty circuit.
 
-## Protocol-v1 circuits (2026-09-25, `spec059.py`, `results/v059/`)
+## Protocol-v1 circuits (`spec059.py`, `results/v059/`)
 
 The diagnostic runs on 059's circuits for the protocol training set (32 strongest + 16 mid-band), each weight setting
 fitted on two stratified samples: B / B2 (γ 0.25, λ 1e-3) and Bw / B2w (γ 1, λ 2e-3). It uses 059's contexts, with

@@ -1,4 +1,4 @@
-# direct-drivers (2026-07-24)
+# direct-drivers
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 
@@ -79,7 +79,7 @@ DETACHED leaf anchor, so the backward from the seed's pre-activation reaches
 each anchor only along paths free of other feature nodes — the gradient IS the
 unmediated direct effect (u_baseline = 0, free0-coherent). One instrumented
 forward + one backward, member->member edges never built (that all-pairs loop
-is what OOMed in July; the seed-directed slice was always cheap).
+is what OOMed earlier; the seed-directed slice was always cheap).
 
 Then the eval the question asks for: keep only the top-K members by |direct
 edge|, zero-ablate every other latent (free0 semantics, live re-encode), and

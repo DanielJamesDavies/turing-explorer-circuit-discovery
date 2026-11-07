@@ -1,6 +1,6 @@
 # 103: the donor-background (resample) test as a native scorer and a pod stage
 
-31 October 2026 (agent donor-stage). Spec: `paper/protocol-v1.md` §12.3 (Daniel, 2026-10-31). Goal: the pod reports a
+Agent donor-stage. Spec: `paper/protocol.md` §12.3 (Daniel). Goal: the pod reports a
 donor-background recovery and a `resample_pass` for every circuit, computed by src code, not by an experiment script.
 
 ## What was built
@@ -122,7 +122,7 @@ weighted or not, and `Runner.fit` sets the donors whenever `resample_weight > 0`
 U arms with the triple floor + "pos" objective that R requires. The smoke confirms it: the `U_0.001` train rows carry
 the resample stats; see below.
 
-## Equivalence (GPU, 31 Oct 12:51-13:00; `run_equiv.sh`, `equiv.py`, `out/equiv/compare.json`)
+## Equivalence (GPU, ~9 min; `run_equiv.sh`, `equiv.py`, `out/equiv/compare.json`)
 
 The setup:
 - the native CLI on 3 of 100's targets (`targets_equiv.txt`: 2.attn.34021, 6.mlp.209, 2.resid.29259);
@@ -180,7 +180,7 @@ Not compared bit for bit:
 - `bash -n` on chain.sh / progress.sh; `DRY_RUN=1 TL_TRACK=1 WCM_VERSION=v2cr` prints every new stage with its env,
   archive and error gate (see the smoke for the real run).
 
-## Smoke (31 Oct 13:00-14:03; `run_smoke_chain.sh` -> `smoke_chain/`, events `smoke_chain/logs/chain.events`)
+## Smoke (~1 h 03 min; `run_smoke_chain.sh` -> `smoke_chain/`, events `smoke_chain/logs/chain.events`)
 
 **Setup.** The 082 chain itself, in its smoke mode: `LIMIT=2`, 20 steps, P = 1, GPU 0, `WCM_VERSION=v2cr`,
 `TL_TRACK=1`, `MODELS=pythia-70m`.

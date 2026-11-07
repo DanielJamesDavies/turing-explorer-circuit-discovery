@@ -1,6 +1,6 @@
-# Latent pilot: does the geometric lr schedule change production latent WCM? (2026-11-02)
+# Latent pilot: does the geometric lr schedule change production latent WCM?
 
-Daniel, 2026-11-02: "Please can you do the small local pilot to check it". Background: arena C found that the mask
+Daniel: "Please can you do the small local pilot to check it". Background: arena C found that the mask
 engine's constant lr under the gate anneal (m = sigmoid(θ / T), T 1 → 0.05) makes the gate step lr / T grow 20× over
 training. Behavioural fits blew up late in training, and a geometric schedule (lr × 0.05^progress, `lr_schedule=
 "geometric"` in learned_mask, default off) fixed it (`../arena_c/WCM_ADAPTER.md` §8). Production latent WCM (062

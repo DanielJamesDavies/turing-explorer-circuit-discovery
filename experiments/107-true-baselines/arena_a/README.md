@@ -1,9 +1,9 @@
 # 107 arena A: Ge et al. (A1) and Dunefsky et al. (A2) on GPT-2 small, plus WCM on the same substrate
 
-Status (2026-11-06 11:20, agent `hardstop`, CPU only): **`run_pod.sh` has a HARD time limit** (Daniel approved). See
-"Time limit 2026-11-06" below.
+Status (agent `hardstop`, CPU only): **`run_pod.sh` has a HARD time limit** (Daniel approved). See
+"Time limit" below.
 
-## Time limit 2026-11-06 (agent `hardstop`; `run_pod.sh` header "TIME LIMIT" = the full doc)
+## Time limit (agent `hardstop`; `run_pod.sh` header "TIME LIMIT" = the full doc)
 
 - **Soft stop** `STOP_EPOCH` (as before: no new target / arm / stage) and **hard stop** `AA_HARD_GRACE` (3600 s) later.
   At the hard stop a watchdog sends SIGTERM to every process of this run, then SIGKILL after `AA_KILL_GRACE` (30 s).
@@ -31,28 +31,28 @@ Status (2026-11-06 11:20, agent `hardstop`, CPU only): **`run_pod.sh` has a HARD
   - SIGTERM to the script: everything killed, rc 143, 0 left;
   - soft stop only: P7 ran, rc 4;
   - the real P7 on an empty work dir: results tgz only, md5 verified, rc 0.
-- Chain dry runs with arenas off are identical to the dryrun agent's 2026-11-06 captures.
+- Chain dry runs with arenas off are identical to the dryrun agent's captures.
 
-Status (2026-11-05 13:00, agent `a10-pod`): **A10 `run_pod.sh` (P0–P7) and A11 (chain `ARENA_A=1`, off by default)
+Status (agent `a10-pod`): **A10 `run_pod.sh` (P0–P7) and A11 (chain `ARENA_A=1`, off by default)
 written and dry-run checked; the 2-target GPU smoke is not run yet; A12 re-cost open.** See "A10 / A11" below.
 
-Status (2026-11-03 late, agent `arenaA`, CPU only, no GPU used): **downloads D1–D5 done (approved ~22:00), both
+Status (agent `arenaA`, CPU only, no GPU used): **downloads D1–D5 done (approved), both
 baseline envs built (`pip check` clean), CPU fidelity checks run, WCM adapter written and CPU-tested.** See "Log
-2026-11-03" below. Linear: DAN-192 (Ge setup + fidelity), DAN-197 (Ge / WCM runs), DAN-200 (Dunefsky), DAN-195 (WCM
+(CPU only)" below. Linear: DAN-192 (Ge setup + fidelity), DAN-197 (Ge / WCM runs), DAN-200 (Dunefsky), DAN-195 (WCM
 adapter). Specs: `../specs/ge.md`, `../specs/dunefsky.md`, `../specs/evaluation.md`. Structure copied from `../arena_c/`.
 Each choice that is ours, not the paper's, is tagged **[ours]**; each one Daniel has to make is tagged **[decide]**.
 
-Goal: pod-ready for the 8×H100 session on Saturday 2026-11-07, with the local smoke done on the Wednesday and Thursday
-nights.
+Goal: pod-ready for the 8×H100 pod, with the local smoke done on the two local nights before it (Night 1 and
+Night 2).
 
-## 2026-11-06 (agent `scorer`, CPU): per-target summary + ho_xdoc in `score_arena_a.py`
+## Scorer update (agent `scorer`, CPU): per-target summary + ho_xdoc in `score_arena_a.py`
 
 - **Per target** (`--summary`; `summary.json` `per_target`, `per_method_rollup`): one row per (method, target). Best
   setting, the same rule for every method: max ho pass_b rate over prompts, then pass_a rate, then the smaller median
   n latent (Ge = τ grid index, Dunefsky = (branches, iters), WCM = λ with prompts n/a). At it: pass b / a fractions, medians
   of n, Z / A / C / nec a / b, donor R, home pass b, ho_xdoc; plus "any setting passes b" and the smallest passing n.
   Roll-up: targets passing on a majority of prompts at the best setting, out of the non-vacuous targets.
-  **q-fallback** (coordinator 2026-11-06): when no setting passes (b) or (a) on any prompt, the best setting is the
+  **q-fallback** (coordinator): when no setting passes (b) or (a) on any prompt, the best setting is the
   highest median over prompts of q = min(fold(Z), fold(A), fold(C), nec_b), fold(x) = min(x, 0.75 × 1.5 / x) (= 0.75
   at both band edges, lower outside on either side), then smaller n; such rows are marked "best: q-fallback"
   (`best_rule`). Without it the size tie-break picked n = 0–2 Ge circuits on the smoke.
@@ -62,7 +62,7 @@ nights.
   forward pass), stored as the ho row's `xdoc` dict; `n/a: no provenance` / `empty` notes. Rows scored before it have
   none (summary says "not scored"). Existing columns and sections unchanged (smoke `--summary` diff: additions only).
 
-## A10 / A11 2026-11-05 (agent `a10-pod`, CPU, dry runs only): `run_pod.sh` and the chain stage
+## A10 / A11 (agent `a10-pod`, CPU, dry runs only): `run_pod.sh` and the chain stage
 
 - **`run_pod.sh`** (header = the full doc): P0 assets (checks only; missing downloads are printed for approval, exit 2),
   P1 envs (ge107 / tc107 gate; `setup_env.sh` printed for approval), P2 corpus + data pass, P3 `make_targets.py`, P4
@@ -78,10 +78,10 @@ nights.
 - `score_arena_a.py`: one change, the env `ARENA_A_CTX_DIRS` (os.pathsep list) overrides the smoke `CTX_DIRS`. Unset
   = unchanged; 12 tests pass.
 - **`082/chain.sh`** (A11): `arena_a_stage` after S10 + T12 when `ARENA_A=1`. With it unset, the dry run is identical
-  to before (TL on, TL off, `LIMIT=2`; timestamps masked). Runbook entry dated 2026-11-05.
+  to before (TL on, TL off, `LIMIT=2`; timestamps masked). Runbook entry written.
 - Not done: the 2-target GPU smoke. `run_ge.py` / `ge_recovery_tcz.py` have never run with `--device cuda`, so the
   P4 canary on the pod is the first check.
-- Coordinator 2026-11-05 13:00:
+- Coordinator:
   - λ grid = placeholder, read from `AA_LAMBDAS` (`AA_LAMS` fallback).
   - 524k windows and the extended Dunefsky knob accepted. The extended knob is labelled **"beyond published range"**:
     num_branches > 60 in the units.
@@ -96,7 +96,7 @@ nights.
   - Timings go to `out/smoke_pod/smoke_summary.md`.
   - **Ge, Dunefsky and Ge recovery run on the CPU.** The local ge107 / tc107 torch builds are CPU-only, and their
     pinned torch cannot use the sm_120 card.
-- Tuning hooks (coordinator 13:20, `TUNING.md`):
+- Tuning hooks (coordinator, `TUNING.md`):
   - P3 passes `EXCLUDE=tune_exclude.txt` to `make_targets.py`. A missing file fails P3, and the picks are re-checked
     against it.
   - P5 reads `out/tune/CHOSEN.env` (`AA_TUNE_ENV`). Only the keys AA_RANK_W, NEC_W, STEPS and AA_TUNE_CONFIG are
@@ -105,7 +105,7 @@ nights.
   - A missing file fails P5 unless `AA_ALLOW_UNTUNED=1`. The smoke sets it.
   - P5 skips a scope with no targets and refuses an unknown scope.
   - `out/` is not in git, so CHOSEN.env must be copied to the pod, or pointed to with AA_TUNE_ENV.
-- Held-out baselines + A8b (Daniel 13:35): new resumable stages.
+- Held-out baselines + A8b (Daniel): new resumable stages.
   - **P4h**: `--emit-heldout-prompts` (K = 8) into `targets_held/`. Then Ge (same τ grid) into `ge_heldout/` and
     Dunefsky (published branch grid; no > 60 knob) into `dunefsky_heldout/`, with the P4 worker scheme.
   - **P6b**: `score_perprompt.py` per GPU on the train and held sets. Scope a1 = WCM a1 + Ge held; a2 = WCM a2 +
@@ -118,12 +118,12 @@ nights.
     `score_perprompt.py --summary` joins them to its held-out rows. The jobs are emitted per a2 shard, then run with
     that shard's other jobs.
   - CPU check on the smoke Dunefsky dir: 14 jobs from 14 circuits.
-  - Cost ≈ £28–38 (plan §5).
+  - Cost ≈ 10.5–14.5 GPU-h (plan §5).
 - New `run_pod.sh` knobs (defaults unchanged): `AA_FROM`, `AA_STORES`, `AA_TARGETS_DIR`, `AA_KEYS`, `AA_PACK`,
   `AA_BASELINE_DEVICE`, `AA_GE_NTAU`, `AA_DUNEFSKY_K`, `AA_DUNEFSKY_BRANCHES`. Every command is also timed into
   `cmds.tsv`.
 
-## A8b 2026-11-05 (agent `a-perprompt`, CPU only): `score_perprompt.py`, the per-prompt ("their turf") test
+## A8b (agent `a-perprompt`, CPU only): `score_perprompt.py`, the per-prompt ("their turf") test
 
 Question: does the part of a WCM circuit that is active on one prompt do as well, on that prompt, as a circuit built
 for that prompt (Ge hierarchical / post-hoc, Dunefsky)? `score_arena_a.py` does the other direction (their circuits
@@ -151,7 +151,7 @@ and the runners are unchanged. Tests: `test_score_perprompt.py`, 9 pass (CPU, no
   (`--baseline-rows`, every knob point). Comparisons are curves (each method's own sweep against size), not matched
   points.
 
-**CPU check (2026-11-05, 4 threads, peak RSS 4.8 GB; Ge recovery in ge107, 2 threads, 5.6 GB):** 1.z.21179 (35
+**CPU check (4 threads, peak RSS 4.8 GB; Ge recovery in ge107, 2 threads, 5.6 GB):** 1.z.21179 (35
 members) and 2.z.1360 (690, passed) × 2 train + 2 held prompts: 68 units, ~1.6 s per unit on CPU, Ge recovery ~0.8 s
 per job.
 - Keep-all restriction (every member × position through `restrict()`) against `score_arena_a`'s home scope on
@@ -179,17 +179,16 @@ Reading (2 targets, 8 prompts, not results):
   pass b 4 of 28. WCM firing part on train prompts: n 94 (median), Z / A / C 1.06 / 0.96 / 0.96, nec b 2.05, pass b
   4 of 4. Not a comparison until the same targets run.
 
-**Pod cost (48 targets; at £2.65 / GPU-h, plan §5):**
+**Pod cost (48 targets; plan §5):**
 - **WCM side.** 48 × 16 prompts × (5 λ × 2 + ~9 top-k in one arm) ≈ 14.6k one-row units. That is ≈ 2–4 GPU-h at
   0.5–1 s per unit, an estimate: on CPU it is 1.6 s at L1–2, and deeper targets have more sites. Plus 14.6k Ge recovery
-  jobs, ≈ 0.5 GPU-h, or ≈ 1 h wall on 8 CPU processes. **≈ 2.5–4.5 GPU-h ≈ £7–12.**
+  jobs, ≈ 0.5 GPU-h, or ≈ 1 h wall on 8 CPU processes. **≈ 2.5–4.5 GPU-h.**
 - **Held-out baselines** (optional, a decision). Ge on 48 × 8 held prompts ≈ 0.6 GPU-h. Dunefsky 24 × 8 × 7 = 1,344
-  circuits ≈ 5–6 GPU-h. Scoring them per prompt at `--tau-stride 2` is ≈ 12.9k units ≈ 2–3.5 GPU-h. **≈ 8–10 GPU-h ≈
-  £21–27.**
-- **Both ≈ 10.5–14.5 GPU-h ≈ £28–38.** The Dunefsky held-out units need an a2 process (tc only), like
+  circuits ≈ 5–6 GPU-h. Scoring them per prompt at `--tau-stride 2` is ≈ 12.9k units ≈ 2–3.5 GPU-h. **≈ 8–10 GPU-h.**
+- **Both ≈ 10.5–14.5 GPU-h.** The Dunefsky held-out units need an a2 process (tc only), like
   `score_arena_a`. The WCM a1 units cannot be scored in a2.
 
-**Open:** (1) whether to run the held-out baselines (≈ £21–27); (2) whether to add a Dunefsky-style coverage for WCM
+**Open:** (1) whether to run the held-out baselines (≈ 8–10 GPU-h); (2) whether to add a Dunefsky-style coverage for WCM
 units (it would need a new attribution pass, so it is left out); (3) a position-specific keep (members only at their
 firing positions) would need a new patcher, so the keep stays position-collapsed, as for the baselines; (4) the top-k
 score uses the max code over positions (sum or anchor are the alternatives).
@@ -198,13 +197,13 @@ score uses the max code over positions (sum or anchor are the alternatives).
   then `ge_recovery_tcz.py --jobs <OUT>/ge_jobs.pp.jsonl --out <OUT>/ge_recovery.pp.jsonl` (ge107); then
   `score_perprompt.py --summary --out <OUT> --baseline-rows <score_arena_a OUT>/rows.jsonl`.
 
-## A8 2026-11-05 (agent `a8-scorer`): `score_arena_a.py`, the arena A scorer
+## A8 (agent `a8-scorer`): `score_arena_a.py`, the arena A scorer
 
 Scores Ge (hierarchical + post-hoc), Dunefsky and WCM circuits under our tests, plus Ge's leaf-sum recovery and
 Dunefsky's coverage. Nothing under `src/` and no existing script changed (it imports `diag_necessity_tcz.Diag` / `run`
 and the src scorer pieces). Tests: `test_score_arena_a.py` (8 pass, CPU, no model). Smoke output: `out/score_smoke/`
 (`rows.jsonl`, `selftest.jsonl`, `summary.md`, `summary.json`, logs). One CPU debug run (1.z.21179) plus the smoke on
-the local GPU 11:04–11:21 (coordinator-approved, one process, fp32, TF32 off): ~1–3 s per unit, 371 + 28 units.
+the local GPU, ~17 min (coordinator-approved, one process, fp32, TF32 off): ~1–3 s per unit, 371 + 28 units.
 
 **Definitions (all ours unless noted):**
 - **Units / curves.** One unit = one node set: Ge `hier[t]` and post-hoc `S(τ)` (pool attr > τ, strict) at each of the
@@ -263,7 +262,7 @@ Reading (smoke, 2–3 targets per baseline, so not results):
   transcoder error, as in the diagnosis.
 - 7.z2.18144 is vacuous on both eval sets (e0 > a_pos), like 6.z.8399.
 
-**Added 2026-11-05 11:25–11:35 (coordinator: code + short tests only; the smoke is NOT rescored with these yet):**
+**Added later (coordinator: code + short tests only; the smoke is NOT rescored with these yet):**
 - **R, the donor test** (`--donor`; `--donor-variants fit` by default, `--donor-draws 8`, `--donor-pool`,
   `--donor-records`). It is src `eval.donor_test.donor_target`, unchanged, run once per target on that target's
   distinct (members, α) sets. Each set becomes a minimal circuit object (`fake_circuit`: a seed node plus one node per
@@ -298,8 +297,8 @@ Reading (smoke, 2–3 targets per baseline, so not results):
   <OUT>/ge_jobs.a1.jsonl --jobs <OUT>/ge_jobs.a2.jsonl --out <OUT>/ge_recovery.jsonl --check` (ge107); then
   `--summary`.
 
-**Run 2026-11-05 12:57–13:57 (GPU donor test, then the companion on the CPU):**
-- **First donor attempt.** It spilled into shared GPU memory, and the coordinator killed it at 12:53. Cause: src
+**Run (~1 h: GPU donor test, then the companion on the CPU):**
+- **First donor attempt.** It spilled into shared GPU memory, and the coordinator killed it. Cause: src
   `donor_test.capture_codes` stores each code with k = d_sae values plus int64 indices. That is ~2.5 GB per site for
   133 donor rows, × 24 sites.
 - **Fix [ours, exact; src unchanged].** `capture_codes_compact` is installed over `donor_test.capture_codes`. It
@@ -328,13 +327,13 @@ read (7.3(b)) are not computed.
   `PYTHONPATH=src HF_HUB_OFFLINE=1 ARENA_A_SCOPE=a1 .venv/bin/python -u experiments/107-true-baselines/arena_a/score_arena_a.py --scope a1 --out <OUT> --selftest --ge <ge out> --wcm l1e-3=<wcm out>`;
   the same with `--scope a2 --dunefsky <dunefsky out>` and `ARENA_A_SCOPE=a2`; then `--summary --out <OUT>`.
 
-## Log 2026-11-05 night (agent `arenaA3`; local GPU 01:35–03:31, then CPU): v4 panel + necessity diagnosis
+## Log, night run (agent `arenaA3`; local GPU ~2 h, then CPU): v4 panel + necessity diagnosis
 
-**What ran** (one GPU process at a time; `out/panel/GPU_DONE` written 03:31 when the last one exited):
+**What ran** (one GPU process at a time; `out/panel/GPU_DONE` written when the last one exited):
 - `make_panel_targets.py` (new): 12 targets, 2 tc + 2 z per band L1–3 / L4–7 / L8–11, seed 20261105, the pilot's rule
   (full top store, ≥ 48 / 64 mid, ≥ 8 held-out strongest, ≥ 32 contrast), pilot targets excluded, pilot data pass
   reused. `run_panel_a.sh`: v4, λ 1e-3, 400 steps, the pilot's env. Output `out/panel/wcm_l1e-3/`.
-- 3 of the 12 fits died at 02:07 (card at 15.96 GB: `CUDA driver error: device not ready`, then allocator asserts).
+- 3 of the 12 fits died (card at 15.96 GB: `CUDA driver error: device not ready`, then allocator asserts).
   Refit one process each (`run_necdiag_a.sh`, `out/panel/wcm_l1e-3_rerun/`): **9.z.19003 and 9.z.17708 ok;
   11.tc.22949 fails again in a fresh process, at 15.9 GB.** L11 tc does not fit on the 16 GB card even at DEEP_BS=1
   (it has the most upstream sites). On an H100 this is not a problem. So the panel has 11 of 12 targets.
@@ -431,7 +430,7 @@ transcoder error, i.e. the real MLP recomputing from the edited stream what the 
   - The 1200-step arm was OOM-killed on the host, so "more steps" itself is untested.
 - λ: at λ 4e-3 (smaller circuits) necessity is lower than at 1e-3 on all 3 pilot targets, as expected from coverage.
 
-### Proposals before Saturday (propose only; v4, BOS hidden, error live and float32 are unchanged)
+### Proposals before the pod (propose only; v4, BOS hidden, error live and float32 are unchanged)
 
 1. **Report a second necessity reading, alongside the settled one, with the transcoder error held at its clean value
    during member removal** (`f_tc_err` here: the tc error is treated as an error node fixed at its clean value).
@@ -458,9 +457,9 @@ transcoder error, i.e. the real MLP recomputing from the edited stream what the 
 `necdiag_summary.md`, `logs/`, `gpu_mem.csv`, `steps.tsv`, `GPU_DONE`). `out/panel/diag_cputest/` holds the CPU
 checks of the diagnostic.
 
-## Log 2026-11-03 (late evening; CPU only)
+## Log (CPU only)
 
-**Downloaded** (Daniel's approval, ~22:00; `fetch_assets.sh local` + `owt`, pinned revisions; `fetch_assets.sh verify`
+**Downloaded** (Daniel's approval; `fetch_assets.sh local` + `owt`, pinned revisions; `fetch_assets.sh verify`
 against the HF API: 0 missing / mismatched):
 - D1 Kissane z-SAEs @ `97e0da0`: 24 files, 2,115,394,805 B (2.12 GB);
 - D5 OWT `train-00000-of-00073.parquet` @ `f02886b5`: 242,887,938 B;
@@ -505,7 +504,7 @@ leaves are counted; report the bias share as planned. Dunefsky R1–R5 took 100 
 **Next:** G2, G4 (Fig. 2b on 20 IOI prompts), D-F4 (R6 greater-than metric), a 6-step engine fit and the Z-empty panel
 on the CPU; then the GPU timing pilot on the first free night.
 
-## 1. Download inventory (approved 2026-11-03 ~22:00 and fetched; see the log above)
+## 1. Download inventory (approved and fetched; see the log above)
 
 ### 1.1 Already on disk (WSL HF cache `/home/daniel/.cache/huggingface/hub`, plus repo files), so nothing is fetched twice
 
@@ -544,7 +543,7 @@ Not needed (deliberately not listed for download):
 - A cp310 CUDA torch for the baselines locally: the local GPU is a Blackwell (sm_120) card, which needs torch ≥ 2.7, so
   their pinned torch cannot use it. Local baseline work is CPU-only by design (§2); GPU timing happens on the pod.
 
-### 1.3 Pod (Saturday): what the pod fetches (it has no HF cache)
+### 1.3 The 8×H100 pod: what the pod fetches (it has no HF cache)
 
 | what | size |
 |---|---|
@@ -722,12 +721,12 @@ recovery (A11) for all three methods; Dunefsky "attribution coverage" and the gr
 
 | when | where | step |
 |---|---|---|
-| Wed day | CPU | after approval: `fetch_assets.sh local`; `setup_env.sh` (both envs); G0, G3; conversion + parity tests; D-F1–D-F4 on CPU in `tc107`; G1, G2, G4 on CPU in `ge107` |
-| Wed day | CPU | `wcm_tcz.py` + `test_wcm_tcz.py` (splice, parity, 6-step fit) |
-| Wed night (GPU, ≤ 8 h, stop 07:30) | 5070 Ti, `.venv` | data pass on the smoke corpus; Z-empty diagnostic; WCM smoke on 3 targets (2 tc, 1 z) × 2 λ; **timing pilot** (fit s/step, peak memory) |
-| Thu day | CPU | Ge + Dunefsky circuits for the 3 smoke targets (CPU, their envs); score all three methods under our tests and their own; tables |
-| Thu night | GPU | rerun anything that failed; a 48-target data-pass dry run on the smoke corpus |
-| Fri | – | `run_pod.sh` dry run (`DRY_RUN=1`), pod command list for Daniel |
+| Day 1 | CPU | after approval: `fetch_assets.sh local`; `setup_env.sh` (both envs); G0, G3; conversion + parity tests; D-F1–D-F4 on CPU in `tc107`; G1, G2, G4 on CPU in `ge107` |
+| Day 1 | CPU | `wcm_tcz.py` + `test_wcm_tcz.py` (splice, parity, 6-step fit) |
+| Night 1 (GPU, ≤ 8 h, stop 07:30) | 5070 Ti, `.venv` | data pass on the smoke corpus; Z-empty diagnostic; WCM smoke on 3 targets (2 tc, 1 z) × 2 λ; **timing pilot** (fit s/step, peak memory) |
+| Day 2 | CPU | Ge + Dunefsky circuits for the 3 smoke targets (CPU, their envs); score all three methods under our tests and their own; tables |
+| Night 2 | GPU | rerun anything that failed; a 48-target data-pass dry run on the smoke corpus |
+| Day 3 | – | `run_pod.sh` dry run (`DRY_RUN=1`), pod command list for Daniel |
 
 **Timing (estimates, not measurements; the pilot replaces them):**
 
@@ -742,7 +741,7 @@ recovery (A11) for all three methods; Dunefsky "attribution coverage" and the gr
 | data pass on the OWT corpus (24 dense ReLU dictionaries) | ≈ 1–2 GPU-h | arena C pass 1: 54 s for 4,096 × 64 tokens at 19 sites |
 | **total** | **≈ 45–55 GPU-h ≈ 6–7 h wall on 8 × H100 ≈ $160–190** at the runbook's ≈ $3.45 / GPU-h, on top of the 082 budget **[decide]** | |
 
-## 8. Pod stage (`run_pod.sh`, to be written Thursday; each stage resumable per circuit, `STOP_AT`)
+## 8. Pod stage (`run_pod.sh`, to be written on Day 2; each stage resumable per circuit, `STOP_AT`)
 
 | stage | calls | GPUs |
 |---|---|---|
@@ -755,19 +754,19 @@ recovery (A11) for all three methods; Dunefsky "attribution coverage" and the gr
 | P6 scoring | `score_arena_a.py` (.venv): our tests for all three methods + Ge leaf-sum for all + Dunefsky own-eval | 8 |
 | P7 pack | curves (`../specs/evaluation.md`), tables, tgz to the global volume | CPU |
 
-## 9. Risks to being pod-ready by Friday (largest first)
+## 9. Risks to being ready before the pod (largest first)
 
 1. **Per-site d_sae** (z L5 / L7 are 49,152, everything else 24,576): `src` takes one `d_sae` per family everywhere.
    Implemented as the `z2` split (`wcm_tcz.py`, CPU-tested exact); still to confirm that the data pass, stores and
    scorer accept a site that shares its input tensor with another.
 2. **The transcoder site in the engine:** the fit path is audited and compatible (`WCM_ADAPTER.md` section 1); the
    scorer / fills (`eval/wcm_eval.py`) are not yet audited for `x − decode(c)` uses at a site (P5).
-3. ~~Kissane format inferred~~: verified 2026-11-03 (log above); one extra convention found (no b_V), handled.
+3. ~~Kissane format inferred~~: verified (log above); one extra convention found (no b_V), handled.
 4. **Old pins on Python 3.10:** `tc107`'s resolver (TL 1.11.0 with hub 0.17.3, datasets 2.12.0, setuptools 67) may need
    one or two more era pins; `pip check` will say. The vendored TL fork with torch 2.3.1 is the authors' own lock, so low
    risk.
 5. **BOS convention** (§5, [decide]) and K / extended-knob scope ([decide]) need Daniel before the targets are built.
-6. **Time:** two local nights only. The GPU pilot is the critical path; if Wednesday night fails, Thursday night is
+6. **Time:** two local nights only. The GPU pilot is the critical path; if Night 1 fails, Night 2 is
    the only retry, and the pod numbers in §7 stay estimates.
 7. **Pod budget** grows by ≈ $160–190 for arena A (§7).
 
@@ -775,7 +774,7 @@ recovery (A11) for all three methods; Dunefsky "attribution coverage" and the gr
 
 - `README.md` (this file), `setup_env.sh` (both envs; written, not run), `fetch_assets.sh` (the download list as
   commands; written, not run).
-- Written 2026-11-03: `ge_dicts.py` (conversion + `ZSparseAutoEncoder`), `ge_checks.py` (format, G1, G3b),
+- Written in the first CPU session: `ge_dicts.py` (conversion + `ZSparseAutoEncoder`), `ge_checks.py` (format, G1, G3b),
   `dunefsky_checks.py` (R1–R5), `wcm_tcz.py`, `test_wcm_tcz.py`, `WCM_ADAPTER.md` (design + proposed src changes),
   `env_freeze_ge.txt`, `env_freeze_tc.txt`; results in `out/ge_checks/`, `out/dunefsky_checks/`.
 - To write: G2 / G4 in `ge_checks.py`, R6 in `dunefsky_checks.py`, `data_pass_tcz.py`, `driver_tcz.py`,

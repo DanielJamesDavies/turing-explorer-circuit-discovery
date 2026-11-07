@@ -1,6 +1,6 @@
 # 084 — Harder random-circuit nulls (DAN-181)
 
-2026-10-23. Built locally, CPU smoke only; nothing at scale has run yet. **2026-10-24: Daniel's decisions applied**
+Built locally, CPU smoke only; nothing at scale has run yet. **Daniel's decisions applied**
 (target panel from the 190 sweep targets, WIN = 8, production members in the pool, members' own contribution
 deciles with a shortfall table, public panels from 082; see "Decisions" at the end).
 
@@ -58,11 +58,11 @@ training arm), `harder_nulls.py`:
 - **Anchor lag.** On one training context with anchor *a* (the target's argmax position,
   `protocol_contexts` `arg`), an upstream latent at position *p* ≤ *a* with post-Top-K activation > 0 has lag *a − p*.
   Its lag is the minimum over the fit's training contexts. Positions after the anchor are ignored.
-- **Anchor-active pool.** Lag ≤ `WIN` (**default 8**, decided 2026-10-24; was 3: active at the anchor or one of the 8
+- **Anchor-active pool.** Lag ≤ `WIN` (**default 8**, decided by Daniel; was 3: active at the anchor or one of the 8
   positions before it, on at least one training context), at each of the production circuit's sites, **production
-  members included** (decided 2026-10-24: a plain draw from the matched pool, the standard random baseline).
+  members included** (decided: a plain draw from the matched pool, the standard random baseline).
   `n_overlap` / `overlap_wcm` / `overlap_frac` record how many production members each draw took (table 8).
-  **Final (Daniel, 2026-10-24): the contribution-matched null EXCLUDES the production members** (a substitution
+  **Final (Daniel): the contribution-matched null EXCLUDES the production members** (a substitution
   test: its top contribution bins held almost only members, so with members in the pool ~54% of its draws were
   members). `EXCLUDE_MEMBERS` is now a list of nulls whose pool drops the members: default `contrib`; `0` = none,
   `1` = every null. The anchor-active null keeps them (`n_overlap` reported).
@@ -91,7 +91,7 @@ training arm), `harder_nulls.py`:
 
 ### Targets
 
-Decided 2026-10-24: about 128 targets per model, drawn from the panel the other comparisons use.
+Decided: about 128 targets per model, drawn from the panel the other comparisons use.
 
 - **TuringLLM: 126 = 14 per band × kind cell** from the 190 sweep targets with a production circuit
   (`062/targets_sweep.txt`, the DAN-159 / 083 panel; `7.attn.17087` has no circuit). `make_panel.py` writes the frozen
@@ -164,12 +164,12 @@ The script imports 062's `driver` / `random_null` / `rescore_alpha1`, so `FAMILY
 over, and it reads `K`, kinds, layers and `latent_stats` from the family's bank and stores. `chain.sh` runs it as the
 `harder_nulls` arm of S6 / S9 (it **replaces** the DAN-17 `random` arm, D3), on `targets_<model>_nulls.txt` with
 `SUB_N=32 SUB_DRAWS=2 N_DRAWS=1 WIN=8 EXCLUDE_MEMBERS=contrib REFS=wcm RN_DIR= DAN17_REFIT=0` on the public
-models (final 2026-10-24: no DAN-17 reference refits there; TuringLLM keeps `REFS=wcm,dan17` with the 65 stored + 61
+models (final: no DAN-17 reference refits there; TuringLLM keeps `REFS=wcm,dan17` with the 65 stored + 61
 refits on its 126 panel, `SUB_N=32`) (`chain.sh nulls_env`), and the 073 resample
 stage reads the anchor null's draw-0 circuits as its random variant. The TuringLLM run is the chain's track stage T4
 (after the held-out rebuild, with `CTX_DIR` = the rebuilt records).
 
-## Smoke (GPU, 2026-10-24: the decided design)
+## Smoke (GPU, the decided design)
 
 RTX 5070 Ti, `STEPS=8` (plumbing, not results); outputs in the session scratchpad (not kept in the repo).
 - **TuringLLM**, panel targets `3.attn.11307` (position 0: stored DAN-17 from `out_random`) and `3.attn.37473`
@@ -187,9 +187,9 @@ RTX 5070 Ti, `STEPS=8` (plumbing, not results); outputs in the session scratchpa
   - DAN-17's sampler reproduced;
   - members included by default, with overlap recorded;
   - the shortfall counts (`by_bin`) and report tables 8 / 9;
-  - the 2026-10-24 defaults in a fresh interpreter.
+  - the decided defaults in a fresh interpreter.
 
-## Smoke (CPU, 2026-10-23)
+## Smoke (CPU, original design)
 
 All CPU, `CUDA_VISIBLE_DEVICES=` (the GPU was busy). STEPS = 8, so null fits are barely trained; the smoke checks
 plumbing, not results.
@@ -232,7 +232,7 @@ null ran on the RTX 5070 Ti at 49.5 s per target (fit + held score + live pass; 
 062 eval at 3–6 s per score, so fit ≈ 42 s and score ≈ 5 s locally; the profile is assumed ≈ 6 s (CPU: 0.7 of a
 score). Per target: 6 reference scores, and per null draw 1 fit + 3 scores.
 
-Revised 2026-10-24 for the decided design. Per target: 3 WCM reference scores and 3 DAN-17 scores (the DAN-17 fit is
+Revised for the decided design. Per target: 3 WCM reference scores and 3 DAN-17 scores (the DAN-17 fit is
 added when it is refit); per null draw, 1 fit + 3 scores.
 
 | Run | Fits | Scores | RTX 5070 Ti | H100 (TuringLLM r = 2.0–3.4 per GPU at P = 6, 062; public r = 1.5–2.7, pod plan) |
@@ -243,10 +243,10 @@ added when it is refit); per null draw, 1 fit + 3 scores.
 | GPT-2 with `SUB_DRAWS=2` (pod-plan cut) | 512 | 1,920 | ~36 local-h | ~13–24 GPU-h |
 | GPT-2 with `SUB_DRAWS=2`, `REFS=wcm` (no DAN-17 refit) | 384 | 1,536 | ~27 local-h | ~10–18 GPU-h |
 
-GPU smoke, 2026-10-24 (RTX 5070 Ti, 8 fit steps, so not representative of the 400-step costs): TuringLLM 30–53 s per
+GPU smoke (RTX 5070 Ti, 8 fit steps, so not representative of the 400-step costs): TuringLLM 30–53 s per
 target for 15 rows; Pythia 37–124 s per target.
 
-## Decisions (Daniel, 2026-10-24) and what they imply
+## Decisions (Daniel) and what they imply
 
 - **Panel:** ~128 targets per model drawn from the comparison panel (above): TuringLLM 126 from the 190 sweep targets;
   Pythia 128 = 8 per component; GPT-2 128 over its 47 sites. Extra draws (4) for 7 per cell on TuringLLM (63), and
@@ -256,7 +256,7 @@ target for 15 rows; Pythia 37–124 s per target.
 - **Contribution bins** stay the members' own deciles; the shortfall table (9) is reported.
 - **Public panels** come from `082/make_targets_public.py` (`nulls`).
 
-**What inclusion does to the contribution-matched null (GPU smoke, 2026-10-24, TuringLLM `3.attn.11307` /
+**What inclusion does to the contribution-matched null (GPU smoke, TuringLLM `3.attn.11307` /
 `3.attn.37473`, 8 fit steps).**
 - With the members in the pool, every member found an exact bin: shortfall 0%, against 51% exact under exclusion on
   10-23.
@@ -267,7 +267,7 @@ target for 15 rows; Pythia 37–124 s per target.
   keeps them. Either way the report shows the overlap per arm (table 8), and table 9 shows where the non-member pool
   runs short (by bin).
 
-The original options (2026-10-23) are kept for the record:
+The original options are kept for the record:
 
 1. **WIN** (the anchor-active window, default 3). The issue says "at, or just before". On the first 9 targets (one
    per band × kind, `out_profile9/`), WIN = 3 covers 99–100% of the production members for every MLP / resid target

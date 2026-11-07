@@ -1,4 +1,4 @@
-# D4.3 / D4.4 / D3.4 — CPU analyses (2026-08-02)
+# D4.3 / D4.4 / D3.4 — CPU analyses
 
 ## D4.3 — Containment: are drivers inside the closure?
 

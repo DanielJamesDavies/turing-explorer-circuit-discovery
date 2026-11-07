@@ -1,7 +1,6 @@
 # 086 Held-out rebuild (DAN-157)
 
-New held-out sets for the 15k run's **fixed** circuits, under the rule Daniel approved on 2026-10-24 (final form the
-same day: **no source-file rule**, the **contrast held-out set deduplicated too**, below-floor targets scored and
+New held-out sets for the 15k run's **fixed** circuits, under the rule Daniel approved (final form: **no source-file rule**, the **contrast held-out set deduplicated too**, below-floor targets scored and
 flagged). The rebuild follows from the 085 audit: 66.8% of held-out strongest rows repeat a training-side row. There
 are no refits, and no training-side field changes. The rule itself lives in `src/circuit/heldout_rule.py`, shared
 with the group-aware split for the public models (below).
@@ -38,7 +37,7 @@ Per target, for the held-out **strongest** set:
      (`protocol_contexts.target_activations`, batch 16).
    - It is not exact, anchor-prefix or near (LCR ≥ 32, or ≥ 50% of its 8-gram positions) against F.
    - It is not exact, anchor-prefix or near against an already-accepted held-out row.
-   - There is **no source-file clause** (dropped 2026-10-24; `corpus_src.npy` is no longer read).
+   - There is **no source-file clause** (dropped; `corpus_src.npy` is no longer read).
 4. **Fill and floor.** Fill to 16; the floor is 8. Targets below the floor are flagged `below_floor`, **scored and
    flagged, never dropped**, and reported per band × kind. The headline counts targets with ≥ 8 clean rows; the worst
    case counts below-floor targets as fails.
@@ -68,7 +67,7 @@ rebuild applies the same rule to the held-out 16 with the sides swapped (`select
 3. **Accepted iff** silent (the target's post-Top-K activation is 0 at **every** position, recomputed with the
    protocol forward), and neither a **whole-window exact copy** (tokens, id or content hash) nor a **near duplicate**
    (a shared contiguous run of ≥ 32 tokens, or ≥ 50% of its 8-grams shared) of a forbidden row or of an
-   already-accepted contrast row. **There is no anchor-prefix rule for contrast rows** (Daniel, 2026-10-24): they
+   already-accepted contrast row. **There is no anchor-prefix rule for contrast rows** (Daniel): they
    never fire, so they have no anchor; `select_heldout(want="silent")` skips the apfx test, and the verifier's apfx
    at the last position is the exact test. A shared prefix shorter than 32 tokens is therefore accepted.
    The final set is forwarded once more as one batch; a row that fires there is excluded (`unstable_silence`).
@@ -88,7 +87,7 @@ would also change `split_n(n)` and so the contrast-train slice; the explicit `n_
 contrast-train slice exactly the run's 48 rows whatever the held-out size. (The fit's padded positive filler rows do
 follow the rebuilt `strong.held`; like the contrast holdout they reach only `holdout_data_loss`, not the circuit.)
 
-## Smoke results (local, 2026-10-24, before the final decisions: two variants, no contrast dedupe)
+## Smoke results (local, before the final decisions: two variants, no contrast dedupe)
 
 The smoke uses `targets_smoke40.txt` and a scan of one quarter of the corpus (`out/scan_smoke40`; SHARD 0/4, 758
 shards). Outputs are in `out/smoke40/` and `out/smoke_repro/`.
@@ -175,7 +174,7 @@ paper's tables:
 
 `build_record(..., group_split=GroupSplit(...))` is opt-in. The default TuringLLM path is unchanged.
 `driver.Runner.contexts` uses it for public families (`GROUP_SPLIT=1`, the default). **Duplicates only, the same
-rule as TuringLLM** (Daniel, 2026-10-24): same-document grouping and the contrast document skip were dropped.
+rule as TuringLLM** (Daniel): same-document grouping and the contrast document skip were dropped.
 Document ids (`DATA/provenance/shard_<N>.docs.npy`) are still recorded per row (`doc`) as provenance, nothing else.
 
 1. **Joint groups.** Rows of the strongest and mid-band pools that are exact, anchor-prefix (under either row's

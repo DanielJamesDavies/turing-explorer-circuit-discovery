@@ -1,11 +1,11 @@
 # 052 — Gemma 3 270M as the open replacement substrate for TuringLLM
 
-Motivation (2026-09-14/15): the TuringLLM census (049 §0e) showed its circuit
+Motivation: the TuringLLM census (049 §0e) showed its circuit
 population is word assembly, frames and memorised sequences — a repertoire
 limit, not a method limit. Daniel chose Gemma 3 270M + Gemma Scope 2 after a
 survey of open model+SAE options. This folder holds the port.
 
-## Stage 0 — feasibility (2026-09-16)
+## Stage 0 — feasibility
 
 ### 0a. Capability (`capability_probe.py`, `capability_*.json`)
 
@@ -64,7 +64,7 @@ is broadly on par with Gemma-2-2b (10x larger) on contrastive decisions.
   `model.layers.N.output`.
 - L0 (resid_post 16k): small 10 @L0, 15 @L3, 20 @L6-L17; big 60 / 90 / 120.
 
-### Decisions (Daniel, 2026-09-16)
+### Decisions (Daniel)
 1. **Width 16k** (54 x 16,384 = 885k latents, fewer than TuringLLM's 1.47M;
    262k = ~14M, ~10x heavier artifact build).
 2. **L0 big** (~120 from L6 on; 60 @L0, 90 @L3). Folders:
@@ -172,7 +172,7 @@ ReLU "empty floors off-manifold to 1e8" in the cross-SAE work. att/mlp SAEs
 read norm-bounded inputs, consistent with them staying sane. UNTESTED
 mechanism (next: measure L0 at res sites under the edited stream).
 
-**CORRECTION (2026-09-17): this is NOT a failure of residual sites, it is the
+**CORRECTION: this is NOT a failure of residual sites, it is the
 uncalibrated-lambda bulk regime already documented in `030-cross-sae` (dense
 ReLU on Pythia-70m).** There: empty floors 2e3 (L2) to 1.8e8 (L4) against
 a_pos 2-12 were treated as well-defined denominators; tri-amp still passed
@@ -185,7 +185,7 @@ quotable at compact n only. The clean-error "fix" is unnecessary. NEXT:
 all three kinds, lambda in {1e-2, 1e-1, 1.0}, plus anchor support (TopK 0.2-0.3%,
 dense 6.5-37%; JumpReLU at L0 ~120/16k expected in between).
 
-**LAMBDA SWEEP (2026-09-17, `latent_circuits_amr_lam*.jsonl`,
+**LAMBDA SWEEP (`latent_circuits_amr_lam*.jsonl`,
 `latent_lambda_sweep.log`) — lambda calibration does NOT rescue depth.**
 Same 5 seeds, att+mlp+res, triple floor, 2 fitted nulls each.
 Anchor support (030 definition, lambda-independent): L3 0.046, L6 0.052,
@@ -211,7 +211,7 @@ structural fix.** Next: res_explosion_diag.py (empty circuit through 18
 layers, current vs clean SAE error), then ERROR_MODE=clean in the fitter,
 then validate that clean error leaves TopK results unchanged (033 Pythia).
 
-**EXPLOSION DIAGNOSTIC (2026-09-17, `res_explosion_diag.py`, `.log`)** — empty
+**EXPLOSION DIAGNOSTIC (`res_explosion_diag.py`, `.log`)** — empty
 zero-fill circuit through all 18 layers, 8 x 128 corpus tokens, four modes.
 Residual-stream norm vs clean:
 
@@ -238,7 +238,7 @@ Residual-stream norm vs clean:
   through member codes, not through the SAE error (SFC's error-node
   convention); TuringLLM/033 recomputed the error. Must validate on 033 TopK.
 
-**THE FIX, AND A FORM THAT LOOKED EQUIVALENT BUT WASN'T (2026-09-19).**
+**THE FIX, AND A FORM THAT LOOKED EQUIVALENT BUT WASN'T.**
 `floor_manifold_diag.py` ruled out the floor: `b_dec` IS the data mean (cos
 0.975-0.999), a mean-filled site lands 0.01-0.03% from the mean, single-site
 edits are benign (gain < 1) — and MEAN fill everywhere still diverges (inf by
@@ -266,7 +266,7 @@ All results made with it are archived as `*_deltaform*`
 latent_clean_partial.log, latent_clean_deltaform_partial.log, 033
 rows_clean_deltaform.jsonl, run_clean_deltaform.log) and must not be quoted.
 
-**GROW FROM EMPTY, NOT PRUNE FROM FULL (2026-09-19).** With the clean error
+**GROW FROM EMPTY, NOT PRUNE FROM FULL.** With the clean error
 fixing removal, deep seeds were still trapped: from the production gate init
 (theta0 = 4, all open) the fit stays near "everything kept" at L6-L12
 (207k-535k members, overshoot 3.9x to 7.9e12) and L15 collapses to 0 members
@@ -300,7 +300,7 @@ Empty-start calibration, clean error, att+mlp+res, 2 fitted nulls each
   same clean-error form kept sup at 1.00, so this looks like a property of the
   Gemma circuits (suppressors inside, or redundant routes), not the error term.
 
-**BOUNDED RE-ENCODING (2026-09-19, `solution_diag.py`, `solution_diag*.log`).**
+**BOUNDED RE-ENCODING (`solution_diag.py`, `solution_diag*.log`).**
 Every site att/mlp/res at all 18 layers edited at once, a random fraction of
 latents kept at alpha=1 (0 = empty circuit), residual norm vs clean at L17:
 
@@ -360,8 +360,8 @@ open-start necessity panel from `latent_circuits_bound_theta4_rescore.jsonl`):
   a matched random expansion (0.18 vs 0.18, 0.85 vs 0.72, 0.88 vs 0.86, 0.19 vs
   0.47, ...).
 
-**THE MEAN FLOOR WAS DENSE — freeM_topk RESTORED (2026-09-19/20,
-`floor_density.py`, `.log`).** Daniel: "have we ever tried topk or cap where
+**THE MEAN FLOOR WAS DENSE — freeM_topk RESTORED
+(`floor_density.py`, `.log`).** Daniel: "have we ever tried topk or cap where
 those not in the topk are zeroed? this feels more on-distribution". We have:
 it is the engine's `_respect_topk_fill` (`src/eval/ablation_faithfulness.py:267`,
 selected by `objective="free_mean_topk"`), and 027 R6a made freeM_topk the
@@ -409,9 +409,9 @@ R6a's pattern transfers: the fills agree at L6 and diverge with depth, and
 dense is the pessimistic one exactly where we were failing. It does not by
 itself rescue L15, and L3-empty moves the other way (a small circuit leaning
 on the dense fill). Fitting AGAINST the k-sparse floor is the real test
-(`FLOOR_MODE=topk`, both starts) — 2026-09-20 run.
+(`FLOOR_MODE=topk`, both starts).
 
-**FITTING AGAINST THE K-SPARSE FLOOR (2026-09-20, `FLOOR_MODE=topk`,
+**FITTING AGAINST THE K-SPARSE FLOOR (`FLOOR_MODE=topk`,
 `latent_circuits_tkfloor_theta{4,-4}.jsonl`, `latent_tkfloor_theta*.log`)** —
 clean error + cap+clamp, lam 1e-3, 2 fitted nulls, both starts:
 
@@ -449,7 +449,7 @@ clean error + cap+clamp, lam 1e-3, 2 fitted nulls, both starts:
 - Verdict: **keep the production dense floors for fitting, report freeM_topk /
   freeN_topk as the headline scores**, with the L15 exception recorded.
 
-**THE EVAL FAMILY, AMPLITUDE-AWARE (2026-09-20, `EVAL_FAMILY=1`,
+**THE EVAL FAMILY, AMPLITUDE-AWARE (`EVAL_FAMILY=1`,
 `family_*.jsonl/.log`)** — Daniel checked this port against the paper's Table 1
 and it was missing rows. Added: role-aware phi_cf^a and phi_sup (roles by
 attribution, sign of d seed / d w_i = grad x activation over train positives,
@@ -464,7 +464,7 @@ Trap found while building it: capturing the code and differentiating the seed
 w.r.t. it gives EXACTLY zero gradient, because the identity transform
 (c_hat - c) cancels; attribution has to differentiate a scaling weight instead.
 
-**WHAT THE EVAL FAMILY FOUND (2026-09-20, `family_*.jsonl`, `valratio_*.jsonl`,
+**WHAT THE EVAL FAMILY FOUND (`family_*.jsonl`, `valratio_*.jsonl`,
 `pin_activators.jsonl`)**
 
 1. **Role-aware phi_sup removes the sign flips.** Zeroing every member ignores
@@ -493,10 +493,10 @@ w.r.t. it gives EXACTLY zero gradient, because the identity transform
 Consequence: free scores alone OVERSTATE these Gemma circuits. Report phi_pin
 beside every free score. Substrate options: keep Gemma as the honest "what
 breaks on uncapped dictionaries" result, and/or train our own Top-K SAEs for
-Gemma 3 270M (the backup plan from 2026-09-17) — Gemma Scope 2's transcoders and
+Gemma 3 270M (the earlier backup plan) — Gemma Scope 2's transcoders and
 CLTs are JumpReLU too, so they would NOT fix this.
 
-**SPARSITY (2026-09-17, `sparsity_stats.py`, `.log`, `.json`)** — 16 x 256
+**SPARSITY (`sparsity_stats.py`, `.log`, `.json`)** — 16 x 256
 clean corpus tokens, BOS excluded, dictionary 16,384:
 
   kind  mean L0  % dict   p5   p95   max   >=50%-on latents  ever on

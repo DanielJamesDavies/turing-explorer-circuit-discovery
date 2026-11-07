@@ -1,4 +1,4 @@
-"""Protocol-v1 specificity diagnostic, amplifier flag and near-threshold stratum (DAN-73; protocol-v1.md §6, §7.1).
+"""Protocol-v1 specificity diagnostic, amplifier flag and near-threshold stratum (DAN-73; protocol.md §6, §7.1).
 
 The 062 run's ``experiments/056-specificity/specificity.py: score`` and the per-target flags of
 ``experiments/062-h100-protocol-v1/merge.py`` / ``pass_rule.py``, moved into src with an explicit interface.
@@ -16,7 +16,7 @@ Top-K cut, and the faithfulness of the target and of its siblings (latents in th
   near-threshold   rank_clean >= k / 2, k = the dictionary's Top-K k (per model: 128 TuringLLM, 32 GPT-2 small,
                    16 Pythia-70m). rank_clean = the median over the held-out anchors of the clean rank, uncapped
                    (a different "clean rank" from the fit's rank-keep, which ranks among the OTHER latents on
-                   training anchors and clamps at k; protocol-v1.md §10.3.4)
+                   training anchors and clamps at k; protocol.md §10.3.4)
 """
 
 from __future__ import annotations

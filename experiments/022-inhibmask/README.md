@@ -1,4 +1,4 @@
-# Inhibitor-mask — the "raise" objective (2026-08-02)
+# Inhibitor-mask — the "raise" objective
 
 Daniel's proposal, built and validated: the MIRROR of abl-mask. Where
 "pos" says *keep the seed at natural, pay for every latent you KEEP*
@@ -63,7 +63,7 @@ INHIBITORS; the rest are signed ACTIVATORS. Splitting the raise by
 label (T3, lambda 1e-3) shows both halves brake, and **the
 "activator"-labelled half brakes HARDER on 5 of 8 seeds** (L4-mlp: 0.228
 from the R_act half vs 0.063 from the R_inh half). Consistent with the
-2026-07-24 gradient-observability finding (sign is state-dependent to
+gradient-observability finding (sign is state-dependent to
 near-independence) and with D2.2's warning that "inhibitor" is a
 functional label, not an intrinsic property. An intervention-native
 definition of inhibitor is therefore NOT redundant with the
@@ -128,7 +128,7 @@ brake-native interventions reveal that it is finding real, specific,
 causally-validated structure. Any future "generalist" claim must
 therefore be judged on a matrix that includes a suppression column.
 
-## BRAKE vs CLOSURE OVERLAP (Daniel's question, 2026-08-02)
+## BRAKE vs CLOSURE OVERLAP (Daniel's question)
 
 Are the learned brakes among the latents abl-mask SETS TO ZERO, or among
 those it KEEPS? Theory predicts KEEPS: abl-mask's objective is MSE to
@@ -202,7 +202,7 @@ seed in the NATURAL stream (silence it -> seed rises 35%) and supports
 the seed in the ABLATED stream (delete it from the circuit -> seed dies).
 Both measurements are causal, held-out, and control-checked; they simply
 interrogate different states. This is the circuit-membership-level
-version of the 2026-07-24 gradient-observability finding (sign is
+version of the gradient-observability finding (sign is
 state-dependent to near-independence), and it is the strongest evidence
 yet that "activator" and "inhibitor" are properties of a
 (latent, context, intervention) TRIPLE rather than of a latent.

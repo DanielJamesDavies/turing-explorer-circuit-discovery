@@ -271,7 +271,7 @@ At every upstream site $s$, WCM sets $m_s = \sigma(\theta_s / T)$ and $\alpha_s 
 \end{aligned}
 \end{equation}
 where $z$ is the target's pre-activation $\preact$ at the anchors of the training contexts on the unmodified stream, $\tilde{z}_{\pi}$ its value under \eqref{eq:edit} with method $\pi$, and the means run over those anchors.
-% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1; exps 090/093): A and C trained under the scorer's fill
+% PROTOCOL v2 (2026-10-25, protocol.md §12.1; exps 090/093): A and C trained under the scorer's fill
 % (train_fill "sparse", sparse_grad "ste", train_means_source "eval_ref"). v1 trained them under a dense mean.
 Under A and C, training uses evaluation's sparsity-preserving fill (\cref{sec:eval-abl}), since circuits trained against a dense mean, a code no Top-K SAE produces, rely on a background that evaluation removes: at each position the members are kept and only the largest-mean non-members fill the rest of the Top-K, with straight-through gradients and evaluation's own means.
 
@@ -301,7 +301,7 @@ The ablation means are computed on training-split contexts only; the weights $\g
 
 % RESTRUCTURE 2026-10-12 (DAN-161 step 5): the evaluation-family table moved to app:protocol (after tab:protocol);
 % the necessity details, near-threshold and specificity definitions now live in its rows.
-% 2026-10-26 (protocol-v1.md §12.1, Daniel): two pass rates, never mixed inside one rule; pre-activation Z and
+% 2026-10-26 (protocol.md §12.1, Daniel): two pass rates, never mixed inside one rule; pre-activation Z and
 % necessity on a baseline of 0 (Z_pre = x / a_pos, nec_pre = (a_pos - x_removed) / a_pos). Placed here, not in the
 % pass-criterion paragraph, for the page budget (DAN-24).
 Every reported score is read on held-out contexts and reads the target's activation (after Top-K) in every term of its ratio, except a secondary pass rate: the pass rule on the pre-activation, with Z and necessity measured from $0$; the full evaluation family and its settings are in \cref{tab:semantics,tab:protocol}.
@@ -570,7 +570,7 @@ Not drawn: a generic core of $7$ latents and $682$ further latents, together $55
 % 2026-10-24 (paper prep, DAN-159/DAN-77): the pre-v1 22-target sentence and its \pending are replaced. Exact-patching
 % numbers: experiments/083-v1-comparison/exact_report.log (10 targets, training contexts, so unaffected by DAN-157).
 % DAN-148 (2026-10-27): the verdict moved into the heading; source labels (ten targets, 190 sweep targets) made explicit.
-On ten targets with exact patching, the median rank correlation with the exact effect is $0.86$ for attribution patching (AtP) and $0.71$ for integrated gradients (IG); on the $190$ sweep targets, \cref{app:method-comparison} compares both, hierarchical attribution, and ranked members given fitted coefficients with WCM at every size each produces \pending{verdict, DAN-159 and DAN-77}.
+On ten targets with exact patching, the median rank correlation with the exact effect is $0.86$ for attribution patching (AtP) and $0.71$ for integrated gradients (IG)~\citep{sundararajan2017axiomatic}; on the $190$ sweep targets, \cref{app:method-comparison} compares both, hierarchical attribution, and ranked members given fitted coefficients with WCM at every size each produces \pending{verdict, DAN-159 and DAN-77}.
 
 \subsection{A Circuit for Classical Antiquity Has a Readable Core}
 \label{sec:case-study}
@@ -711,11 +711,11 @@ TuringLLM, its synthetic training corpus, and the trained SAE bank are described
 \label{app:corpus}
 % 2026-10-27 (DAN-28): the four-subsection "Corpus and Model Details" appendix (corpus construction, architecture
 % table, loss curve, fitness grades, sample completions) is condensed to this card; removed text verbatim in
-% paper/resources/dan28-removed-appendix.md. Public-model facts: src/model/families.py, protocol-v1.md §9.2,
+% paper/resources/dan28-removed-appendix.md. Public-model facts: src/model/families.py, protocol.md §9.2,
 % Linear DAN-35 comments; public SAE quality: experiments/070-public-model-adapters/recon_*.json.
 
 \Cref{tab:model-cards} gives what the results depend on for each model.
-TuringLLM follows the GPT residual-stream design with SwiGLU MLPs and RMSNorm; it is meant as a subject whose training data is fully known, not as a strong model.
+TuringLLM follows the GPT residual-stream design with SwiGLU MLPs~\citep{shazeer2020glu} and RMSNorm~\citep{zhang2019root}; it is meant as a subject whose training data is fully known, not as a strong model.
 The public models and dictionaries are used as released, read at the hook points the dictionaries were trained on.
 
 \begin{table}[!ht]
@@ -776,7 +776,7 @@ Right: percentage of the cross-entropy gap recovered when splicing each SAE's re
 \section{Protocol}
 \label{app:protocol}
 % PROTOCOL v1 — the single place every reported number's settings are stated.
-% Mirrors paper/protocol-v1.md (DAN-7; table brought in line with the code 2026-10-07, protocol-v1.md §11). v1 = the existing
+% Mirrors paper/protocol.md (DAN-7; table brought in line with the code 2026-10-07, protocol.md §11). v1 = the existing
 % 15k settings (config.py defaults + config-h100-triamp.yaml) PLUS the
 % silence-checked "close" contrast contexts, the rank-keep term (gamma_R 3e-3) and
 % ablation means from the training split only. The existing 15k circuits are
@@ -859,7 +859,7 @@ Contrast contexts & 64 per target: candidates ranked by highest cosine similarit
 Anchor & position of the target's peak activation in each context \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Weighted circuit masking, WCM[Z+C+A]}} \\
-% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1): v1 trained A and C under dense means over the training contexts.
+% PROTOCOL v2 (2026-10-25, protocol.md §12.1): v1 trained A and C under dense means over the training contexts.
 Ablation methods & Z zero ablation (weight 1); C mean over contrast contexts ($\gamma_{\mathrm{C}} = 0.25$); A mean over activating contexts ($\gamma_{\mathrm{A}} = 0.25$), at every layer; A and C are trained under the evaluation's sparsity-preserving fill, bit for bit (\cref{app:respect-topk}), with straight-through gradients through the fill's selection, and with the evaluation's means (A over the reference contexts below, C over the 48 training contrast contexts) \\
 Objective & MSE to the target's natural pre-activation at the anchors, each term divided by one shared $\nu = \operatorname{mean}(\text{target}^2)$ \\
 Rank-keep & $\gamma_{\mathrm{R}} = 3 \times 10^{-3}$ on $\operatorname{relu}(\tau^{(r)} - \preact)^2$ inside every ablation term, $r$ the target's rank among its site's other latents at the training anchor in the unmodified model, capped at $K$ \\
@@ -868,12 +868,12 @@ Scaling coefficients & $\alpha = \mathrm{softplus}(\psi)$, $\alpha_0 = 1$; close
 Sparsity penalty & $\lambda = 10^{-3}$, flat per latent (TuringLLM). Public models: a 30-target pilot at three values (Pythia-70m $\{3 \times 10^{-4}, 10^{-3}, 3 \times 10^{-3}\}$, GPT-2 small $\{10^{-3}, 3 \times 10^{-3}, 10^{-2}\}$) under a rule stated before it: keep $10^{-3}$ unless the pooled median circuit size leaves $[100, 1000]$, else take the value whose median is nearest $494$ on a log scale; size only, never pass rate \pending{adopted $\lambda$ per public model, DAN-42} \\
 Optimiser & AdamW, learning rate $0.05$ (constant), weight decay $0.05$, 400 steps, batch 4 \\
 Execution & nodes recomputed from the edited stream; SAE errors preserved; every upstream site edited \\
-% 2026-10-26 (DAN-147 stage c, item 6): provenance and disjointness from protocol-v1.md §2, §9, §9.2, §10.1; wording for Daniel's review.
+% 2026-10-26 (DAN-147 stage c, item 6): provenance and disjointness from protocol.md §2, §9, §9.2, §10.1; wording for Daniel's review.
 Provenance & $\gamma_{\mathrm{C}} = \gamma_{\mathrm{A}} = 0.25$ at every layer is a protocol decision; $\gamma_{\mathrm{R}}$ comes from a sweep on 16 TuringLLM targets; $\lambda$ is calibrated on TuringLLM; the 400-step schedule is examined in the binarisation sweep (\cref{app:membership-studies}). TuringLLM: the calibration targets are not disjoint from the evaluation set; the pass rule was set on a $1{,}416$-target subset of the same frame. Pythia-70m and GPT-2 small: $\lambda$ comes from the 30-target pilot, disjoint from the 512 main targets, and every other setting carries over from TuringLLM unchanged \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Evaluation (\cref{sec:eval}), on the held-out contexts}} \\
 Reference contexts & the evaluation's A means, the anchor means set by sufficiency to induce, the specificity siblings, and the random-circuit pool are computed on the strongest training contexts (48 with a full pool) for every target, one reference whether or not the target trains on mid-band contexts; C means use the 48 training contrast contexts, as in training \\
-% 2026-10-26 (protocol-v1.md §12.1, Daniel): two reads, two pass rates, never mixed inside one rule. Baseline 0 for
+% 2026-10-26 (protocol.md §12.1, Daniel): two reads, two pass rates, never mixed inside one rule. Baseline 0 for
 % the pre-activation Z and necessity: with every upstream latent zeroed, a residual target's pre-activation is a
 % median ~190x its clean value, so (x - e0) / (a_pos - e0) is undefined for 91% of residual targets (v1 15k, 10 shards).
 Read & the headline pass rate reads the target's activation (after Top-K), in every term of every ratio; a secondary pass rate applies the same rule to the pre-activation, asking whether the circuit reproduces the target's input apart from whether the target then survives the Top-K competition. On that read Z and necessity are measured from a baseline of $0$, latent off ($\phi^{\mathrm{free}}_{\mathrm{Z}} = \hat{a}_C / \hat{a}_{\mathrm{pos}}$, $\phisup = (\hat{a}_{\mathrm{pos}} - \hat{a}_{M \setminus C}) / \hat{a}_{\mathrm{pos}}$, hats for pre-activations), because with every upstream latent zeroed a residual-stream target's pre-activation leaves its natural range and the empty-circuit form is undefined for most of them; A and C keep their mean-ablation baselines; for attention and MLP targets, where the empty circuit is well defined, the empty-circuit baseline is reported as a sensitivity check. The two reads are never mixed inside one rule. Training uses the pre-activation, which keeps a gradient where Top-K censors the activation \\
@@ -940,7 +940,7 @@ with $W_e^{(f)}$ the target's encoder row, $b_e^{(f)}$ its effective bias, and $
 The two gradient estimators share one path, from every upstream site's mean over the target's activating training contexts (its A ablation value, $\bar{c}^{s}$) to its natural code $c^{s}$, all sites interpolated together and held at their interpolated codes, and both multiply a gradient by $(c^{s} - \bar{c}^{s})$:
 \begin{itemize}
 \item \textbf{Attribution patching} (AtP) takes the gradient at the clean point, giving the first-order estimate of mean-ablating each latent~\citep{nanda2023attribution, syed2023attribution, kramar2024atp}.
-\item \textbf{Integrated gradients from the mean} (IG) averages the gradient over $10$ points of the path. It follows the $\mathrm{IE}_{\mathrm{ig}}$ node estimator of \citet{marks2025sparse}, the node-level, activation-space counterpart of EAP-IG~\citep{hanna2024faith}, in form but not in detail: theirs interpolates one submodule at a time with the rest of the model live (as in their released code), starts from a zero patch when no counterfactual exists, and scores the error terms as nodes.
+\item \textbf{Integrated gradients from the mean} (IG)~\citep{sundararajan2017axiomatic} averages the gradient over $10$ points of the path. It follows the $\mathrm{IE}_{\mathrm{ig}}$ node estimator of \citet{marks2025sparse}, the node-level, activation-space counterpart of EAP-IG~\citep{hanna2024faith}, in form but not in detail: theirs interpolates one submodule at a time with the rest of the model live (as in their released code), starts from a zero patch when no counterfactual exists, and scores the error terms as nodes.
 \end{itemize}
 The two differ only in where they linearise, with target, contexts, path, and selection held fixed.
 Two further baselines use them:
@@ -1113,7 +1113,7 @@ Attention outputs are the exception: $40\%$ of their circuits fail even zero abl
 Layer 0 departs from the trend ($55\%$): its circuits are faithful ($90\%$), but over a third ($37\%$) fail necessity, because the token embedding reaches layer-0 targets directly and is never ablated.
 
 \paragraph{Transfer to weaker contexts.}
-% 2026-10-09 (protocol-v1.md §3.6): the 58 padded mid-band rows were re-scored with the explicit split
+% 2026-10-09 (protocol.md §3.6): the 58 padded mid-band rows were re-scored with the explicit split
 % (062 rescore_mid.py, out_rescore_mid/). One row flips fail -> pass: 12.09% -> 12.10%, median worst-of-3 0.774
 % unchanged, so the 12% and 0.77 below stand.
 On the held-out mid-band contexts, where targets fire more weakly, $12\%$ pass (median largest deviation $0.77$, against $0.31$ on the strongest contexts), so circuits fitted mostly to strong contexts transfer only in part to weak ones: a circuit is a circuit for the regime it was fitted in.
@@ -1130,14 +1130,14 @@ Holding attention patterns at their clean values does not rescue them ($5$ of $1
 Near-threshold targets are a separate case, largely a Top-K censoring effect: their clean margin above the first excluded latent is $25\%$, against $81$--$91\%$ for other targets, and over all $1{,}142$ of them the pre-activation read gives median faithfulness $0.93$ under zero ablation but only $0.50$ and $0.42$ under the two mean ablations, so the read explains their zero-ablation failures but not all of their mean-ablation ones.
 
 \paragraph{Two pass rates.}
-% 2026-10-26 (protocol-v1.md §12.1, Daniel; stated before any v2 production fit). Fill from the v2 8k scorer output
+% 2026-10-26 (protocol.md §12.1, Daniel; stated before any v2 production fit). Fill from the v2 8k scorer output
 % (*_tk and *_pre columns; free0_raw_pre, a_pos_pre, phi_sup_blind_raw_pre). v1 15k, for the v1-vs-v2 record only:
 % near-threshold 1,142 targets (1,134 attention), 0.8% post-Top-K, 10.9% pre-activation (pre Z in band 80%, A 25%, C 20%).
 The headline pass rate reads the activation; the secondary one applies the same rule to the pre-activation read, with $0$ as the Z and necessity baseline (\cref{tab:protocol}), and asks whether a circuit reproduces its target's input whether or not the target then survives the Top-K competition.
 Over all targets the pre-activation pass rate is \pendingcell\% against \pendingcell\% for the headline, and among targets outside the near-threshold stratum \pendingcell\% against \pendingcell\%.
 Of the \pendingcell{} near-threshold targets, \pendingcell\% pass both rules, \pendingcell\% the pre-activation rule only, \pendingcell\% the activation rule only, and \pendingcell\% neither.
 With the empty-circuit baseline in place of $0$, for attention and MLP targets only, the pre-activation pass rate is \pendingcell\%.
-\pending{every value above, with intervals and by depth band and site kind, from the v2 8k run's two reads, \texttt{protocol-v1.md} \S12.1}
+\pending{every value above, with intervals and by depth band and site kind, from the v2 8k run's two reads, \texttt{protocol.md} \S12.1}
 
 % APPENDIX CUTS 2026-10-12 (tier 2): circuit sizes, sufficiency to induce by site kind, and training dynamics moved
 % here from app:weighted-details (they describe the production run); the short duplicate summary was dropped.
@@ -1764,7 +1764,7 @@ At scale (32 targets, paired) the sparsity-preserving variant does not systemati
 It therefore functions as a cleaner protocol rather than a score inflator; but at small node sets and tight Top-K budgets the two variants can disagree on \emph{rankings}, which is why the body's comparisons name their ablation method.
 % data: analysis-restyled/respect-topk-sweep/
 
-% PROTOCOL v2 (2026-10-25, protocol-v1.md §12.1). Evidence: exp 090 (20 targets enriched for failures, rule pass 7/20
+% PROTOCOL v2 (2026-10-25, protocol.md §12.1). Evidence: exp 090 (20 targets enriched for failures, rule pass 7/20
 % dense -> 15/20 v2) and exp 093 (72 paired targets, 31 -> 50 of 72, +26.4 pp [15.3, 38.9], paired median dZ 0.00).
 % Code: src/circuit/instrument/learned_mask.py (sparse_keep_mask, sparse_code), WCM_VERSION=v2 in 062/driver.py.
 \paragraph{The same fill in training.}

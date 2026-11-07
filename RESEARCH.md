@@ -1,117 +1,79 @@
-# Research Overview: Sparse Latent Relationships in Language Models
+# Research overview
 
-A brief description of the research programme implemented in this repository — what it studies, what is new, how it works, and how results are evaluated.
+This repository is the code for *What Makes a Latent Fire? Discovering Causal Dependencies Between Sparse
+Autoencoder Latents* (Davies and Liu; draft in `paper/main.tex`). This page gives the question, the claims and the
+limits. `README.md` covers the method in brief and how to run it; `paper/protocol.md` §0 and
+`docs/wcm-specification.md` give the exact specification.
 
----
+## The question
 
-## One-Paragraph Summary
+Circuit discovery usually explains an output: a logit, a probability, a behavioural metric. An output is the
+model's computation expressed in our vocabulary, and many internal variables never show up as a token. Sparse
+autoencoder (SAE) latents are an imperfect but useful sample of a model's own variables, learned without labels.
+So we ask, for one target latent: **which upstream latents make it fire?**
 
-This project studies **circuit discovery over sparse autoencoder (SAE) latents** in TuringLLM, a 12-layer, 254M-parameter transformer trained on a fully documented synthetic corpus. Prior circuit methods (Sparse Feature Circuits, Attribution Graphs) select a *behavioural or logit-level endpoint* — even when that endpoint is automatically discovered — and identify features contributing to it. This project instead uses a **sparse internal feature as the endpoint**: for a given seed SAE latent, which other latents can causally increase, suppress, or sustain its activation? The system discovers these **signed local causal dependency neighbourhoods** at scale, without externally specified behavioural tasks, and validates every candidate by its ability to manipulate the target latent on probe contexts.
+Earlier work on internal targets attributes upstream of a chosen latent and thresholds the scores, ablates one node
+at a time, or regresses. We instead *optimise* a circuit of upstream latents for a single target latent, and test it
+by ablating everything outside the circuit and measuring that latent.
 
-## Research Framing
+## The method: weighted circuit masking (WCM)
 
-Outputs are filtered summaries of computation, not the whole computation. A model computes many internal variables that never surface cleanly as a single behaviour, so circuit analysis rooted at behavioural or logit endpoints — even automatically discovered ones — only reaches the internal variables that happen to project onto those endpoints. SAE latents — imperfect but empirically meaningful — provide a sample of the model's internal ontology. The central question:
+Every latent at every SAE site upstream of the target gets a gate (in or out of the circuit) and a coefficient α
+(how strongly it acts). Both are trained so that the circuit alone reproduces the target's pre-activation while every
+non-member is ablated in four ways: set to zero, set to the activating-context mean, set to the contrast-context mean
+(contexts where the target is verified silent), or resampled from a real contrast context. A sparsity price on open
+gates keeps the circuit small. The result is a set of members, each with its α; the two are always reported together.
 
-> Instead of only asking which features caused an output, can we map which features cause **other features**, building a dependency graph over the model's own learned variables — and do those graphs survive causal intervention?
+Each circuit is scored on held-out contexts for faithfulness under the zero and mean ablations, and for necessity
+(removing the members from the live model removes the target). It passes only if all of these hold at once.
+Sufficiency to induce (setting the members' values turns on a silent target) and a donor-background test with real
+contexts in place of means are reported alongside. The unweighted control fixes α = 1.
 
-## Key Contributions
+## What the paper claims
 
-1. **Latent-as-endpoint circuit discovery.** A pipeline that treats every SAE latent as a first-class explanandum — requiring no externally specified behavioural task — rather than rooting analysis at a behavioural or logit-level endpoint. The claim is context-conditioned, intervention-tested *control* relationships between latents — not a static compatibility matrix or co-occurrence structure.
-2. **A causal role taxonomy with matched discovery methods.** Three operational node roles, each discovered by gradient attribution under a different regime:
-   - **Counterfactual activator** — absent on negative contexts; would push the seed toward firing if active.
-   - **Counterfactual inhibitor** — present on negative contexts; actively suppresses the seed.
-   - **Ablation support** — present on positive contexts; necessary to maintain the seed's activation.
-3. **Negative-context construction as a first-class variable.** Hard negatives are retrieved by exact cosine k-NN search over mean-pooled final-layer residual representations (semantically similar sequences expected to lack the seed's activation — membership in the stored positive contexts is excluded, but seed inactivity is not verified), and the choice of negative regime (`close` / `random` / `distant`) is studied experimentally. Early finding: semantic closeness and clean causal contrast are not the same thing.
-4. **Seed pre-activation attribution (`SeedProjectionInstrument`).** On contrast sequences the seed is typically absent from SAE top-k, so its sparse activation carries no gradient. Attribution instead targets the seed's *encoder pre-activation* computed directly from the SAE input, keeping gradients alive when the seed never fires.
-5. **Intervention-based evaluation matched to the latent endpoint** — counterfactual faithfulness and positive-context suppression — rather than borrowing output-level metrics that do not fit the target.
-6. **A reproducible laboratory**: a controlled model + SAE bank + known training corpus, a multi-pass data-collection pipeline, 17 discovery methods under one interface, and post-hoc structural analysis (motifs, commonality, supercircuit composition).
+1. **Circuits for arbitrary latents, at scale.** WCM needs no behavioural task and applies to any latent in an SAE
+   bank. On thousands of randomly sampled TuringLLM latents, at one sparsity price, it finds circuits of 10^2 to 10^3
+   upstream latents that pass the joint held-out test for a large share of targets. Random circuits of the same size,
+   given the same coefficient fitting, do not pass.
+2. **Coefficients keep circuits small.** With α fixed at 1 the same members almost never pass, and the smallest
+   passing unweighted circuits for deep targets are about ten times larger, with fewer deep targets passing at all.
 
-## The System
+The pass rate is one point on a size trade-off, not a ceiling: a weaker price gives larger circuits that pass more
+often. Residual-stream targets pass most often and attention outputs least. The final numbers, including Pythia-70m
+and GPT-2 small, are in the paper.
 
-### Substrate
+## Other findings worth knowing
 
-| | |
-|---|---|
-| Model | TuringLLM (12 layers, d_model 1024, 16 heads, 254M params, 1024 ctx) |
-| Training data | ~2B tokens, fully synthetic and documented |
-| SAE bank | 36 SAEs (attn / mlp / resid × 12 layers), dictionary 40,960, Top-K = 128 |
+- **The contrast set matters.** Circuits trained against close contrast contexts (near the target's topic) generalise
+  worst to other backgrounds. Production keeps close contexts so that the model is the only change between models;
+  for new work, random or distant contrast contexts are the better default.
+- **Node sets are not unique.** A refit that passes about as often shares roughly two thirds of the original members,
+  so we report sizes and scores, not single memberships.
+- **Comparisons use other papers' methods as published**, on their own substrates, with WCM run there too
+  (`experiments/107-true-baselines/`).
 
-### Pipeline (six stages)
+## Why a controlled model
 
-1. **Pass 1 — latent statistics & contexts.** Welford activation statistics, top-activating and mid-band reservoir contexts, top predicted tokens, and pooled residual sequence representations, collected across dataset shards.
-2. **Negative-context construction.** Pure-PyTorch exact cosine k-NN search (chunked GPU matmul over a per-latent positive-centroid query) finds sequences semantically close to each latent's positive contexts that are not among its stored positives.
-3. **Pass 2 — co-activation graph.** Top co-activating latents per latent, scored raw, frequency-weighted, or PMI-clamped.
-4. **Candidate selection.** Activity- and frequency-filtered seed latents chosen for discovery.
-5. **Discovery.** One or more of 17 methods per seed (below).
-6. **Evaluation & post-analysis.** Intervention scoring, minimality pruning, then structural analysis of accepted circuits.
+The primary model, TuringLLM, is a 12-layer, 254M-parameter transformer trained from scratch on ~2B tokens of
+documented synthetic educational text, with our own bank of 36 Top-K SAEs. A model whose training data is known is a
+more tractable subject than one trained on an opaque crawl. Pythia-70m and GPT-2 small with public SAEs test whether
+the results carry over.
 
-### Discovery Methods (grouped)
+## Limits
 
-| Family | Methods | Evidence used |
-|---|---|---|
-| Statistical baselines | `coactivation_statistical`, `neighborhood_expansion` | Co-activation thresholds / two-hop structure; no gradients |
-| Sparse expansion | 7 `*_top_coact_sparse_expansion` variants, `hard_negative_coact_sparse_expansion` | Variable-depth BFS over the co-activation graph, kind-targeted with passthrough; hard-negative variant adds gradient-validated inhibitors |
-| Output attribution | `logit_attribution`, `sfc_attribution_patching`, `top_coact_attr` | activation×gradient to logits; SFC-style integrated-gradient nodes + delta×gradient edges |
-| Upstream tracing | `gradient_upstream`, `layerwise_gradient_upstream` | Multi-hop / layerwise backward attribution against the seed's activation |
-| Contrastive (core contribution) | `differential_activation`, `counterfactual_gradient`, `ablation_gradient`, `hybrid_gradient` | Pos/neg contrast scans; gradient attribution on negative contexts (activators + inhibitors); ablation-benefit scoring on positive contexts (supports); circuit-level fusion of both with re-evaluation |
-| Global baseline | `circuit_tracer_baseline` | SAE-adapted Attribution-Graphs method: direct-effects matrix + Neumann-series influence propagation, fraction-based pruning |
+- Models of at most 254M parameters, and Top-K dictionaries only. On dense ReLU dictionaries the method runs, but a
+  random circuit with fitted coefficients stops being a discriminating control.
+- TuringLLM's synthetic corpus aids control but limits generality.
+- Memberships are not unique (above), so a circuit is a sufficient-and-necessary set, not *the* mechanism.
+- Circuits are sets with coefficients. Edges between members (`experiments/057-wcm-edges/`) and recursive tests
+  (`experiments/099-recursive-causal-scrubbing/`) are exploratory, not claims.
 
-The pluralism is deliberate: no single notion of "relevant feature" is trusted, and simple statistical baselines act as reference points for the gradient methods.
-
-### Evaluation
-
-Output-level (shared by logit-rooted methods):
-
-| Metric | Definition |
-|---|---|
-| Faithfulness | `1 − MSE(circuit logits, original) / MSE(baseline logits, original)`; baseline is zero- or neg-ctx-mean ablation |
-| Kind-local faithfulness | Faithfulness with only target SAE kinds patched (gate for sparse-expansion family) |
-| Sufficiency | Target-token probability preserved under circuit-only execution |
-| Completeness | `1 − faithfulness(complement)` — does removing the circuit degrade the model? |
-| Minimality | Leave-one-out pruning of redundant nodes |
-
-Latent-level (matched to the contrastive family's endpoint):
-
-| Metric | Question it answers |
-|---|---|
-| Upstream faithfulness | Does the circuit recover the seed's activation (not just the output)? |
-| Counterfactual faithfulness | On contrast contexts, does injecting discovered activators and suppressing inhibitors make the seed fire as on positive contexts? |
-| Pos-ctx suppression score | On positive contexts, does suppressing activators / injecting inhibitors silence the seed? |
-
-Acceptance gates are per-method: `counterfactual_gradient` gates on counterfactual faithfulness, `ablation_gradient` on suppression, `hybrid_gradient` on a configurable combination.
-
-## Empirical Findings So Far
-
-- A full H100 run produced **7,525 accepted circuits** across seeds and methods, with a complete analysis catalogue (`paper/analysis-catalogue.md`).
-- **Co-activation structure alone does not explain circuits.** Latent co-activation profiles are near-orthogonal (PC1+PC2 ≈ 3% variance); overlap between discovered circuits and seeds' co-activation neighbourhoods is low (~3.6%) and uncorrelated with faithfulness. Faithful causal circuits are not local co-activation neighbourhoods.
-- **Negative-context regime matters.** Random negatives can outperform semantically-close ANN negatives for counterfactual discovery — evidence that "close" negatives are not verified clean counterfactuals (they may contain partial activators or off-store seed activity).
-- **Exact latent reuse across circuits is real but hub-dominated.** ~233 non-seed latents appear in ≥15% of circuits, overwhelmingly early-layer counterfactual inhibitors — motivating hub-corrected, causally validated motif analysis rather than raw commonality counts.
-- **Current gradient circuits are one-hop stars** (`upstream latents → seed`), motivating the supercircuit-composition work below.
-
-## Known Limitations & Open Questions
-
-- **Pre-activation is a surrogate for firing.** With Top-K SAEs, a high encoder pre-activation does not guarantee the latent wins a top-K slot and actually activates. `SeedProjectionInstrument` therefore attributes through a continuous surrogate of a discrete firing event. A dedicated validation is planned: does selecting nodes by pre-activation attribution reliably cause *actual top-K entry* of the seed under intervention, compared against direct activation gradients, straight-through estimators, and finite-difference interventions?
-- **Star topology.** Accepted circuits are one-hop attribution neighbourhoods; multi-hop causal chains are composed, not yet directly discovered, and require propagation-validated intervention tests.
-- **Metric comparability.** MSE-ratio faithfulness is nonstandard; KL-based metrics are planned so results can be compared against SFC / Attribution Graphs conventions.
-- **Generic-inhibitor risk.** High-commonality early-layer inhibitors may be objective artifacts (any generic suppressive direction moves the pre-activation loss); per-latent null tests are needed.
-- **Single custom model.** The controlled testbed is a deliberate design choice (fully known training distribution), but replication on a public model + public SAEs, or release of the model/SAE bank/dataset, is needed for external comparability.
-- **SAE error terms.** Reconstruction residuals are preserved as anchors during instrumentation, but the causal share absorbed by residuals is not yet quantified against circuit claims.
-
-## Direction
-
-1. **Composed supercircuits** — splice circuits whose seeds appear as nodes in other circuits into multi-hop graphs, then validate that interventions at the earliest nodes propagate through intermediates to the final seed (`dev-notes/composed-supercircuit-analysis.md`).
-2. **Causally validated motifs** — mine recurring 2–3-node signed subgraphs across circuits, scored by lift over role/layer/kind-preserving null models and by motif-only sufficiency / motif-removal damage (`dev-notes/circuit-motif-and-cohesion-analysis.md`).
-3. **Graph-replacement and complement-ablation scores at the latent level** — stronger sufficiency/necessity claims than inject/suppress alone.
-4. **Evaluation hardening** — strict held-out context splits (contexts split *before* discovery, threshold selection, and pruning); matched null controls (random latents matched on layer, kind, activation frequency, decoder norm); dose–response and reversed-sign intervention checks for each predicted activator/inhibitor role.
-5. **Metric comparability and a public-model replication** — KL-based faithfulness alongside the MSE ratio, and a smaller replication of the counterfactual / ablation / hybrid comparison on a public model with public SAEs.
-
-## Where to Look
+## Where to look
 
 | Topic | Location |
 |---|---|
-| Full system description | `docs/description.md`, `docs/concise_description.md` |
-| Method implementations + docs | `src/circuit/discovery/`, `src/circuit/discovery/METHODS.md` |
-| Evaluation implementations | `src/eval/` |
+| Method in brief, install, run | `README.md` |
+| Exact specification (code-cited) | `docs/wcm-specification.md`, `paper/protocol.md` §0 |
 | Paper draft | `paper/main.tex` |
-| Run analyses & figures | `paper/resources/analysis-catalogue.md` (local, git-ignored) |
-| Research notes & plans | `dev-notes/`, `docs/ideas.md`, `agent-planning/` |
+| WCM engine and evaluation | `src/circuit/instrument/learned_mask.py`, `src/eval/wcm_eval.py`, `src/eval/donor_test.py` |
+| Experiments | `experiments/INDEX.md`; the current ones are listed in `README.md` |

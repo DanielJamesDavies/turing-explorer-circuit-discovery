@@ -1,4 +1,4 @@
-# D1 — Driver bake-off (completed 2026-07-31 14:45; 280 rows, 11 seeds)
+# D1 — Driver bake-off (280 rows, 11 seeds)
 
 Frozen driver exam (48/16 held-out split, pin0 metrics, calibrated
 imposition, random controls) over 7 arms x K in {64,256,1024,4096}.

@@ -1,6 +1,6 @@
 # 081 — Task circuits on GPT-2 small: WCM with an output endpoint on the original task datasets
 
-2026-10-19, reworked 2026-10-21 (Daniel's review). Linear **DAN-177**. Companion to **080** (latent- vs output-targeted
+Reworked after Daniel's review. Linear **DAN-177**. Companion to **080** (latent- vs output-targeted
 circuits).
 
 **Question.** Does weighted circuit masking (WCM), run under protocol-v1 conventions with the model's OUTPUT as the
@@ -9,7 +9,7 @@ it finds look like the circuits the papers published? It tests the paper's two c
 - **claim 1:** WCM finds faithful circuits, and random circuits with fitted coefficients fail;
 - **claim 2:** fitted coefficients keep circuits small.
 
-**Why GPT-2 small (changed 2026-10-21).** 047 found that TuringLLM has neither IOI (p(IO) ~ 1e-4) nor induction (no
+**Why GPT-2 small (changed in the rework).** 047 found that TuringLLM has neither IOI (p(IO) ~ 1e-4) nor induction (no
 in-context copying), so two of the canonical tasks could only be reported as absent. GPT-2 small is the model the
 published IOI (Wang et al.) and greater-than (Hanna et al.) circuits were found in, so structure can be checked against
 them head by head. `MODEL=gpt2-small` is the default. `MODEL=turingllm` still works (tasks are generated for it too),
@@ -20,10 +20,10 @@ the actual next token) and compares them with the latent circuits. 081 fits them
 scope, a contrastive task metric) and checks them against published circuits. The two share the engine changes, the
 `gap` normaliser and the fit conventions. 081 imports 080's `common.py` for the matched-size helpers.
 
-**Status.** Code, tests, data and task generation are done (CPU). 2026-10-21 (Daniel's decision): full datasets with
+**Status.** Code, tests, data and task generation are done (CPU). Daniel's decision: full datasets with
 their natural split instead of 320-item subsamples, at protocol v1's unchanged budget of 400 steps x batch 4 (see
-**Splits**). **2026-10-27: first GPU run, under protocol v2, on IOI, greater-than and some secondary tasks; see
-"v2 local run (2026-10-27)" at the end. 081 now runs under WCM_VERSION=v2 by default.**
+**Splits**). **First GPU run, under protocol v2, on IOI, greater-than and some secondary tasks; see
+"v2 local run" at the end. 081 now runs under WCM_VERSION=v2 by default.**
 
 ## Model and dictionaries
 
@@ -61,7 +61,7 @@ Prompts are right-padded at load time with a per-row anchor, never left-padded (
 prepended (the SAEs were trained without one). Downloaded code is read as data: list literals are extracted with `ast`
 and nothing is imported or executed.
 
-Counts are the 2026-10-21 regeneration (`make_tasks.py`, GPT-2 tokenizer): train = the whole training pool, held = the
+Counts are the latest regeneration (`make_tasks.py`, GPT-2 tokenizer): train = the whole training pool, held = the
 held-out set after the 5,000 cap (uncapped size in brackets where the cap bites).
 
 | task | source (original) | prompt -> good vs bad | C (contrast) | split | train / held | groups | len |
@@ -105,16 +105,16 @@ Notes:
   - Answer tokens are the stand-alone encodings of "00".."99" (all single GPT-2 tokens), as Hanna / ACDC define them.
 - **Gendered pronoun.** These are the original data, found in the hackathon notebook. Their baseline was built only for
   the first template; here it is applied to all five. Their notebook used a BOS; this experiment does not.
-- **Dropped from 2026-10-19:**
+- **Dropped from the first version:**
   - the from-memory template recreations, replaced by the originals;
   - the hand-written capitals task, replaced by ROME's `known_1000.json`;
   - the "answer-flipped prefix" BLiMP counterfactual, replaced by the generated contrast set.
 - **MIB's IOI split: not added.** The authors' own templates, names and ABC distribution are used directly, so a
   further benchmark split would add a second IOI variant without adding a published circuit to compare against.
 
-## Splits (2026-10-21: full datasets, natural split)
+## Splits (full datasets, natural split)
 
-**Decision (Daniel, 2026-10-21).** Use every item of each dataset with its natural split, and keep protocol v1's
+**Decision (Daniel).** Use every item of each dataset with its natural split, and keep protocol v1's
 training budget of 400 steps x batch 4.
 
 **What other circuit papers do:**
@@ -140,7 +140,7 @@ cycled in reshuffled epochs.
   prompts of every training item, or the generated contrast pool. Both are averaged over real prompt tokens, computed
   once per task (`engine.means`, chunks of 64 prompts) and passed to the engine and the scorer
   (`floor_means` / `pos_floor_means`, `means_A` / `means_C`).
-- Before 2026-10-21 the engine's internal 25% holdout also took a quarter of the training items out of training and out
+- Before the rework the engine's internal 25% holdout also took a quarter of the training items out of training and out
   of the A and C means.
 
 **Held-out sets:**
@@ -204,7 +204,7 @@ All metrics are read at the prompt's last token, and higher means more correct (
 **Greater-than.** The pass rule is applied to Hanna's probability difference. The fit reproduces its log-odds form,
 which is bounded and has the same sign. Both are scored on every circuit (`task_*` and `obj_*` fields).
 
-**Multi-token answers** (2026-10-21) are teacher-forced:
+**Multi-token answers** are teacher-forced:
 - each item becomes a (good, bad) row pair, each row = prompt + its answer[:-1];
 - log-probs are read at positions anchor + k and summed;
 - the pair's difference is the item's value.
@@ -251,7 +251,7 @@ prompt tokens only (`collect_site_means(valid=...)`, the engine's `pos_valid` / 
 
 ROME's facts and BLiMP's minimal pairs have no counterfactual prompt. Their C ablation uses a contrast pool generated
 from the same dataset by `prepare.py`. It mirrors protocol v1's "close, verified silent" rule for latents:
-- **candidates:** the other TRAINING prompts of the same dataset or subset (since 2026-10-21 the whole training pool:
+- **candidates:** the other TRAINING prompts of the same dataset or subset (since the rework the whole training pool:
   690-908 prompts under GPT-2). A held-out prompt never enters C, and neither does a prompt from the item's own group.
   - The embeddings are computed once per task.
   - The cosine ranking is built in row chunks and keeps each item's 32 closest.
@@ -329,13 +329,13 @@ SFC's own agreement data covers that phenomenon instead.
 - ranked by qualifying pairs;
 - at most 2 per phenomenon;
 - at most 8 in total;
-- every qualifying pair of each (since 2026-10-21), split 75 / 25 by prefix.
+- every qualifying pair of each (since the rework), split 75 / 25 by prefix.
 
 That gives 8 subsets over 5 phenomena. **Contrast:** BLiMP pairs share their prefix, so C is the generated pool.
 
-## Registered predictions (re-registered 2026-10-21, before any run)
+## Registered predictions (re-registered before any run)
 
-These supersede the 2026-10-19 registration. That one was written for TuringLLM and the from-memory tasks; no run
+These supersede the first registration. That one was written for TuringLLM and the from-memory tasks; no run
 happened under it. `report.py` prints every verdict.
 - **T1. Competent tasks get W circuits that pass the v1 rule at some λ.** Held-out items, full rule (Z, A_sp, C_sp,
   necessity).
@@ -452,14 +452,14 @@ Useful variables:
 **`src/` changes**, all additive and off by default:
 - `eval/floors.py`: `valid=` masks for the A / C means.
 - `circuit/instrument/learned_mask.py`:
-  - `logit_metric` "token" (default) | "set" | "seq" (2026-10-21: teacher-forced multi-token answers as (good, bad)
+  - `logit_metric` "token" (default) | "set" | "seq" (teacher-forced multi-token answers as (good, bad)
     row pairs);
   - `pos_valid` / `neg_valid`;
-  - (2026-10-21) `floor_means` / `pos_floor_means`: precomputed C / A floors, None = collected as before; provenance
+  - `floor_means` / `pos_floor_means`: precomputed C / A floors, None = collected as before; provenance
     `floors_precomputed`.
 - `eval/wcm_eval.py`: `score_task` (now including `seq_diff`), `passes_task`, `task_metric`, `read_rows`,
   `answer_logprob`, `pair_diff`, `read_anchor_logprobs`.
-  - (2026-10-21) `score_task(means_A=, means_C=)`: precomputed A / C values, None = collected as before.
+  - `score_task(means_A=, means_C=)`: precomputed A / C values, None = collected as before.
   - Each frame's [n_ho, vocab] log-probs are now reduced to per-item values as soon as they are read. Host memory is
     one frame (~1 GB at 5,000 held-out items), not nine; the numbers are unchanged (the existing tests pass as
     before).
@@ -476,7 +476,7 @@ b1·sites). Extrapolated to **48 masked sites at 400 steps**:
   - GPT-2 small is smaller than TuringLLM (d_model 768), and the task prompts are 1–31 tokens, so these are upper-end
     numbers.
   - The 48 float32 dictionaries are a new memory cost (~9.7 GB resident).
-  - **2026-10-21:** the training budget is unchanged (400 × 4). The engine's pre-passes (natural targets and the gap
+  - The training budget is unchanged (400 × 4). The engine's pre-passes (natural targets and the gap
     normaliser's two closed-mask passes) now run over the 1,600 presented rows instead of 180, which adds an
     estimated 20–35%: **≈ 125–155 s per fit**.
 - **Per scoring pass:** ~1.5–6 ms per held-out row with all 48 sites edited. This is bounded below by 080's fit
@@ -535,7 +535,7 @@ b1·sites). Extrapolated to **48 masked sites at 400 steps**:
 - **Precision.** Fits run in float32 by default (~9.7 GB of dictionaries). On a 16 GB card a deep fit may be tight;
   `DTYPE=bfloat16` is the fallback, and a precision change has to be stated with the results.
 
-## v2 local run (2026-10-27)
+## v2 local run
 
 The first GPU run of 081, under protocol v2, on the RTX 5070 Ti (float32). It was stopped early (token budget), so it
 covers IOI and greater-than in full and gender_pronoun's W arm only. Tables: `out_v2/tables.md` (from `v2_tables.py`),

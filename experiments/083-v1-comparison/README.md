@@ -1,6 +1,6 @@
 # 083: the v1 method comparison (DAN-159, DAN-43, DAN-77)
 
-Built 2026-10-23, re-scoped 2026-10-24 to Daniel's DAN-159 decisions. Plan: `dev-notes/2026-10-23-pod-plan-public-models.md`
+Re-scoped to Daniel's DAN-159 decisions. Plan: `dev-notes/2026-10-23-pod-plan-public-models.md`
 §4.2. **Nothing here has run on the 190 targets yet**; the smoke runs (below) are CPU only.
 
 ## Design: curve-first
@@ -25,7 +25,7 @@ truncated at the W_0.001 size under each ranking, and DAN-43 at α = 1 and fitte
 λ (Daniel's choice over size matching); the nearest-size match is printed only as a note (no unweighted price on the
 grid is as small as WCM: the nearest is U_0.001 for 99% of the 190 targets, at a median 1.85× the WCM size).
 
-Dropped on 2026-10-24: the restoration row, the contrastive `ig_mean` row and the `ctr_ig_c` variant.
+Dropped in the re-scope: the restoration row, the contrastive `ig_mean` row and the `ctr_ig_c` variant.
 
 ## What it resolves in the paper
 
@@ -64,7 +64,7 @@ All discovery runs on each target's v1 **training** contexts (the first `n_train
   binarisation, production config through `Runner.fit`). IG is kept as the source because AtP is its one-point
   linearisation; `FIT_FROM=abl_ig:max,atp:max` adds AtP as a second source (+2.6 local-h) if the AtP rows beat IG.
 
-- **Activation-ranked members + fitted coefficients** (Daniel, 2026-10-24; `attr_fitted.py`, `FIT_FROM=act:mean,act:coact`):
+- **Activation-ranked members + fitted coefficients** (Daniel; `attr_fitted.py`, `FIT_FROM=act:mean,act:coact`):
   the no-gradient heuristic. At each upstream site, latents ranked by their mean post-Top-K activation at the
   target's anchor over the training contexts (`act:mean`, primary), or by the Pearson correlation of that anchor
   activation with the target's own across contexts (`act:coact`, the co-activation variant; latents never active
@@ -137,7 +137,7 @@ backward work):
 | exact patching, 10 targets, subset candidates (≤ 5,000 × 48 contexts ≈ 240k patched rows, est. ~0.75 ms/row on a GPU) + IG/AtP + 2 scores + 1 fit | ~5 min per target → ~1 local-h |
 
 **8×H100 (pod)**: at the plan's r = 2.0 (one H100 under MPS ≈ 2 local processes; range 1.5–2.7), 51 / (8 × 2) ≈
-**3.2 h wall (2.4–4.3 h), ~26 GPU-h, ≈ $80 at the plan's ~$25/h for 8 GPUs**, plus ~0.2 h for the exact stage,
+**3.2 h wall (2.4–4.3 h), ~26 GPU-h**, plus ~0.2 h for the exact stage,
 start-up and stage tails. P = 4 per GPU (a ~13 GB bank per process; Ge holds a full-depth graph per chunk).
 `SCORE_POINTS=final` saves ~0.2 h; `RANKINGS=max,sfc` saves ~1/6 of the attr scoring.
 
@@ -151,7 +151,7 @@ the estimate, as asked).
 A CPU run of the 190 is not feasible (10 IG steps, 400 fit steps, up to 35 sites, ~60 scores per target at 54–166 s
 each on CPU).
 
-## Smoke evidence (CPU, 2026-10-24, `out_smoke/`, `CTX_DIR` = the as-run ctx dir to exercise the CTX_DIR path)
+## Smoke evidence (CPU, `out_smoke/`, `CTX_DIR` = the as-run ctx dir to exercise the CTX_DIR path)
 
 One shallow target, `0.resid.4723` (39 WCM members), IG 2 steps, Ge 2 bisection steps, 4 fit steps, sizes W_0.001
 and W_0.004; every stage ran end to end (ref, attr, fitted, exact, ge, table, exact report), resumed through four OOM

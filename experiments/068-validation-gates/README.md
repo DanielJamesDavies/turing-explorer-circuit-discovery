@@ -1,11 +1,11 @@
 # 068 — validation gates for the public-model and TuringLLM runs (DAN-36, DAN-74)
 
-2026-10-09. Two gates before the H100 runs (Pythia-70m and GPT-2 small, 1,024 targets each, through the 070
+Two gates before the H100 runs (Pythia-70m and GPT-2 small, 1,024 targets each, through the 070
 adapters):
 
 - **DAN-36**: the production engine on a public model agrees with code already verified (033's standalone Pythia
   implementation).
-- **DAN-74**: HEAD still reproduces the TuringLLM 15k-circuit run (062 `out_full`) after today's src changes.
+- **DAN-74**: HEAD still reproduces the TuringLLM 15k-circuit run (062 `out_full`) after the latest src changes.
 
 | File | Gate | Runs on |
 |---|---|---|
@@ -83,7 +83,7 @@ fp32.
 
 The full panel on CPU would take ~25 h (cost grows with upstream sites; the 30 seeds total ~145 site-units at
 ~10 min each for engine + standalone + one null on an idle CPU), so this run is a subset. It covers L1, every kind,
-two 033 passes and two 033 fails. On 2026-10-09 the CPU was shared with another agent's 069 data pass (load ~30 on
+two 033 passes and two 033 fails. During this run the CPU was shared with another agent's 069 data pass (load ~30 on
 16 threads), so fits ran ~3× slower than idle and the planned six seeds were cut to four. The standalone arm was
 dropped for the last two seeds.
 
@@ -172,12 +172,12 @@ Report: `out_native/report.md`; `REPORT=1` re-prints it.
 
 ## DAN-74: TuringLLM golden regression set (`golden_turingllm.py`, pending GPU)
 
-**Pinned commit.** The 15k run (062 `out_full`, 2026-09-27, 8×H100) pulled `multi-device` at **538cbed**. Stage 1's
+**Pinned commit.** The 15k run (062 `out_full`, 8×H100) pulled `multi-device` at **538cbed**. Stage 1's
 1,416 targets ran earlier (d5109bc / 564b68f) and were skipped by the full run's resume; between those commits only
 `062/driver.py` changed, `src/` is identical. Since then: committed HEAD (76e1531) changed `src/circuit/discovery/
 base.py`, `gradient_base.py`, `probe_dataset.py`, `config.py` and added `protocol_contexts.py` (all behind
 `context_protocol == "v1"`, default `legacy`, and bypassed by the driver's context injection); the uncommitted
-working tree (today's adapters) changes `ablation_gradient.py` (site sort by `bank.kinds`, identical to the
+working tree (the new adapters) changes `ablation_gradient.py` (site sort by `bank.kinds`, identical to the
 alphabetical sort for attn / mlp / resid), `ablation_faithfulness.upstream_sites` (TuringLLM keeps its rule),
 `hooks.py` / `inference.py` / `bank.py` (family dispatch), `neg_context_selector.py`, `config.py`, and 049's
 `amp_eval_pass_v2.py` (`EVAL_SPLIT`, default `as_run` = the run). None should move a TuringLLM fit; this gate checks.
@@ -217,7 +217,7 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src .venv/bin/python experiments/068-validatio
 .venv/bin/python experiments/046-fit-profiling/compare_stores.py experiments/068-validation-gates/out_golden/stores/r0.pt experiments/068-validation-gates/out_golden/stores/r1.pt
 ```
 
-Runtime on the RTX 5070 Ti (one process; the GPU must be free, 062's `stable_core.py` was using it today): ~3 min
+Runtime on the RTX 5070 Ti (one process; the GPU must be free, 062's `stable_core.py` was using it at the time): ~3 min
 start-up, 64 fits at ~40–60 s (062's local timings: fit 23–43 s, deep targets slower), 256 scorings at ~3–6 s →
 **~1.3–1.5 h**. Resumable (`PHASES=fit,score,report` select parts; `LIMIT=2` for a smoke test, ~6 min).
 `PHASES=select,report` were dry-run on CPU (selection written; the report builds, compare_stores reads the stores).

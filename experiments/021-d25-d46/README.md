@@ -1,4 +1,4 @@
-# D2.5 (pin variant) + D4.6 (true generalisation) — 2026-08-02
+# D2.5 (pin variant) + D4.6 (true generalisation)
 
 8-seed panel, eval-only over archived rankings. rows.jsonl (D4.6 +
 small-K D2.5), rows_d25_bigK.jsonl (D2.5 at usable budgets).

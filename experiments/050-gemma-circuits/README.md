@@ -1,6 +1,6 @@
 # 050 — Interesting circuits on Gemma-2-2B (all three SAE kinds)
 
-Daniel's call (2026-09-09): TuringLLM lacks the classic behaviours (no
+Daniel's call: TuringLLM lacks the classic behaviours (no
 IOI, no induction, no arithmetic — see 047), so the showcase circuits
 should come from a model that has them. Gemma-2-2B + GemmaScope is the
 substrate we already de-risked in 048 (IOI att+mlp: 212 members, EF 1.04
@@ -80,7 +80,7 @@ the same edit removes only that block's contribution and the stream
 flows on. The training trace shows the collapse directly — the value
 starts at 11.8 with the mask open and falls to −0.3 once the L1 prunes.
 
-Fix (Daniel's, 2026-09-09): the **dual floor** — our engine's dual/triple
+Fix (Daniel's): the **dual floor** — our engine's dual/triple
 floor minus the negctx term, which these task datasets cannot supply.
 `FLOOR=dual` scores the mask every step under BOTH zero-fill (weight 1)
 and mean-fill (weight `FLOOR_W`, default 0.25), so a member must earn its

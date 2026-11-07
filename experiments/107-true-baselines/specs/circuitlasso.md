@@ -1,7 +1,7 @@
 # CircuitLasso: implementation specification (arena B)
 
 Yin, Wei, Gao, Dhurandhar, Natesan Ramamurthy, Yu, "Scalable Circuit Learning for Interpreting Large Language Models",
-arXiv 2606.16939. Written 2026-11-01 for exp 107, arena B.
+arXiv 2606.16939. Written for exp 107, arena B.
 
 ## 0. Sources, versions and tags
 
@@ -36,7 +36,7 @@ OpenReview blocks automated reads, so its reviews were **not** read.
 **Tags**
 - `[paper §x / Eq. y / App. z / Tab. n / Fig. n]`: v2.
 - `[code repo file:line @SHA]`: code read on GitHub.
-- `[verified locally]`: computed on this machine on 2026-11-01. HF GPT-2 and the cached
+- `[verified locally]`: computed on this machine. HF GPT-2 and the cached
   `jbloom/GPT2-Small-OAI-v5-32k-resid-post-SAEs` were loaded offline, via the project's WSL `.venv`; nothing was
   written to disk.
 - `[Neuronpedia]`: the public feature API.
@@ -321,7 +321,7 @@ prompt-specific (appendix only):                                           [§4.
 - **completeness:** F(M∖C);
 - **ideal values:** F = 1, completeness = 0 [Fig. 4 caption].
 
-**What Marks et al. do, for reference** (Marks et al. §3.2, read 2026-11-01 via WebFetch; that paper, not this one):
+**What Marks et al. do, for reference** (Marks et al. §3.2, read via WebFetch; that paper, not this one):
 - nodes outside C are mean-ablated to their position-specific means;
 - scores are on a held-out split.
 
@@ -433,7 +433,7 @@ See A9 and A10.
 
 The tolerances are ours, not the paper's.
 
-**FC1. Data pipeline. DONE 2026-11-01, passes.**
+**FC1. Data pipeline. DONE, passes.**
 - Reproduce the Tab. 5 and Tab. 8 values to 4 dp (§2.1).
 - Keep this as a unit test: "Kiss himself." → (0, 0, 0, 1.5254, 0), mean 0.3051, on z₁₂,₂₀₇₂₆; "He said that himself was
   hungry." → 6.0688 at the final "." on z₁₂,₃₀₉₂.

@@ -4,7 +4,7 @@ Plan: `PLAN.md`. Base algorithm = 095's v2CR (Z + A + C + R_C, lambda 1e-3, 400 
 target's 48 training contrast contexts redrawn per forward, sparsity-preserving donor fill, no silent term). Pass floor
 0.75. `diag/` belongs to agent diag-102 (CPU diagnosis); everything else here is track G.
 
-## Frozen before any phase-1 result was read (2026-10-31, ~12:00)
+## Frozen before any phase-1 result was read
 
 ### Check panel (frozen; not fitted until phase 3)
 
@@ -61,7 +61,7 @@ number touches held-out data.) Ties (equal criterion) go to the lower seed.
 
 - `p102_engine.py`: 100's `e4_engine` (= 095's `rs2_engine` + four default-off E4 switches) exec'd in memory on a
   **frozen** copy of `learned_mask.py`: 099's source snapshot, sha256 `b9a6142b...`, the exact file 095 / 100 ran. Why:
-  on 2026-10-31 the live `src/circuit/instrument/learned_mask.py` (and `config.py`, `ablation_gradient.py`, 062
+  during this run the live `src/circuit/instrument/learned_mask.py` (and `config.py`, `ablation_gradient.py`, 062
   `driver.py`) are being edited by agent r-port (101, the native R port); its edits to the other files are additive and
   default-off (`resample_weight` 0 under `WCM_VERSION=v2`), but `learned_mask.py` itself no longer equals 095's text.
   Nothing in 095 / 100 / src is edited; the 102 addition is one default-off switch (`P102["amp_init"]`, warm-started
@@ -86,28 +86,28 @@ number touches held-out data.) Ties (equal criterion) go to the lower seed.
 | `lamdepth` | lambda 1e-3 / 5e-4 / 2.5e-4 for L0-4 / L5-7 / L8-11 (L0-4 = base rows) |
 | `twostage` | base membership fixed (support = base members, lambda 0, binarize none, theta_init 40), gains warm-started at the base alphas, 200 more steps under all terms incl. R; fit time = this stage only (report adds the base's) |
 | `r0.5`, `r1.0` | R weight 0.5 / 1.0, C kept |
-| `rk3e-2`, `rk1e-1` | (added 11:55, coordinator, from diag-102: 15/18 v2CR Z failures restore the pre-activation and lose at the Top-K cut) rank-keep weight 3e-2 / 1e-1 (production 3e-3), mode `keep`, delta 0 as in production. The engine also has a `cut` mode with margin `rank_delta`; not used |
+| `rk3e-2`, `rk1e-1` | (added by the coordinator, from diag-102: 15/18 v2CR Z failures restore the pre-activation and lose at the Top-K cut) rank-keep weight 3e-2 / 1e-1 (production 3e-3), mode `keep`, delta 0 as in production. The engine also has a `cut` mode with margin `rank_delta`; not used |
 | `r1.0_rkBEST` | R weight 1.0 + the better of rk3e-2 / rk1e-1 by the selection-rule score on dev (decided after both finish; arm name `r1.0_rk3e-2` or `r1.0_rk1e-1`) |
 
-Run order (coordinator, 11:55): base re-score -> rk3e-2 -> rk1e-1 -> r1.0 -> r1.0_rkBEST -> lamdepth -> twostage ->
+Run order (coordinator): base re-score -> rk3e-2 -> rk1e-1 -> r1.0 -> r1.0_rkBEST -> lamdepth -> twostage ->
 r0.5 -> seed1 -> seed2 (`phase1.sh`, one GPU process at a time: every fit peaks at 8-9.6 GB, so a second concurrent fit
 would not fit on the 16 GB card next to r-port's jobs).
 
-**Revised plan (coordinator, 13:25, given ~2 h per 72-target arm):** dev = base -> rk3e-2 -> rk1e-1 -> r1.0_rkBEST
-only. Plain r1.0, lamdepth, twostage, r0.5, seed1 / seed2 and best3 are dropped for today (diag-102 measured refit
+**Revised plan (coordinator, given ~2 h per 72-target arm):** dev = base -> rk3e-2 -> rk1e-1 -> r1.0_rkBEST
+only. Plain r1.0, lamdepth, twostage, r0.5, seed1 / seed2 and best3 are dropped from this run (diag-102 measured refit
 noise at ~14% production flips; they move to a later session; the code for them stays in `run.py`). When r1.0_rkBEST
 finishes, the selection rule is applied on dev to {base, rk3e-2, rk1e-1, r1.0_rkBEST} and the decision is written here
 with its numbers **before** any check target is fitted. Then the check panel: base (v2CR, fitted here:
 `--base-source fit`), then the dev winner, then (time permitting, `--end-by`) the runner-up; if the winner is the base,
 the best non-base eligible arm is the second check arm. Check tables: `out/check/tables.md`, same format, paired vs
 base, by band and by the rank_clean >= 32 stratum. Without seed1, the selection rule's fit-time tie-break uses the
-median per-target ratio vs 095's base fit times (26 Oct, same GPU).
+median per-target ratio vs 095's base fit times (same GPU).
 
-**rkBEST decision (16:14, selection-rule score on dev, n = 72 each):** rk1e-1 min(prod, rs) = 33 (prod 57, rs 33)
+**rkBEST decision (selection-rule score on dev, n = 72 each):** rk1e-1 min(prod, rs) = 33 (prod 57, rs 33)
 vs rk3e-2 27 (prod 56, rs 27); both eligible; 6 apart (> the 2-target tie band), so **rkBEST = rk1e-1** and the arm
-run is `r1.0_rk1e-1` (started 16:15).
+run is `r1.0_rk1e-1`.
 
-**Dev decision (18:20, the pre-stated rule on {base, rk3e-2, rk1e-1, r1.0_rk1e-1}, n = 72 each, floor 0.75; written
+**Dev decision (the pre-stated rule on {base, rk3e-2, rk1e-1, r1.0_rk1e-1}, n = 72 each, floor 0.75; written
 before any check target was fitted; `out/phase1/tables.md` §6):**
 
 | arm | production | resample | min | d production vs base [paired 95% CI] (w/l) | eligible |
@@ -118,9 +118,9 @@ before any check target was fitted; `out/phase1/tables.md` §6):**
 | r1.0_rk1e-1 | 54 | 44 | 44 | +8 pp [-1, +18] (10/4) | yes |
 
 Winner: **r1.0_rk1e-1** (score 44; no other arm within 2). Runner-up: **rk1e-1** (33). Check panel order: base (v2CR,
-fitted), r1.0_rk1e-1, rk1e-1, with `--end-by 2026-11-01T00:30` (`check.sh`, started ~18:22).
+fitted), r1.0_rk1e-1, rk1e-1, with `--end-by 2026-11-01T00:30` (`check.sh`).
 
-## Results (dev 12:04-18:20, check 18:22-00:06; all arms complete, n = 72 each, 0 errors, no rejected fits)
+## Results (dev ~6 h 16 min, check ~5 h 44 min; all arms complete, n = 72 each, 0 errors, no rejected fits)
 
 Tables: `out/phase1/tables.md` (dev), `out/check/tables.md` (check). Floor 0.75; paired vs base; CI = paired bootstrap
 95%; w/l = targets the arm passes and base fails / the reverse. Fit time = median per-target ratio vs base (dev: 095's
@@ -151,18 +151,18 @@ base fit times; check: this run's base fit).
   lower ends -1 / +0).
 - Flagged targets: dev 11.attn.12206, 2.attn.16773, 5.resid.35667 and check 1.resid.33347, 3.resid.26238,
   9.resid.40186 have undefined Z / necessity reads (vacuous_tk False) in every arm and count as failures everywhere.
-- Not run today (coordinator's revised plan): plain R 1.0, depth-scaled lambda, two-stage, R 0.5, extra seeds, best3.
+- Not run here (coordinator's revised plan): plain R 1.0, depth-scaled lambda, two-stage, R 0.5, extra seeds, best3.
 
 Flagged targets (diag-102), counted as failures wherever a read is undefined, consistently in every arm, and listed in
 the tables: 11.attn.12206, 2.attn.16773, 5.resid.35667 (an undefined term with `vacuous_tk` False); 7.attn.38584 (only 9
 strongest contexts).
 
-### Base reuse check (phase 0, done 11:50)
+### Base reuse check (phase 0)
 
 `run.py --check-base 2.attn.22342,8.resid.4054` (`out/phase1/check.jsonl`, `logs/check_base.log`): v2CR refits through
 `p102_engine` are **bit-identical** to 095's circuits on both (same 279 / 895 members, max |d alpha| 0; trained terms
 zero, floor, pos, resample). 095's v2CR circuits are therefore the `base` arm, re-scored by this run's code.
 
-Fit-time baseline: 095's base fit times were measured on 26 Oct with no other GPU job; this run shares the GPU (r-port),
+Fit-time baseline: 095's base fit times were measured with no other GPU job; this run shares the GPU (r-port),
 so fit-time ratios are reported against `seed1` (the same algorithm as base, fitted in this run) as well as against
 095's times.

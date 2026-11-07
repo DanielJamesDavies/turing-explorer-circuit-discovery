@@ -10,7 +10,7 @@ PY=.venv/bin/python
 while pgrep -f "062-h100-protocol-v1/(driver|random_null|stable_core|rescore_mid).py" > /dev/null; do sleep 30; done
 echo "[$(date +%H:%M)] queue start"
 
-echo "[$(date +%H:%M)] job 1: re-score the 58 padded mid-band rows (protocol-v1.md 3.6)"
+echo "[$(date +%H:%M)] job 1: re-score the 58 padded mid-band rows (protocol.md 3.6)"
 OUT=$E/out_full/out $PY -X utf8 -u $E/rescore_mid.py > $E/rescore_mid.log 2>&1
 echo "[$(date +%H:%M)] job 1 exit $?"
 

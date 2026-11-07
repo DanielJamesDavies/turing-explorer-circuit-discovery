@@ -1,6 +1,6 @@
 # The support-matched null: is our result about selection, or about TopK?
 
-2026-08-12. Llama-3.2-1B + EleutherAI TopK skip-transcoders, the same 6
+Llama-3.2-1B + EleutherAI TopK skip-transcoders, the same 6
 seeds as the rest of this directory.
 
 ## The worry

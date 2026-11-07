@@ -1,4 +1,4 @@
-# centrepiece (2026-08-07)
+# centrepiece
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 
@@ -8,19 +8,19 @@ Centrepiece-figure data collector: cumulative pinned vs free
 faithfulness as members are added in attribution order.
 
 Per seed: one position-aware abl-ig_mean discovery (abs-p50 selection,
-the July recipe), members ranked by |attribution| within each site-role
+the original recipe), members ranked by |attribution| within each site-role
 group, then the runner's own score-ranked per-site truncation evaluated
 at a log ladder of per-site caps. Three scores per prefix:
 
   pinned_mean  members clamped to position-specific clean values,
                non-members at posctx means  (node selection)
   free_mean    members live, non-members at posctx means (freeM_dense,
-               the SFC-aligned protocol of the July curves)
+               the SFC-aligned protocol of the original curves)
   free_zero    members live, non-members at zero (free0, the
                fill-independent anchor)
 
-Rows land in curves.jsonl; the July scripts and data were lost in the
-2026-07-22 teardown, so shapes should reproduce but numbers are fresh
+Rows land in curves.jsonl; the original scripts and data were lost in a
+teardown, so shapes should reproduce but numbers are fresh
 measurements. Seeds: one shallow / mid / deep (L3 mlp, L7 resid,
 L11 mlp — the original depth trio's hosts).
 

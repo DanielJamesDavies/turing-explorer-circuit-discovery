@@ -1,6 +1,6 @@
 # Recreating well-known circuits from their task datasets (tri-amp)
 
-Daniel's ask (2026-09-05): "Recreate well known circuits using their
+Daniel's ask: "Recreate well known circuits using their
 task datasets using tri amp mask, like IOI." Same machinery as
 044-behaviours (logit objective, all 36 sites, zero floor, free
 amplitudes, λ=3e-3, 400 steps, 75/25 train/held-out, matched

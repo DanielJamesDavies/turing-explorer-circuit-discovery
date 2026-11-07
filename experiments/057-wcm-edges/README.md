@@ -1,6 +1,6 @@
 # 057 — Wired weighted circuits: direct-effect edges for WCM
 
-2026-09-24. Turns a WCM circuit (a set of upstream latents with coefficients, a "star" onto the target) into a
+Turns a WCM circuit (a set of upstream latents with coefficients, a "star" onto the target) into a
 wired graph using the SFC direct-effect edge construction. Until now this was done only for attribution circuits
 (`analysis-restyled/edge-pilot/`, `src/circuit/instrument/edge_attribution.py`).
 
@@ -72,7 +72,7 @@ Outputs:
 - `results/summary_<arm>.md`;
 - matrices in `data/<arm>/<target>.pt`: `nodes` [(layer, kind, idx, α)], and per π `A`, `E[d, u]`, `Et`.
 
-## Results: main 16, rkeep3e3fix (primary config v1), 2026-09-24
+## Results: main 16, rkeep3e3fix (primary config v1)
 
 About 15 minutes locally on an RTX 5070 Ti. Batched VJPs worked everywhere; there was no sequential fallback.
 Files: `results/summary_rkeep3e3fix.md` (driver) and `results/analyse_rkeep3e3fix.md` (`analyse.py`). Two
@@ -118,7 +118,7 @@ targets are layer-0 MLP with all nodes at one site, so they have no member edges
 of edge mass stated. A sparse wiring diagram drawn from one ablation method would overclaim, just as a single-run
 node set does. This is a 16-target pilot, so don't quote it yet.
 
-## Figures (`render.py`, 2026-09-24)
+## Figures (`render.py`)
 
 `figures/wiring_consensus.png/.pdf` is a 2 × 2 panel; there is also one `wiring_<target>` per target. The four
 most ablation-stable targets are shown.

@@ -1,4 +1,4 @@
-# Inhibitor-mask ('raise' objective) — 8 seeds, v2 (2026-08-02)
+# Inhibitor-mask ('raise' objective) — 8 seeds, v2
 
 ## T1 — per seed x lambda (BEST snapshot, early-stopped)
 

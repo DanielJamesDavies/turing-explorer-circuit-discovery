@@ -1,4 +1,4 @@
-# Cross-SAE replication on GENUINE Top-K dictionaries (2026-08-11)
+# Cross-SAE replication on GENUINE Top-K dictionaries
 
 THE cross-SAE replication for the paper. Supersedes the dense-ReLU arm
 (030-cross-sae), which is out of domain: the method's
@@ -59,7 +59,7 @@ intervention). Verified on GPU: exactly 16 nonzeros per position.
    seeds reconstruct (1.05/1.05) but barely drive (cf 0.07), the same
    asymmetry the 22-seed home panel found.
 
-## Re-run with the SAE error held clean (2026-09-19, for the 052 Gemma port)
+## Re-run with the SAE error held clean (for the 052 Gemma port)
 
 `ERROR_MODE=clean` (see crosssae_topk.py header): each edited site becomes
 c_hat W_dec + b_dec + err_CLEAN instead of + err(edited stream). Needed on
@@ -89,7 +89,7 @@ there.** An earlier intermediate form (subtract the clean CODE) was wrong
 (leaks x - x_clean through non-members) and is archived as
 rows_clean_deltaform.jsonl / run_clean_deltaform.log — do not quote.
 
-## phi_pin CONTROL for the Gemma port (2026-09-20, `rows_pin_panel.jsonl`, `run_pin_panel.log`)
+## phi_pin CONTROL for the Gemma port (`rows_pin_panel.jsonl`, `run_pin_panel.log`)
 
 On Gemma 3 270M + Gemma Scope 2 every latent circuit reads free0 0.67-1.13 but
 **phi_pin 0.00-0.37**: clamping the SAME members to alpha x their CLEAN values

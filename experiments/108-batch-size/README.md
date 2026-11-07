@@ -1,6 +1,6 @@
-# 108: does WCM with more contexts per optimiser step give better or more stable circuits? (2026-11-06)
+# 108: does WCM with more contexts per optimiser step give better or more stable circuits?
 
-Production v4 (`dev-notes/2026-11-06-wcm-production-spec.md`) fits each circuit with **4 training contexts per
+Production v4 (`paper/protocol.md` §0) fits each circuit with **4 training contexts per
 AdamW step** (`probe_batch_size` 4, set by `049/amp_eval_pass_v2.setup()` and `062/driver.py:314` for the public
 path), 400 steps, cycling deterministically over the 48 training contexts (32 strongest + 16 mid-band). Question
 (Daniel, approved design): does a larger effective batch, via gradient accumulation, give better or more stable

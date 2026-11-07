@@ -1,7 +1,6 @@
 # Frozen comparison protocol + 8xH100 run spec
 
-Status: DRAFT for Daniel's sign-off. The 6-seed local pilot (2026-08-22
-to -26) proved the pipeline end-to-end; this file freezes exactly what
+Status: DRAFT for Daniel's sign-off. The 6-seed local pilot proved the pipeline end-to-end; this file freezes exactly what
 the large run repeats, so the H100 results are the pilot's protocol at
 scale and nothing else. Anything not listed here is out of scope for
 the big run.

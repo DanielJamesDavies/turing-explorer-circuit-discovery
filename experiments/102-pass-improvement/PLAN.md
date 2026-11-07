@@ -1,4 +1,4 @@
-# 102: improving production and resample pass rates before the pod (plan, 2026-10-31)
+# 102: improving production and resample pass rates before the pod (plan)
 
 Base algorithm: Z + A + C + R_C at λ 1e-3 (095's "v2CR"), pass floor 0.75. Goal: find changes that raise the
 production pass rate and the resample (donor-background) pass rate together, then freeze before the pod.

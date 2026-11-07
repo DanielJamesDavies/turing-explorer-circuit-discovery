@@ -1,6 +1,6 @@
 # 061 — WCM vs unweighted circuit masking across the sparsity price (pilot for DAN-76 / DAN-77)
 
-2026-09-25, local, 16 pilot targets (15 with a mid-band pool). Both methods train on the protocol-v1 contexts of 059
+Local, 16 pilot targets (15 with a mid-band pool). Both methods train on the protocol-v1 contexts of 059
 (arm B's training set: 32 strongest + 16 mid-band, stratified split), with close contrast contexts, rank-keep 3e-3,
 train-only ablation values and γ = 0.25. The only difference is whether the coefficients are fitted. Scored by the
 eval pass on the held-out strongest contexts.

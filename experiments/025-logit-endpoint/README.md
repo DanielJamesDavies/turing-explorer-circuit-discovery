@@ -1,4 +1,4 @@
-# One method, two endpoints — latent vs behavioural circuits (2026-08-04)
+# One method, two endpoints — latent vs behavioural circuits
 
 Daniel: "could we apply abl-mask to logits like SFC's non-template
 version, and see how those circuits do on logit faithfulness and by node

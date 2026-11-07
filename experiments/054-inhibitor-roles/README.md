@@ -31,7 +31,7 @@ Z, A, C. Early observation: under zero ablation, removing large groups sends the
 stream off-distribution (pre-activation ×60 while the activation dies), so the
 set-level test is only meaningful under the mean ablations A and C.
 
-## Results (2026-09-22; 60 pilot circuits, LOO on 24; log `results/roles_pilot.log`)
+## Results (60 pilot circuits, LOO on 24; log `results/roles_pilot.log`)
 
 **No definition holds at set level.** Share of circuits where removing all the
 definition's inhibitory nodes raises the target (held-out, pre-activation read):

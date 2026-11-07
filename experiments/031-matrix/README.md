@@ -1,4 +1,4 @@
-# The definitive cross-method matrix (2026-08-10)
+# The definitive cross-method matrix
 
 Attribution arms (abl-ig_mean PA, cf-ig_mean PA, abl-restoration PA
 rounds=sites; abs-p50 selection) on the SAME 22 seeds, probes, held-out

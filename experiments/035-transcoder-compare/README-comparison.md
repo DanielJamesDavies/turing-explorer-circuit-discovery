@@ -1,6 +1,6 @@
 # circuit-tracer vs tri-amp on the same model and the same features
 
-2026-08-12. Llama-3.2-1B + EleutherAI TopK skip-transcoders (131,072
+Llama-3.2-1B + EleutherAI TopK skip-transcoders (131,072
 latents, k=32, 16 layers), 6 seeds at L4/L6, 48 train windows each.
 
 Both sides read the SAME converted weights and were verified to compute

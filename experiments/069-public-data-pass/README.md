@@ -246,7 +246,7 @@ did through pre-v1 survival). 24.8M matches TuringLLM exactly at ~2.5× the time
 
 ### How long (one H100 per model; estimate, measure on the first ~200 batches)
 
-TuringLLM's 2026-05-31 run (8 GPUs, `Runs/20260531-152059-37117a33/distributed/*.log`): pass 1 4.95 s and pass 2 4.1 s
+TuringLLM's original run (8 GPUs, `Runs/20260531-152059-37117a33/distributed/*.log`): pass 1 4.95 s and pass 2 4.1 s
 per 4,096-sequence batch per GPU, bf16, 36 × 40,960 grid, d_model 1,024; pass 2 replays the unique top-store
 sequences (16.5M of 24.8M, 67 %). Store updates scale with components × d_sae (Pythia 0.40×, GPT-2 0.98× TuringLLM's)
 and the SAE GEMMs with components × d_model × d_sae (0.20× / 0.73×). Under bf16 (`--dtype bfloat16`) that gives about

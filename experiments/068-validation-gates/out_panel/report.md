@@ -1,4 +1,4 @@
-# DAN-36: 033 Pythia panel through the engine (2026-10-09 16:42)
+# DAN-36: 033 Pythia panel through the engine
 
 steps 400. Pass = ampF0 and ampFM in [0.8, 1.25] and sup > 0.9 (held-out 16). 033 = rows.jsonl (GPU, TF32); engine / standalone = this run, scored by 033's scorer (ref033.Seed.score).
 

@@ -86,7 +86,7 @@ def in_band(x, lo=0.75, hi=1.5):
 
 
 def pre_passes(df, nec_min=0.9):
-    """The secondary pass rate (protocol-v1.md section 12.1): the same rule on the pre-activation read, with 0 ("latent
+    """The secondary pass rate (protocol.md section 12.1): the same rule on the pre-activation read, with 0 ("latent
     off") as the Z and necessity baseline. Z_pre = free0_raw_pre / a_pos_pre; necessity_pre = (a_pos_pre -
     phi_sup_blind_raw_pre) / a_pos_pre; A and C keep their own mean-ablation baselines (freeM_topk_pre, freeN_topk_pre).
     A non-positive or missing a_pos_pre fails."""

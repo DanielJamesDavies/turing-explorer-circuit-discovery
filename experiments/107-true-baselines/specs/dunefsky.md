@@ -1,7 +1,7 @@
 # Spec: Dunefsky, Chlenski & Nanda 2024, transcoder circuit finding (arena A)
 
-Status: specification for running the official code **unmodified** as a baseline. Written 2026-11-01 (agent
-`spec-dunefsky`). Nothing here is built or run.
+Status: specification for running the official code **unmodified** as a baseline. Written by agent
+`spec-dunefsky`. Nothing here is built or run.
 
 **Paper.** Jacob Dunefsky, Philippe Chlenski, Neel Nanda, "Transcoders Find Interpretable LLM Feature Circuits",
 arXiv 2406.11944, NeurIPS 2024.
@@ -634,7 +634,7 @@ Their code is not changed.
 
 ---
 
-## Sources (read 2026-11-01; nothing downloaded or cloned)
+## Sources (nothing downloaded or cloned)
 
 - Paper: https://arxiv.org/abs/2406.11944 (versions), https://arxiv.org/html/2406.11944v2 (full text, §3.2, §4.1,
   §5, App. D.2–D.5, E, F, G, H).

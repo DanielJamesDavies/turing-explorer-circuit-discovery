@@ -1,8 +1,8 @@
 # 107 arena B: CircuitLasso (re-implementation) vs WCM on GPT-2 small + OAI v5 32k resid-post SAEs
 
 Linear: DAN-193 (setup), parent DAN-188. Spec: `../specs/circuitlasso.md` (the method, every ambiguity A1-A19 and the
-fidelity checks FC1-FC7; this README does not repeat it). Status 2026-11-03: **plan only, nothing built or run.**
-Target: pod-ready by Fri 2026-11-06 for the Sat 2026-11-07 8×H100 pod, as a separate stage after the GPT-2 main chain
+fidelity checks FC1-FC7; this README does not repeat it). Status: **plan only, nothing built or run.**
+Target: pod-ready for the 8×H100 pod, as a separate stage after the GPT-2 main chain
 (DAN-206).
 
 ## 1. The method and where it lives
@@ -17,8 +17,8 @@ Target: pod-ready by Fri 2026-11-06 for the Sat 2026-11-07 8×H100 pod, as a sep
   **So the row is "CircuitLasso, re-implementation (ours)".**
 - **Published setting used here** (spec §2-§4, C.4 of the paper):
   - GPT-2 small; OAI `v5_32k` resid-post SAEs (TopK 32, LN on the input, `b_dec` subtracted) at all 12 block outputs.
-    The paper's D.1 says "ReLU / L1"; that is wrong, the Table 5 / 8 codes reproduce exactly on v5_32k (FC1, done
-    2026-11-01). Paper layer ℓ = our `blocks.(ℓ−1).hook_resid_post`.
+    The paper's D.1 says "ReLU / L1"; that is wrong, the Table 5 / 8 codes reproduce exactly on v5_32k (FC1, done).
+    Paper layer ℓ = our `blocks.(ℓ−1).hook_resid_post`.
   - Data: CoLA train, 8,551 sentences, raw, `<|endoftext|>` prepended.
   - **"Token-averaged":** for each sentence, each layer's 32,768-dim code is averaged over all T positions *including
     the BOS* (denominator n_tokens + 1); one row per sentence. So Z_ℓ is 8,551 × 32,768, one observation per prompt,
@@ -37,7 +37,7 @@ Target: pod-ready by Fri 2026-11-06 for the Sat 2026-11-07 8×H100 pod, as a sep
 
 ## 2. Download inventory
 
-Everything except CoLA is already on disk (checked 2026-11-03):
+Everything except CoLA is already on disk (checked):
 
 | item | where | status |
 |---|---|---|
@@ -118,9 +118,9 @@ a large, structural penalty. Options, both cheap:
 
 ## 5. Fidelity gate (before the pod)
 
-| check | pass rule | can run on CPU tonight-style |
+| check | pass rule | can run on CPU |
 |---|---|---|
-| FC1 data pipeline | Tab. 5 / 8 to 4 dp with BOS, fails without (already passed by hand 2026-11-01; becomes a test) | yes (few sentences) |
+| FC1 data pipeline | Tab. 5 / 8 to 4 dp with BOS, fails without (already passed by hand; becomes a test) | yes (few sentences) |
 | FC2 split / label rates | 8,551 / 70.44%; 1,043 / 69.13% | **already confirmed from HF metadata** |
 | FC5 solver | no-intercept FISTA = sklearn to 1e-4; block = per-column | yes |
 | FC3 Eq. 6 calibration | Tab. 9 accuracies ± 1.5 pt, ‖A‖₁ at 1e-5 ± 15% of 9,257.6, ≥ 4 of Fig. 5's top 5 | yes (one 8,551 × ~20k sparse logistic path; minutes) |
@@ -139,7 +139,7 @@ soft by design (hand-picked parents, unknown λ_F).
    layer down from the root, at 4-5 λ_F values; record closure sizes per λ and per-column FISTA time → freezes the
    grid and the pod timing.
 4. Score those circuits under our tests on the local GPT-2 stores (`outputs_public/gpt2-small` records) — this needs
-   the GPU, so in an approved overnight slot (≤ 15 min), not while tonight's job runs.
+   the GPU, so in an approved overnight slot (≤ 15 min), not while the current overnight job runs.
 5. Dry run of `run_arena_b.sh` with `LIMIT=2`.
 
 **Pod stage** (separate, after the GPT-2 main S9; one process per GPU):
@@ -155,7 +155,7 @@ soft by design (hand-picked parents, unknown λ_F).
 - Inputs it needs from the main chain: the GPT-2 track's records (`OUT/ctx`) and S9 circuits; output tar + md5 to
   `RESULTS` like every chain stage.
 
-## 7. Risks to "pod-ready by Friday"
+## 7. Risks to "pod-ready before the pod"
 
 1. **Pair-fit cost is unmeasured** (biggest unknown): if FISTA needs far more iterations at small λ_F (near-collinear
    token-averaged codes, BOS-carried near-constant columns), the full 11-pair fit could be several times the estimate.
@@ -167,7 +167,7 @@ soft by design (hand-picked parents, unknown λ_F).
 4. **The scope decision (4.3) is Daniel's**; option (b) needs a small runtime wrapper and a WCM arm, ~1 day of code +
    tests. Only (a) is needed for a minimal row.
 5. **Calendar:** ~1 day of build (as the 107 README estimated) + one overnight GPU slot for smoke step 4, competing
-   with the arena A builds and the Wed decision on the main fit additions. FC3 may not reproduce (logged, not blocking).
+   with the arena A builds and the pending decision on the main fit additions. FC3 may not reproduce (logged, not blocking).
 6. CoLA download needs Daniel's yes (0.3 MB).
 
 ## 8. Sources

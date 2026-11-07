@@ -14,7 +14,7 @@ the production run; paper-updates live checklist).
 KEYS=9.resid.7640 PYTHONPATH=src python experiments/063-case-studies/inspect_circuit.py
 ```
 
-## Screen (2026-09-27, stage-1 download `062-.../out_stage1`)
+## Screen (stage-1 download `062-.../out_stage1`)
 
 385 candidates: passing the DAN-8 rule, not amplifier-flagged, not near-threshold. Seven read-only subagents screened
 them in depth/kind batches and read ~120 reports in full. The top picks were checked by hand against the reports.
@@ -61,7 +61,7 @@ them in depth/kind batches and read ~120 reports in full. The top picks were che
 - In the good cases, members' logit effects agree with the target's, which is a cheap coherence check.
 - Induce differs by kind: attention targets often overshoot (~2), MLP targets sit at 0.1–0.7.
 
-## Deep concept-composition search (2026-09-27)
+## Deep concept-composition search
 
 Daniel asked for a deep target that pieces concepts together into a new concept.
 - Pool: `SELECT=deep`, all 204 passing, non-near-threshold stage-1 circuits at layers 6–11, amplifier-flagged
@@ -83,7 +83,7 @@ Others: 9.mlp.24426 public/private key (word × crypto domain, amplifier; check 
 9.resid.10889 climate → harm causation (amplifier, function-word target); 7.resid.34018 extensions of classical logic
 (partly a union); 8.attn.21835 printing press → dissemination (relay-heavy).
 
-## Chosen and validated (2026-09-27): `validate.py` → `results_validate/<key>.md`
+## Chosen and validated: `validate.py` → `results_validate/<key>.md`
 
 Daniel did not want the reproduction topic (9.mlp.10663) as the headline. He picked **8.attn.29991** (acid–base) and
 **9.resid.7640** (the "not X, but rather Y" pivot).
@@ -114,7 +114,7 @@ Daniel did not want the reproduction topic (9.mlp.10663) as the headline. He pic
   circuit, and control latents are over-driven 2–5×. The target itself is selective (probes), but the circuit is not
   a clean single-target mechanism.
 
-## Full-run deep concept search (2026-09-27, DAN-132): `results_full_deep/`
+## Full-run deep concept search (DAN-132): `results_full_deep/`
 
 - Pool: `SELECT=deepconcept` on the full run. 2,238 deep (L6–11) passing circuits; 595 remain after the target
   peak-token consistency ≤ 70% filter; 25 members each.
@@ -140,7 +140,7 @@ Verdict: nothing in the full run beats 8.attn.29991 on validation evidence. **10
 full-run candidate worth validating.** It is clean (not an amplifier, worst dev 0.08), and its members split into
 shared-with-contrast (art, story) and discriminative (motion, CG, performance) groups.
 
-## Knowledge / logic / calculation hunt (2026-09-28): `survey.py`, `lab_server.py`, `lab.py`
+## Knowledge / logic / calculation hunt: `survey.py`, `lab_server.py`, `lab.py`
 
 **Tools:**
 - `survey.py` catalogues all 2,238 passing, non-near-threshold circuits at layers ≥ 6 (no consistency filter) into

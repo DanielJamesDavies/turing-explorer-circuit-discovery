@@ -1,6 +1,6 @@
 # 059 — Which activating contexts should WCM train on? (the 64 strongest vs strongest + mid-band)
 
-2026-09-24. Asked by Daniel after 058: does training only on peak firing give circuits that explain ordinary firing,
+Asked by Daniel after 058: does training only on peak firing give circuits that explain ordinary firing,
 and do mid-band contexts, or just more data, help?
 
 **Setup:** `pool_test.py` and `run_all.sh`.
@@ -71,7 +71,7 @@ and do mid-band contexts, or just more data, help?
 - The B/C training ablation value (mean over their own training contexts, which include mid-band ones) differs
   from the common evaluation reference, which favours A and D if anything.
 
-## Follow-ups (2026-09-24): E, B2 (noise floor), C800 (budget control)
+## Follow-ups: E, B2 (noise floor), C800 (budget control)
 
 Full table: `results/summary.md`. Comparisons are on the strongest held-out set unless stated otherwise.
 
@@ -104,7 +104,7 @@ On the mid-band held-out set, B and B2 are closer to 1 than A on 10/15 and 9/15;
 **Decision support:** keep 32 strongest + 16 mid-band (48 training contexts) at 400 steps. Describe the evidence
 as "beats 48 strongest in two independent samples (14/15 and 11/15 targets)", not as the single-sample margin.
 
-## Matched contrast count (Dm / Em / Cm, 2026-09-24)
+## Matched contrast count (Dm / Em / Cm)
 
 The C ablation value averages over as many contrast training contexts as the arm has activating training contexts:
 32 / 64 / 96 instead of 48. The contrast pool was extended to 128 per target, and the first 64 were identical to
@@ -125,7 +125,7 @@ which already equals the default 48 contrast training contexts (64 retrieved, sp
 For thin targets, "match" would shrink the contrast set and make the C mean noisier. The option stays available
 in config.
 
-## Equal ablation-term weights under the final protocol (Bw / B2w, 2026-09-25)
+## Equal ablation-term weights under the final protocol (Bw / B2w)
 
 Daniel switched the primary to γ_C = γ_A = 1, λ = 2e-3 on the strength of 055's eq2, to be confirmed by this refit.
 Same contexts as B / B2 (two stratified samples of 32 + 16), only the weights and price changed.

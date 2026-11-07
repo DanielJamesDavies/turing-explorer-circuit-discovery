@@ -2,7 +2,7 @@
 
 Linear: DAN-191 (SFC setup), DAN-194 (WCM adapter), DAN-196 (runs). Spec: `../specs/sfc.md`.
 
-## SFC setup (2026-11-01)
+## SFC setup
 
 - **Code:** `third_party/feature-circuits@7fbd82b` (main HEAD) with `dictionary_learning@61ac634`. Both are untouched
   clones; every change we make lives in this folder and is labelled.
@@ -79,7 +79,7 @@ deduplicated held-out split (decision 8 in the 107 README).
 
 Checks: `sfc_checks.py` (count, diff, overlap) and `sfc_curves.py` (F4).
 
-## First comparison (2026-11-02, DAN-196)
+## First comparison (DAN-196)
 
 **Rows.** Data mode `sfc` throughout: SFC's 100 discovery / 40 evaluation examples (the leak above applies to both
 methods).

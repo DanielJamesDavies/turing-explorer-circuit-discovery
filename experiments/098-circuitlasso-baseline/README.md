@@ -1,7 +1,7 @@
 # 098: CircuitLasso as a baseline row in the DAN-159 method comparison
 
-Asked by Daniel on 2026-10-27: add CircuitLasso (Yin et al. 2026, `yin2026scalable`) as a baseline row in Table 2 and
-in the DAN-77 faithfulness-vs-size figure, on the 190 sweep targets. Scope today: implement it, test it, run it on 8
+Asked by Daniel: add CircuitLasso (Yin et al. 2026, `yin2026scalable`) as a baseline row in Table 2 and
+in the DAN-77 faithfulness-vs-size figure, on the 190 sweep targets. Scope here: implement it, test it, run it on 8
 targets, and evaluate.
 
 - The paper's method and evaluations, read from raw text: `PAPER_NOTES.md`.
@@ -86,7 +86,7 @@ wsl: bash experiments/098-circuitlasso-baseline/run_local.sh
 PYTHONPATH=src python -m pytest -q tests/analysis/test_098_circuitlasso.py tests/analysis/test_083_v1_comparison.py
 ```
 
-## Results (8 targets, 2026-10-27, this RTX 5070 Ti)
+## Results (8 targets, this RTX 5070 Ti)
 
 **Setup**
 - **Targets** (`targets8.txt`, chosen by hand from exp 093's 72): 3 in L0-4, 2 in L5-7, 3 in L8-11, mixing attention,
@@ -130,13 +130,13 @@ PYTHONPATH=src python -m pytest -q tests/analysis/test_098_circuitlasso.py tests
 - **Caveat.** 8 targets on as-run records. The direction is unambiguous (0/8 for Lasso on every arm, while the fitted
   DAN-43 and activation rows reach 0.90–0.93 A), but the sizes of the differences are not estimates.
 
-### Ge et al. hierarchical attribution on the same 8 targets (2026-11-01, asked by Daniel)
+### Ge et al. hierarchical attribution on the same 8 targets (asked by Daniel)
 
 **Run:**
 - Command: `REF_RUN=out/ref093 STAGES=ge,table bash run_local.sh` (the `ge` stage was added to this script).
 - Method: 083's `ge_hier.py`, unchanged; τ is bisected in log space (7 steps, ±10%) to the W_0.001 size.
 - Scoring: every point with n ≤ 20,000 is scored by the same scorer as the rows above.
-- 00:07–00:36, 0 error rows.
+- ~29 min, 0 error rows.
 
 **Result:** the Ge row is now in `out/cmp/table2.md`. The table is regenerated at the current floor (0.75), so the WCM reference reads 7/8 there, not the 6/8 above (which was at 0.8).
 
@@ -148,7 +148,7 @@ PYTHONPATH=src python -m pytest -q tests/analysis/test_098_circuitlasso.py tests
 **Reading:**
 - **At matched size it fails like every other rank-and-cut row.** Z is 0 on all 8 targets; A ≤ 0.38 and C ≤ 0.31 on every target.
 - **Its members are necessary:** necessity is 1.00, against about 0.47 for Lasso.
-- **It does better than the IG / AtP top-n on φ_ind:** 0.79 against 0.59–0.71. This matches 034's August finding (its control-side drive is the best of the truncations, but its faithfulness fails).
+- **It does better than the IG / AtP top-n on φ_ind:** 0.79 against 0.59–0.71. This matches 034's finding (its control-side drive is the best of the truncations, but its faithfulness fails).
 - **Faithfulness needs a much larger circuit.** Over all bisection points, Z/A/C come into band only at τ = 1e-3, and only on the two shallowest targets:
   - 3.attn.9495: 13,456 latents, 45× WCM, Z 0.76;
   - 2.mlp.9455: 9,454 latents, 33× WCM, Z 0.75.

@@ -1,6 +1,6 @@
 # 100: causal-scrubbing frontier (donor-background robustness vs size, v2CR, failure modes, pod pricing)
 
-Started 30 October 2026 (agent scrub-e123; Daniel out, local GPU authorised until 01:00).
+Agent scrub-e123; Daniel out, local GPU authorised until 01:00.
 
 **What this is.** Development experiments that decide which donor-background ("causal-scrubbing") stages go into
 the 8xH100 pod run. The panel is 099's frozen, availability-based 18-target panel (two targets per depth band x
@@ -14,7 +14,7 @@ a population sample. The pod run gives the population-scale confirmation; nothin
 | Panel | 099 `panel.json`: `targets_dev9.txt` (development), `targets_check9.txt` (check); copies of 099's lists |
 | Records | 099's audited clean records `099/out/records/ctx_v2` (094 machinery), no rebuild; per-record SHA-256 checked against 099's manifest on every run |
 | Fits | standard v2 WCM (062 `driver.Runner.method/fit`, `WCM_VERSION=v2`, gamma 0.25, rank-keep 3e-3, 400 steps) at lambda in {1e-3, 2.5e-4, 5e-5, 1e-5}; v2CR = 095's arm (Z + A + C + R_C, R weight 0.25, donors = the 48 training contrast contexts redrawn per forward, sparsity-preserving donor fill, no silent term; 095 `rs2_engine` + 091 `setup_terms`, imported) |
-| Reuse | lambda 1e-3 WCM = 099's fitted circuits. 099's manifest source hashes (320 files) match today's tree except `099/run_panel.py` (the documented post-run launcher edit); records match; steps 400. Additionally two 099 circuits (2.attn.34021, 10.resid.8194) were refitted here through the same process and are **bit-identical** (`out/refit_check/fits_check.jsonl`) |
+| Reuse | lambda 1e-3 WCM = 099's fitted circuits. 099's manifest source hashes (320 files) match the current tree except `099/run_panel.py` (the documented post-run launcher edit); records match; steps 400. Additionally two 099 circuits (2.attn.34021, 10.resid.8194) were refitted here through the same process and are **bit-identical** (`out/refit_check/fits_check.jsonl`) |
 | Random control | per arm: the arm's per-site member counts, drawn (seeded per target and arm) from latents active post-Top-K on the 48 training contexts, **excluding the arm's members**; coefficients fitted with the arm's own objective under 062 `random_null`'s support restriction (lambda 0, gates open, theta_init 40, binarize none). Random vs WCM therefore differs in membership, not gain capacity |
 | Production score | `driver.Runner.score`, held-out strongest: post-Top-K rule pass (Z, A_sp, C_sp in [0.8, 1.5], necessity >= 0.9) and protocol 12's pre-activation pass (Z and necessity on the 0 baseline; 095 definitions). Also the circuit at alpha = 1 and the random control |
 | Donor test | **exactly 099's** whole-donor background test (`099/run_baseline.py`): bases = held-out activating + held-out silent; donor pools A = training activating, C = held-out silent, R = 099's filtered 512-context random pool; 8 paired draws per pool from 099's generator sequence (the donors are identical to 099's); 073 `ResamplePatcher` (live SAE error, Top-K fill budget). Variants: `fit` (live members, fitted gains), `a1` (gains 1), `pinned` (members at their clean natural value x fitted gains), `rand`, `rand_pinned`, `empty` |
@@ -31,7 +31,7 @@ the median paired change in pooled donor recovery is >= +0.05 for **both** A and
 ("weakest" = weakest sparsity penalty). If no lambda satisfies it, no weaker-lambda v2CR arm is run and the frontier
 is reported as flat. The rule uses development results only; check results are never used to pick lambda.
 
-**Outcome of the rule (development, 30 Oct 12:45):** not satisfied at any lambda (median paired dA / dC: 2.5e-4
+**Outcome of the rule (development):** not satisfied at any lambda (median paired dA / dC: 2.5e-4
 -0.011 / -0.001; 5e-5 -0.010 / -0.004; 1e-5 -0.051 / +0.012; A rises on 2-3 of 9 targets). By the rule, **no
 weaker-lambda v2CR arm is run** (the brief's priority 5 is dropped by its own condition, not for lack of time).
 
@@ -40,7 +40,7 @@ weaker-lambda v2CR arm is run** (the brief's priority 5 is dropped by its own co
 Stated in the section "Check hypotheses" below, written after the development results and **before** any check
 target is scored in this experiment.
 
-## Check hypotheses (written 30 Oct 12:15, after the development results of Run A, before any check target is scored here)
+## Check hypotheses (written after the development results of Run A, before any check target is scored here)
 
 The v2 lambda 1e-3 side of the check set is not untouched: 099 already scored those circuits (0/9 donor passes). The
 new check evidence is v2CR, the weaker-lambda WCM fits, and their random controls. The extra WCM fits at 2.5e-4 and
@@ -56,13 +56,13 @@ also gets a check.
 | H5 | v2CR's own-background (self-donor) ratio exceeds v2's (median), i.e. its gains overshoot the clean background | 1.51 vs 1.20 |
 | H6 | weaker lambda does not help: the pre-stated 'clearly rising' criterion fails at 2.5e-4 and at 5e-5 | fails at both |
 | H7 | pinned recovery rises with size (median pinned A at 5e-5 > at 1e-3) | 0.48 vs 0.19 |
-| H6b | (added 12:45, after the development lambda 1e-5 result, before any check lambda 1e-5 fit) the criterion also fails at 1e-5 on check | fails (dA -0.05, dC +0.01) |
+| H6b | (added after the development lambda 1e-5 result, before any check lambda 1e-5 fit) the criterion also fails at 1e-5 on check | fails (dA -0.05, dC +0.01) |
 | H8 | v2's C-donor loss is lost encoder signal, not Top-K competition: median normalised pre recovery under C < 0.1 and <= 2/9 targets with normalised pre - post > 0.2 | 0.038, 0/9 |
 
-## Results E1-E3 (30 Oct; full tables `out/main/tables.md`, rows `out/main/rows.jsonl`)
+## Results E1-E3 (full tables `out/main/tables.md`, rows `out/main/rows.jsonl`)
 
-Runs: A = dev x {wcm 1e-3, 2.5e-4, 5e-5, v2cr 1e-3} 10:35-12:12; B = dev x wcm 1e-5 12:16-12:42; C = check x {wcm
-1e-3, v2cr 1e-3, wcm 2.5e-4, 5e-5} 12:43-14:17; D = check x wcm 1e-5 14:20-14:45. 0 errors, no rejected fits.
+Runs (in this order): A = dev x {wcm 1e-3, 2.5e-4, 5e-5, v2cr 1e-3}, 1 h 37 min; B = dev x wcm 1e-5, 26 min; C = check x {wcm
+1e-3, v2cr 1e-3, wcm 2.5e-4, 5e-5}, 1 h 34 min; D = check x wcm 1e-5, 25 min. 0 errors, no rejected fits.
 **Checks:** all 18 reused production circuits re-scored here reproduce 099 exactly (same donors; max abs difference 0
 in every per-draw anchor mean for empty / fit / a1 / pinned and in the production scores; `check_vs_099.json`); two
 refits are bit-identical to 099's circuits. Self-donor identities (empty, a1) hold at the anchors (anchor-mean ratio
@@ -190,7 +190,7 @@ overheads; the donor stages are cheap next to the fits.
 | (3) v2CR fits on the 190 sweep targets? | **Yes** (which variant: see the updated E4 recommendation below, R weight 1.0 and/or lambda 2.5e-4), with the donor test and production scoring; plus equal-size random controls fitted under v2CR's objective if pod time allows (doubles the fit cost) | +0.7 donor recovery on 18/18 targets, membership-specific (random 0), at 1.2-1.3x size and 1.4x fit time; but production pass falls (13/18 -> 10/18) and donor pass stays low (3/18), so the population trade-off needs the pod. ~0.1 h wall. A weaker-lambda v2CR is not justified by E1's rule |
 | protocol 12 donor metric | add the paragraph below (draft, not applied) | keeps the pod comparable with 099 / 100 |
 
-**Draft for `paper/protocol-v1.md` §12 (not applied):**
+**Draft for `paper/protocol.md` §12 (not applied):**
 
 > **12.3 Donor-background (causal-scrubbing-style) robustness, reported alongside the pass rule.** For every fitted
 > circuit, the held-out bases (16 strongest held-out activating + 16 held-out contrast contexts) are run with every
@@ -207,7 +207,7 @@ overheads; the donor stages are cheap next to the fits.
 > anchor. The donor test is a robustness diagnostic, stated before any pod result; it is not recursive causal scrubbing
 > and does not replace the production pass rule.
 
-## E4 design and selection rule (Daniel's follow-up; written 30 Oct 14:00, before any E4 fit or result)
+## E4 design and selection rule (Daniel's follow-up; written before any E4 fit or result)
 
 Question: which changes to v2 improve donor-background robustness without hurting production? Development on the 9
 dev targets; the best 1-2 arms are then confirmed on the 9 check targets. All arms lambda 1e-3, 400 steps unless
@@ -236,7 +236,7 @@ record row and against the evaluation random pool (`out/e4_train_random_pool.pt`
 overlap between its training donors and every evaluation pool and refuses to fit on any overlap (counts in
 `fits.jsonl`, field `e4.overlap_exact`).
 
-**Pre-flight (15:00).** A v2CR refit of 2.attn.34021 through `e4_engine` (every E4 switch off) is bit-identical to
+**Pre-flight.** A v2CR refit of 2.attn.34021 through `e4_engine` (every E4 switch off) is bit-identical to
 Run A's v2CR circuit (`out/e4_check/fits_check.jsonl`). A 20-step smoke of every mechanism (`out/e4_smoke`, scores
 meaningless) trained exactly the intended terms: `v2cr-w0.5` / `mixCAR` / `cap2` = zero, floor (C), pos (A),
 resample; `rsAC` = zero + two donor terms (240 donor-fill calls = 2 x 120), no floor / pos; `k4` = 4 donor forwards per
@@ -251,7 +251,7 @@ within 0.05 of the best's; an arm is confirmed on check only if its dev score be
 honest outcome is "nothing beats v2CR", and only v2CR's existing check result stands). Cut order if time runs short:
 from the bottom of the priority table.
 
-## E4 results (development 15:00-21:46; check confirmation from 21:46; tables `out/e4/tables_e4.md`)
+## E4 results (development ~6 h 46 min, then the check confirmation; tables `out/e4/tables_e4.md`)
 
 Dev, 9 targets, every arm complete (0 errors, no rejected fits). Score = median min(donor A, donor C). Fit time =
 arm / v2 per target (median). Paired = arm minus v2CR per target (median; targets where the arm is higher).
@@ -297,7 +297,7 @@ check (`e4_check.sh`, started automatically when the dev chain finished).
   slightly (0.657): robustness uses some large gains but does not depend on them.
 - Random controls under every arm's objective stay at 0.00: every gain is membership-specific.
 
-### E4 check confirmation (9 check targets, 21:46-22:59; v2 and v2CR from Run C)
+### E4 check confirmation (9 check targets, ~1 h 13 min; v2 and v2CR from Run C)
 
 | arm | size (x v2) | prod pass | pre pass | donor A | donor C | donor R | score | donor pass | random A / C | fit time x v2 | paired vs v2CR |
 |---|---|---:|---:|---|---|---|---:|---:|---|---:|---|

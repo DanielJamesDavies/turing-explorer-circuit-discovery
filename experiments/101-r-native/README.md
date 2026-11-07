@@ -1,6 +1,6 @@
 # 101: the resample term R made native (WCM_VERSION=v2cr)
 
-31 October 2026 (agent r-port). Goal: the pod run's protocol "v2 + R_C" (Daniel approved 2026-10-31) must not depend on
+Agent r-port. Goal: the pod run's protocol "v2 + R_C" (approved by Daniel) must not depend on
 in-memory source patches. R (079's donor-resample term, 092 / 095's sparsity-preserving donor fill) is now a native,
 default-off option of the production engine and a driver version.
 
@@ -37,11 +37,11 @@ Historical scripts are untouched and still reproduce: every 079 / 092-t3 / 095 /
 once in the new src, the native code they inherit is dormant (`patcher_donor` is None), and `test_101_equiv_cpu.py`
 runs their patched engines next to the native one.
 
-## Design decision: unweighted arms under v2 (coordinator-approved 2026-10-31)
+## Design decision: unweighted arms under v2 (coordinator-approved)
 
 The 095 patch built its donor patcher with `train_fill="dense"` and hooked the donor fill only on the free-amplitude
 branch, so an UNWEIGHTED (gate-only) fit with R got the dense donor fill even under v2. Native gives the unweighted
-donor term the same sparsity-preserving donor fill at alpha = 1 (the 2026-10-26 rule: U differs from WCM only in the
+donor term the same sparsity-preserving donor fill at alpha = 1 (the existing rule: U differs from WCM only in the
 coefficients). No historical circuit used the old behaviour (100's random controls are free-amplitude), but the
 difference is real and tested (`test_unweighted_sparse_differs_by_design`). Under `train_fill="dense"` both agree.
 
@@ -53,7 +53,7 @@ curve. Unweighted dense identical; unweighted sparse differs by design.
 
 **GPU, production path** (`run_smoke.sh` + `compare.py`, `out/compare.json`): the 062 driver, `MODE=main`,
 `WCM_VERSION=v2cr`, on 099's audited records (as 100), 400 steps, compared with 100's Run A/C `v2cr_1e-3` circuits
-(095 patch, fitted 30 Oct on the same src engine). The same targets under `WCM_VERSION=v2` against 099's production
+(095 patch, fitted on the same src engine). The same targets under `WCM_VERSION=v2` against 099's production
 circuits.
 
 | target | v2cr vs 100 v2CR | v2 vs 099 |
@@ -64,7 +64,7 @@ circuits.
 
 Only the scorer's wall time / peak memory fields differ. 400 donor draws per fit, 48 donors, resample fill calls 2400 /
 7600 / 3200 (sites x forwards, = 100's `donor_sp_calls` 2400 on 2.attn.34021). (095's own 72 v2CR circuits were fitted
-on 26 Oct, before the 27 Oct src change, so 100's circuits are the reference on today's engine; 100's E4 pre-flight had
+before a later src change, so 100's circuits are the reference on the current engine; 100's E4 pre-flight had
 already shown its rs2 refit bit-identical to them.)
 
 ## Tests

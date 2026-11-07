@@ -1,6 +1,6 @@
 # 062 — Protocol-v1 runs on H100s
 
-2026-09-26. The first at-scale runs under the final protocol (DAN-75 spec). They run the protocol through the same
+The first at-scale runs under the final protocol (DAN-75 spec). They run the protocol through the same
 injection harness as 059 / 061 (`../059-context-pool/protocol_harness.py`), which reproduces local results exactly.
 DAN-78 will later move the context protocol into the production path.
 
@@ -17,7 +17,7 @@ The sweep reuses main's contexts, and main's circuits for its WCM λ = 1e-3 arm,
 - `merge.py`: summary, safe to run any time.
 - `make_targets.py`: target lists (already generated and committed).
 
-**Public models (DAN-40/41, 2026-10-23).** `driver.py` and its companions (`random_null.py`, `rescore_alpha1.py`,
+**Public models (DAN-40/41).** `driver.py` and its companions (`random_null.py`, `rescore_alpha1.py`,
 `stable_core.py`, `../073-strict-eval/strict_eval.py`) take `FAMILY=pythia-70m | gpt2-small` with `DATA` / `STORES`
 (the 069 data pass's shards and artefacts; default `data_public/<FAMILY>`, `outputs_public/<FAMILY>`). The default
 `FAMILY=turingllm` is the 15k run's path, unchanged (bitwise on 2 golden targets, fit + score + specificity + α = 1).

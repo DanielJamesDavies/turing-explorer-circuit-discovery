@@ -1,4 +1,4 @@
-# D3.7 gate test — per-latent ceilings vs uniform alpha (2026-08-01)
+# D3.7 gate test — per-latent ceilings vs uniform alpha
 
 Fixed AMPC sets (D1 direct-mass, identical pin>0 inclusion), K in
 {8,16,64}, 11 seeds. Per-latent ceiling = the member's MAX activation
@@ -46,7 +46,7 @@ genuinely counterfactual, not just compensating for probe averaging.
 This sharpens the "engineered state" caveat on the L11/K=1 headline and
 belongs next to it in the paper.
 
-## SECOND GATE (2026-08-02): the GLOBAL topctx-max ceiling — also fails
+## SECOND GATE: the GLOBAL topctx-max ceiling — also fails
 
 The first gate used an IN-MECHANISM ceiling (max on the SEED's own
 contexts). Daniel's original proposal named a looser anchor: each

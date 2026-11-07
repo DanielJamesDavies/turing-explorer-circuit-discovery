@@ -1,7 +1,6 @@
-# 107: the method comparison with other papers' true algorithms (plan, 2026-11-01)
+# 107: the method comparison with other papers' true algorithms (plan)
 
-Status: **plan settled, code cloned, nothing run.** Asked by Daniel on 2026-11-01; decisions recorded below
-(2026-11-01 evening). This supersedes the 083 / 098 comparison rows (see "What leaves the comparison"). Linear: DAN-188
+Status: **plan settled, code cloned, nothing run.** Asked by Daniel; decisions recorded below. This supersedes the 083 / 098 comparison rows (see "What leaves the comparison"). Linear: DAN-188
 and its sub-issues DAN-189 to DAN-204.
 
 The exact algorithm, pseudocode, setup, fidelity checks and open ambiguities of every method are in `specs/`:
@@ -44,7 +43,7 @@ Where this README and a spec disagree, the spec is the more detailed source; fix
    (site, position, latent), Caples' per-position masks) goes in a second column (decision 7).
 7. **Statistics:** medians with p10, paired bootstrap CIs over targets or tasks.
 
-## Arenas (decided 2026-11-01)
+## Arenas (decided)
 
 | arena | model + dictionaries | baseline | code | WCM side |
 |---|---|---|---|---|
@@ -144,7 +143,7 @@ comparisons (rule 2).
 
 - **What is published:** a MATS report (LessWrong / AF, 2025-01-10) on Gemma-2-9B with four Gemma Scope 16k residual
   SAEs, fp32, ~43 GB. It does not fit 16 GB.
-- **What we run (Daniel, 2026-11-01): the same method on Gemma-2-2B.** The authors' own code has a 2B path after the
+- **What we run (Daniel): the same method on Gemma-2-2B.** The authors' own code has a 2B path after the
   post (`interp_bottlenecks.py`, `scripts/sae_gap.sh`: `gemma-scope-2b-pt-res`, SAEs at layers 0/6/12/18/24 at L0 ≈
   100, lr 0.05). The row is labelled "Caples et al.'s method and code, Gemma-2-2B (an unpublished configuration of
   the authors')". Precision: bf16, or fp32 with two memory-only changes (SAE params frozen; reference forward under
@@ -159,7 +158,7 @@ comparisons (rule 2).
 - **Fidelity:** only the authors' post-publication 2B saegap6 masks are available as anchors (47 → 0.968, 87 → 0.901,
   157 → 0.963, 370 → 0.972, 790 → 0.965 against the true model). The 9B checks F1–F7 do not apply.
 
-## Third-party code (cloned 2026-11-01, Daniel's approval)
+## Third-party code (cloned with Daniel's approval)
 
 All under the repo-root `third_party/` folder, which is gitignored (never committed). Each in its own environment when
 run.
@@ -175,14 +174,14 @@ run.
 
 Weights and data are fetched separately, with the revisions in each spec.
 
-## Local GPU rules (Daniel, 2026-11-01)
+## Local GPU rules (Daniel)
 
 - Runs happen **overnight only, at most 8 h a night**, on the 16 GB card. Nothing runs during the day.
 - Every job is **resumable per circuit** (a finished circuit is never refitted) and is launched with a **hard stop
   time (07:30)**; a job killed at the stop loses at most the circuit in progress.
 - Each arena starts with a short timing pilot before its overnight run.
 
-## Decisions (Daniel, 2026-11-01 evening)
+## Decisions (Daniel)
 
 1. **Pod T7 off by default** (`TL_DAN159=0` in `082/chain.sh`; runbook budget ~136 GPU-h, ~$469). Done (DAN-189).
 2. **Clone the official code** into a gitignored folder. Done (table above).
@@ -192,7 +191,7 @@ Weights and data are fetched separately, with the revisions in each spec.
 5. **CircuitLasso kept**, lowest priority, with our labelled read-out rule.
 6. Size units: both counts (rule 6). SFC held-out: their test split plus a deduplicated split, labelled.
 
-## Prior replications (literature check, 2026-11-01)
+## Prior replications (literature check)
 
 - **SFC:** official code. Kharlapenko et al. 2025 (arXiv 2504.13756) scaled it to Gemma-2B: nodes are (latent, token
   type); size chosen by node count; zero ablation on a held-out batch; attribution patching unreliable before layer 6.
@@ -213,7 +212,7 @@ These were our adaptations presented as other papers' methods:
 They stay in the record (083, 098) as internal diagnostics, not as rows attributed to those papers. Consequences:
 - the pod chain's T7 stage, which ran these rows, is off by default (decision 1);
 - the tutor PDF's Table 1 and the paper's method-comparison appendix are rewritten from the arena results (DAN-199);
-- `paper/main.tex:1560` must say that Caples drops the SAE error, and the 2026-09-28 audit §4's temperature schedule
+- `paper/main.tex:1560` must say that Caples drops the SAE error, and the baseline audit's (`dev-notes/2026-09-28-baseline-audit.md`) §4 temperature schedule
   is wrong (T reaches 627–993, not ~340) (`specs/caples.md`).
 
 ## Order and estimates (estimates, not measurements)

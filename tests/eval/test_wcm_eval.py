@@ -73,7 +73,7 @@ class TestMaths:
         md = dict(n_train=48, n=58)
         assert W.eval_split(64, dict(n_train=48), "explicit") == 48
         assert W.eval_split(58, md, "explicit") == 48           # the padded mid-band probe: held-out stays held out
-        assert W.eval_split(58, md, "as_run") == 44             # protocol-v1.md §3.6: 4 train contexts move
+        assert W.eval_split(58, md, "as_run") == 44             # protocol.md §3.6: 4 train contexts move
         assert W.eval_split(58, None, "as_run") == 44
 
     @pytest.mark.parametrize("md", [None, {}, dict(n_train=0), dict(n_train=58), dict(n_train=60)])

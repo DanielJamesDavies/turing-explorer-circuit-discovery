@@ -1,6 +1,6 @@
 # Spec: Sparse Feature Circuits (Marks et al.), as published and as coded
 
-Written 2026-11-01 for 107 arena C. This file describes what the paper and the official code do. It does not describe
+Written for 107 arena C. This file describes what the paper and the official code do. It does not describe
 what we think they should do. Anything we would change is labelled **our adaptation**.
 
 ## 0. Sources read, and how to read the tags
@@ -699,7 +699,7 @@ adaptation**.
 
 ---
 
-## 12. Branches, bug fixes and memory (follow-up, 2026-11-01)
+## 12. Branches, bug fixes and memory (follow-up)
 
 The GitHub REST API rate limit was hit partway through, so some ahead/behind counts come from the github.com compare
 pages, which report "nothing to compare" (0 ahead) or "N commits" (N ahead) but not the behind count.

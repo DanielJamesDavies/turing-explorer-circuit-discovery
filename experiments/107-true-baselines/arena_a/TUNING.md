@@ -1,7 +1,7 @@
-# Arena A: tuning WCM for the tc + z substrate (A13, 2026-11-05, agent `a-tune`)
+# Arena A: tuning WCM for the tc + z substrate (A13, agent `a-tune`)
 
-Goal (Daniel, 2026-11-05 ~13:10): make WCM sensible on arena A's substrate (GPT-2 small + Dunefsky transcoders `tc`
-+ Kissane attention SAEs `z` / `z2`) before Saturday's comparison. Only OUR method is tuned. Ge and Dunefsky stay
+Goal (Daniel): make WCM sensible on arena A's substrate (GPT-2 small + Dunefsky transcoders `tc`
++ Kissane attention SAEs `z` / `z2`) before the comparison on the 8×H100 pod. Only OUR method is tuned. Ge and Dunefsky stay
 exactly as published (their own knobs are swept as curves). λ is already a curve on the pod, so this sweep tunes the
 other knobs at the pod's λ 1e-3 point.
 
@@ -65,7 +65,7 @@ processes, and ~3 min of scoring. NEC adds ~15% (one more forward per step); STE
 - RANK_CUT_K: Top-K only.
 - γ (A / C weight) and the R weight: not reachable in MODE=main without touching 062's driver.
 
-## 3. Selection rule (PRE-REGISTERED 2026-11-05, before any tuning run; `tune_summary.py` applies it mechanically)
+## 3. Selection rule (PRE-REGISTERED before any tuning run; `tune_summary.py` applies it mechanically)
 
 - Units: the 9 dev targets, held-out strongest (ho).
 - A config is **eligible** only when every dev target is either scored or listed in `KILLED`. A fit killed by a

@@ -1,10 +1,10 @@
-# Ge et al. hierarchical-attribution replication (2026-08-11)
+# Ge et al. hierarchical-attribution replication
 
 Replication of the discovery method of Ge et al. 2024 (arXiv:2405.13868)
 as a first-class comparison arm, rooted at internal seed latents, run on
 the SAME 22 matrix seeds / held-out protocol / scoring code as
 tab:matrix (029-panel + 031-matrix), so it lands as a
-matrix row. Requested by Daniel 2026-08-11 ("actual replication ... real
+matrix row. Requested by Daniel ("actual replication ... real
 results to compare").
 
 ## Their method (from the paper, arXiv:2405.13868)
@@ -72,7 +72,7 @@ Expected story: high attribution-mass recovery can coexist with 0.00
 real-model ablation faithfulness — the analytic-vs-interventional gap
 made quantitative (home-turf at the evaluation level).
 
-## RESULTS (full 22-seed run, 2026-08-11)
+## RESULTS (full 22-seed run)
 
 Medians over 22 seeds (all held-out): n=359 (targets landed 0.86-1.14x),
 F0=0.63 (bimodal dead-or-overshoot: per-seed 0.00-186, only ONE seed in
@@ -139,7 +139,7 @@ seeds: the members attribution cannot see are load-bearing."
 
 ## Status
 
-- 2026-08-11: smoke launched (1 seed). Full 22-seed run pending smoke.
+- Smoke launched (1 seed). Full 22-seed run pending smoke.
   Estimated full-run cost: per bisection step, one forward+backward per
   upstream site over 48 probes at bs=8; deep seeds ~35 sites -> minutes
   per step, ~2-5h total.

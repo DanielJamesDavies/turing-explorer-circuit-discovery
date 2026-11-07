@@ -1,13 +1,13 @@
 # 049 — Circuit-level graph over the production tri-amp circuits
 
-Daniel's question (2026-09-07, night): with ~16k circuits, treat circuits
+Daniel's question: with ~16k circuits, treat circuits
 as nodes and find the "organs" — causal relationships between circuits,
 fan-in/fan-out, shared dependencies/sub-circuits.
 
-Two datasets. **Snapshot** (01:05 UTC, 7,310 circuits, seeds L0–L3 +
+Two datasets. **Snapshot** (7,310 circuits, seeds L0–L3 +
 L9–L11 only because of the interleave): `data/`, `tables/`, `results/`;
-sections 1–8 below were written on it overnight and are kept as the
-record. **Full set** (run complete 06:43 UTC, 15,046 circuits from 15,925
+sections 1–8 below were written on it and are kept as the
+record. **Full set** (run complete, 15,046 circuits from 15,925
 seeds): `data_full/`, `tables_full/`, `results_full/`; **section 0 is the
 full-set summary and supersedes the snapshot numbers wherever they
 differ.** Same scripts, `TABLES=…/tables_full OUT=…/results_full`.
@@ -288,7 +288,7 @@ token and overwriting them moves the model's threshold; the decision is
 read from that position by late attention, not from swappable members
 at the end.
 
-## 0e. Circuits as ALGORITHMS: the census, and what it found (2026-09-13/14)
+## 0e. Circuits as ALGORITHMS: the census, and what it found
 
 Daniel: "I want to see a circuit that computes something… multiple
 concepts/variables figuring things out", then "let's find more circuits
@@ -375,7 +375,7 @@ positive meaningful.
 
 ## 0d. Are there interesting circuits in TuringLLM? (`interesting_circuits.py`, `interesting_report.py`, `tl_case_study.py`)
 
-Hypothesis (Daniel, 2026-09-12): "TuringLLM doesn't have many circuits
+Hypothesis (Daniel): "TuringLLM doesn't have many circuits
 we're interested in". Test: rank all 15k on abstract (low seed
 top-token consistency) + specific (low hub share) + composed (layer
 spread) + modulating (amplitude work) + depended-on (in-degree), each

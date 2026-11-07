@@ -1,6 +1,6 @@
 # CircuitLasso (Yin et al. 2026, "Scalable Circuit Learning for Interpreting Large Language Models"): reading notes
 
-arXiv 2606.16939 **v2** (9 Oct 2026), ICML 2026, bib key `yin2026scalable`. Read 2026-10-27 for exp 098 (DAN-159 baseline row).
+arXiv 2606.16939 **v2** (9 Oct 2026), ICML 2026, bib key `yin2026scalable`. Read for exp 098 (DAN-159 baseline row).
 
 ## How it was read
 

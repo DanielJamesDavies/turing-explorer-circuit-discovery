@@ -8,7 +8,7 @@ Peak lr of the 100-step arms: matched to production's lr budget sum(lr) under th
 0.05, warm-up round(0.1 * steps)), the budget the v4 x3.15 multiplier was defined by (driver.py:97-101,
 latent_pilot README part 2: sum(lr) sets both the pruning walk and the decay budget sum(lr) * wd). lr_sum() below is
 learned_mask.lr_at (src/circuit/instrument/learned_mask.py:1630-1650) transcribed; check_budget() asserts the
-production sum 21.40 that the spec quotes (dev-notes/2026-11-06-wcm-production-spec.md §3).
+production sum 21.40 that the spec quotes (paper/protocol.md §0.3).
 """
 
 PROD_PEAK = 0.05 * 3.15          # config lr 0.05 (src/config.py:682) x WCM_LR_MULT["v4"] (driver.py:104) = 0.1575

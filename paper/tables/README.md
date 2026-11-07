@@ -28,7 +28,7 @@ bands and k come from `062/family_table.py`).
 - **Headline pass (post-Top-K).** merge.py `passes`: Z, A, C (`free0_tk`, `freeM_topk_tk`, `freeN_topk_tk`) in
   [0.75, 1.5] and necessity (`phi_sup_blind_tk`) >= 0.9; a missing score fails. (Floor 0.8 until 2026-10-31; the
   v1-validation outputs were made at 0.8.)
-- **Pre-activation pass** (protocol-v1.md section 12.1, baseline 0): Z_pre = `free0_raw_pre / a_pos_pre`,
+- **Pre-activation pass** (protocol.md section 12.1, baseline 0): Z_pre = `free0_raw_pre / a_pos_pre`,
   necessity_pre = `(a_pos_pre - phi_sup_blind_raw_pre) / a_pos_pre`, A and C = `freeM_topk_pre`, `freeN_topk_pre`;
   same band and threshold; a non-positive `a_pos_pre` fails. Same population as the headline.
 - **Intervals.** 95% Wilson score intervals on the pass counts (z = 1.96).

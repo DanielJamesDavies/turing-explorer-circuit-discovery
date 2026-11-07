@@ -1,4 +1,4 @@
-# Pruned 8-arm 32-seed run (2026-07-19)
+# Pruned 8-arm 32-seed run
 
 Baseline × schedule lattice, all position-aware, `abs_pctl@90` union +
 `abs_pctl@95` restoration rounds, **magnitude-bisection prune ON** (relative

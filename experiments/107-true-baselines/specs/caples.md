@@ -1,6 +1,6 @@
 # Spec: Caples et al. 2025, learned binary masks over SAE latents ("Scaling Sparse Feature Circuit Finding to Gemma 9B")
 
-Written 2026-11-01 by `spec-caples` for 107 (proposed arena D, Gemma-2). This file says what the post and the authors'
+Written by `spec-caples` for 107 (proposed arena D, Gemma-2). This file says what the post and the authors'
 code do. Anything we would change is labelled **our adaptation**. Nothing was cloned or downloaded: the code was read as
 raw text through the GitHub API, and the post through WebFetch.
 
@@ -478,7 +478,7 @@ These are the curves behind the post's figures [code masks/**/_run.json]. Size =
 - **Its res sites:** 050's three-kind fits used `LAYER_STRIDE = 2` to fit the card [050 README:52-58].
 - **Neither is 9B, and neither uses Caples' 4-site, no-error, per-position-mean set-up.**
 - `fit_gemma_task.py` is a **standalone port** (tri-amp era), not `src/circuit/instrument/learned_mask.py`. The
-  2026-09-22 implementation audit found bugs in the standalone ports, so reuse it only after a parity test against the
+  implementation audit found bugs in the standalone ports, so reuse it only after a parity test against the
   engine [inferred, memory `implementation-audit-2026-09-22`].
 
 ### 9.2 What WCM needs for arena D (build list)
@@ -616,7 +616,7 @@ unpublished configuration".
 Sources for our arm:
 - `src/config.py:650-890` (house recipe);
 - `learned_mask.py:808-828, 1529, 1688, 1986-1999`;
-- the 2026-09-28 audit §4;
+- `dev-notes/2026-09-28-baseline-audit.md` §4;
 - 061 README.
 
 "Unweighted arm" = WCM with amplitudes fixed at 1 (`free_amplitude = False`), as run in 061 and protocol v1.

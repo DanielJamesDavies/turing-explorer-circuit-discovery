@@ -4,7 +4,7 @@ Circuits for **randomly drawn** production targets, shown next to the curated ca
 random examples, not only the best ones). Paper: App. "Circuits for Randomly Drawn Targets" (`app:random-gallery`,
 `tab:random-gallery`), pointed to from §5.3.
 
-**Design (Daniel, 2026-10-12):**
+**Design (Daniel):**
 
 * **Sample:** 9 targets, one per depth band (L0-4 / L5-7 / L8-11) × site kind (attn / mlp / resid).
   * Drawn uniformly from the non-vacuous circuits of each cell, `SEED` 20261012, any outcome.

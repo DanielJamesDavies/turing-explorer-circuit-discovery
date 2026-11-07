@@ -1,4 +1,4 @@
-# Why these 52 rows are superseded (2026-07-30)
+# Why these 52 rows are superseded
 
 Two independent reasons, either of which alone would invalidate a comparison
 against newer rows:

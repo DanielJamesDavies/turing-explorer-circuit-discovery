@@ -1,4 +1,4 @@
-# negctx-floor-grid (2026-07-23)
+# negctx-floor-grid
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 

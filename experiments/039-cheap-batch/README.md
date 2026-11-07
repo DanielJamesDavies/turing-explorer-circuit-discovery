@@ -1,6 +1,6 @@
 # Cheap-analysis batch (holiday questions 1, 3, 4, 5, 7)
 
-2026-08-21. Four analyses on existing artifacts; ~1 GPU-hour total.
+Four analyses on existing artifacts; ~1 GPU-hour total.
 
 ## A. Amplitude distribution (`alpha_dist.py`)
 

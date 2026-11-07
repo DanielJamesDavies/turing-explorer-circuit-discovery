@@ -1,6 +1,6 @@
 # 060 — The running example under protocol v1: 3.resid.35381 (the "temperature" latent)
 
-2026-09-25. Refit of the paper's running example (pre-v1 study: `../032-running-example`) under the final protocol:
+Refit of the paper's running example (pre-v1 study: `../032-running-example`) under the final protocol:
 - 32 strongest + 16 mid-band contexts, stratified split, close contrast contexts, rank-keep;
 - arms B (γ 0.25, λ 1e-3) and Bw (γ 1, λ 2e-3).
 

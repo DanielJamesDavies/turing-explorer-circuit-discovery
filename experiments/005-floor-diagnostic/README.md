@@ -1,4 +1,4 @@
-# floor-diagnostic (2026-07-23)
+# floor-diagnostic
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 

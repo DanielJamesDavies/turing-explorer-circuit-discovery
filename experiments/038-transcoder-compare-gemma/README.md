@@ -1,6 +1,6 @@
 # circuit-tracer on its OWN turf: Gemma-2-2B + the default "gemma" scan
 
-2026-08-21/22. Both sides read circuit-tracer's shipped transcoder files
+Both sides read circuit-tracer's shipped transcoder files
 (mwhanna/gemma-scope-transcoders = GemmaScope JumpReLU transcoders, 16k,
 one L0 pick per layer) — NO weight conversion. 6 seeds (3 at L4, 3 at
 L6), 48 train / 16 held-out windows, BOS prepended, position 0 excluded.
@@ -102,7 +102,7 @@ logs `run.log`, `theirs_run.log`, `score_theirs.log`, `sweep.log`.
 Weights at `$HOME/gemma_tc` (native disk).
 
 
-## Deep dive + consensus frontier (2026-08-26)
+## Deep dive + consensus frontier
 
 `gemma_deep_dive.py` -> `gemma_deepdive.pdf/png` + `deepdive_stats.md`
 (CPU, from stored circuits) and a GPU CONSENSUS-FRONTIER sweep
@@ -126,7 +126,7 @@ frequency-head truncation, but the gap stays two orders of magnitude);
 the hybrid fits rescue them; (6) their sets concentrate on layer 0
 (matched head ~88% layer-0) vs our mass spread across the cone.
 
-### Qualitative anatomy + the echo test (2026-08-26)
+### Qualitative anatomy + the echo test
 
 `fetch_labels.py` caches Neuronpedia auto-interp labels (397 features:
 our six circuits, their six matched heads, the seeds) ->

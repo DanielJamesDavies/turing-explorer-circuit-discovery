@@ -71,7 +71,7 @@ LOGIT_NORM = "gap"                # as 080: each data term ~ (1 - faithfulness)^
 # (2026-10-27) "gap_term" = each ablation term by its own closed-mask gap^2 (learned_mask logit_norm; the A/B of the
 # v2 local run). Any value of the run config's / calibrate.py's logit_norm is passed through to the engine.
 LOGIT_NORMS = ("gap", "gap_term")
-# WCM protocol version (2026-10-27; paper/protocol-v1.md section 12). v2 = the A and C training terms under the
+# WCM protocol version (2026-10-27; paper/protocol.md section 12). v2 = the A and C training terms under the
 # scorer's sparsity-preserving fill with straight-through gradients (learned_mask train_fill / sparse_grad), as 062's
 # driver.WCM_VERSIONS. Protocol v2's third field, train_means_source="eval_ref" (train against the scorer's own A / C
 # means), holds BY CONSTRUCTION here: engine.means(B) computes the A / C means once per task and the SAME tensors are

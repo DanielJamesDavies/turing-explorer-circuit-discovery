@@ -1,4 +1,4 @@
-# PA structure diagnostics (2026-07-19)
+# PA structure diagnostics
 
 ## Test 1 — shared closure library (`shared_library_test.py`, 9 seeds, abl-ig_mean PA)
 

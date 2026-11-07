@@ -1,6 +1,6 @@
 # 067 — src scorer equivalence (DAN-73)
 
-2026-10-09. DAN-73 moved the protocol-v1 scorer into src: `src/eval/wcm_eval.py` (`score_circuit`, the pass rule,
+DAN-73 moved the protocol-v1 scorer into src: `src/eval/wcm_eval.py` (`score_circuit`, the pass rule,
 vacuity, the graded companion) and `src/eval/wcm_specificity.py` (`specificity_rows`, the amplifier flag, the
 near-threshold stratum). The public-model runs (Pythia-70m, GPT-2 small) and any TuringLLM rerun score with them.
 This check shows they reproduce the 062 run's scorer on the run's own circuits before anything is quoted from them.
@@ -12,7 +12,7 @@ in both split modes. This script runs the same comparison on TuringLLM on the GP
 ## What it does
 
 `check_equivalence.py` picks 12 targets stratified over depth band × site kind, plus 4 of the 58 padded mid-band
-targets (mid-band eval rows with `n_pos < 64`, protocol-v1.md §3.6). It uses the run's cached contexts
+targets (mid-band eval rows with `n_pos < 64`, protocol.md §3.6). It uses the run's cached contexts
 (`062/out_full/out/ctx`) and circuits (`062/out_full/out/main/circuits`). Then:
 
 | | Comparison | Expectation |

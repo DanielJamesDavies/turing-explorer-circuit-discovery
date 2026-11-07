@@ -1,4 +1,4 @@
-# D3.6 — Mask-refine over attribution support: 24-seed run (2026-08-01)
+# D3.6 — Mask-refine over attribution support: 24-seed run
 
 Daniel's proposal, run at his direction: the learned mask trained ONLY
 over an attribution-proposed candidate support (R = abl-restoration PA
@@ -81,7 +81,7 @@ with depth — 10-50k shallow, 50k deep mlp, 100-200k deep resid; with
 that schedule the restriction is viable EVERYWHERE, and the D3.6 idea
 stands panel-wide.
 
-## FINAL VERDICT (Daniel, 2026-08-01)
+## FINAL VERDICT (Daniel)
 
 Not a paper result. The wins are modest and band/kind-conditional, and
 a depth-scaled width schedule is more machinery than the free mask

@@ -1,6 +1,6 @@
 # Arena C: the WCM adapter for Pythia-70m-deduped + Marks SAEs (DAN-194)
 
-Written 2026-11-01, before the code (`wcm_marks.py`, `test_wcm_marks.py`). Production is frozen at `WCM_VERSION=v3`;
+Written before the code (`wcm_marks.py`, `test_wcm_marks.py`). Production is frozen at `WCM_VERSION=v3`;
 nothing under `src/`, `experiments/082-*`, `paper/` or `third_party/` is changed. Everything new is in this folder and
 registers itself at import time. Each place where our setup is our choice rather than SFC's is tagged **[ours]**.
 
@@ -109,26 +109,26 @@ Z + C + A (triple floor, γ_C = γ_A = 0.25), free coefficients, AdamW, `logit_n
 `binarize`/keep threshold from the production config, the 100 training items cycled without replacement within an
 epoch.
 
-**Behavioural WCM = Z + A + C + R, no rank-keep (Daniel, 2026-11-02).** In numbers (`wcm_marks.V3_LOGIT`, = 062
+**Behavioural WCM = Z + A + C + R, no rank-keep (Daniel).** In numbers (`wcm_marks.V3_LOGIT`, = 062
 `driver.WCM_VERSIONS["v3"]` without `WCM_RANK`): `train_fill="sparse"`, `sparse_grad="ste"`, `resample_weight=1.0`,
 `resample_k=1`, `rank_weight=0`. R's donor rows are the training items' `patch_prefix` prompts (the C mean's pool);
 they replace the clean rows position by position, so the adapter asserts they have the clean prompts' token length
 (true on SFC's min-length sets).
 
 *Why no rank-keep.* A behavioural rank-keep (the answer token holds its clean rank among the vocabulary, weight 0.1) was
-added on 2026-11-01 and removed the next night. It made fits collapse: `simple` λ 1e-5 pooled gave Z 0.00 with it,
+added and then removed. It made fits collapse: `simple` λ 1e-5 pooled gave Z 0.00 with it,
 0.89 without it, and 1.00 without both it and R (`ablate_terms.py`, `out/ablate_terms/rows.jsonl`). Across the first
 24 pooled fits, every fit with a large final rank term (5–50) had low Z, while the same members at α = 1 scored
 0.6–1.0. The answer's absolute vocabulary rank is arbitrary here (the full model ranks the right verb first on only 10%
 of `simple` prompts), and the logit difference already scores the answer against its rival, the wrong verb. Those 24
 fits (`out/wcm_tasks/`) are superseded and are not reported.
 
-**Maskable scope (decided 2026-11-01): the 18 attn / mlp / resid sites, embedding excluded** (`--sites noembed`, the
+**Maskable scope (decided): the 18 attn / mlp / resid sites, embedding excluded** (`--sites noembed`, the
 default; latent targets: their upstream sites minus embed, via a NullSAE at (0, embed), `MARKS_EMBED=1` to undo). Layers
 0-1 stay in, although SFC's evaluator leaves them unablated (`start_layer=2`); `--sites ge2` (12 sites) is SFC's
 evaluated scope, the scope-matched row. `--sites all` (19) is kept for diagnostics only.
 
-**A / C means, reported both ways (Daniel, 2026-11-01):** `--means pooled` = the protocol's [d_sae] means over every
+**A / C means, reported both ways (Daniel):** `--means pooled` = the protocol's [d_sae] means over every
 real prompt token; `--means per_position` **[ours: an adaptation for fixed-length templates, matching SFC's
 per-position mean ablation]** = [T, d_sae] means, A over the training clean prompts and C over the training patch
 prompts, position by position (one prompt length T per task, asserted). The same tensors go to the fit and the scorer.
@@ -162,14 +162,14 @@ with errors removed, `features_wo_errs`; that scoring is DAN-196's).
 | 3 | k | none (ReLU) | k = d_sae (whole code) | ours, exact |
 | 4 | sparse fill | — | = plain mean fill (consequence of 3) | ours, stated |
 | 5 | null embed slots (1..5, embed) | — | inert placeholders | ours, no numeric effect |
-| 6 | behavioural WCM | — | Z + A + C + R (donors = training patch prompts), no rank-keep | Daniel's definition (2026-11-02), stated |
+| 6 | behavioural WCM | — | Z + A + C + R (donors = training patch prompts), no rank-keep | Daniel's definition, stated |
 | 7 | scope | evaluator ablates layers ≥ 2 only, never the embedding (`include_embed=False`) | 18 sites, embed excluded (default); `ge2` = 12 = their scope | ours: the embedding is out because SFC never ablates it and zeroing it explodes the Z empty circuit (§7: 7 of 8 resid targets at layer ≥ 2 vacuous with it, e.g. median e0 1e10 vs clean 0.98; without it median e0 −2.1 to 1.3, though a tail of anchors still explodes, §7) |
 | 8 | our ablations | mean over the 40 eval patch prompts, per position | Z; A = training clean mean; C = training patch mean; `pooled` (protocol) and `per_position` rows | pooled = the shared protocol; per_position = ours (fixed-length templates; SFC's convention) |
 | 9 | data | 100 train / 40 test, min length | the same sets (`sfc`); larger / dedup held-out | `sfc` = theirs; others ours |
 | 10 | model stack | nnsight 0.3.7 | HF forward hooks, torch 2.8, transformers 5.1 | environment; tested equal |
 | 11 | precision | float32 | float32, no TF32 | same |
 
-## 7. Measured (2026-11-01, RTX 5070 Ti; tests on the CPU)
+## 7. Measured (RTX 5070 Ti; tests on the CPU)
 
 **Tests** (`test_wcm_marks.py`, 4 pass):
 - parity with `dictionary_learning.AutoEncoder`, all 19 dictionaries: max |Δf| 1.5e-5 (real activations), 3.6e-5
@@ -185,8 +185,8 @@ within_rc 2, rc 0, nounpp 0; prefix in the discovery set 40 / 5 / 0 / 1; prefix 
 Min lengths: simple 2, within_rc 5, rc 6, nounpp 5 (train and test agree). The `dedup` held-out (test prefixes not in
 the 100 discovery prompts) is empty for simple.
 
-**SUPERSEDED (kept for the record): the first smoke and Finding 1 below were scored before the scorer fix of
-2026-11-01** (the 1-D sparsity-preserving fill at k = d_sae could overwrite KEPT latents with their means), with the
+**SUPERSEDED (kept for the record): the first smoke and Finding 1 below were scored before the scorer
+fix** (the 1-D sparsity-preserving fill at k = d_sae could overwrite KEPT latents with their means), with the
 embedding in scope. Their A / C numbers are wrong; the rerun is "Smoke 2" further down.
 
 **Smoke 1, simple, `sfc` data, 400 steps, v3, 19 sites** (held-out = SFC's 40; fit ≈ 73 s, peak 3.3 GB; score 0.6 s):
@@ -274,7 +274,7 @@ curve needs the smaller ones (3e-6 to 3e-5).
 **Donor test for task circuits** (`donor_tasks.py`, tests `test_donor_tasks.py`: self-donor empty circuit = full
 model to 0.0 on 40 bases; full circuit recovers 1.0 under A / C / R; draws deterministic). Pools A = training clean
 prompts, C = held-out patch prompts, R [ours] = 256 smoke-corpus windows truncated to T; 8 draws; 40 bases. First
-scores (2026-11-02, behavioural v3 = Z + A + C + R, pooled means, noembed):
+scores (behavioural v3 = Z + A + C + R, pooled means, noembed):
 
 | circuit | latents | Z / A / C / nec | prod pass | recovery fit A / C / R | a1 A / C / R | resample_pass |
 |---|---|---|---|---|---|---|
@@ -295,7 +295,7 @@ and v2 = Z+A+C): R's circuit is 1.9× larger and scores lower on the mean fills,
 everywhere: 2-5-token windows cut from running text are far from the templates (the R pool is ours). Empty leaks: simple
 A 0.02 / C −0.01 / R −0.08; nounpp −0.32 / −0.44 / −0.15. Scoring cost: 7-22 s per task group (shared empty draws).
 
-## 8. Fit instability: late blow-ups under the anneal (2026-11-02)
+## 8. Fit instability: late blow-ups under the anneal
 
 **Symptom.** At 400 steps the behavioural fits are noisy. On seed refits (`seed_variance.py`, 3 seeds) pass / fail
 and size flip up to 2-3× at λ ≥ 3e-5, and the size curves are non-monotone (intermediate λ collapse while a larger λ

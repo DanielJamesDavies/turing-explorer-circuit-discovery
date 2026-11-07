@@ -1,21 +1,21 @@
 # 104: WCM_VERSION=v3 (the final production algorithm): native port, bit-identity, cross-model check, smoke, budget
 
-1 November 2026 (agent prepod). Daniel approved the final production algorithm on 2026-11-01: Z + A + C + R_C at
+Agent prepod. Daniel approved the final production algorithm: Z + A + C + R_C at
 λ 1e-3 (v2cr) with **R weight (γ_R) 1.0** and **rank-keep weight 1e-1**, = exp 102's arm `r1.0_rk1e-1` (check panel:
 production 48 → 54, resample 19 → 39 of 72).
 
-## Status (2026-11-01)
+## Status
 
 | part | what | status |
 |---|---|---|
 | code | `WCM_VERSION=v3` in the 062 driver; per-version rank-keep (`WCM_RANK`); tests | **done** |
 | A | bit-identity of native v3 with 102's `r1.0_rk1e-1` | **done: 3 / 3 bit-identical** |
 | docs | `chain.sh` default v3; runbook "2026-11-01" line; protocol §12.3 final settings | **done** |
-| B | cross-model check (Pythia-70m, GPT-2 small) | **done** 03:51-07:12 (WSL clock, GMT): resample gain carries over, production not clearly hurt (below) |
-| D | clean TuringLLM timing panel, then the pod budget | **done** (panel 07:12-08:17; budget below) |
-| C | full chain smoke on all three models under v3 (fresh WORK `104/smoke_chain`) | **done** 08:17-09:18: rc 0, 0 error rows |
+| B | cross-model check (Pythia-70m, GPT-2 small) | **done** (3 h 20 min of GPU): resample gain carries over, production not clearly hurt (below) |
+| D | clean TuringLLM timing panel, then the pod budget | **done** (panel ~1 h 05 min; budget below) |
+| C | full chain smoke on all three models under v3 (fresh WORK `104/smoke_chain`) | **done** (~1 h 01 min): rc 0, 0 error rows |
 
-The GPU was released at 09:19 (WSL clock). No 104 job runs after it.
+The GPU was released after part C. No 104 job runs after it.
 
 GPU queue after B: `run_queue.sh` (waits for `run_cross.sh`, then `run_timing_tl.sh`, then the smoke `PHASE=tl`,
 then `PHASE=all`); events in `logs/queue.events`. Restart after a stop:
@@ -45,7 +45,7 @@ then `PHASE=all`); events in `logs/queue.events`. Restart after a stop:
 
 The old "unknown version" test used `v3`; it now uses `v9`. 10 / 10 pass (WSL).
 
-## Part A: bit-identity (done 2026-11-01)
+## Part A: bit-identity (done)
 
 `run_bitident.sh` ran the 062 driver, `MODE=main`, `WCM_VERSION=v3`, on 102's records (`062/out_full/out/ctx`,
 explicit split) for 3 check-panel targets, one per band (`targets_bitident.txt`). `compare_bitident.py` compared them
@@ -71,7 +71,7 @@ bash experiments/104-v3-cross-model/run_smoke_chain.sh                  # C: cha
 ```
 Progress: `experiments/104-v3-cross-model/logs/run_cross.events`, `logs/fit_<model>_<v>.log`, `logs/donor_<model>_<v>.log`.
 
-## Part B design (frozen 2026-11-01 before any 104 fit)
+## Part B design (frozen before any 104 fit)
 
 - **Question:** do the v3 settings help, or at least not hurt, on the public models?
 - **Arms:** `v2` (no R, rank-keep 3e-3) vs `v3` (R 1.0, rank-keep 1e-1), both λ 1e-3, 400 steps, the 062 driver,
@@ -87,7 +87,7 @@ Progress: `experiments/104-v3-cross-model/logs/run_cross.events`, `logs/fit_<mod
 - **Stop rule:** if v3's production CI lies entirely below 0 on a model, stop after the write-up and flag it to
   Daniel (no production change is triggered by this experiment).
 
-## Part B results (2026-11-01, 03:51-07:12 WSL clock: 3 h 20 min of GPU, under the 4 h stop)
+## Part B results (3 h 20 min of GPU, under the 4 h stop)
 
 The run had 0 error rows (fits and donor) and 0 vacuous rows. The donor rows' `pass_prod` equals the eval rows' pass
 on every target. Tables: `out/tables.md`, `out/report.json`.
@@ -141,7 +141,7 @@ By band (production v2 → v3 / resample v2 → v3):
   - one seed;
   - n = 24 per model, so a difference of 1-2 targets is noise.
 
-## Part C: chain smoke under v3, all three models (2026-11-01 08:17-09:18)
+## Part C: chain smoke under v3, all three models (~1 h 01 min)
 
 `run_smoke_chain.sh` ran as 103's smoke: `LIMIT=2`, 20 steps, P = 1, GPU 0, `WORK=104/smoke_chain` (fresh).
 `WCM_VERSION` was unset, so the chain's own default (v3) was under test. It ran `PHASE=tl` (public tracks stopped at
@@ -169,7 +169,7 @@ S3), then `PHASE=all`. Pre-marked done, not under test, as in 103:
 - Every v3 sweep row carries rank-keep 0.1, the unweighted `U_0.001` included. Its train rows carry R 1.0, 48 donors,
   the sparse fill and the `resample` term.
 
-## Part D: the v3 pod budget (2026-11-01; `cost_v3.py` -> `out/cost_v3.json`)
+## Part D: the v3 pod budget (`cost_v3.py` -> `out/cost_v3.json`)
 
 ### What was measured
 
@@ -244,31 +244,27 @@ S3), then `PHASE=all`. Pre-marked done, not under test, as in 103:
 | data passes | 2.3 | 2.3 | unchanged | E (plan) |
 | **busy total** | **~120** | **~152** (142-165) | | |
 
-### GPU-h, wall time and cost
+### GPU-h and wall time
 
-Wall time = busy / 8 GPUs × 1.05 (lock hand-overs, shard tails), plus 0.75 h bootstrap and 0.3 h packing. Cost = wall
-× 8 GPUs × price. The cap is $550.
+Wall time = busy / 8 GPUs × 1.05 (lock hand-overs, shard tails), plus 0.75 h bootstrap and 0.3 h packing.
 
-| variant | GPU-h | wall h | cost at $2.7 / 3.1 / 3.5 | range (public r 2.7 .. 1.5, price 2.7 .. 3.5) | GPU-h with TL ratios on public |
-|---|---:|---:|---|---|---:|
-| full | 152 | 21.0 | $454 / **521** / 588 | $426-634 | 134 |
-| (a) `TL_DAN159=0` | 136 | 18.9 | $409 / **469** / 530 | $381-576 | 118 |
-| (b) `DONOR_VARIANTS=fit` | 148 | 20.4 | $441 / **506** / 572 | $415-616 | 130 |
-| (c) public tracks local | 112 | 15.8 | $341 / **392** / 443 | $341-443 | 112 |
-| (a) + (b) | 132 | 18.3 | $396 / **454** / 513 | $369-557 | 114 |
-| (a) + (c) | 97 | 13.7 | $296 / **340** / 384 | $296-384 | 97 |
-| (b) + (c) | 109 | 15.4 | $333 / **382** / 431 | $333-431 | 109 |
-| (a) + (b) + (c) | 93 | 13.3 | $287 / **330** / 373 | $287-373 | 93 |
+| variant | GPU-h | wall h | GPU-h with TL ratios on public |
+|---|---:|---:|---:|
+| full | 152 | 21.0 | 134 |
+| (a) `TL_DAN159=0` | 136 | 18.9 | 118 |
+| (b) `DONOR_VARIANTS=fit` | 148 | 20.4 | 130 |
+| (c) public tracks local | 112 | 15.8 | 112 |
+| (a) + (b) | 132 | 18.3 | 114 |
+| (a) + (c) | 97 | 13.7 | 97 |
+| (b) + (c) | 109 | 15.4 | 109 |
+| (a) + (b) + (c) | 93 | 13.3 | 93 |
 
-**What changed vs the previous estimate (~120 GPU-h, ~16.8 h, ~$415):**
+**What changed vs the previous estimate (~120 GPU-h, ~16.8 h):**
 - **Up by +36 GPU-h:** v3 fits cost 1.50× v2, not 1.0×. T3 +18.5, T4 +4.8, public +12.6.
 - **Up by +7 GPU-h:** the new donor and noR stages (T10-T12), now measured.
 - **Down by about 10 GPU-h:** T7, at the measured TuringLLM r_fit 3.5 instead of the plan's r = 2.
 - **Unchanged, and now measured:** scoring is unchanged by v3, and is ≤ 4% of every fit stage.
-- **Net:** ~152 GPU-h, ~21 h, **~$521 central**.
-  - That is under the $550 cap at the central price, but not at the top of the price range ($588), nor at the slow
-    end of the public r range ($634).
-  - With `TL_DAN159=0` the central figure is $469, and the range reaches $576 only at both slow ends together.
+- **Net:** ~152 GPU-h, ~21 h (142-165 GPU-h over the public r range); ~136 GPU-h with `TL_DAN159=0`.
 
 **Notes on the variants:**
 - (a) runs 083 locally afterwards: ~56.5 local-h, about 2.4 days of the local GPU.
@@ -283,7 +279,7 @@ Wall time = busy / 8 GPUs × 1.05 (lock hand-overs, shard tails), plus 0.75 h bo
 **The remaining big uncertainty** is the public models' local → H100 ratio r. No pod run has measured it; only the
 pod can.
 - TuringLLM's is now measured from history: 3.5 for training, 10 for scoring.
-- If the public models behave like that, the full plan is ~134 GPU-h (~18.6 h, ~$461 central).
+- If the public models behave like that, the full plan is ~134 GPU-h (~18.6 h).
 - At the plan's r = 2 it is 152 GPU-h; at r = 1.5 it is 165.
 - Measure it at C3 (the λ pilots) and re-project then.
 

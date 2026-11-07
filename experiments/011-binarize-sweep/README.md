@@ -1,4 +1,4 @@
-# binarize-sweep (2026-07-31)
+# binarize-sweep
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 
@@ -62,7 +62,7 @@ step-200 snapshot IDENTICAL to a truncated run.
 
 SWEEP 0: training-time binarisation - none vs ste vs anneal.
 
-Motivation (keep_threshold sweep, 2026-07-30): the soft mask converges to
+Motivation (keep_threshold sweep): the soft mask converges to
 genuinely FRACTIONAL members - 79% of L8's membership has m in (0.5, 0.9),
 and 8%/25%/20% of membership (L2/L8/L10) sits within +-0.05 of the cut - and
 any post-hoc binarisation is lossy, asymmetrically (raising the cut is

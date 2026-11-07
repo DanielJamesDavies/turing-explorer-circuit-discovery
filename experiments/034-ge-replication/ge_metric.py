@@ -1,4 +1,4 @@
-"""GE-METRIC EVALUATOR (2026-08-11) — score memberships under the
+"""GE-METRIC EVALUATOR — score memberships under the
 intervention-free faithfulness surrogate of Ge et al. 2024.
 
 Their eval (Theorem 3.1): in the linearised graph, the root's value

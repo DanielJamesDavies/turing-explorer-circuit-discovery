@@ -1,4 +1,4 @@
-# DAN-74 golden regression set (2026-10-09 19:24)
+# DAN-74 golden regression set
 
 32 targets (selection.json, seed 74); the 15k run = /mnt/x/Projects/AIs/Turing/Publication/3 Implementation/2/experiments/062-h100-protocol-v1/out_full/out (pinned commit 538cbed). Local refits: r0, r1.
 

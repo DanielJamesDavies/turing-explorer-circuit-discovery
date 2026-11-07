@@ -1,4 +1,4 @@
-# D4.2 — Driver identifiability (2026-08-01)
+# D4.2 — Driver identifiability
 
 11-seed panel, split-half probe resampling (disjoint halves of the
 deterministic probe order via a builder proxy; R / abl-ig / direct-mass

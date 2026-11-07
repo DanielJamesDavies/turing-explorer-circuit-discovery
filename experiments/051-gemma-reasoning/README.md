@@ -1,6 +1,6 @@
 # 051 — Is reasoning visible in the circuit's members? (Gemma-2-2B)
 
-Daniel's question (2026-09-09): "the real thing I care about is can we see
+Daniel's question: "the real thing I care about is can we see
 by the members of circuits some reasoning taking place internally".
 
 Operationalisation: a TWO-HOP prompt names entity A, requires an

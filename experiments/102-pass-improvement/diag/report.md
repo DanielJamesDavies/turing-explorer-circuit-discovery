@@ -1,4 +1,4 @@
-# 102 diagnosis: why circuits fail (diag-102, 2026-10-31)
+# 102 diagnosis: why circuits fail (diag-102)
 
 Scope: CPU only; no refits. Panels: 095's 72 targets × arms v2 / v2CR / v2R, 100's 18, and the v1 15k run
 (held-out sets have duplicate-context leakage, so these numbers are for power on features only). Floor 0.75.

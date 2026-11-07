@@ -1,6 +1,6 @@
 # 079 — WCM with a fourth training ablation: donor-resample backgrounds
 
-**Status (2026-10-17):** pilot run (27 targets, results below). Silent-position term added afterwards; its rerun is set
+**Status:** pilot run (27 targets, results below). Silent-position term added afterwards; its rerun is set
 up (`run_silent.sh`) but not launched.
 
 ## Why
@@ -60,9 +60,9 @@ on contrast contexts (074) shrink?
 | `report.py` | `out/report.md`: per arm and band; paired against W0 |
 | `test_rs_engine.py` | CPU tests: edits apply once and compile; weight 0 builds nothing; donor densification; open gate = identity; closed gate = the donor code; donors redrawn per forward |
 
-## Commands for tomorrow
+## Next commands
 
-1. CPU tests (done 2026-10-17, 6 passed):
+1. CPU tests (done, 6 passed):
 
    ```bash
    wsl -e bash -lc 'cd "/mnt/x/Projects/AIs/Turing/Publication/3 Implementation/2" && CUDA_VISIBLE_DEVICES= PYTHONPATH=src .venv/bin/python -m pytest experiments/079-resample-training/test_rs_engine.py -q'
@@ -87,7 +87,7 @@ on contrast contexts (074) shrink?
 Knobs: `WEIGHTS` (0.25,1.0), `DONORS` (mix | contrast | random), `ARMS` (W0,RS), `PER_CELL` (3), `STEPS` (400),
 `RS_MICRO` (micro-batch for memory).
 
-## Pilot results (2026-10-17, 27 targets, `out_smoke4/`)
+## Pilot results (27 targets, `out_smoke4/`)
 
 Paired against W0: resample pass 0% -> 33% (RS0.25) / 37% (RS1); production pass 37% -> 52%; size 1.15x / 1.48x;
 fits ~40% slower. But all-position correlation under the C fill fell 0.76 -> 0.46 / 0.45, with variance explained
@@ -100,7 +100,7 @@ also fires on 84% of contrast-context positions. About half of each RS circuit i
 target up against a real background at the anchor, training recruits passage-level drivers, and nothing in training
 looks at the target anywhere but the anchor.
 
-## The silent-position term (added 2026-10-17; not yet run on a GPU)
+## The silent-position term (added after the pilot; not yet run on a GPU)
 
 `rs_engine.py` edit 6 + `silent_penalty` / `make_silent_fn`. With `SILENT["weight"] = w_S > 0`, every data term on the
 training activating contexts (every ablation, the donor one included) also pays

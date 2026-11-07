@@ -4,7 +4,7 @@ This is the 062 run's scorer, ``experiments/049-circuit-graph/amp_eval_pass_v2.p
 skip_roles=True)``, moved into src with an explicit interface: the caller passes the inference engine, the SAE bank,
 the circuit, the eval ProbeDataset and the contrast tokens, instead of module globals and a patched M0. Rows carry
 the same fields with the same names and the same numbers (experiments/067-src-scorer-equivalence checks this on
-the run's own circuits), so merge.py / pass_rule.py-style analysis reads them unchanged. Spec: paper/protocol-v1.md
+the run's own circuits), so merge.py / pass_rule.py-style analysis reads them unchanged. Spec: paper/protocol.md
 §5 (evaluation) and §6 (pass rule); the pass rule, vacuity and graded companion are at the bottom of this module,
 the specificity diagnostic and near-threshold stratum in eval/wcm_specificity.py.
 
@@ -17,7 +17,7 @@ record whose contrast held-out set was rebuilt (086) carries metadata["n_neg_tra
                     is exactly the held-out set.
   split="as_run"    the 15k run's 3:1 rule, split_n(n_pos). On a short probe (mid-band with fewer held-out contexts
                     than the padding expects) it moves strongest-train contexts into the held-out slice
-                    (protocol-v1.md §3.6, 58 mid-band rows). Kept only to reproduce the run.
+                    (protocol.md §3.6, 58 mid-band rows). Kept only to reproduce the run.
 
 Reads. Every measurement is taken under both reads of the target at the anchor and every ratio uses ONE read in all
 its terms (DAN-66): ``<name>_tk`` the post-Top-K activation (PRIMARY: every pass / fail number) and ``<name>_pre``
@@ -29,7 +29,7 @@ sparsity-preserving fill whose budget is the dictionary's Top-K k (``bank.k``, p
 stream edits (necessity, sufficiency to induce) go through CounterfactualInterventionPatcher. Both are subclassed
 only to tap the target read.
 
-Scores (protocol-v1.md §5.2): free0 / freeM_topk / freeN_topk are Z / A / C (the pass rule), with freeM_dense,
+Scores (protocol.md §5.2): free0 / freeM_topk / freeN_topk are Z / A / C (the pass rule), with freeM_dense,
 freeN_dense, free0_tr, free0_a1 and free0_perm recorded; phi_sup_blind is necessity (a_pos - a_{M\\C}) /
 (a_pos - e0); phi_cf_alpha_blind is sufficiency to induce on held-out contrast contexts; phi_sup_alpha and
 phi_pin_alpha_{zero,topk,dense} are recorded diagnostics.

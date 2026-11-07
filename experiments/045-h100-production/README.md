@@ -1,6 +1,6 @@
 # 8xH100 production driver: tri-amp + neg-amp at full candidate scale
 
-Built 2026-08-31 at Daniel's request ("prepare for a full run ... on
+Built at Daniel's request ("prepare for a full run ... on
 tri-amp mask and then after with the neg amp mask variant").
 
 ## What was promoted into config (src/config.py, learned_mask section)

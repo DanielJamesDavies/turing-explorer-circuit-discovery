@@ -2,7 +2,7 @@
 paper/main.tex (sec:main-result), plus the numbers the text and caption quote.
 
 Per row (each site kind x depth band, then all circuits): n = non-vacuous circuits on the held-out strongest contexts;
-the headline (post-Top-K) pass rate with its 95% Wilson interval; the pre-activation pass rate (protocol-v1.md section
+the headline (post-Top-K) pass rate with its 95% Wilson interval; the pre-activation pass rate (protocol.md section
 12.1: same rule, Z and necessity measured from 0); medians of Z / A / C faithfulness (free0_tk, freeM_topk_tk,
 freeN_topk_tk), necessity (phi_sup_blind_tk) and circuit size (n). Rule, vacuous exclusion and bands come from
 062/merge.py. Vacuous circuits are excluded from every column and counted.

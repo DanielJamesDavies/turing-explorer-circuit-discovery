@@ -1,4 +1,4 @@
-# Is there a universal core? — abl-mask on 32 L2-resid seeds (2026-08-04)
+# Is there a universal core? — abl-mask on 32 L2-resid seeds
 
 Daniel's question: run the closure mask over many seeds in one layer and
 look at the crossover — **are there latents in every seed's circuit?**

@@ -2,7 +2,7 @@
 
 Audit of every stored context record of the 15k protocol-v1 run (`062/out_full/out/ctx/<key>.pt`, 15,046 files;
 the sweep, random nulls, α=1, specificity, 073, 084 and the case studies all read these same records). Read-only on
-all existing data and code; everything here writes only to `out/`. Run 2026-10-23.
+all existing data and code; everything here writes only to `out/`.
 
 **Short answer: no.** Exact duplicates are the smallest part of it. For the scored read, half of all held-out
 strongest rows are the same input as a training-side row. Under a robust rule only a median of **5 of 16** rows per

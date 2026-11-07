@@ -1,6 +1,6 @@
 # 080 — Latent-targeted vs output-targeted circuits
 
-2026-10-18. **Question.** Are circuits found for an internal SAE latent a different object from circuits found for
+**Question.** Are circuits found for an internal SAE latent a different object from circuits found for
 the model's output, and when do they coincide? One method (weighted circuit masking, WCM), two endpoints: only the
 thing the circuit must reproduce changes.
 
@@ -26,11 +26,11 @@ Three designs are kept. Only the first is the default.
 
 | `SAMPLING` | tier names | tier measure | status |
 |---|---|---|---|
-| **causal** (default) | **high / low next-token effect** | effect_abs, measured in context by `next_token_effect.py` | default since the second 2026-10-18 review; needs stage 0 |
-| withinkind | direct-path (064) high / mid / low | 064's context-free `boost_peak` | first 2026-10-18 review; reproducible |
+| **causal** (default) | **high / low next-token effect** | effect_abs, measured in context by `next_token_effect.py` | default since the second review; needs stage 0 |
+| withinkind | direct-path (064) high / mid / low | 064's context-free `boost_peak` | first review; reproducible |
 | tierband | direct-path (064) high / mid / low | the same | the original design; reproducible |
 
-**Why the measure changed** (Daniel, 2026-10-18). 064's `boost_peak` (l_max × peak activation, read through the final
+**Why the measure changed** (Daniel). 064's `boost_peak` (l_max × peak activation, read through the final
 norm at a typical scale) has two problems:
 - It is a **direct-path, context-free logit-lens proxy**. It ignores what later layers do with a write, and 064
   measured it as a 2–4× underestimate in L1–8.
@@ -126,7 +126,7 @@ The renaming changed no sampling: both legacy lists regenerate byte-identical to
 that carry the old names are mapped by `common.norm_tier`.
 
 - **tierband** (`targets_tierband.txt`, 150 targets: 50 per direct-path tier over the bands).
-  - The first review (2026-10-18) found its tier confounded with site kind: `dp_low` was 48 of 54 attention and
+  - The first review found its tier confounded with site kind: `dp_low` was 48 of 54 attention and
     `dp_high` 51 of 54 residual.
   - The population makes that unavoidable under these tiers:
 
@@ -159,9 +159,9 @@ that carry the old names are mapped by `common.norm_tier`.
 | **OUT_W** | log p(x_{t+1} \| x_≤t) at each context's target anchor t, where x_{t+1} is the actual next token | fitted α | upstream of the target's site | yes |
 | **OUT_U** | the same | α = 1 (`free_amplitude=False`) | upstream | yes |
 | OUT_W_FULL (optional, off) | the same | fitted α | every site, the target's own included (025's scope) | only with `ARMS=...,OUT_W_FULL` and a config entry |
-| OUT_U_FULL (optional, off) | the same | α = 1 | every site | the same; added 2026-10-22, see below |
+| OUT_U_FULL (optional, off) | the same | α = 1 | every site | the same; added later, see below |
 
-Everything else is identical to protocol v1 (`paper/protocol-v1.md`):
+Everything else is identical to protocol v1 (`paper/protocol.md`):
 - the same contexts and split: training on the target's 32 strongest + 16 mid-band training contexts, scoring on its
   16 held-out strongest;
 - the same three ablations with the same weights: Z, A mean (γ_A = 0.25) and C mean over the close contrast set
@@ -193,7 +193,7 @@ differ from LAT in scope as well as endpoint, which is exactly the confound this
 The scope also fixes what "the output" means here. The output metric is the next-token log-prob as far as it depends on
 the upstream sites. The upper stack can recompute around any edit.
 
-**The live sites confound the coefficient comparison (found 2026-10-22, in the calibration).** The number of live sites
+**The live sites confound the coefficient comparison (found in the calibration).** The number of live sites
 depends on the target's layer:
 - a `0.resid` target masks 2 of the 36 sites and leaves 34 live;
 - an `11.resid` target masks 35 and leaves 1 live.
@@ -213,7 +213,7 @@ which leaves the coefficients less to do. It is a hypothesis, not yet a test.
 So the whole-model pair OUT_W_FULL / OUT_U_FULL is calibrated too (`queue_calib_full.sh` → `calib_full/`). With every
 site maskable, its W/U ratio measures the coefficients on the output endpoint with no live layers to help.
 
-**Whole-model calibration (2026-10-22, 198 fits, 0 errors).**
+**Whole-model calibration (198 fits, 0 errors).**
 - **The live-site hypothesis holds.** With every site maskable, the OUT_U_FULL / OUT_W_FULL size ratio at output Z 0.8
   is flat with depth: 6.7× at L0–4, 8.4× at L5–7, 6.9× at L8–11, 7.4× overall (n 18; W wins on every target).
 - **But whole-model Z is not comparable with upstream Z.** Zeroing every site wrecks the model:
@@ -323,7 +323,7 @@ Criteria are fixed here, and `report.py` prints each verdict.
 
 **P1. Overlap and cross-faithfulness rise with the target's next-token effect, within site kind and depth band.**
 
-*Re-registered for the third time, 2026-10-18, still before any run.*
+*Re-registered for the third time, still before any run.*
 - **Reason:** Daniel. The direct-path proxy (`boost_peak`) is context-free and biased toward deep residual latents.
   The causal in-context measure (effect_abs) reads the same quantity as the output arm's endpoint.
 - **Earlier versions:**
@@ -352,7 +352,7 @@ The test:
 - The 9 per-group differences are reported with their own intervals; no per-group verdict is registered.
 
 **P2. For low next-token effect targets, the endpoints do not transfer.**
-- *Restated 2026-10-18 with the causal tiers.* Low-effect targets now exist in every kind × band group: 81 targets
+- *Restated with the causal tiers.* Low-effect targets now exist in every kind × band group: 81 targets
   across the 9 groups.
 - *Claim:* for these targets, OUT circuits score near 0 on the latent metrics, and LAT circuits score near 0 on output
   faithfulness.
@@ -454,7 +454,7 @@ It is descriptive: a tier's bar pools the 9 groups, so read tier effects off the
   (025's) remains available as `LOGIT_NORM=none`.
 - The 0.1-nat output-vacuity threshold is absolute: a log-prob has no natural zero.
 
-## Smoke results (2026-10-18, RTX 5070 Ti, `smoke.log`)
+## Smoke results (RTX 5070 Ti, `smoke.log`)
 
 The smoke ran end to end with **0 error rows**: 10 eval rows over 2 targets (LAT plus 2 λ each of OUT_W and OUT_U),
 the timing pass, the calibrate.py code check, report, figure and estimate. The fit settings were 12 steps at lr 0.5,

@@ -1,6 +1,6 @@
 # GemmaScope JumpReLU: first validation outside the top-k family
 
-2026-08-12. Gemma-2-2B + google/gemma-scope-2b-pt-mlp, width 16k,
+Gemma-2-2B + google/gemma-scope-2b-pt-mlp, width 16k,
 JumpReLU, tier 2 of the L0 ladder (average_l0 ~85-133 per layer — the
 same operating point as DeepMind's canonical release). 6 seeds (3 at L4,
 3 at L6), 48 train / 16 held-out windows, 400 steps, the exact harness

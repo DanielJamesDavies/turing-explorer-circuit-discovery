@@ -298,7 +298,7 @@ def report():
         old = old[old.get("skip", pd.Series(index=old.index, dtype=object)).isna()]
         L += ["## Reproduction check: the as-run subset re-score vs the run's own main eval rows", "",
               "(same records; differences = hardware / float noise, plus the explicit split on mid-band sets shorter "
-              "than 16, protocol-v1.md §3.6)", ""]
+              "than 16, protocol.md §3.6)", ""]
         for held in ("strong", "mid"):
             o = old[old.held == held].drop_duplicates("seed", keep="last").set_index("seed")
             n = ar[(ar.held == held) & ar.scored].set_index("seed")

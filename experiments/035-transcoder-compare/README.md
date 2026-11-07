@@ -1,6 +1,6 @@
-# Circuit-tracer comparison (infra built 2026-08-11; runs pending GPU)
+# Circuit-tracer comparison (infra built; runs pending GPU)
 
-PLACEMENT DECISION (Daniel, 2026-08-11): this is APPENDIX material, not
+PLACEMENT DECISION (Daniel): this is APPENDIX material, not
 body. The paper is complete without it; the body is already over its
 page budget; a method-vs-method comparison on a third model belongs in
 the appendix. Revisit only if the result is striking enough to change a
@@ -177,7 +177,7 @@ data point on a different dictionary family.
 
 ---
 
-# LLAMA TARGET — BUILD COMPLETE, AGREEMENT GATE PASSED (2026-08-11)
+# LLAMA TARGET — BUILD COMPLETE, AGREEMENT GATE PASSED
 
 Target adopted: Llama-3.2-1B (ungated mirror unsloth/Llama-3.2-1B) with
 EleutherAI/skip-transcoder-Llama-3.2-1B-131k — genuine TopK (k=32,

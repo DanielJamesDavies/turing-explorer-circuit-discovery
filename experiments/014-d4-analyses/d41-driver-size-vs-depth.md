@@ -1,4 +1,4 @@
-# D4.1 — Driver size vs depth (2026-08-01)
+# D4.1 — Driver size vs depth
 
 Computed from D1 rows + D2.3 (+ tiny-K extension rows_tinyk.jsonl) +
 D2.2's archived memberships. All on the frozen exam, held-out split.

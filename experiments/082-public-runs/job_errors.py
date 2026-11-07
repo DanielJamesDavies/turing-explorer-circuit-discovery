@@ -1,4 +1,4 @@
-"""Per-job error accounting for the 082 chain (Daniel, 2026-10-26; the records gate's philosophy, for every fitting job).
+"""Per-job error accounting for the 082 chain (the records gate's philosophy, for every fitting job).
 
 A JOB is one launch of the chain (a stage, sub-stage, main chunk or sweep arm). Its ROWS are the jsonl rows its
 shards append to the given files during the launch (a snapshot of the line counts before the launch tells new rows

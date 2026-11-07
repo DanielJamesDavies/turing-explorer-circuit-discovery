@@ -1,4 +1,4 @@
-# Recursive latent map — does the internal explanation close? (2026-08-02)
+# Recursive latent map — does the internal explanation close?
 
 Daniel's question: with closure circuits at 10^4-10^5 latents, how can a
 human ever read the structure? Proposal: don't read the closure — expand
@@ -149,7 +149,7 @@ accumulates**. At n=3,242 this object is simultaneously closure-faithful
 (free0 0.741, in the abl-mask's 0.7-1.0 band), drive-sufficient
 (cf_alpha 1.000) and necessary (sup 1.000).
 
-**CORRECTED 2026-08-04.** An earlier version of this paragraph claimed
+**CORRECTED.** An earlier version of this paragraph claimed
 "no other object in the project holds all three: abl-mask has closure
 with cf~0". That is **wrong** — it repeated a stale note without
 checking. The frozen-recipe panel
@@ -327,7 +327,7 @@ the probe batch:
 Everything else is identically zero and can never affect the seed on
 these sequences.
 
-**CORRECTED 2026-08-04 — read the qualifier, it is load-bearing.** These
+**CORRECTED — read the qualifier, it is load-bearing.** These
 are latents live *on the 8 probe sequences used to build the ranking*
 (GRAD_B=8, 512 positions), not an intrinsic property of the dictionary.
 Measured over 64 corpus sequences (4,096 positions) at the same 8 L2

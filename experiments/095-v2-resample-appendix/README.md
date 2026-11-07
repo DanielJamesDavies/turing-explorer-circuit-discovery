@@ -1,8 +1,8 @@
 # 095: the resample appendix (`app:resample`) under protocol v2 (DAN-184)
 
 The appendix quotes v1 numbers (079's 99-target confirmation: resample pass 0% -> 30%, production pass 44% -> 57%,
-size x1.22). Production is now protocol v2 (`paper/protocol-v1.md` §12), so this re-runs that comparison under v2, with
-two ways of adding R: in place of C (v2R) and on top of C (v2CR, 079's shape; added 2026-10-26, Daniel).
+size x1.22). Production is now protocol v2 (`paper/protocol.md` §12), so this re-runs that comparison under v2, with
+two ways of adding R: in place of C (v2R) and on top of C (v2CR, 079's shape; added by Daniel).
 
 ## Design
 
@@ -28,12 +28,12 @@ two ways of adding R: in place of C (v2R) and on top of C (v2CR, 079's shape; ad
 ### Deviation from the brief: 092's engine patch could not run as-is
 
 092's `sx_engine` is an in-memory patch on 090's `sp_engine`, whose first edit anchors the pre-v2 floor branch of
-`LearnedMaskPatcher.transform`. The v2 port into src (2026-10-25) moved that branch under an `else:`, so the anchor no
-longer exists and `sx_engine.source_v2r()` refuses to build on today's src. Running it on the old src would also not
+`LearnedMaskPatcher.transform`. The v2 port into src moved that branch under an `else:`, so the anchor no
+longer exists and `sx_engine.source_v2r()` refuses to build on the current src. Running it on the old src would also not
 be "v2 with R": 092's v2 was 090's `sp_ste` with the engine's own A mean, whereas production v2 (and 093's v2 arm)
 trains against the scorer's means (`train_means_source = "eval_ref"`).
 
-`rs2_engine.py` therefore ports 092's test 3 onto today's src (src is not edited): 079's `rs_engine.EDITS` + footer
+`rs2_engine.py` therefore ports 092's test 3 onto the current src (src is not edited): 079's `rs_engine.EDITS` + footer
 and 092's `drop_floor` edit are reused verbatim, 092's `sp_keep_mask_donor` is cut from `sx_engine.FOOTER` and
 exec'd as is, and one edit (the only one touching the v2 code) hooks the donor fill into the native v2 branch, calling
 the native `sparse_code(code, H, "ste")` (identical to 092's `sp_code(..., "ste")`) with K = the dictionary's k.
@@ -67,9 +67,9 @@ switches at R weight 0, i.e. keep C + donor fill on + no R term (`CHECK=2`).
     DEADLINE=22:30 PYTHONPATH=src HF_HUB_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 .venv/bin/python -u experiments/095-v2-resample-appendix/run.py >> experiments/095-v2-resample-appendix/run.log 2>&1
     .venv/bin/python experiments/095-v2-resample-appendix/report.py
 
-## Results (2026-10-26; full tables in `out/tables.md`, rows in `out/rows.jsonl`)
+## Results (full tables in `out/tables.md`, rows in `out/rows.jsonl`)
 
-Runs on the RTX: v2R 15:16-17:08, v2CR 18:18-20:18, 0 errors (logs `smoke.log`, `check.log`, `run.log`). All 72
+Runs on the RTX: v2R ~1 h 52 min, v2CR ~2 h 00 min, 0 errors (logs `smoke.log`, `check.log`, `run.log`). All 72
 targets complete in all three arms, none rejected, none vacuous; no deadline cut was needed.
 
 **Checks.** The v2 circuits re-scored here equal 093's rows exactly (max |diff| 0 over Z / A / C / necessity, both
@@ -114,7 +114,7 @@ terms zero, pos, resample; every v2CR fit zero, floor (C), pos, resample; donor 
 
 **Caveats.** The held-out sets are the 15k run's as-run sets with the DAN-157 duplicate leakage: the comparison is paired
 (all arms, same records), but absolute rates are on leaky held-out sets and the rebuilt records (094) may move them.
-v2's fit times are 093's (same GPU, a day earlier, alternating with v1 fits in one process), so fit-time ratios carry
+v2's fit times are 093's (same GPU, an earlier session, alternating with v1 fits in one process), so fit-time ratios carry
 some machine-state noise. 092 showed that refits move single-target passes (bf16 kernel noise); read single-band
 differences of 1-2 targets as noise.
 
@@ -129,7 +129,7 @@ Replace the paragraph "Nothing in training asks a circuit to survive a real back
 least on the resample test but most on the production test ($21\%$ to $45\%$)." (main.tex lines 1332-1337) with:
 
 ```latex
-% 2026-10-26: experiments/095-v2-resample-appendix (out/tables.md). Protocol v2, 72 targets = exp 093's (8 per band x
+% experiments/095-v2-resample-appendix (out/tables.md). Protocol v2, 72 targets = exp 093's (8 per band x
 % kind), paired: v2 (093's circuits) vs v2CR (R added, C kept) vs v2R (R in place of C), both refitted; no silent-
 % position term. Held-out sets: the 15k as-run sets (DAN-157 leakage; paired, absolute rates on leaky sets).
 % Rates s1, paired CIs s1b, medians s2, size / time s3; v1 numbers: 079 out_confirm, recomputed in s5.

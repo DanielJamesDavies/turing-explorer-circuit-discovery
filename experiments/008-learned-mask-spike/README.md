@@ -1,4 +1,4 @@
-# learned-mask-spike (2026-07-24)
+# learned-mask-spike
 
 *README generated from the scripts' docstrings; the scripts are the record.*
 

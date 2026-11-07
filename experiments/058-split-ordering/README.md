@@ -1,6 +1,6 @@
 # 058 — Is the train / held-out split ordered? (DAN-12 / DAN-15)
 
-2026-09-24. Read-only check (`check_split.py`; `results/check_split.md`, `.jsonl`). Targets: the 16 pilot targets
+Read-only check (`check_split.py`; `results/check_split.md`, `.jsonl`). Targets: the 16 pilot targets
 plus 200 sampled from the 15,046 production seeds, with (d) on 64 of them. No errors.
 
 ## How the split is built (code)
@@ -51,7 +51,7 @@ context is always the weakest in its block, so the split is still about 2% low b
 - Held-out is less similar on 64 of 64: max cosine 0.874 (train) vs 0.861 (held-out), as medians.
 - The gap is small in absolute terms, but it holds every time: held-out contrast contexts are slightly easier.
 
-## Decision (Daniel, 2026-09-24; recorded on DAN-12 / DAN-15, both Done; spec in DAN-75)
+## Decision (Daniel; recorded on DAN-12 / DAN-15, both Done; spec in DAN-75)
 
 - **Activating contexts are "the 64 strongest"** by the store's score, with no mid-band contexts. Targets with
   fewer than 64 stored top contexts use what they have.

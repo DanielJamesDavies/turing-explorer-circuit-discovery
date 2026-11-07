@@ -1,11 +1,11 @@
-# 106: speed profile of the v3 WCM fit, and prototyped wins (2026-11-01, agent profiler)
+# 106: speed profile of the v3 WCM fit, and prototyped wins (agent profiler)
 
 Goal: find measured, easy wins on the ~165 GPU-h pod run (8×H100, ~22 h, ~$560) before launch. Fitting dominates.
 Nothing in `src/`, the driver, `chain.sh` or the protocol was changed. Every prototype is an in-memory patch in this
 folder (`fastlm.py`: exact string replacements of `learned_mask.py`'s text, each one a proposed adoption hunk).
 
-STATUS (09:45): the GPU came free at 09:19 (sibling agent prepod's queue), so only a minimal GPU session ran before
-the 10:00 stop. **Measured:** base vs the "exact" bundle on the 3 panel targets (below) and a flag attribution on the
+STATUS: the GPU came free only ~40 min before the 10:00 stop (sibling agent prepod's queue), so only a minimal GPU
+session ran. **Measured:** base vs the "exact" bundle on the 3 panel targets (below) and a flag attribution on the
 shallow target (§4). **Not run:** the torch.profiler breakdown (`profile_fit.py`, ready), batch4 / compile_sp /
 triton_topk / no_cfeval benches (ready: `run_quick.sh`).
 
@@ -38,7 +38,7 @@ early_exit and donor_gpu are bit-identical on this target. Their gains on the mi
 separately; the bundle's (with rank_nosync's ~1%) were ×1.07 (L6) and ×1.04 (L9), consistent with early exit saving
 the layers after the target (more of them for shallow targets).
 
-### Confirmation run (09:45-09:53, `VARIANTS="base;early_exit,donor_gpu"`, all 3 targets; `logs/bench_confirm.log`,
+### Confirmation run (~8 min, `VARIANTS="base;early_exit,donor_gpu"`, all 3 targets; `logs/bench_confirm.log`,
 `out/bench/compare.json` now holds this run's comparison)
 
 | target | base t_fit | early_exit + donor_gpu | speed-up | members / α (4 dp) vs base | raw θ / ψ vs base | loss curve | vs 104 circuit |
@@ -57,7 +57,7 @@ speed-ups over the 8k's uniform layer mix (shallow ×1.23, mid ×1.06, deep ×1.
   `early_exit.*`, `donor_gpu.*`). **Confirmed bit-identical on all 3 targets** (members, α, raw θ / ψ, loss curve,
   vs base and vs 104); measured ×1.23 (L2), ×1.06 (L6), ×1.04 (L9) on one local process. Estimate (E): ~×1.06-1.07 on
   TL fit time → ~4-5 GPU-h; if the public adapters gain alike (not measured) ~2-3 GPU-h more → **~6-8 GPU-h,
-  ~0.8-1 h wall, ~$20-25** (lower than the 09:45 estimate, which predated the mid / deep confirmation). Under MPS P=6
+  ~0.8-1 h wall, ~$20-25** (lower than the earlier STATUS estimate, which predated the mid / deep confirmation). Under MPS P=6
   the donor_gpu part (sync removal) may gain less than locally, since other processes fill the idle GPU (E).
 - **Adopt (CPU, bit-identical):** W8 memoised 8-gram predicate in the T2 verify: 2.31 → 0.30 s per record on the
   CPU predicate part (83,820 calls exactly equal).

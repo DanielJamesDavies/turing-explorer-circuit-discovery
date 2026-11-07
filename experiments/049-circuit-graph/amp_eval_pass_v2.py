@@ -101,7 +101,7 @@ HOLDOUT_FRAC = 0.25          # engine split (learned_mask.split): n_hold = round
 MIN_POS = 8
 # Activating train / held-out split. "as_run" (default, the 15k run): split_n(n_pos) from the 3:1 rule. When a probe's
 # held-out set is shorter than the padding the rule expects (mid-band with < 16 held out), that rule moves part of the
-# strongest-train reference into the held-out slice (58 mid-band rows of the 15k run; protocol-v1.md §3.6).
+# strongest-train reference into the held-out slice (58 mid-band rows of the 15k run; protocol.md §3.6).
 # "explicit": take the train count from the probe's metadata["n_train"] (set by protocol_contexts.probe_from), so the
 # held-out slice is exactly the held-out set. Use "explicit" for every new run.
 EVAL_SPLIT = os.environ.get("EVAL_SPLIT", "as_run")

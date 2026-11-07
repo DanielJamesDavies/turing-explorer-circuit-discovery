@@ -1,4 +1,4 @@
-# Arena D lr-budget test (2026-11-06, agent `dlrtest`; built and checked on CPU, the GPU part not yet run)
+# Arena D lr-budget test (agent `dlrtest`; built and checked on CPU, the GPU part not yet run)
 
 ## Question
 
@@ -9,7 +9,7 @@ pinned to `WCM_VERSION=v2` with arena C's behavioural `V3_LOGIT`:
 - geometric lr at peak 0.05, no warm-up;
 - no censored term.
 
-See `dev-notes/2026-11-06-wcm-production-spec.md` §6.1 and `../pod_stage_d.sh`. Would it benefit from v4's pieces?
+See `paper/protocol.md` §0.6.1 and `../pod_stage_d.sh`. Would it benefit from v4's pieces?
 
 ## Which v4 pieces apply to arena D
 
@@ -17,7 +17,7 @@ See `dev-notes/2026-11-06-wcm-production-spec.md` §6.1 and `../pod_stage_d.sh`.
 |---|---|---|
 | lr budget: geometric, peak ×3.15 (0.1575), warm-up 0.1 | **yes, tested (C1)** | `learned_mask` takes `lr`, `warmup_frac` and `weight_decay` as kwargs for every objective. The wrapper sets them on top of the production kwargs. No engine edit. |
 | censored-activation term (`censor_temp` 0.05) | **no: C2 skipped** | `run_learned_mask` raises for `censor_temp` when objective ≠ `pos` ("censor_temp / rival_weight / rank_zero_mult need objective='pos'"). The term censors the seed latent's pre-activation at its own site's Top-K cut. A logit-difference objective has no seed latent and no Top-K read. Both families are JumpReLU (PLT `activation_function.threshold`, Gemma Scope `threshold`; `wcm_gemma.JumpReLUSAE`) with k = d_sae, so the term would **not** be inert on a latent objective (τ is clamped at the threshold). For the task objective, though, it is undefined, not merely inert. Using it here would need a new behavioural version of the term in `learned_mask` (a post-pod engine change, and a design question first). |
-| rank-keep 1e-1 | **no: skipped** | `run_learned_mask` raises for `rank_weight > 0` when objective ≠ `pos`. A behavioural rank-keep (the answer token's vocabulary rank) was tried on 2026-11-01 and removed: it collapsed SVA fits (comment at the check; arena C `wcm_marks.py:70-73`). |
+| rank-keep 1e-1 | **no: skipped** | `run_learned_mask` raises for `rank_weight > 0` when objective ≠ `pos`. A behavioural rank-keep (the answer token's vocabulary rank) was tried and removed: it collapsed SVA fits (comment at the check; arena C `wcm_marks.py:70-73`). |
 | R (γ_R 1.0) | already in C0 | arena C's V3_LOGIT |
 
 One more v4 detail: v4 keeps AdamW's weight decay at the absolute 0.05 at the ×3.15 peak, so Σlr·wd = 1.07. 081's
@@ -65,7 +65,7 @@ Budgets at 400 steps (re-stated `lr_at`; matches the engine's own `lr_sum` on th
   - the fit's own lr provenance (`lr_peak`, `lr_sum`, `warmup_steps`, `weight_decay`).
 - **Order and budget.**
   - Stages: `res_main` (6 fits), `plt_main` (18 fits: rc, then simple, then nounpp), `res_seed2` (2 fits).
-  - Prior projection: 26 fits ≈ 2.1 GPU-h. The Thursday pilot measured 0.64 s/step on both families, so ≈ 4.5 min per
+  - Prior projection: 26 fits ≈ 2.1 GPU-h. The GPU-night pilot (`../run_pilot_d.sh`) measured 0.64 s/step on both families, so ≈ 4.5 min per
     fit + scoring, + ~3 min per stage load.
   - `LRTEST_BUDGET_S` (default 10,800 = 3 h, loads included) is checked before every unit, using the largest measured
     unit time of that family. The first fit's s/step and a fresh projection are logged (`FIRST FIT` in the stage log).
@@ -116,7 +116,7 @@ DRY_RUN=1 bash experiments/107-true-baselines/arena_d/lrtest/run.sh
 CUDA_VISIBLE_DEVICES= HF_HUB_OFFLINE=1 WCM_VERSION=v2 ./.venv/bin/python experiments/107-true-baselines/arena_d/lrtest/lrtest.py check
 ```
 
-## CPU checks run (2026-11-06)
+## CPU checks run
 
 - `bash -n run.sh`: OK.
 - `DRY_RUN=1 run.sh`: 0 problems. It printed 26 pending units and a projection of 7,690 s, and `analyze` ran on the
@@ -136,7 +136,7 @@ CUDA_VISIBLE_DEVICES= HF_HUB_OFFLINE=1 WCM_VERSION=v2 ./.venv/bin/python experim
 
 - **The censored term for a behavioural objective:** a new term in `learned_mask` (an engine change). The current one is
   undefined without a seed latent.
-- **A behavioural rank-keep:** an engine change. It was tried and removed on 2026-11-01.
+- **A behavioural rank-keep:** an engine change. It was tried and removed.
 - **If C1 helps:** adopting it for arena D means the arena D WCM gets v4's lr budget. That needs a new behavioural
   version (e.g. V4_LOGIT) in `wcm_gemma.py` / arena C's `wcm_marks.py`, plus 081's v1 / v2 guard. It is **not** a change
   to the 081 engine's versions table, and it is Daniel's decision.

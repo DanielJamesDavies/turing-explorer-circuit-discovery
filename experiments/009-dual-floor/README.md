@@ -1,7 +1,7 @@
 # Dual-floor mask + pre-top-k negative filtering
 
-**Re-run 2026-07-30 on the FIXED normaliser and post-H1 numerics.** The
-original 2026-07-29 rows are in `superseded_broken_normaliser_and_pre_H1/`
+**Re-run on the FIXED normaliser and post-H1 numerics.** The
+original rows are in `superseded_broken_normaliser_and_pre_H1/`
 with a WHY.md; do not merge them with these.
 
 4 seeds (L2/L5/L8/L10, stratified indices 2/5/8/10), 11 arms + 2 matched

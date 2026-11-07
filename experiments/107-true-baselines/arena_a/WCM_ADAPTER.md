@@ -1,6 +1,6 @@
 # Arena A: the WCM adapter for GPT-2 small + Dunefsky transcoders + Kissane z-SAEs (DAN-195)
 
-Written 2026-11-03 (agent `arenaA`), with the code (`wcm_tcz.py`) and its CPU tests (`test_wcm_tcz.py`, 3/3 pass).
+Written by agent `arenaA`, with the code (`wcm_tcz.py`) and its CPU tests (`test_wcm_tcz.py`, 3/3 pass).
 **No fit has run and no GPU was used.** Nothing under `src/`, `third_party/`, `experiments/062*` or `082*` is changed:
 the family, site model and bank register at runtime, as arena C's `wcm_marks.py` does. Tags: **[ours]** = our choice,
 **[decide]** = Daniel's call.
@@ -18,12 +18,12 @@ Family `gpt2-small-tcz`, HF `gpt2` (eager attention, float32), kinds `("z", "z2"
 | (L, `tc`) | input of `h[L].mlp` (full `ln_2` output) | the **MLP output**: `mlp_out + (y − x_in)` = `mlp_out + (ĉ − c) W_dec` (035); the transcoder error passes through | Dunefsky L via 035's LN-folded `transcoders_ct/` |
 
 - `same_layer_upstream = {z: (), z2: (), tc: (z, z2)}`; `capture_sites` order per layer is z, z2, tc.
-- **The Kissane value-bias convention (measured 2026-11-03, `ge_checks.py format`, 8 × 127 OWT tokens).** The z-SAEs
+- **The Kissane value-bias convention (measured with `ge_checks.py format`, 8 × 127 OWT tokens).** The z-SAEs
   were trained on TL's default `fold_value_biases=True`, so their input is `z_TL = z_HF − b_V`. Centred encoder on
   `z_TL`: FVU 0.20–0.49, L0 3–21 at every layer. On `z_HF` (b_V kept): FVU 0.44–441, L0 up to 564. Uncentred: worse
   everywhere. The bank stores `decoder_bias = b_dec + b_V'`, so `b_eff = b_enc − W_enc (b_dec + b_V')` is exactly
   Kissane's encoder on `z_TL`, and `decode()` is the HF-space reconstruction. Edits are differences, so unaffected.
-  **Fix 2026-11-05 (agent `arenaA2`):** TL's b_V is taken *after* its default `fold_ln=True`, so the offset is
+  **Fix (agent `arenaA2`):** TL's b_V is taken *after* its default `fold_ln=True`, so the offset is
   `b_V' = b_V + ln_1.bias · W_V` (`wcm_tcz.tl_value_bias`), not the raw HF `b_V`. With the raw b_V the adapter's z
   input kept `ln_1.bias · W_V`: on 8 smoke-corpus sequences centred FVU 21.6 / 21.3 / 12.9 at L0–L2 (L0 65–163), and
   zeroing the z codes blew the residual stream up (std 2 → 650 by L3). With `b_V'`: FVU 0.46 / 0.28 / 0.34 / 0.39

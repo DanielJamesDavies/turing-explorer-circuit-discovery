@@ -1,6 +1,6 @@
 # Known circuits on Gemma-2-2B (tri-amp, GemmaScope SAEs)
 
-Follow-up to 047 (TuringLLM) at Daniel's request (2026-09-07): do the
+Follow-up to 047 (TuringLLM) at Daniel's request: do the
 same task circuits on Gemma-2-2B, where the classic circuits were
 actually found, and see whether we match up.
 

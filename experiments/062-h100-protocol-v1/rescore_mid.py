@@ -1,4 +1,4 @@
-"""Re-score the mid-band rows hit by the padding defect (protocol-v1.md §3.6), with the explicit eval split.
+"""Re-score the mid-band rows hit by the padding defect (protocol.md §3.6), with the explicit eval split.
 
 In the 15k run, 58 mid-band rows had fewer than 16 held-out mid-band contexts. The scorer's 3:1 split then moved
 1-11 strongest-train contexts into the "held-out" slice (and the A mean / pins used fewer than 48 contexts). This

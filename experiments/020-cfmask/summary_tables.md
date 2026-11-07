@@ -1,4 +1,4 @@
-# cf-mask dynamics — summary tables (2026-08-02)
+# cf-mask dynamics — summary tables
 
 ## T1 — the over-training curve: cf by step (snapshots)
 

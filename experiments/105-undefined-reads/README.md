@@ -5,7 +5,7 @@ CPU only; reads stored rows, fits and scores nothing. Script: `undefined_reads.p
 
     cd <repo>; PYTHONPATH=src .venv/bin/python experiments/105-undefined-reads/undefined_reads.py
 
-**Status: proposal for Daniel.** `paper/protocol-v1.md` and `src/eval/wcm_eval.py` are NOT edited. The draft §12
+**Status: proposal for Daniel.** `paper/protocol.md` and `src/eval/wcm_eval.py` are NOT edited. The draft §12
 text and a patch proposal are at the end.
 
 ## 1. The question
@@ -177,7 +177,7 @@ is reported alongside as a lower bound.
 - It must be written into §12 before the pod starts. It also changes `paper/main.tex` l. 345 ("an undefined A or C
   ratio counts as a fail") and the protocol appendix.
 
-## 6. Draft §12 text (for `paper/protocol-v1.md`, new §12.4; not applied)
+## 6. Draft §12 text (for `paper/protocol.md`, new §12.4; not applied)
 
 > ### 12.4 Vacuous denominators: every pass-rule baseline, signed (Daniel, 2026-11-__; before any production fit)
 >

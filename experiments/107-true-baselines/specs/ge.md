@@ -1,6 +1,6 @@
 # Spec: Ge et al. 2024, hierarchical attribution on a linear computation graph (arena A)
 
-Status: specification for a faithful re-implementation. Written 2026-11-01 (agent `spec-ge`). Nothing here is built.
+Status: specification for a faithful re-implementation. Written by agent `spec-ge`. Nothing here is built.
 
 **Paper.** Xuyang Ge, Fukang Zhu, Wentao Shu, Junxuan Wang, Zhengfu He, Xipeng Qiu, "Automatically Identifying Local
 and Global Circuits with Linear Computation Graphs", arXiv 2405.13868, ICML 2024 Mechanistic Interpretability
@@ -627,7 +627,7 @@ on that prompt; the max-activating position is our choice, labelled.
 
 ---
 
-## Sources (all read on 2026-11-01 via WebFetch / WebSearch; nothing downloaded)
+## Sources (all read via WebFetch / WebSearch; nothing downloaded)
 
 - Paper: https://arxiv.org/abs/2405.13868, https://arxiv.org/html/2405.13868v1, https://arxiv.org/html/2405.13868v2
 - Code:
