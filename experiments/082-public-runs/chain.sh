@@ -891,7 +891,9 @@ t0_check() {   # the TuringLLM artefacts are in TL_ROOT (scripts/pod_bootstrap_g
   for p in "${need_root[@]}"; do [ -e "$TL_ROOT/$p" ] || miss+=("$TL_ROOT/$p"); done
   for p in "${need_abs[@]}"; do [ -e "$p" ] || miss+=("$p"); done
   if [ ${#miss[@]} -gt 0 ]; then say "  T0: missing ${miss[*]} (bootstrap TL_ROOT first)"; return 1; fi
-  if ! grep -q "\"$WCM_VERSION\": dict(" "$TL_ROOT/$D62/driver.py" || ! grep -q WCM_VERSIONS "$TL_ROOT/$D62/driver.py"; then
+  # v1-v3 are dict entries ("v3": dict(...)); v4 / v4nr are added after the table (WCM_VERSIONS["v4"] = dict(...))
+  if ! grep -qF -e "\"$WCM_VERSION\": dict(" -e "WCM_VERSIONS[\"$WCM_VERSION\"] = dict(" "$TL_ROOT/$D62/driver.py" \
+      || ! grep -q WCM_VERSIONS "$TL_ROOT/$D62/driver.py"; then
     say "  T0: $TL_ROOT/$D62/driver.py has no WCM_VERSION=$WCM_VERSION in its WCM_VERSIONS table"; return 1
   fi
   if [ -f "$TL_V2_OUT/WCM_VERSION" ] && [ "$(tr -d ' \n' < "$TL_V2_OUT/WCM_VERSION")" != "$WCM_VERSION" ]; then

@@ -85,7 +85,7 @@ for F in $MODELS; do
     for x in "$d/$stem.jsonl" "$d/$stem".shard*.jsonl; do [ -f "$x" ] && f+=("$x"); done
     echo "   $(printf '%-8s' "${a%%:*}") rows $(lines "${f[@]}") (errors $(errs "${f[@]}"))$( [ -d "$d/circuits" ] && echo ", circuits $(count "$d"/circuits/*.pt "$d"/circuits/*/*.pt)")"
   done
-  gu=$(cat "$LOGS/$F"/*/*.shard*.log 2> /dev/null | grep -c "GIVING UP")
+  gu=$(cat "$LOGS/$F"/*/*.shard*.log < /dev/null 2> /dev/null | grep -c "GIVING UP")   # nullglob + no logs: cat would read the terminal
   [ "$gu" -gt 0 ] && echo "   WARNING: $gu shard(s) gave up (grep 'GIVING UP' $LOGS/$F/*/*.log)"
 done
 
@@ -129,8 +129,8 @@ if [ -d "$LOGS/turingllm" ] || [ ${#tlm[@]} -gt 0 ]; then   # the optional Turin
     [ ${#f[@]} -gt 0 ] && echo "   donor $(printf '%-18s' "${d#"${d%/*/*/*}/"}") rows $(lines "${f[@]}") (errors $(errs "${f[@]}"))"
   done
   for d in "$LOGS"/turingllm/*/; do
-    printf '   %-24s %s log lines, last: %s\n' "$(basename "$d")" "$(cat "$d"*.log 2> /dev/null | wc -l)" \
-      "$(cat "$d"*.log 2> /dev/null | tail -n 1 | cut -c1-90)"
+    printf '   %-24s %s log lines, last: %s\n' "$(basename "$d")" "$(cat "$d"*.log < /dev/null 2> /dev/null | wc -l)" \
+      "$(cat "$d"*.log < /dev/null 2> /dev/null | tail -n 1 | cut -c1-90)"
   done
 fi
 
