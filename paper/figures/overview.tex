@@ -1,30 +1,38 @@
 % FIGURE 1: how weighted circuit masking works (schematic; no data).
-% Drawn 2026-09-22. Colours follow the Lab Bright theme (src/analysis/style.py):
+% Drawn 2026-09-22; redrawn 2026-11-08 (DAN-210) for the production method, WCM v4 (protocol.md §0): four training
+% reads Z / A / C / D, sparsity-preserving fill for A and C, censored read + rank-keep inside Z / A / C, the closed-gate
+% charge, 32 strongest + 16 mid-band training contexts, and the evaluation family (pass criterion vs reported).
+% The v1 version is paper-backups/overview-2026-11-08-pre-DAN210.tex. Fonts were raised from \tiny to \scriptsize
+% (reviewer: Fig. 1 text too small).
+% Colours follow the Lab Bright theme (src/analysis/style.py):
 % target honey #d99400 (slot 7); kept latents blue #0044ff (slot 1);
-% ablation values: C contrast-context mean red #fa1e4e (slot 2),
-% A activating-context mean green #12c46a (slot 4), Z zero (ink secondary).
-% Random circuit: ink muted. Font stays the paper's serif (a diagram, not a chart).
-% Needs \usetikzlibrary{patterns}. Included from main.tex inside \resizebox{\linewidth}{!}{...}.
+% ablation values: C contrast-context mean red #fa1e4e (slot 2), A activating-context mean green #12c46a (slot 4),
+% R resample (donor code; labelled D before 2026-11-08, rank-keep is now gamma_K) teal #0ab5c9 (slot 3; purple
+% #b028ff until 2026-11-08, changed because it sat too close to the kept-latent blue). Z zero (ink secondary). Random circuit: ink muted.
+% Font stays the paper's serif (a diagram, not a chart).
+% Included from main.tex inside \resizebox{\linewidth}{!}{...}.
 \definecolor{wcmtarget}{HTML}{D99400}
 \definecolor{wcmkept}{HTML}{0044FF}
 \definecolor{wcmC}{HTML}{FA1E4E}
 \definecolor{wcmA}{HTML}{12C46A}
+\definecolor{wcmD}{HTML}{0AB5C9}
 \definecolor{wcmZ}{HTML}{4C525C}
 \definecolor{wcmrand}{HTML}{6C727C}
 \begin{tikzpicture}[
   font=\scriptsize,
   arrow/.style={-{Stealth[length=1.6mm]}, black!55, thick},
-  lab/.style={font=\tiny, black!60},
-  head/.style={font=\scriptsize\bfseries},
+  lab/.style={font=\scriptsize, black!65},
+  head/.style={font=\small\bfseries},
   keptbar/.style={fill=wcmkept, draw=wcmkept!70!black, line width=0.3pt},
   Cbar/.style={fill=wcmC, draw=wcmC!70!black, line width=0.3pt},
   Abar/.style={fill=wcmA, draw=wcmA!70!black, line width=0.3pt},
+  Dbar/.style={fill=wcmD, draw=wcmD!70!black, line width=0.3pt},
 ]
 
 % ---------------------------------------------------------------- (a) upstream latents
-\node[head, anchor=west] at (-0.1,5.75) {(a) upstream latents};
+\node[head, anchor=west] at (-0.75,5.85) {(a) upstream latents};
 \draw[-{Stealth[length=1.6mm]}, black!30, line width=2pt] (-0.45,0.55) -- (-0.45,5.25);
-\node[lab, rotate=90] at (-0.66,2.9) {residual stream};
+\node[lab, rotate=90] at (-0.68,2.9) {residual stream};
 \foreach \l [count=\li from 0] in {1,2,3,4} {
   \pgfmathsetmacro{\y}{0.75 + \li*1.1}
   \foreach \s/\sx in {attn/0.25, mlp/1.15, res/2.05} {
@@ -32,7 +40,7 @@
     \foreach \c in {0,...,4}
       \fill[black!22] (\sx+0.1+\c*0.14, \y+0.18) rectangle ++(0.09,0.14);
   }
-  \node[lab, anchor=east] at (0.2,\y+0.25) {L\l};
+  \node[lab, anchor=east] at (0.22,\y+0.25) {L\l};
 }
 % latents kept in the circuit
 \foreach \sx/\y/\c in {0.25/0.75/1, 1.15/0.75/3, 2.05/1.85/0, 1.15/1.85/2, 0.25/2.95/4, 2.05/2.95/1, 1.15/2.95/3}
@@ -40,96 +48,114 @@
 % the target: top layer, residual stream
 \draw[wcmtarget, line width=0.9pt, rounded corners=1pt] (2.05,4.05) rectangle ++(0.78,0.5);
 \fill[wcmtarget] (2.05+0.1+2*0.14, 4.05+0.18) rectangle ++(0.09,0.14);
-\node[font=\scriptsize, wcmtarget] at (2.44,4.82) {target $f$};
+\node[font=\small, wcmtarget] at (2.44,4.85) {target $f$};
 \foreach \s/\sx in {attn/0.25, mlp/1.15, res/2.05}
-  \node[lab] at (\sx+0.39,0.52) {\s};
+  \node[lab] at (\sx+0.39,0.5) {\s};
 % zoom into one site
 \draw[black!45, line width=0.8pt, rounded corners=1pt] (2.05,1.85) rectangle ++(0.78,0.5);
-\draw[black!40, dashed] (2.83,2.35) -- (4.05,4.30);
-\draw[black!40, dashed] (2.83,1.85) -- (3.85,1.00);
+\draw[black!40, dashed] (2.83,2.35) -- (3.3,4.75);
+\draw[black!40, dashed] (2.83,1.85) -- (3.3,0.35);
 
 % ---------------------------------------------------------------- (b) one gate and one coefficient per latent
-\node[head, anchor=west] at (3.75,5.75) {(b) one gate and one coefficient per latent};
-\def\xo{4.55}\def\dx{0.46}
-% per latent: kept?, live value, alpha, contrast-context mean, activating-context mean
-\def\lat{1/0.60/1.40/0.15/0.40, 0/0.30/1/0.25/0.30, 1/0.80/0.70/0.10/0.50, 1/0.45/1.80/0.20/0.30,
-         0/0.20/1/0.30/0.35, 0/0.50/1/0.10/0.30, 1/0.70/1.00/0.20/0.45, 0/0.35/1/0.15/0.30,
-         0/0.25/1/0.10/0.25, 1/0.55/1.30/0.20/0.40}
-\foreach \r/\ry in {Z/3.25, A/2.10, C/0.95} {
-  \draw[black!30] (\xo-0.25,\ry) -- (\xo+9*\dx+0.25,\ry);
-  \node[font=\scriptsize\bfseries, anchor=east] at (\xo-0.28,\ry+0.30) {\r};
+\node[head, anchor=west] at (3.3,5.85) {(b) a gate and a coefficient per latent};
+\def\xo{3.95}\def\dx{0.38}
+% per latent: kept?, live value, alpha, then the closed latent's value under A, C, D (0 = not filled: the
+% sparsity-preserving fill keeps only the largest means up to the Top-K budget; a donor's code is itself sparse)
+\def\lat{1/0.60/1.40/0/0/0,      0/0.30/1/0.30/0/0,       1/0.80/0.70/0/0/0,    1/0.45/1.80/0/0/0,
+         0/0.20/1/0.40/0.30/0.55, 0/0.50/1/0/0.25/0,     1/0.70/1.00/0/0/0,    0/0.35/1/0.35/0/0.20,
+         0/0.25/1/0/0.20/0.40,    1/0.55/1.30/0/0/0}
+\foreach \r/\ry/\rc in {Z/3.45/wcmZ, A/2.45/wcmA!75!black, C/1.45/wcmC!85!black, R/0.45/wcmD!85!black} {
+  \draw[black!30] (\xo-0.22,\ry) -- (\xo+9*\dx+0.22,\ry);
+  \node[font=\small\bfseries, text=\rc, anchor=east] at (\xo-0.24,\ry+0.3) {\r};
 }
-\foreach \k/\v/\a/\cm/\am [count=\i from 0] in \lat {
+\foreach \k/\v/\a/\am/\cm/\dm [count=\i from 0] in \lat {
   \pgfmathsetmacro{\x}{\xo+\i*\dx}
-  \draw[black!10] (\x,0.95) -- (\x,5.05);                 % one set of parameters shared by all three rows
+  \draw[black!10] (\x,0.45) -- (\x,4.95);                 % one set of parameters shared by all four rows
   \ifnum\k=1
-    \draw[wcmkept!80!black, fill=wcmkept] (\x-0.11,4.88) rectangle ++(0.22,0.20);
-    \draw[wcmkept!80!black, fill=wcmkept!12] (\x,4.45) circle (0.13);
+    \draw[wcmkept!80!black, fill=wcmkept] (\x-0.1,4.95) rectangle ++(0.2,0.2);
+    \draw[wcmkept!80!black, fill=wcmkept!12] (\x,4.55) circle (0.12);
     \pgfmathsetmacro{\ang}{180-\a*70}
-    \draw[wcmkept!70!black, line width=0.8pt] (\x,4.45) -- ++(\ang:0.12);
-    \foreach \ry in {3.25, 2.10, 0.95}
-      \draw[keptbar] (\x-0.12,\ry) rectangle ++(0.24,{0.95*\a*\v});   % kept: alpha x live value
+    \draw[wcmkept!70!black, line width=0.8pt] (\x,4.55) -- ++(\ang:0.11);
+    \foreach \ry in {3.45, 2.45, 1.45, 0.45}
+      \draw[keptbar] (\x-0.11,\ry) rectangle ++(0.22,{0.8*\a*\v});   % kept: alpha x live value
   \else
-    \draw[black!40, fill=white] (\x-0.11,4.88) rectangle ++(0.22,0.20);
-    \draw[black!25] (\x,4.45) circle (0.13);
-    \draw[wcmZ] (\x-0.08,3.25) -- ++(0.16,0);                       % Z: set to zero
-    \draw[Abar] (\x-0.12,2.10) rectangle ++(0.24,{0.95*\am});        % A: activating-context mean
-    \draw[Cbar] (\x-0.12,0.95) rectangle ++(0.24,{0.95*\cm});        % C: contrast-context mean
+    \draw[black!40, fill=white] (\x-0.1,4.95) rectangle ++(0.2,0.2);
+    \draw[black!25] (\x,4.55) circle (0.12);
+    \draw[wcmZ] (\x-0.08,3.45) -- ++(0.16,0);                        % Z: zero
+    \ifdim\am pt>0pt \draw[Abar] (\x-0.11,2.45) rectangle ++(0.22,{0.8*\am}); \else \draw[wcmZ] (\x-0.08,2.45) -- ++(0.16,0); \fi
+    \ifdim\cm pt>0pt \draw[Cbar] (\x-0.11,1.45) rectangle ++(0.22,{0.8*\cm}); \else \draw[wcmZ] (\x-0.08,1.45) -- ++(0.16,0); \fi
+    \ifdim\dm pt>0pt \draw[Dbar] (\x-0.11,0.45) rectangle ++(0.22,{0.8*\dm}); \else \draw[wcmZ] (\x-0.08,0.45) -- ++(0.16,0); \fi
   \fi
 }
-\node[lab, anchor=west] at (\xo+9*\dx+0.22,4.98) {gate $m$};
-\node[lab, anchor=west] at (\xo+9*\dx+0.22,4.45) {coefficient $\alpha$};
-% direct row labels: what a closed latent is set to
-\def\rx{9.02}
-\draw[wcmZ] (\rx,3.55) -- ++(0.2,0);
-\node[font=\tiny, wcmZ, anchor=west, align=left] at (\rx+0.24,3.55) {set to 0};
-\draw[Abar] (\rx,2.32) rectangle ++(0.2,0.2);
-\node[font=\tiny, wcmA!70!black, anchor=west, align=left] at (\rx+0.24,2.42) {activating-\\context mean};   % text darkened for legibility; swatch stays on-theme
-\draw[Cbar] (\rx,1.17) rectangle ++(0.2,0.2);
-\node[font=\tiny, wcmC!85!black, anchor=west, align=left] at (\rx+0.24,1.27) {contrast-\\context mean};
-\node[lab, anchor=north] at (\xo+4.5*\dx,0.90) {\textcolor{wcmkept}{blue}: in the circuit, $\alpha \times$ its live value \qquad \textcolor{wcmA!70!black}{green} / \textcolor{wcmC!85!black}{red}: closed, set to its ablation value};
+\def\rx{7.62}
+\node[lab, anchor=west] at (\rx,5.05) {gate $m$, kept iff $\theta > 0$};
+\node[lab, anchor=west] at (\rx,4.55) {coefficient $\alpha$};
+% what a closed latent is set to, one row each
+\node[anchor=west, align=left, text=wcmZ]          at (\rx,3.75) {zero};
+\node[anchor=west, align=left, text=wcmA!70!black] at (\rx,2.75) {activating-\\context mean};   % text darkened for legibility; bars stay on-theme
+\node[anchor=west, align=left, text=wcmC!85!black] at (\rx,1.75) {contrast-\\context mean};
+\node[anchor=west, align=left, text=wcmD!85!black] at (\rx,0.75) {resampled\\contrast context};
+\node[lab, anchor=north, align=center] at (\xo+4.5*\dx,0.3)
+  {\textcolor{wcmkept}{blue}: kept, $\alpha \times$ its live value; other colours: closed, set to its ablation value\\
+   (A, C: sparsity-preserving, only the largest means fill the Top-K)};
 
-% ---------------------------------------------------------------- (c) reproduce the target
-\node[head, anchor=west] at (10.45,5.75) {(c) reproduce the target};
-\def\px{10.75}\def\py{1.35}
-\draw[black!45, ->] (\px,\py) -- (\px+3.0,\py);
-\draw[black!45, ->] (\px,\py) -- (\px,\py+2.55);
-\node[lab, anchor=north] at (\px+1.5,\py-0.02) {tokens};
-\node[lab, anchor=west] at (\px+0.05,\py+2.52) {$f$'s pre-activation};
-\draw[black, line width=0.9pt] plot[smooth] coordinates {(\px+0.1,\py+0.35) (\px+0.55,\py+0.5) (\px+1.0,\py+0.4) (\px+1.45,\py+0.9) (\px+1.95,\py+2.15) (\px+2.4,\py+0.8) (\px+2.85,\py+0.45)};
-\draw[wcmZ, dashed, line width=0.6pt] plot[smooth] coordinates {(\px+0.1,\py+0.3) (\px+0.55,\py+0.55) (\px+1.0,\py+0.35) (\px+1.45,\py+0.95) (\px+1.95,\py+2.05) (\px+2.4,\py+0.75) (\px+2.85,\py+0.5)};
-\draw[wcmC, dashed, line width=0.6pt] plot[smooth] coordinates {(\px+0.1,\py+0.4) (\px+0.55,\py+0.45) (\px+1.0,\py+0.45) (\px+1.45,\py+0.85) (\px+1.95,\py+2.2) (\px+2.4,\py+0.85) (\px+2.85,\py+0.4)};
-\draw[wcmA, dashed, line width=0.6pt] plot[smooth] coordinates {(\px+0.1,\py+0.33) (\px+0.55,\py+0.52) (\px+1.0,\py+0.42) (\px+1.45,\py+0.92) (\px+1.95,\py+2.1) (\px+2.4,\py+0.82) (\px+2.85,\py+0.47)};
-\fill[wcmtarget] (\px+1.95,\py+2.15) circle (0.06);
-\node[lab, wcmtarget, anchor=east] at (\px+1.87,\py+2.2) {anchor};
-\draw[black, line width=0.9pt] (\px-0.05,\py-0.55) -- ++(0.25,0) node[lab, anchor=west, black] {unmodified};
-\draw[wcmZ, dashed, line width=0.6pt] (\px+1.2,\py-0.55) -- ++(0.2,0);
-\draw[wcmA, dashed, line width=0.6pt] (\px+1.45,\py-0.55) -- ++(0.2,0);
-\draw[wcmC, dashed, line width=0.6pt] (\px+1.7,\py-0.55) -- ++(0.2,0) node[lab, anchor=west] {circuit, Z / A / C};
-\draw[arrow] (\rx+0.05,1.85) -- (\px-0.12,1.85);                    % the edited stream reaches the target
-\draw[arrow, wcmtarget!80!black, rounded corners=4pt] (\px+1.5,\py+2.75) -- (\px+1.5,5.35) -- (\xo+4.5*\dx,5.35) -- (\xo+4.5*\dx,5.13);
-\node[font=\tiny, wcmtarget!80!black, fill=white, inner sep=1pt] at (8.3,5.35) {error $+$ rank-keep $+$ sparsity penalty $\lambda \sum m$};
+% ---------------------------------------------------------------- (c) training objective
+\node[head, anchor=west] at (10.0,5.85) {(c) trained to reproduce $f$};
+\begin{scope}[shift={(10.35,3.3)}, xscale=0.84, yscale=0.6]
+  \draw[black!45, ->] (0,0) -- (3.0,0);
+  \draw[black!45, ->] (0,0) -- (0,2.55);
+  \draw[black, line width=0.9pt] plot[smooth] coordinates {(0.1,0.35) (0.55,0.5) (1.0,0.4) (1.45,0.9) (1.95,2.15) (2.4,0.8) (2.85,0.45)};
+  \draw[wcmZ, dashed, line width=0.6pt] plot[smooth] coordinates {(0.1,0.3) (0.55,0.55) (1.0,0.35) (1.45,0.95) (1.95,2.05) (2.4,0.75) (2.85,0.5)};
+  \draw[wcmC, dashed, line width=0.6pt] plot[smooth] coordinates {(0.1,0.4) (0.55,0.45) (1.0,0.45) (1.45,0.85) (1.95,2.2) (2.4,0.85) (2.85,0.4)};
+  \draw[wcmA, dashed, line width=0.6pt] plot[smooth] coordinates {(0.1,0.33) (0.55,0.52) (1.0,0.42) (1.45,0.92) (1.95,2.1) (2.4,0.82) (2.85,0.47)};
+  \draw[wcmD, dashed, line width=0.6pt] plot[smooth] coordinates {(0.1,0.28) (0.55,0.47) (1.0,0.47) (1.45,0.88) (1.95,2.12) (2.4,0.78) (2.85,0.43)};
+  \fill[wcmtarget] (1.95,2.15) circle (0.06);
+  \node[lab, wcmtarget, anchor=east] at (1.85,2.2) {anchor};
+  \node[lab, anchor=north] at (1.5,0) {tokens};
+\end{scope}
+\node[lab, anchor=south west] at (10.3,4.85) {$f$'s pre-activation};
+\draw[black, line width=0.9pt] (13.05,4.35) -- ++(0.3,0) node[lab, anchor=west] {unmodified};
+\foreach \c [count=\j from 0] in {wcmZ, wcmA, wcmC, wcmD}
+  \draw[\c, dashed, line width=0.6pt] (13.05,3.95-\j*0.1) -- ++(0.3,0);
+\node[lab, anchor=west, align=left] at (13.35,3.8) {circuit under\\Z, A, C, R};
+\draw[arrow] (8.55,3.5) -- (10.22,3.5);                                 % the edited stream reaches the target
+\draw[arrow, wcmtarget!80!black, rounded corners=4pt] (14.6,4.6) -- (14.6,5.45) -- (\xo+4.5*\dx,5.45) -- (\xo+4.5*\dx,5.2);
+\node[font=\scriptsize, wcmtarget!80!black, fill=white, inner sep=1pt] at (11.4,5.45) {gradient};
+\node[anchor=north west, align=left, text width=5.05cm, inner sep=0pt, execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}] at (10.05,2.55) {%
+  \textbf{Z, A, C}: squared error of the censored read at the anchors, $+\,\gamma_{\mathrm{K}}\,$rank-keep\\[1pt]
+  \textbf{\textcolor{wcmD!85!black}{R}} (resample term): error under a donor's code\\[1pt]
+  $+\;\lambda \sum \sigma(\theta) \;+\; \lambda \sum (1 - \sigma(\theta))\,\lvert \alpha - 1 \rvert$\\[3pt]
+  \textcolor{black!65}{48 training contexts: 32 strongest $+$ 16 mid-band activating; contrast contexts retrieved by similarity, verified silent}};
 
-% ---------------------------------------------------------------- (d) the three tests and the baseline
-\node[head, anchor=west] at (-0.1,-0.15) {(d) tested on held-out contexts};
-\newcommand{\wcmicon}[5]{% #1 x, #2 node colour, #3 target fires?, #4 background, #5 circuit removed?
-  \draw[black!30, rounded corners=2pt, fill=#4] (#1-1.45,-2.25) rectangle (#1+1.45,-0.45);
-  \foreach \yy/\rr in {-0.75/0.13, -1.1/0.07, -1.45/0.11, -1.8/0.085} {         % node size = coefficient
-    \draw[#2!80!black, fill=#2!35, line width=0.7pt] (#1-0.9,\yy) circle (\rr);
-    \ifnum#5=1 \draw[black!70, line width=0.7pt] (#1-0.97,\yy-0.07) -- (#1-0.83,\yy+0.07) (#1-0.97,\yy+0.07) -- (#1-0.83,\yy-0.07); \fi
-    \draw[-{Stealth[length=1.2mm]}, #2!80!black] (#1-0.78,\yy) -- (#1+0.28,-1.27);
+% ---------------------------------------------------------------- (d) evaluation
+\node[head, anchor=west] at (-0.75,-0.85) {(d) tested on held-out contexts \textmd{(strongest; mid-band reported separately)}};
+\newcommand{\wcmicon}[6]{% #1 x, #2 node colour, #3 target fires?, #4 background, #5 circuit removed?, #6 colour of the rest
+  \def\yc{-2.15}
+  \draw[black!30, rounded corners=2pt, fill=#4] (#1-1.3,\yc-0.7) rectangle (#1+1.3,\yc+0.7);
+  \foreach \yy/\rr in {0.45/0.12, 0.15/0.065, -0.15/0.1, -0.45/0.08} {         % node size = coefficient
+    \draw[#2!80!black, fill=#2!35, line width=0.7pt] (#1-0.75,\yc+\yy) circle (\rr);
+    \ifnum#5=1 \draw[black!70, line width=0.7pt] (#1-0.82,\yc+\yy-0.07) -- (#1-0.68,\yc+\yy+0.07) (#1-0.82,\yc+\yy+0.07) -- (#1-0.68,\yc+\yy-0.07); \fi
+    \draw[-{Stealth[length=1.2mm]}, #2!80!black] (#1-0.63,\yc+\yy) -- (#1+0.38,\yc);
   }
-  \foreach \yy in {-0.92,-1.62} \fill[black!12] (#1-0.45,\yy) circle (0.06);
-  \ifnum#3=1 \fill[wcmtarget] (#1+0.42,-1.27) circle (0.13);
-  \else \draw[wcmtarget, line width=0.8pt] (#1+0.42,-1.27) circle (0.13); \fi
-  \node[font=\tiny, wcmtarget] at (#1+0.42,-0.98) {$f$};
+  \foreach \yy in {0.3,-0.3} \fill[#6] (#1-0.3,\yc+\yy) circle (0.06);
+  \ifnum#3=1 \fill[wcmtarget] (#1+0.52,\yc) circle (0.13);
+  \else \draw[wcmtarget, line width=0.8pt] (#1+0.52,\yc) circle (0.13); \fi
+  \node[font=\scriptsize, wcmtarget] at (#1+0.52,\yc+0.32) {$f$};
 }
-\wcmicon{1.55}{wcmkept}{1}{white}{0}
-\wcmicon{5.05}{wcmkept}{0}{white}{1}
-\wcmicon{8.55}{wcmkept}{1}{wcmC!8}{0}
-\wcmicon{12.05}{wcmrand}{0}{white}{0}
-\node[align=center, font=\tiny] at (1.55,-2.55) {\textbf{faithfulness}: the circuit alone\\ reproduces $f$ where it fires};
-\node[align=center, font=\tiny] at (5.05,-2.55) {\textbf{necessity}: removing the\\ circuit silences $f$};
-\node[align=center, font=\tiny] at (8.55,-2.55) {\textbf{sufficiency to induce}: set in a\\ \textcolor{wcmC!85!black}{contrast context}, it switches $f$ on};
-\node[align=center, font=\tiny] at (12.05,-2.55) {\textbf{random circuit}, same size and\\ same $\alpha$ fitting: $f$ stays off};
+\wcmicon{0.6}{wcmkept}{1}{white}{0}{black!15}
+\wcmicon{3.8}{wcmkept}{0}{white}{1}{black!15}
+\wcmicon{7.0}{wcmkept}{1}{wcmC!8}{0}{black!15}
+\wcmicon{10.2}{wcmkept}{1}{wcmD!6}{0}{wcmD}
+\wcmicon{13.4}{wcmrand}{0}{white}{0}{black!15}
+% which tests make up the pass criterion
+\draw[black!50] (-0.7,-1.25) -- (-0.7,-1.18) -- (5.1,-1.18) -- (5.1,-1.25);
+\node[font=\scriptsize, fill=white, inner sep=1.5pt] at (2.2,-1.18) {pass: Z, A, C in $[0.75, 1.5]$, necessity $\geq 0.9$};
+\draw[black!50] (5.7,-1.25) -- (5.7,-1.18) -- (14.7,-1.18) -- (14.7,-1.25);
+\node[font=\scriptsize, fill=white, inner sep=1.5pt] at (10.2,-1.18) {reported, not required};
+\foreach \x/\t in {0.6/{\textbf{faithfulness}: under Z, A, C the circuit alone reproduces $f$},
+                   3.8/{\textbf{necessity}: removing the circuit silences $f$},
+                   7.0/{\textbf{sufficiency to induce}: set in a \textcolor{wcmC!85!black}{contrast context}, it switches $f$ on},
+                   10.2/{\textbf{donor background}: the rest from \textcolor{wcmD!85!black}{real contexts}; $f$ is restored},
+                   13.4/{\textbf{random circuit}, same size, $\alpha$ fitted: $f$ stays off}}
+  \node[anchor=north, align=center, text width=2.95cm, font=\scriptsize, execute at begin node={\hyphenpenalty=10000}] at (\x,-2.95) {\t};
 \end{tikzpicture}

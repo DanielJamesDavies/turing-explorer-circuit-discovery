@@ -121,12 +121,16 @@ nvidia-smi --query-gpu=index,clocks.sm,temperature.gpu,power.draw,clocks_event_r
   --format=csv,noheader > "$LOGD/health_load.csv"
 wait
 BAD=()
+TF_MED=$(cat "$LOGD"/burn.*.txt | grep -o "[0-9]* TFLOP" | cut -d' ' -f1 | sort -n | awk '{a[NR]=$1} END {print a[int((NR+1)/2)]+0}')
 while IFS=, read -r i clk tmp pw swt hwt; do
   clk=${clk//[^0-9]/}; tmp=${tmp//[^0-9]/}
   life=$(nvidia-smi -q -d PERFORMANCE -i "$i" | awk -F: '/SW Thermal Slowdown/ && /us/ {gsub(/[^0-9]/, "", $2); print int($2 / 3.6e9)}' | head -1)
   tf=$(grep -o "[0-9]* TFLOP" "$LOGD/burn.$i.txt" | cut -d' ' -f1)
   flag=""
-  { [ "${clk:-0}" -lt 1500 ] || [ "${tmp:-0}" -ge 80 ]; } && flag="  <== FLAGGED (slow clock or hot)"
+  # a full bf16 load holds an H100 SXM at its 700 W cap, ~1,365-1,400 MHz (2026-11-07, healthy pod: 679-688 TFLOP/s):
+  # flag a GPU that is hot, or clearly below its neighbours (the bad one: 420-1,230 MHz, 86 C, ~200 W)
+  { [ "${clk:-0}" -lt 1100 ] || [ "${tmp:-0}" -ge 80 ] || [ "${tf:-0}" -lt "$(( TF_MED * 85 / 100 ))" ]; } \
+    && flag="  <== FLAGGED (hot, slow clock or < 85% of the median matmul rate)"
   case "$swt|$hwt" in *"Not Active|"*"Not Active") ;; *Active*) flag="  <== FLAGGED (thermal slowdown active)" ;; esac
   printf '   GPU %s: under load SM %s MHz, %s C, %s, matmul %s TFLOP/s, lifetime SW-thermal-slowdown %s h%s\n' \
     "$i" "$clk" "$tmp" "${pw# }" "${tf:-?}" "${life:-?}" "$flag"

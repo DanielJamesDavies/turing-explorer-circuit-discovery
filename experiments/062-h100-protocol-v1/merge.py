@@ -29,7 +29,8 @@ sys.path.insert(0, str(HERE))
 from family_table import band_label, family  # noqa: E402
 
 OUT = Path(os.environ.get("OUT", str(HERE / "out")))
-GPUS = int(os.environ.get("GPUS", 8))
+_GPUS = os.environ.get("GPUS") or "8"   # a count, or (082 chain / launch.sh) a GPU list "2,3,4,0" -> its length
+GPUS = len([g for g in _GPUS.split(",") if g.strip()]) if "," in _GPUS else max(int(_GPUS), 1)   # projection only
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]
 BAND = (0.75, 1.5)         # DAN-8 pass rule (2026-09-27; floor 0.75 from 2026-10-31): Z, A, C in BAND, necessity >= NEC_MIN
 NEC_MIN = 0.9

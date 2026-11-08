@@ -1,0 +1,21 @@
+{
+ "name -> law": ["9.resid.2782", "7.resid.10515", "8.resid.26248"],
+ "physics context": ["9.resid.3607", "9.resid.24799"],
+ "generic possessive (control)": ["8.resid.30890", "7.resid.33102", "5.resid.20846", "8.resid.786"],
+ "generic core (control)": ["0.resid.6299", "0.attn.5663", "0.mlp.1349", "1.attn.13899", "1.attn.16130", "1.mlp.621",
+                            "5.attn.33630"],
+ "_story": ["name -> law", "physics context"],
+ "_years": 0,
+ "_probes": {
+  "names with a law": ["Ohm's law relates voltage, current and resistance.",
+                       "Snell's law describes how light bends at a boundary.",
+                       "Coulomb's law gives the force between two charges.",
+                       "Hooke's law says the extension is proportional to the force."],
+  "scientists without an eponymous law": ["Darwin's theory changed biology.",
+                                          "Rutherford's model placed the charge in a nucleus.",
+                                          "Turing's machine is a model of computation."],
+  "not scientists": ["Picasso's painting hangs in the gallery.", "Mozart's symphony was played last night.",
+                     "Mary's book is on the table."],
+  "invented name": ["In electromagnetism, Zorbel's", "In the history of painting, Zorbel's"]
+ }
+}

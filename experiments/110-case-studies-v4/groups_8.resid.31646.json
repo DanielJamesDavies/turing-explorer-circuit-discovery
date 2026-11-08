@@ -1,0 +1,32 @@
+{
+ "AI word forms (A-I / artificial intelligence)": ["3.resid.28147", "4.resid.232", "4.resid.8835", "5.resid.21965",
+   "5.resid.6697", "6.resid.34289", "6.resid.25270", "6.resid.29708", "6.resid.15636", "7.resid.38533",
+   "7.resid.31393", "7.resid.4279"],
+ "machine learning and agents": ["7.resid.19712", "5.resid.29704", "1.resid.13183", "2.resid.777", "6.resid.3246",
+   "0.mlp.21961"],
+ "technology applications": ["7.attn.25270", "7.resid.14964", "6.resid.18599", "7.mlp.566", "8.attn.35302",
+   "0.resid.7297"],
+ "off-topic (control)": ["8.attn.15664", "7.attn.18681", "4.resid.1236", "8.attn.4515", "4.resid.35986",
+   "4.attn.14637", "0.resid.21148"],
+ "generic core (control)": ["0.resid.6299", "0.attn.5663", "0.mlp.1349", "1.attn.13899", "1.attn.16130", "1.mlp.621",
+   "5.attn.33630"],
+ "_story": ["AI word forms (A-I / artificial intelligence)", "machine learning and agents", "technology applications"],
+ "_years": 0,
+ "_probes": {
+  "AI, written out": [
+   "Developing trustworthy artificial intelligence is a major goal of computer science.",
+   "Researchers in artificial intelligence build systems that learn from data."],
+  "AI, abbreviated": [
+   "Modern AI systems can translate languages and recognise images.",
+   "The company built an AI-powered assistant to answer customer questions."],
+  "computing, not AI": [
+   "The operating system manages memory and schedules processes.",
+   "The database stores customer records in tables."],
+  "same word, other sense": [
+   "Military intelligence reported troop movements near the border.",
+   "Emotional intelligence helps people manage their relationships.",
+   "I went to the market and bought some bread.",
+   "The intelligence of dolphins has long fascinated biologists.",
+   "The artificial flowers on the table looked almost real."]
+ }
+}

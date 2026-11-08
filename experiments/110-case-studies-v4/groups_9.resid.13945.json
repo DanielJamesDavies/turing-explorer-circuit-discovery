@@ -1,0 +1,32 @@
+{
+ "plasma confinement": ["8.resid.38811", "7.resid.10763", "7.resid.18115", "6.resid.1774", "8.mlp.36220",
+                        "5.resid.39361", "8.mlp.31784", "9.mlp.28470", "7.mlp.11081", "5.attn.19209"],
+ "nuclear and power engineering": ["8.attn.13437", "8.resid.35073", "7.resid.25169", "7.resid.3205", "8.resid.9803",
+                                   "8.attn.28205"],
+ "stars, cosmos, particles": ["7.attn.19889", "7.attn.20098", "8.resid.33903"],
+ "quantum and magnetism": ["8.attn.13797", "9.attn.12806", "7.attn.8045", "9.attn.3777", "6.resid.39219"],
+ "off-topic (control)": ["7.attn.34987", "7.attn.2488", "7.attn.1796", "8.attn.13132", "7.attn.27777", "8.attn.30652",
+                         "7.attn.23646"],
+ "generic core (control)": ["0.resid.6299", "0.attn.5663", "0.mlp.1349", "1.attn.13899", "1.attn.16130", "1.mlp.621",
+                            "5.attn.33630"],
+ "_story": ["plasma confinement", "nuclear and power engineering", "stars, cosmos, particles", "quantum and magnetism"],
+ "_years": 0,
+ "_probes": {
+  "magnetic confinement": [
+   "The tokamak uses a combination of toroidal and poloidal magnetic fields to confine the plasma.",
+   "The stellarator employs a complex arrangement of twisted coils to confine the hot plasma.",
+   "To achieve fusion, the reactor creates a helical magnetic field that holds the plasma in a ring.",
+   "Inside the tokamak, magnetic coils keep the plasma away from the walls of the vessel."],
+  "other fusion and nuclear": [
+   "The Sun produces energy by fusing hydrogen into helium in its core.",
+   "A fission reactor uses a combination of uranium fuel rods and control rods.",
+   "In inertial confinement fusion, powerful lasers compress a small pellet of fuel."],
+  "other electromagnetism": [
+   "The electric motor uses a combination of magnets and coils to produce rotation.",
+   "An MRI scanner uses a strong magnetic field to create an image of the body.",
+   "A transformer employs two coils wound around an iron core."],
+  "same frame, not physics": [
+   "The bakery uses a combination of flour and sugar to create a ring of dough.",
+   "The architect employs a complex arrangement of beams to support the roof."]
+ }
+}
