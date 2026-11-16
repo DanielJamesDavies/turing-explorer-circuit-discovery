@@ -12,16 +12,25 @@ pass rate (DAN-8) and median A against median circuit size.
 |---|---|---|
 | WCM | all eight prices, λ 2.5e-5 .. 4e-3 | 062 circuits (`out_full/out/sweep`, `out_{bands,depth,lowlam}`), re-scored by `rescore_ref.py` |
 | unweighted circuit masking | all five prices, λ 1e-5 .. 1e-3 | 062 circuits, re-scored |
-| path attribution (IG, `abl_ig`) | the target's WCM size at every WCM price, and its natural size | `attr_baselines.py` |
+| path attribution (IG, `abl_ig`) | the fixed absolute grid, global top-n for n = 64, 128, …, 65,536 (`N_64` … `N_65536`, 11 points, independent of WCM: the curve); the target's WCM size at every WCM price (`W_*`: Table 2 and the CSV); and its natural size. Rankings `max` and `sfc` | `attr_baselines.py` |
 | attribution patching (AtP, `atp`) | same | `attr_baselines.py` |
 | Ge hierarchical attribution | every τ bisection point (target: the W_0.001 size) | `ge_hier.py` |
 | attribution members + fitted coefficients (DAN-43) | the W_0.001 per-site counts | `attr_fitted.py` |
 | activation-ranked members (mean anchor activation; co-activation variant), α = 1 and fitted | the W_0.001 per-site counts | `attr_fitted.py` |
 | exact-patching-ranked members (10-target subset), α = 1 and fitted | the W_0.001 size | `exact_patching.py` |
 
+**The figure** draws IG and AtP as curves on the absolute grid (pass rate and median A against n, per depth band
+L0-4 / L5-7 / L8-11, one line per ranking), with WCM's eight λ points, unweighted's five and the natural-size points
+overlaid (Daniel, 2026-11-15). The W-matched truncations stay in `dan77_points.csv` (kind `attr`) and Table 2; a
+method with no grid rows (CircuitLasso from 098) is still drawn at the WCM sizes. A grid size above the number of
+entries a target's ranking holds (nonzero, capped at `KEEP_TOP` = 65,536) is written as a skip row
+(`skip: n_above_ranked`), not scored, so a grid point counts only targets that can fill it (the `targets` column).
+
 **Table 2 is the summary** (`table2.py`): each method at its natural operating point (WCM and unweighted at the
 **same price**, λ 1e-3; IG and AtP at their natural position-union size; Ge at its bisected size), then IG / AtP
-truncated at the W_0.001 size under each ranking, and DAN-43 at α = 1 and fitted. Unweighted is compared at the same
+truncated at the W_0.001 size under each ranking, and DAN-43 at α = 1 and fitted. Its companion
+(`table2_grid.{md,csv}`, also appended to `table2.md`): per depth band, the smallest grid n at which each IG / AtP
+ranking's pass rate reaches WCM's at λ 1e-3 in that band (— if none does, with the grid's best pass rate). Unweighted is compared at the same
 λ (Daniel's choice over size matching); the nearest-size match is printed only as a note (no unweighted price on the
 grid is as small as WCM: the nearest is U_0.001 for 99% of the 190 targets, at a median 1.85× the WCM size).
 
@@ -34,6 +43,7 @@ Dropped in the re-scope: the restoration row, the contrastive `ig_mean` row and 
 | the DAN-77 figure (`dan77-faithfulness-vs-size.pdf`, `dan77_points.csv`) | DAN-77; the main-text "Attribution at matched size" paragraph (L469) can cite it |
 | Table 2 under protocol v1 on the 190 sweep targets (`table2.md`, `.tex`) | L469, L847 (`app:method-comparison`) |
 | the SFC-aggregate and max rankings side by side | L872 caption ("the aggregate ranking of prior work") and L879 |
+| the smallest grid size at which attribution matches WCM's pass rate, per band (`table2_grid.md`) | the "Attribution at matched size" paragraph |
 | DAN-43 rows | the missing middle row (attribution members, fitted coefficients) |
 
 ## The estimators
@@ -51,10 +61,16 @@ All discovery runs on each target's v1 **training** contexts (the first `n_train
   activation × grad(pre²), i.e. zero ablation of active latents only, so it is not the mean-ablation AtP asked for. Both
   arms therefore use the same reduction code (`attr_baselines.ig_reduce`, `alphas=[1.0]` for AtP); tested: AtP = IG
   exactly on a linear metric, and AtP = a direct autograd clean-point gradient on the nonlinear one.
-- **Rankings** (each target's top `KEEP_TOP` = 65,536 entries; the largest WCM circuit is 37,170): `max` = largest
-  |attribution| at any context and position (031's), `sfc` = |mean over contexts of the summed signed attribution|,
-  the **aggregate ranking of prior work (SFC)**, and `agg` = mean summed |attribution| (kept in the CSV; the figure
-  shows max and sfc).
+- **Rankings** (each target's top `KEEP_TOP` = 65,536 entries; the largest WCM circuit is 37,170, the largest grid
+  size 65,536): `max` = largest |attribution| at any context and position (031's) and `sfc` = |mean over contexts of
+  the summed signed attribution|, the **aggregate ranking of prior work (SFC)**. `agg` (mean summed |attribution|)
+  was dropped on 2026-11-15 (Daniel): it is still computed into the ranking cache, but scored only with
+  `RANKINGS=max,agg,sfc` and shown in Table 2 only with `TABLE_RANKINGS=...,agg`.
+- **Sizes** (`SIZES`, default `W_all,N_grid`): `W_all` = the target's WCM size at each of the 8 prices; `N_grid` =
+  global top-n at n = 64 … 65,536 (powers of 2), or single points `N_<n>`. Rows are keyed (seed, method, ranking,
+  size_arm, ctx_dir) with size_arm `W_<λ>` / `N_<n>` / `natural`, so W rows and ranking caches written before the
+  grid stay valid and a resumed run scores only the grid. The fitted (DAN-43) stage is unchanged (W_0.001 per-site
+  counts). 098's `lasso_rows.py` reads the same `SIZES` but ignores the N arms (`resolve_sizes(grid=False)`).
 - **Natural size**: 031's position union (per batch of 4, one pooled 50th-percentile cut on |attribution|, each
   context's own causal prefix).
 - **Ge**: 034's `GeHierInstrument` / `hier_run` / log-space τ bisection unchanged (bracket 1e-8..1e2, 7 steps, ±10%);
@@ -110,7 +126,7 @@ reused only when the training rows are identical; rows carry `ctx_dir` and `ctx_
 | `ge_hier.py` | `ge/rows.shard*.jsonl` (seed, point, ctx_dir) | `ge/points/<key>.<hash>.pt` |
 | `exact_patching.py` | `exact/rows.shard*.jsonl` (seed, variant, ctx_dir); `REPORT=1` → `exact/summary.md` | `exact/effects/<key>.<hash>.pt` |
 | `run_local.sh` / `run_pod.sh` | the queue on one machine / every stage through `062/launch.sh` (`SCRIPT=`, `SHARD=i/N`) | |
-| `table2.py` | figure, `dan77_points.csv`, `table2.{md,csv,tex}`, `table2_rows.csv` (every row with `file:line`) | |
+| `table2.py` | figure, `dan77_points.csv`, `table2.{md,csv,tex}`, `table2_rows.csv` (every row with `file:line`), `table2_grid.{md,csv}` | |
 | `cmp_common.py` | pure helpers (rankings, truncation, sizes, pass rule, reference merge, Ge replay); unit-tested | |
 
 ```bash
@@ -118,7 +134,7 @@ reused only when the training rows are identical; rows carry `ctx_dir` and `ctx_
 CTX_DIR=experiments/062-h100-protocol-v1/out_full/out/ctx_v2 K=8 P=4 bash experiments/083-v1-comparison/run_pod.sh
 # one machine (resumable; re-run the same line after any interruption)
 CTX_DIR=experiments/062-h100-protocol-v1/out_full/out/ctx_v2 bash experiments/083-v1-comparison/run_local.sh
-# smoke (CPU, 1 shallow target, IG 2 steps, bisection 2 steps, 4 fit steps, sizes W_0.001 and W_0.004)
+# smoke (CPU, 1 shallow target, IG 2 steps, bisection 2 steps, 4 fit steps, sizes W_0.001, W_0.004, N_64, N_65536)
 SMOKE=1 bash experiments/083-v1-comparison/run_local.sh
 ```
 
@@ -130,16 +146,21 @@ backward work):
 | Stage | per target |
 |---|---|
 | ref: 13 re-scores (8 W + 5 U) × ~5 s | 65 s |
-| attr: IG 87 s + AtP ~12 s + 48 truncation scores (8 sizes × 2 arms × 3 rankings) + 2 natural-size scores | ~380 s |
+| attr (2026-11-15 grid): IG 87 s + AtP ~12 s + 78 scores × ~5.6 s = 437 s (32 W-matched: 8 sizes × 2 arms × 2 rankings; 44 grid: 11 sizes × 2 × 2; 2 natural) | ~540 s (was ~380 s with 3 rankings and no grid) |
 | fitted: 3 sources (IG max, activation mean, co-activation) × (400-step support fit + 2 scores) | ~145 s |
 | ge: 8 sweeps (034 mean 335 s) + ~7 scored points | ~370 s |
-| **total** | **~960 s → 190 targets: ~51 local-h** |
+| **total** | **~1,120 s → 190 targets: ~59 local-h** (was ~51) |
 | exact patching, 10 targets, subset candidates (≤ 5,000 × 48 contexts ≈ 240k patched rows, est. ~0.75 ms/row on a GPU) + IG/AtP + 2 scores + 1 fit | ~5 min per target → ~1 local-h |
 
-**8×H100 (pod)**: at the plan's r = 2.0 (one H100 under MPS ≈ 2 local processes; range 1.5–2.7), 51 / (8 × 2) ≈
-**3.2 h wall (2.4–4.3 h), ~26 GPU-h**, plus ~0.2 h for the exact stage,
+The attr stage alone: 540 s × 190 ≈ **28.5 local-h ≈ 14 H100 GPU-h** at r = 2 (was ~20 local-h, ~10 GPU-h). The
+chain's T7 (`ref attr fitted`, no Ge): 750 s × 190 ≈ **40 local-h ≈ 20 H100 GPU-h** (was 590 s, 31 local-h, ~16 GPU-h).
+Unmeasured: the ~5.6 s per score is the old W-size mean; the grid's large points (16k–65k members) may score more
+slowly, and grid sizes above a target's ranked count are skipped (cheaper on shallow targets). Treat ±20%.
+
+**8×H100 (pod)**: at the plan's r = 2.0 (one H100 under MPS ≈ 2 local processes; range 1.5–2.7), 59 / (8 × 2) ≈
+**3.7 h wall (2.7–4.9 h), ~30 GPU-h**, plus ~0.2 h for the exact stage,
 start-up and stage tails. P = 4 per GPU (a ~13 GB bank per process; Ge holds a full-depth graph per chunk).
-`SCORE_POINTS=final` saves ~0.2 h; `RANKINGS=max,sfc` saves ~1/6 of the attr scoring.
+`SCORE_POINTS=final` saves ~0.2 h; `SIZES=W_all` (no grid) saves 44 of the 78 attr scores (~246 s/target: ~13 local-h, ~6.5 GPU-h).
 
 **Exact patching cost (measured, 1 target, CPU)**: `0.resid.4723` (2 upstream sites): pool 26,160 active latents → subset
 of 3,181 candidates (the AtP and IG top-2,000 overlap heavily) + random 1,000; 152,688 patched rows in 2,002 s =
@@ -175,8 +196,11 @@ overlap with the exact top-39: AtP 0.97, IG 0.95; the max reduction tracks the e
 overlap 0.77 / 0.74). One shallow target with 2 IG steps is not evidence about the comparison; it shows the rows are
 sane.
 
-Unit tests: `tests/analysis/test_083_v1_comparison.py`, 34 tests (rankings, truncation, reductions and chunk
+Unit tests: `tests/analysis/test_083_v1_comparison.py`, 41 tests (rankings, truncation, reductions and chunk
 invariance, IG = `integrated_baseline_scores`, AtP = IG on a linear metric and = the clean-point autograd gradient on
 a nonlinear one, the natural union's per-chunk anchors, size resolution, reference merge, training-context hash,
 nearest size, the DAN-8 table logic, the Ge replay, activation / co-activation scores, the exact-patch edit and the
-stratified target draw). Full suite: 1,739 passed, 3 skipped.
+stratified target draw; 2026-11-15: N_grid expansion, the skip above the ranked count, grid job keys disjoint from
+the W rows (a pre-grid run resumes into the grid only), defaults max,sfc and W_all,N_grid, the grid curve points and
+the smallest-grid-size table). The smoke above predates the grid (`SIZES=W_0.001,W_0.004`, 3 rankings). Full
+`tests/analysis` (CPU, 2026-11-15): 106 passed.

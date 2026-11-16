@@ -204,7 +204,9 @@ def main():
             h["per_gpu"]))
     pd.DataFrame(hgrp).to_csv(X.OUT / "run2026_heldout_sizes_groups.csv", index=False)
     pd.DataFrame(hw_rows).to_csv(X.OUT / "run2026_fit_segments.csv", index=False)
-    L.write_table("heldout_sizes", ht, ["Model", "Fitted", "Strongest 16", r"Strongest $<16$", r"Strongest $<8$",
+    # 2026-11-15 (DAN-218 #9): header "Fitted" -> "Targets": the rows count every listed target, including Pythia-70m's
+    # three unfitted ones (fits 509 of 512).
+    L.write_table("heldout_sizes", ht, ["Model", "Targets", "Strongest 16", r"Strongest $<16$", r"Strongest $<8$",
                                         "Strongest min", "No mid-band", r"Mid-band $<16$", r"Contrast $<64$",
                                         "Contrast min"], "lrrrrrrrrr",
                   note="per fitted target, from main/contexts rows: held-out strongest / mid-band context counts and "

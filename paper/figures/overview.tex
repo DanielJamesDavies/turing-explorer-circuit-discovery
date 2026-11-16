@@ -87,7 +87,7 @@
     \ifdim\dm pt>0pt \draw[Dbar] (\x-0.11,0.45) rectangle ++(0.22,{0.8*\dm}); \else \draw[wcmZ] (\x-0.08,0.45) -- ++(0.16,0); \fi
   \fi
 }
-\def\rx{7.62}
+\def\rx{7.78}
 \node[lab, anchor=west] at (\rx,5.05) {gate $m$, kept iff $\theta > 0$};
 \node[lab, anchor=west] at (\rx,4.55) {coefficient $\alpha$};
 % what a closed latent is set to, one row each
@@ -96,8 +96,8 @@
 \node[anchor=west, align=left, text=wcmC!85!black] at (\rx,1.75) {contrast-\\context mean};
 \node[anchor=west, align=left, text=wcmD!85!black] at (\rx,0.75) {resampled\\contrast context};
 \node[lab, anchor=north, align=center] at (\xo+4.5*\dx,0.3)
-  {\textcolor{wcmkept}{blue}: kept, $\alpha \times$ its live value; other colours: closed, set to its ablation value\\
-   (A, C: sparsity-preserving, only the largest means fill the Top-K)};
+  {\textcolor{wcmkept}{blue}: kept, $\alpha \times$ its live value; other colours: closed, set to its ablation value};
+% 2026-11-14 (page budget): the "(A, C: sparsity-preserving ...)" line is dropped; the caption's (b) states it.
 
 % ---------------------------------------------------------------- (c) training objective
 \node[head, anchor=west] at (10.0,5.85) {(c) trained to reproduce $f$};
@@ -114,10 +114,10 @@
   \node[lab, anchor=north] at (1.5,0) {tokens};
 \end{scope}
 \node[lab, anchor=south west] at (10.3,4.85) {$f$'s pre-activation};
-\draw[black, line width=0.9pt] (13.05,4.35) -- ++(0.3,0) node[lab, anchor=west] {unmodified};
+\draw[black, line width=0.9pt] (13.05,4.4) -- ++(0.3,0) node[lab, anchor=west, xshift=2pt] {unmodified};
 \foreach \c [count=\j from 0] in {wcmZ, wcmA, wcmC, wcmD}
-  \draw[\c, dashed, line width=0.6pt] (13.05,3.95-\j*0.1) -- ++(0.3,0);
-\node[lab, anchor=west, align=left] at (13.35,3.8) {circuit under\\Z, A, C, R};
+  \draw[\c, dashed, line width=0.6pt] (13.05,4.02-\j*0.14) -- ++(0.3,0);
+\node[lab, anchor=west, align=left, xshift=2pt] at (13.35,3.81) {circuit under\\Z, A, C, R};
 \draw[arrow] (8.55,3.5) -- (10.22,3.5);                                 % the edited stream reaches the target
 \draw[arrow, wcmtarget!80!black, rounded corners=4pt] (14.6,4.6) -- (14.6,5.45) -- (\xo+4.5*\dx,5.45) -- (\xo+4.5*\dx,5.2);
 \node[font=\scriptsize, wcmtarget!80!black, fill=white, inner sep=1pt] at (11.4,5.45) {gradient};
@@ -128,6 +128,7 @@
   \textcolor{black!65}{48 training contexts: 32 strongest $+$ 16 mid-band activating; contrast contexts retrieved by similarity, verified silent}};
 
 % ---------------------------------------------------------------- (d) evaluation
+\begin{scope}[yshift=0.35cm]   % 2026-11-14: raised into the space freed by the one-line (b) footer
 \node[head, anchor=west] at (-0.75,-0.85) {(d) tested on held-out contexts \textmd{(strongest; mid-band reported separately)}};
 \newcommand{\wcmicon}[6]{% #1 x, #2 node colour, #3 target fires?, #4 background, #5 circuit removed?, #6 colour of the rest
   \def\yc{-2.15}
@@ -152,10 +153,11 @@
 \node[font=\scriptsize, fill=white, inner sep=1.5pt] at (2.2,-1.18) {pass: Z, A, C in $[0.75, 1.5]$, necessity $\geq 0.9$};
 \draw[black!50] (5.7,-1.25) -- (5.7,-1.18) -- (14.7,-1.18) -- (14.7,-1.25);
 \node[font=\scriptsize, fill=white, inner sep=1.5pt] at (10.2,-1.18) {reported, not required};
-\foreach \x/\t in {0.6/{\textbf{faithfulness}: under Z, A, C the circuit alone reproduces $f$},
+\foreach \x/\t in {0.6/{\textbf{faithfulness}: under Z, A, C the circuit reproduces $f$},
                    3.8/{\textbf{necessity}: removing the circuit silences $f$},
-                   7.0/{\textbf{sufficiency to induce}: set in a \textcolor{wcmC!85!black}{contrast context}, it switches $f$ on},
-                   10.2/{\textbf{donor background}: the rest from \textcolor{wcmD!85!black}{real contexts}; $f$ is restored},
-                   13.4/{\textbf{random circuit}, same size, $\alpha$ fitted: $f$ stays off}}
-  \node[anchor=north, align=center, text width=2.95cm, font=\scriptsize, execute at begin node={\hyphenpenalty=10000}] at (\x,-2.95) {\t};
+                   7.0/{\textbf{sufficiency to induce}: in a \textcolor{wcmC!85!black}{contrast context}, turns $f$ on},
+                   10.2/{\textbf{donor background}: rest from \textcolor{wcmD!85!black}{real contexts}; $f$ restored},
+                   13.4/{\textbf{random circuit} (same size, $\alpha$ fitted): $f$ stays off}}
+  \node[anchor=north, align=center, text width=3.15cm, font=\scriptsize, execute at begin node={\hyphenpenalty=10000\frenchspacing}] at (\x,-2.95) {\t};
+\end{scope}
 \end{tikzpicture}

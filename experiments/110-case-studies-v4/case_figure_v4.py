@@ -52,17 +52,21 @@ def panel_years(ax, d):
     x = np.arange(len(ys))
     cls = [i for i, r in enumerate(ys) if -800 <= r["year"] <= -300]
     ax.axvspan(min(cls) - 0.4, max(cls) + 0.4, color=S.tint(S.BLUE, 0.9), zorder=0, linewidth=0)
-    ax.text((min(cls) + max(cls)) / 2, 128, "classical", ha="center", va="top", fontsize=CF.FS["note"], color=S.BLUE)
+    # 2026-11-15: label moved to the foot of the band (the legend now takes the top-right)
+    ax.text((min(cls) + max(cls)) / 2, 4, "classical", ha="center", va="bottom", fontsize=CF.FS["note"], color=S.BLUE)
     ax.plot(x, [100 * r["clean"] / ref for r in ys], color=S.BLUE, marker="o", markersize=2.2, linewidth=1.1,
             zorder=3, label="model")
     ax.plot(x, [100 * r["C"] / ref for r in ys], color=CIRC, marker="s", markersize=2.0, linewidth=1.0,
             zorder=3, label="circuit alone (C)")
     lab = [("%d BC" % -r["year"]) if r["year"] < 0 else ("AD %d" % r["year"]) for r in ys]
-    keep = {"5000 BC", "1000 BC", "AD 100", "AD 2000"}
+    # 2026-11-15 (07-critique C): "5000 BC" and "1000 BC" overlapped; three ticks only (no AD 1 probe, so AD 100)
+    keep = {"5000 BC", "AD 100", "AD 2000"}
     ax.set_xticks([i for i, l in enumerate(lab) if l in keep])
     ax.set_xticklabels([l for l in lab if l in keep], rotation=45, ha="right")
-    ax.set_ylim(0, 130); ax.set_ylabel("target, % of reference")
-    ax.legend(loc="center left", bbox_to_anchor=(0.0, 0.47), handlelength=1.2, borderaxespad=0.1, fontsize=5.2,
+    # 2026-11-15: legend moved to the empty top-right (it overlapped the model line once the row was shortened);
+    # ylim 130 -> 140 to give it room above the circuit-alone peak (108).
+    ax.set_ylim(0, 140); ax.set_yticks([0, 20, 40, 60, 80, 100, 120]); ax.set_ylabel("target, % of reference")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.0, 1.0), handlelength=1.2, borderaxespad=0.1, fontsize=5.2,
               frameon=False)
     ax.set_title("(b) “In [year], …”", fontsize=CF.FS["title"])
 
@@ -95,7 +99,8 @@ def panel_ko(ax, d):
     from matplotlib.patches import Patch
     order = ["classical Greece", "early civilisations", "dates / eras", "philosophy / rhetoric",
              "historical period (control)", "generic core (control)", "all story groups"]
-    labs = ["Class.\nGreece", "Early\nciv.", "Dates", "Philos.", "Period", "Generic", "Story\n(all)"]
+    # 2026-11-15 (07-critique C): two-line labels; "Period" and "Generic" ran together
+    labs = ["Class.\nGreece", "Early\nciv.", "Dates", "Philos.", "Hist.\nperiod", "Generic\ncore", "Story\n(all)"]
     K = d["knockouts"]
     w = 0.26
     ax.axhspan(0.75, 1.5, color=S.tint(S.CATEGORICAL[3], 0.9), zorder=0, linewidth=0)
@@ -105,8 +110,7 @@ def panel_ko(ax, d):
             x = gi + (si - 1) * w
             v = K[g]["ko"][sc]
             ax.bar(x, max(v, 0.0), w * 0.9, color=S.tint(col, amt), zorder=2, linewidth=0)
-            if v < 0.03:
-                ax.text(x, 0.02, "%.2f" % v, ha="center", va="bottom", fontsize=5.0, color=S.INK, rotation=90)
+            # 2026-11-15 (07-critique C): the rotated "0.00" value label was dropped; values are in tab:case-studies
             rnd = [r[sc] for r in K[g]["random"] if r[sc] is not None]
             m, s = float(np.mean(rnd)), float(np.std(rnd))
             ax.plot([x - w * 0.42, x + w * 0.42], [m, m], color=S.INK, linewidth=0.9, zorder=4)
@@ -128,8 +132,11 @@ def main():
                          "legend.fontsize": 5.6, "axes.linewidth": 0.6, "grid.linewidth": 0.45,
                          "xtick.major.pad": 1.2, "ytick.major.pad": 1.2, "axes.labelpad": 1.6})
     d = json.loads(DATA.read_text(encoding="utf-8"))
-    fig = plt.figure(figsize=(5.5, 4.1))
-    gs = fig.add_gridspec(2, 3, width_ratios=[1.0, 0.85, 1.85], height_ratios=[0.8, 1.0], wspace=0.55, hspace=0.45)
+    # 2026-11-15 (07-critique C, page budget): 4.1 -> 3.6 in, panel (a) squeezed (0.8 -> 0.62), hspace 0.45 -> 0.35
+    # 2026-11-15 (Daniel: bottom row "fairly tall"): 3.6 -> 3.3 in, ratios 0.62 -> 0.70 so (a) keeps its height and
+    # only the (b)-(d) row shrinks (about 2.2 -> 1.95 in).
+    fig = plt.figure(figsize=(5.5, 3.3))
+    gs = fig.add_gridspec(2, 3, width_ratios=[1.0, 0.85, 1.85], height_ratios=[0.70, 1.0], wspace=0.55, hspace=0.35)
     panel_circuit(fig.add_subplot(gs[0, :]), d)
     panel_years(fig.add_subplot(gs[1, 0]), d)
     panel_places(fig.add_subplot(gs[1, 1]), d)

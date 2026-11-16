@@ -12,10 +12,12 @@
 #   CTX_DIR=experiments/062-h100-protocol-v1/out_full/out/ctx_v2 bash ...  # the rebuilt held-out sets (DAN-157):
 #                                                                          # read by 062/driver.py, outputs in out_ctx_v2/
 #   SMOKE=1 bash experiments/083-v1-comparison/run_local.sh                # 1 shallow target, tiny budgets, CPU,
-#                                                                          # two sizes, out_smoke/
+#                                                                          # two WCM sizes + grid N_64 and N_65536
+#                                                                          # (the latter usually a skip row), out_smoke/
 #
 # Stages: ref    re-score the stored 062 WCM and unweighted circuits at every price (on these contexts / this GPU)
-#         attr   C1: IG and AtP rankings, top-n at every WCM size and at the natural size, scored
+#         attr   C1: IG and AtP rankings (max, sfc), top-n at every WCM size, on the N_64..N_65536 grid and at the
+#                natural size, scored
 #         fitted C3 (DAN-43) + activation-ranked members: ranked members at the production per-site counts, fitted
 #         exact  exact activation patching on 10 stratified targets (ground truth for AtP / IG), then its summary
 #         ge     C2: Ge hierarchical attribution, tau bisected to the W_0.001 size, every point scored
@@ -28,7 +30,7 @@ STAGES=${STAGES:-ref,attr,fitted,exact,ge,table}
 if [ "${SMOKE:-0}" = 1 ]; then
   export OUT083=${OUT083:-experiments/083-v1-comparison/out_smoke} TARGETS=experiments/083-v1-comparison/targets_smoke.txt
   export LIMIT=${LIMIT:-1} IG_STEPS=${IG_STEPS:-2} BISECT_STEPS=${BISECT_STEPS:-2} STEPS=${STEPS:-4}
-  export SIZES=${SIZES:-W_0.001,W_0.004} REF_ARMS=${REF_ARMS:-W_0.001,U_0.001} N_EXACT=${N_EXACT:-1} CUDA_VISIBLE_DEVICES=
+  export SIZES=${SIZES:-W_0.001,W_0.004,N_64,N_65536} REF_ARMS=${REF_ARMS:-W_0.001,U_0.001} N_EXACT=${N_EXACT:-1} CUDA_VISIBLE_DEVICES=
 fi
 if [ -z "${OUT083:-}" ]; then
   if [ -n "${CTX_DIR:-}" ]; then OUT083=experiments/083-v1-comparison/out_$(basename "$CTX_DIR")

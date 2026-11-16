@@ -40,8 +40,13 @@ TAG = "shard%d" % SHARD_I
 LIMIT = int(os.environ["LIMIT"]) if os.environ.get("LIMIT") else None
 REF_ARM = "W_0.001"                                      # the production circuit: lambda 1e-3, 400 steps (protocol v1)
 # DAN-77 (curve-first): attribution is truncated at the target's own WCM size at EVERY WCM price ("W_all": the five
-# sweep prices plus the three weak ones, 2.5e-5 .. 4e-3); a comma list of arm names restricts it (W_0.001 = Table 2).
-SIZES = [s for s in os.environ.get("SIZES", "W_all").split(",") if s]
+# sweep prices plus the three weak ones, 2.5e-5 .. 4e-3) and (Daniel, 2026-11-15) at a fixed absolute grid of global
+# top-n sizes independent of WCM ("N_grid" = N_64, N_128, .., N_65536; one point "N_<n>"); a comma list of arm names
+# restricts it (W_0.001 = Table 2). The grid arms are only expanded for callers that pass grid=True to resolve_sizes
+# (attr_baselines.py); other users of SIZES (098's lasso_rows.py) see the WCM-size arms only.
+SIZES = [s for s in os.environ.get("SIZES", "W_all,N_grid").split(",") if s]
+GRID = tuple(2 ** k for k in range(6, 17))               # 64 .. 65,536 (11 points); KEEP_TOP holds the largest
+GRID_ARM = re.compile(r"^N_([1-9][0-9]*)$")
 KEEP_TOP = int(os.environ.get("KEEP_TOP", 65536))       # ranking entries kept per (arm, ranking); the largest WCM
 #                                                          circuit in the sweep is 37,170 (W_2.5e-05); 0 = every nonzero
 HEAD = ["free0_tk", "freeM_topk_tk", "freeN_topk_tk"]    # Z, A (sparsity-preserving), C (sparsity-preserving)
@@ -162,16 +167,41 @@ def circuit_path(arm, key):
     return None
 
 
-def resolve_sizes(have, sizes=None):
+def grid_arm(n):
+    """The size-arm name of an absolute grid point: global top-n, independent of WCM."""
+    return "N_%d" % int(n)
+
+
+def resolve_sizes(have, sizes=None, grid=False):
     """The size arms to truncate at for one target: `have` = {arm: n}; "W_all" / "U_all" expand to every such arm
-    the target has, a named arm is kept when the target has it."""
+    the target has, a named arm is kept when the target has it. With grid=True, "N_grid" expands to every GRID point
+    (N_64 .. N_65536) and "N_<n>" is kept as given (absolute sizes: they do not depend on `have`); with grid=False
+    the N arms are dropped."""
     out = []
     for s in (SIZES if sizes is None else sizes):
         if s in ("W_all", "U_all"):
             out += sorted((a for a in have if a.startswith(s[0] + "_")), key=lambda a: float(a.split("_")[1]))
+        elif s == "N_grid":
+            out += [grid_arm(n) for n in GRID] if grid else []
+        elif GRID_ARM.match(s):
+            out += [s] if grid else []
         elif s in have:
             out.append(s)
     return list(dict.fromkeys(out))
+
+
+def size_target(arm, have):
+    """The circuit size a size arm asks for: n for "N_<n>", else the target's own size at that arm (None if absent)."""
+    m = GRID_ARM.match(str(arm))
+    return int(m.group(1)) if m else have.get(arm)
+
+
+def grid_skip(arm, n_ranked):
+    """True for a grid arm asking for more entries than the ranking holds (recorded as a skip row, not scored: the
+    truncation would be the whole ranking, i.e. a point already on the curve at a smaller n). WCM-size arms are never
+    skipped (fewer ranked entries than the WCM size -> all of them, as before)."""
+    m = GRID_ARM.match(str(arm))
+    return bool(m) and int(m.group(1)) > int(n_ranked)
 
 
 def merge_reference(base_rows, local_rows, mode):

@@ -49,13 +49,13 @@ finally {
 
 if (Test-Path $PdfPath) {
     Write-Host "Built PDF: $PdfPath"
-    # Page-budget guardrail (DAN-24): the main body must end on page 12 or earlier.
+    # Page-budget guardrail (DAN-24; tightened 12 -> 10 on 2026-11-14): the main body must end on page 10 or earlier.
     $AuxPath = Join-Path $BuildDir "main.aux"
     $EndLine = Select-String -Path $AuxPath -Pattern '\\newlabel\{end-of-main\}\{\{[^}]*\}\{(\d+)\}' | Select-Object -First 1
     if ($EndLine) {
         $EndPage = [int]$EndLine.Matches[0].Groups[1].Value
-        $Colour = if ($EndPage -le 12) { "Green" } else { "Yellow" }
-        Write-Host "Main body ends on page $EndPage (budget: 12)" -ForegroundColor $Colour
+        $Colour = if ($EndPage -le 10) { "Green" } else { "Yellow" }
+        Write-Host "Main body ends on page $EndPage (budget: 10)" -ForegroundColor $Colour
     }
     if ($Open) {
         Start-Process $PdfPath

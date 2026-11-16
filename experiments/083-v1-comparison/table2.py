@@ -7,21 +7,26 @@ fails; vacuous denominators are excluded from the denominator and counted (062/m
 
 FIGURE (dan77-faithfulness-vs-size): every method at its genuine sizes. WCM at all eight prices (2.5e-5 .. 4e-3) and
 unweighted at all five (1e-5 .. 1e-3), from the reference rows; path attribution (IG) and attribution patching (AtP)
-truncated at the target's WCM size at every WCM price (one line per ranking), and at their natural size; Ge's tau
-bisection points (binned by size); DAN-43 at the production per-site counts; CircuitLasso (exp 098, when its rows are
-in OUT083) like IG / AtP, its natural size = the support at the cross-validated λ. Pass rate (top) and median A (bottom).
+as curves on the fixed absolute grid (global top-n, n = 64 .. 65,536, one line per ranking; Daniel 2026-11-15), and at
+their natural size. A method / ranking with no grid rows (e.g. CircuitLasso, exp 098, when its rows are in OUT083)
+is drawn at the target's WCM sizes instead, as before; its natural size = the support at the cross-validated λ. Ge's
+tau bisection points (binned by size); DAN-43 at the production per-site counts. Pass rate (top) and median A (bottom).
+The W-matched truncations stay in dan77_points.csv (kind "attr") and in Table 2. A grid point counts only the targets
+whose ranking holds n entries (larger n are skip rows), so the targets column of dan77_points.csv shrinks at the top.
 TABLE 2 (summary): each method at its natural operating point (WCM and unweighted at the SAME price, lambda 1e-3;
 attribution at its natural position-union size; Ge at its bisected size), then the attribution truncations at the
-W_0.001 size and DAN-43.
+W_0.001 size and DAN-43. COMPANION (table2_grid.{md,csv}): per depth band, the smallest grid size at which each
+attribution ranking's pass rate reaches WCM's at λ 1e-3 in that band (— if no grid size does).
 
 Reference rows (WCM / unweighted): REF = auto (default: the same-machine re-scores of rescore_ref.py where present,
 else the 062 H100 sweep rows), local (re-scores only; the default when CTX_DIR is set, because the rebuilt held-out
 sets need re-scored references), or 062. 083 rows are read from OUT083 (attr / ge / fitted / ref).
 Outputs (OUT083): dan77_points.csv, dan77-faithfulness-vs-size.{pdf,png}, table2.md, table2.csv, table2_rows.csv
-(every per-target row used, with its source file:line), table2.tex (booktabs body).
+(every per-target row used, with its source file:line), table2.tex (booktabs body), table2_grid.{md,csv}.
 
   PYTHONPATH=src python experiments/083-v1-comparison/table2.py
-  env: REF (auto | local | 062)  COMMON=1 (only targets present in every Table 2 row)  FIG_RANKINGS (max,sfc)
+  env: REF (auto | local | 062)  COMMON=1 (only targets present in every Table 2 row)  FIG_RANKINGS (max,sfc,coef)
+       TABLE_RANKINGS (max,sfc,coef,std; add agg to show mean-|attr| rows when they were scored)
 """
 import os
 import re
@@ -38,6 +43,7 @@ import cmp_common as C  # noqa: E402
 REF = os.environ.get("REF", "local" if C.CTX_DIR else "auto")
 COMMON = os.environ.get("COMMON") == "1"
 FIG_RANKINGS = [r for r in os.environ.get("FIG_RANKINGS", "max,sfc,coef").split(",") if r]
+TABLE_RANKINGS = [r for r in os.environ.get("TABLE_RANKINGS", "max,sfc,coef,std").split(",") if r]   # agg: dropped
 PROD = C.REF_ARM
 U_PROD = "U_0.001"                                          # unweighted at the same price (Daniel, 2026-10-24)
 # "lasso" = CircuitLasso (Yin et al. 2026) adapted to one target latent: experiments/098-circuitlasso-baseline writes
@@ -111,7 +117,7 @@ def table_rows(ref):
     lab = "hierarchical attribution (Ge, adapted), τ bisected to the WCM size"
     out.append((SECTION_NAT, lab, frame(ge, lab, method="ge_hier", ranking="bisect")))
     for m in METHOD_LABEL:
-        for rk in RANK_LABEL:
+        for rk in (r for r in RANK_LABEL if r in TABLE_RANKINGS):
             rr = [r for r in attr if r["method"] == m and r["ranking"] == rk and r["size_arm"] == PROD]
             lab = "%s, %s" % (METHOD_LABEL[m], RANK_LABEL[rk])
             out.append((SECTION_N, lab, frame(rr, lab, method=m, ranking=rk)))
@@ -187,9 +193,10 @@ def write_table(t, rows, note, ctx_dirs):
     pd.concat([f.assign(section=sec) for sec, _, f in rows], ignore_index=True).to_csv(C.OUT / "table2_rows.csv",
                                                                                         index=False)
     lines = ["# Table 2 (protocol v1): summary of the faithfulness-vs-size curves, held-out strongest", "",
-             "DAN-8 pass rule (Z, A, C in [0.8, 1.5] and necessity >= 0.9); vacuous denominators excluded and counted. "
+             "DAN-8 pass rule (Z, A, C in [%g, %g] and necessity >= %g); vacuous denominators excluded and counted. "
              "Medians over non-vacuous rows; size and size ratio over all rows. REF = %s%s. 083 rows scored on: %s."
-             % (REF, ", COMMON targets" if COMMON else "", ", ".join(sorted(ctx_dirs)) or "—"), "",
+             % (C.BAND[0], C.BAND[1], C.NEC_MIN, REF, ", COMMON targets" if COMMON else "",
+                ", ".join(sorted(ctx_dirs)) or "—"), "",
              "| section | row | targets | vac | n (med) | n / WCM | Z | A | C | φ_ind | φ_sup | pass | L0-4 | L5-7 | L8-11 |",
              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     recs = t.to_dict("records")                      # (itertuples would rename "pass" and "pass_L0-4")
@@ -215,27 +222,88 @@ def write_table(t, rows, note, ctx_dirs):
 
 
 # ---------------------------------------------------------------------------------------------- DAN-77 figure
+def band_points(series, size_arm, f, kind):
+    """One point per depth band (and "all") of one (series, size arm): median size, pass rate (non-vacuous), median A."""
+    pts = []
+    for b, _, _ in C.DEPTH_BANDS + (("all", 0, 99),):
+        g = f if b == "all" else f[f.depth == b]
+        ok = g[~g.vacuous]
+        if not len(ok):
+            continue
+        pts.append(dict(series=series, kind=kind, size_arm=size_arm, band=b, targets=len(ok), n_median=g.n.median(),
+                        pass_rate=ok.passes.mean(), A_median=pd.to_numeric(ok[C.HEAD[1]], errors="coerce").median(),
+                        sources=source_files(g, sep=" ")))
+    return pts
+
+
+def size_kind(size_arm):
+    """The figure kind of an attribution size arm: the natural size, the absolute grid, or a WCM-matched size."""
+    return "natural" if size_arm == "natural" else "grid" if C.GRID_ARM.match(str(size_arm)) else "attr"
+
+
+def attr_points(rows):
+    """Curve points of the attribution rows (scored rows only: skip and error rows are dropped by ok_rows upstream),
+    one series per (method, ranking), kind per size_kind."""
+    fa = frame(C.last_by(rows, ("seed", "method", "ranking", "size_arm")), "attr")
+    pts = []
+    if len(fa):
+        for (m, rk, sz), g in fa.groupby(["method", "ranking", "size_arm"]):
+            pts += band_points("%s/%s" % (m, rk), sz, g, size_kind(sz))
+    return pts
+
+
+def grid_crossover(pts, wcm_arm=PROD):
+    """The companion to Table 2: per (attribution series, depth band), the smallest grid size whose pass rate reaches
+    WCM's pass rate at `wcm_arm` in the same band (None if none does), with the pass rate there and the grid's
+    largest pass rate. Reads curve_points output."""
+    if pts.empty:
+        return pd.DataFrame()
+    w = pts[(pts.series == "WCM") & (pts.size_arm == wcm_arm)].set_index("band")
+    out = []
+    for (series, band), g in pts[pts.kind == "grid"].groupby(["series", "band"]):
+        if band not in w.index:
+            continue
+        g = g.assign(n_grid=g.size_arm.str[2:].astype(int)).sort_values("n_grid")
+        ref = float(w.loc[band, "pass_rate"])
+        hit = g[g.pass_rate >= ref - 1e-12]
+        first = hit.iloc[0] if len(hit) else None
+        out.append(dict(series=series, band=band, wcm_arm=wcm_arm, wcm_pass=ref, wcm_n_median=w.loc[band, "n_median"],
+                        n_cross=None if first is None else int(first.n_grid),
+                        pass_at_cross=None if first is None else float(first.pass_rate),
+                        targets_at_cross=None if first is None else int(first.targets),
+                        grid_max_pass=float(g.pass_rate.max()), grid_points=len(g)))
+    return pd.DataFrame(out)
+
+
+def write_grid_table(gx):
+    """table2_grid.{csv,md}; returns the markdown lines (also appended to table2.md)."""
+    if gx.empty:
+        return []
+    gx.to_csv(C.OUT / "table2_grid.csv", index=False)
+    pct = lambda v: "—" if v is None or (isinstance(v, float) and np.isnan(v)) else "%.0f%%" % (100 * v)
+    lines = ["## Smallest absolute grid size reaching WCM's pass rate (λ 1e-3), per depth band", "",
+             "Global top-n, n = 64 .. 65,536 (powers of 2); a grid point counts only targets whose ranking holds n "
+             "entries. — = no grid size reaches it (the grid's best pass rate is shown).", "",
+             "| method / ranking | band | WCM pass | WCM n (med) | smallest n | pass there | targets | grid best |",
+             "|---|---|---|---|---|---|---|---|"]
+    for r in gx.to_dict("records"):
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
+            r["series"], r["band"], pct(r["wcm_pass"]), fmt(r["wcm_n_median"], 0),
+            "—" if r["n_cross"] is None or pd.isna(r["n_cross"]) else "{:,}".format(int(r["n_cross"])),
+            pct(r["pass_at_cross"]), "—" if pd.isna(r["targets_at_cross"]) else int(r["targets_at_cross"]),
+            pct(r["grid_max_pass"])))
+    (C.OUT / "table2_grid.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return lines
+
+
 def curve_points(ref):
     """One point per (series, size arm, depth band): median size, pass rate (non-vacuous), median A."""
     pts = []
-
-    def add(series, size_arm, f, kind):
-        for b, _, _ in C.DEPTH_BANDS + (("all", 0, 99),):
-            g = f if b == "all" else f[f.depth == b]
-            ok = g[~g.vacuous]
-            if not len(ok):
-                continue
-            pts.append(dict(series=series, kind=kind, size_arm=size_arm, band=b, targets=len(ok), n_median=g.n.median(),
-                            pass_rate=ok.passes.mean(), A_median=pd.to_numeric(ok[C.HEAD[1]], errors="coerce").median(),
-                            sources=source_files(g, sep=" ")))
-
+    add = lambda *a: pts.extend(band_points(*a))
     sw = frame(ref, "reference")
     for arm, g in sw.groupby("arm"):
         add("WCM" if arm.startswith("W_") else "unweighted", arm, g, "sweep")
-    fa = frame(C.last_by(ours("attr"), ("seed", "method", "ranking", "size_arm")), "attr")
-    if len(fa):
-        for (m, rk, sz), g in fa.groupby(["method", "ranking", "size_arm"]):
-            add("%s/%s" % (m, rk), sz, g, "natural" if sz == "natural" else "attr")
+    pts += attr_points(ours("attr"))
     ge = frame(C.last_by(ours("ge"), ("seed", "point")), "ge")
     if len(ge):
         ge = ge[ge.n.notna()]
@@ -264,14 +332,17 @@ def figure(pts):
     fig, axes = plt.subplots(2, 3, figsize=(9.6, 5.8), sharex=True, sharey="row")
     for j, (b, lo, hi) in enumerate(C.DEPTH_BANDS):
         P = pts[pts.band == b]
+        gridded = set(P.series[P.kind == "grid"])         # these are drawn on the grid, not at the WCM sizes
         for i, (col, ylab) in enumerate((("pass_rate", "targets that pass (%)"), ("A_median", "A (activating mean), median"))):
             ax = axes[i, j]
             scale = 100 if col == "pass_rate" else 1
-            for series, g in P.groupby("series"):
+            for (series, kind), g in P.groupby(["series", "kind"]):
                 g = g.sort_values("n_median")
-                kind, head = g.kind.iloc[0], series.split("/")[0]
+                head = series.split("/")[0]
                 rk = series.split("/")[1] if "/" in series else None
-                if kind in ("attr", "natural") and rk not in FIG_RANKINGS + ["union", "cv"]:
+                if kind in ("attr", "grid", "natural") and rk not in FIG_RANKINGS + ["union", "cv"]:
+                    continue
+                if kind == "attr" and series in gridded:
                     continue
                 c = colors.get(head, INK_MUTED)
                 if head == "fitted_act" and rk == "coact":
@@ -279,7 +350,10 @@ def figure(pts):
                 name = names.get(head, head) + ("" if rk is None or kind == "natural" else " (%s)" % rk)
                 if kind in ("sweep", "attr"):
                     ax.plot(g.n_median, scale * g[col], ls=dashes.get(rk, "-"), marker="o", ms=3.5, color=c,
-                            label=name, zorder=3)
+                            label=name + (", at the WCM sizes" if kind == "attr" else ""), zorder=4 if head == "WCM" else 3)
+                elif kind == "grid":
+                    ax.plot(g.n_median, scale * g[col], ls=dashes.get(rk, "-"), marker=".", ms=4, lw=1.3, color=c,
+                            label=name + ", top-n grid", zorder=3)
                 elif kind == "natural":
                     ax.scatter(g.n_median, scale * g[col], marker="*", s=60, color=c, label=name + ", natural size", zorder=5)
                 elif kind == "ge":
@@ -292,7 +366,7 @@ def figure(pts):
                     ax.scatter(g.n_median, scale * g[col], marker="s" if series.endswith("/fit") else "^", s=24,
                                color=c, label=lab, zorder=5)
             if col == "A_median":
-                ax.axhspan(0.8, 1.5, color="#eef0f4", zorder=0)
+                ax.axhspan(C.BAND[0], C.BAND[1], color="#eef0f4", zorder=0)
             ax.set_xscale("log")
             if i == 0:
                 ax.set_title("Layers %d–%d" % (lo, hi), fontsize=11)
@@ -320,8 +394,14 @@ def main():
     t, rows = build_table(table_rows(ref))
     ctx_dirs = {str(x) for sub in ("attr", "ge", "fitted", "ref") for x in (r.get("ctx_dir") for r in ours(sub)) if x}
     write_table(t, rows, size_matching_note(ref), ctx_dirs)
+    grid = write_grid_table(grid_crossover(pts))
+    if grid:
+        with open(C.OUT / "table2.md", "a", encoding="utf-8") as fh:
+            fh.write("\n" + "\n".join(grid) + "\n")
+        print("\n" + "\n".join(grid))
     print("\nwrote", C.OUT / "dan77_points.csv", png or "(no figure: no points)", C.OUT / "table2.md",
-          C.OUT / "table2.csv", C.OUT / "table2_rows.csv", C.OUT / "table2.tex")
+          C.OUT / "table2.csv", C.OUT / "table2_rows.csv", C.OUT / "table2.tex",
+          C.OUT / "table2_grid.md" if grid else "(no grid rows: no table2_grid)")
 
 
 if __name__ == "__main__":

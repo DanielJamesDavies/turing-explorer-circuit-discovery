@@ -177,7 +177,9 @@ def figure(sw, model, figdir):
     plt.rcParams.update({"font.size": 8, "axes.titlesize": 8.5, "axes.titlepad": 4.0, "axes.labelsize": 8,
                          "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "legend.fontsize": 7.5, "lines.linewidth": 1.5,
                          "axes.linewidth": 0.8, "grid.linewidth": 0.5})
-    fig, axes = plt.subplots(1, len(bands), figsize=(5.5, 2.35), sharey=True, squeeze=False)
+    # 2026-11-15 (07-critique C, page budget): height 2.35 -> 2.0 in, shared x axis, legend inside the first panel,
+    # no per-point lambda labels (the star and its legend entry carry them), one x label for the row
+    fig, axes = plt.subplots(1, len(bands), figsize=(5.5, 2.0), sharey=True, sharex=True, squeeze=False)
     for j, b in enumerate(bands):
         ax = axes[0][j]
         for wt, col, name in ((True, st.BLUE, "WCM (fitted coefficients)"), (False, st.CATEGORICAL[1], "unweighted ($\\alpha = 1$)")):
@@ -192,17 +194,16 @@ def figure(sw, model, figdir):
                 if wt and abs(r["lam"] - PROD_LAM) < 1e-12:
                     ax.scatter([r["n_median"]], [r["pass_pct"]], s=70, marker="*", color=col, edgecolor=st.INK, lw=0.6,
                                zorder=4, label="production $\\lambda = 10^{-3}$" if j == 0 else None)
-                    ax.annotate("$\\lambda = 10^{-3}$", (r["n_median"], r["pass_pct"]), xytext=(0, -11),
-                                textcoords="offset points", ha="center", fontsize=7, color=st.INK)
         ax.set_title("layers %s" % b[1:].replace("-", "–"))
         ax.set_ylim(0, 100)
         ax.set_xscale("log")
-        ax.set_xlabel("circuit size (median latents)")
+        ax.set_xlim(1e2, 2e5)
     axes[0][0].set_ylabel("circuits that pass (%)")
     h, lab = axes[0][0].get_legend_handles_labels()
-    fig.legend(h, lab, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3, frameon=False, handlelength=1.4,
-               columnspacing=1.2)
-    L.save_with_legend(fig, figdir / ("%stl_sweep_curve.png" % L.PREFIX), top=0.86)
+    axes[0][0].legend(h, lab, loc="lower right", ncol=1, frameon=False, handlelength=1.4, fontsize=7)
+    # one x label, on the middle panel (fig.supxlabel left a ~0.3 in gap under tight_layout)
+    axes[0][len(bands) // 2].set_xlabel("circuit size (median latents, log scale)")
+    L.save_with_legend(fig, figdir / ("%stl_sweep_curve.png" % L.PREFIX), top=1.0)
 
 
 def nor(model, sw):
@@ -252,17 +253,18 @@ def main():
             print("  %-10s targets %3d vac %d (from main %d) pass %s n %.0f dev %.2f" % (
                 r["arm"], r["targets"], r["vacuous"], r["from_main"], L.fmt_pass(r["_c"]), r["n_median"], r["dev_median"]))
             tex.append([r["method"], "%g%s" % (r["lam"], " (production)" if r["weighted"] and abs(r["lam"] - PROD_LAM) < 1e-12
-                                                else ""), L.tex_int(r["targets"]), L.fmt_pass(r["_c"], True),
+                                                else ""), L.tex_int(r["_c"]["n"]), L.fmt_pass(r["_c"], True),
                         "%s (%s--%s)" % tuple(L.tex_int(r[k]) for k in ("n_median", "n_p25", "n_p75")),
                         "%s / %s / %s" % tuple(L.tex_num(r["%s_median" % z]) for z in "ZAC"), L.tex_num(r["dev_median"])])
         strip = lambda rs: pd.DataFrame([{k: v for k, v in r.items() if not k.startswith("_")} for r in rs])  # noqa: E731
-        L.write_table("tl_sweep", tex, ["Method", r"$\lambda$", "Targets", r"Pass (\%) [95\% CI]", "Size, median (IQR)",
+        # 2026-11-08 (DAN-62): print the scored n (the pass-rate denominator), not targets with a record
+        L.write_table("tl_sweep", tex, ["Method", r"$\lambda$", "Scored", r"Pass (\%) [95\% CI]", "Size, median (IQR)",
                                         "Z / A / C", "Worst dev."], "llrllll", csv_df=strip(arms))
         texb = []
         for r in sorted(bands, key=lambda r: (r["band"], not r["weighted"], r["lam"])):
-            texb.append(["layers " + r["band"][1:], r["method"], "%g" % r["lam"], L.tex_int(r["targets"]),
+            texb.append(["layers " + r["band"][1:], r["method"], "%g" % r["lam"], L.tex_int(r["_c"]["n"]),
                          L.fmt_pass(r["_c"], True), L.tex_int(r["n_median"])])
-        L.write_table("tl_sweep_bands", texb, ["Depth", "Method", r"$\lambda$", "Targets", r"Pass (\%) [95\% CI]",
+        L.write_table("tl_sweep_bands", texb, ["Depth", "Method", r"$\lambda$", "Scored", r"Pass (\%) [95\% CI]",
                                                "Size (median)"], "lllrll", csv_df=strip(bands))
         mrows, per = matched(sw, a.model)
         texm, foot = [], []
@@ -298,8 +300,8 @@ def main():
                                   L.fmt_pass(r["_pw"], True), L.fmt_pass(r["_pn"], True),
                                   "%+.1f {[}%+.1f, %+.1f{]}" % (r["diff_pp"], r["diff_lo"], r["diff_hi"]),
                                   "%s / %s" % (L.tex_int(r["n_v4"]), L.tex_int(r["n_noR"]))] for r in n],
-                      ["Depth", "Targets", r"Pass, v4 (\%)", r"Pass, without R (\%)", "Difference (pp)",
-                       "Size v4 / without R"], "lrllll",
+                      ["Depth", "Scored", r"Pass, production (\%)", r"Pass, without R (\%)", "Difference (pp)",
+                       "Size production / without R"], "lrllll",
                       csv_df=pd.DataFrame([{k: v for k, v in r.items() if not k.startswith("_")} for r in n]))
 
 

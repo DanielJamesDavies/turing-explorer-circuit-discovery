@@ -11,11 +11,14 @@
 #   root/turing-tl/...   (absolute paths, leading / stripped)  -> unpacked at DEST_ROOT (/)
 #   everything else      (relative to the public tree)          -> unpacked at PUB (/root/turing)
 # ENV: RESULTS [/workspace/results]  PUB [/root/turing]  DEST_ROOT [/]  DRY_RUN [0] (list what it would do)
+#      RESTORE_SKIP [''] an extended regex on archive names to leave packed (2026-11-16): e.g. 'S10-stores' on a
+#      T7 + arenas pod (the public stores, ~10 GB, are read by no TuringLLM stage and by neither arena)
 set -uo pipefail
 RESULTS=${RESULTS:-/workspace/results}
 PUB=${PUB:-/root/turing}
 DEST_ROOT=${DEST_ROOT:-/}
 DRY=${DRY_RUN:-0}
+SKIP=${RESTORE_SKIP:-}
 say() { echo "[restore $(date +%H:%M:%S)] $*"; }
 [ -d "$PUB" ] || { say "no $PUB: run scripts/pod_quickstart.sh first"; exit 1; }
 
@@ -30,6 +33,7 @@ mapfile -t all < <(cd "$RESULTS" && ls -1 pub-*.tgz 2> /dev/null | awk '{
 [ ${#all[@]} -gt 0 ] || { say "no pub-*.tgz in $RESULTS"; exit 1; }
 use=()
 for a in "${all[@]}"; do
+  if [ -n "$SKIP" ] && [[ "$a" =~ $SKIP ]]; then say "skip $a (RESTORE_SKIP)"; continue; fi
   m=$(echo "$a" | sed -E 's/^pub-(pythia-70m|gpt2-small)-.*/\1/;t;s/.*//')
   if [ -n "$m" ] && [[ "$a" =~ -S(1-corpus|2-native|3-stores)\.tgz$ ]] && [ -f "$RESULTS/pub-$m-S10-stores.tgz" ]; then
     say "skip $a (inside pub-$m-S10-stores.tgz)"; continue

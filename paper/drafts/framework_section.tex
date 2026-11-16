@@ -26,12 +26,13 @@
 % ---------------------------------------------------------------------------------------------------------------------
 \subsection{Using WCM as a Framework}
 \label{sec:framework}
-WCM is better read as a framework for solving for circuits than as one fixed algorithm.
-Its parts are interchangeable: an objective (the quantity reproduced, the ablation methods it is reproduced under, the regularisers, and their weights; \cref{eq:loss}), a parametrisation (a gate and a coefficient per node), data (training, contrast, and held-out contexts), and an optimiser.
-The production recipe is one setting of these parts, each chosen by an experiment (\cref{tab:framework}), and changing a part changes the circuits found.
-With every coefficient fixed at $1$ the same nodes pass for $2$--$14\%$ of targets (\cref{sec:weighted}); in exploratory fits, coefficients trained without zero ablation overshoot it by one to three orders of magnitude (\cref{app:single-method}); circuits trained against close contrast contexts are the most faithful on close backgrounds and the least on any other (\cref{app:contrast-source}); and circuits failed a resample test until training included a resample term (\cref{app:resample}).
-When WCM fails an evaluation, we therefore suggest first asking whether training ever saw that evaluation's domain, and if not, adding the term, contexts, or setting that puts it there, while keeping the evaluation's own contexts and donors out of training so that it stays a held-out test (\cref{app:framework}).
-A pass rate then describes a recipe, a dictionary, and an evaluation together, not WCM alone, which is why the ablation methods used for training and evaluation belong in the method statement~\citep{mueller2025mib, mahale2026explanation}.
+% 2026-11-14 (compression 06 #2-#4; fix): the resample clause overstated the effect; app:resample (exp 095, 72
+% targets) gives 0% -> 24% resample pass rate when the term is added.
+WCM is a framework for solving for circuits rather than one fixed algorithm: its objective (the quantity reproduced, the ablation methods it is reproduced under, the regularisers and their weights; \cref{eq:loss}), parametrisation (a gate and a coefficient per node), data (training, contrast and held-out contexts) and optimiser are interchangeable, and the production recipe is one setting of them, each chosen by an experiment (\cref{tab:framework}).
+Changing a part changes the circuits found: trained without zero ablation, coefficients overshoot it by one to three orders of magnitude (exploratory; \cref{app:single-method}); circuits trained against close contrast contexts are the most faithful on close backgrounds and the least on others (\cref{app:contrast-source}); and on $72$ targets a resample test passed for $0\%$ of circuits trained without a resample term and $24\%$ with one (\cref{app:resample}).
+When WCM fails an evaluation, we suggest first asking whether training saw that evaluation's domain and, if not, adding a term or contexts that put it there, while keeping the evaluation's own contexts and donors out of training (\cref{app:framework}).
+A pass rate therefore describes a recipe, a dictionary and an evaluation together, not WCM alone~\citep{mueller2025mib, mahale2026explanation}.
+For latent-targeted circuit discovery we recommend reporting faithfulness under several ablation methods, naming those used in discovery, training and evaluation; comparing sizes only at matched faithfulness, stating whether coefficients were fitted; reporting specificity, sizes, scores and stable cores rather than one membership; and keeping near copies of training contexts out of held-out sets (\cref{app:heldout}; full list in \cref{app:framework}).
 %
 \else\ifx\frameworkpart\frameworkappendix
 % ---------------------------------------------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ The production choice in each slot was made by an experiment reported in these a
 Target & the pre-activation $\preact$ of one SAE latent at its anchors; censored read under Z, C, A & an output metric, as in learned-mask circuits for outputs~\citep{bhaskar2024finding, caples2025scaling}; output- and latent-targeted circuits fail each other's objective (exploratory) & \cref{sec:ablmask}, \cref{app:secondary,app:logit-faith} \\
 Nodes & every latent at every SAE site upstream of the target; SAE errors passed through; nodes recomputed & dense ReLU dictionaries (the method replicates; the random baseline needs its own design); members clamped (resample diagnostic) & \cref{sec:problem}, \cref{app:dense-relu,app:resample} \\
 Parametrisation & gate $\sigma(\theta/T)$ and coefficient $\mathrm{softplus}(\psi)$ per node, $\alpha_0 = 1$ & $\alpha \equiv 1$ (unweighted circuit masking) & \cref{sec:weighted}, \cref{tab:run2026-alpha1} \\
-Training ablations & Z (weight $1$), C and A ($0.25$ each) under evaluation's sparsity-preserving fill; resample D over the training contrast contexts ($1$) & one method alone; dense means; D in place of C; no D & \cref{app:single-method,app:respect-topk,app:resample} \\
+Training ablations & Z (weight $1$), C and A ($0.25$ each) under evaluation's sparsity-preserving fill; resample R over the training contrast contexts ($1$) & one method alone; dense means; R in place of C; no R & \cref{app:single-method,app:respect-topk,app:resample} \\
 Contrast background & $64$ close, silence-checked contexts per target ($48$ train, $16$ held out) & random, distant, or fused sources; the unchecked retrieval store & \cref{app:stores,app:contrast-source} \\
 Regularisers & flat penalty $\lambda = 10^{-3}$ per open gate; closed-gate charge $\lambda(1-\sigma(\theta))|\alpha - 1|$; rank-keep $\gamma_{\mathrm{K}} = 10^{-1}$; one shared normaliser $\nu$ & other penalties $\lambda$ (sweep); off-target term, Top-K hinge, pull to rank $1$, firing margin; per-term normalisers & \cref{sec:lambda-transfer}, \cref{app:loss-details,app:rank-designs,app:membership-studies} \\
 Optimiser & AdamW, $400$ steps, batch $4$; gate temperature annealed $1 \to 0.05$; learning-rate warm-up, then geometric decay & straight-through binarisation; $200$-step and reach-then-hold schedules; larger batches (exploratory) & \cref{tab:protocol}, \cref{app:membership-studies,app:framework-history} \\
@@ -102,7 +103,7 @@ A fit trained for an evaluation is, for that evaluation, scored on home turf (\c
 
 \paragraph{Choosing the sparsity penalty.}
 % sec:lambda-transfer, tab:run2026-tl-sweep, tab:run2026-lambda-pilot.
-The penalty sets circuit size and, past a point, the pass rate: on the TuringLLM sweep the pass rate holds at $89$--$93\%$ from $\lambda = 2.5 \times 10^{-5}$ to $5 \times 10^{-4}$ while each doubling of $\lambda$ shrinks circuits $1.4$--$1.9\times$, and it declines beyond (\cref{sec:lambda-transfer}).
+The penalty sets circuit size and, past a point, the pass rate: on the TuringLLM sweep the pass rate holds at $89$--$93\%$ from $\lambda = 2.5 \times 10^{-5}$ to $5 \times 10^{-4}$ while each step of the grid shrinks circuits $1.6$--$2.2\times$, and it declines beyond (\cref{sec:lambda-transfer}).
 We recommend fixing the selection rule before looking at pass rates, as our size-only pilot rule did on the public models, where it kept $\lambda = 10^{-3}$ on both (\cref{tab:run2026-lambda-pilot}), and reporting a curve over $\lambda$ rather than one point, since one setting that transfers is not the best setting for each model.
 
 \paragraph{A new model or dictionary.}
@@ -141,10 +142,11 @@ The lesson: inspect the data each training term actually sees.
 Reproducing the pre-activation left some circuits restoring their target by lifting its whole neighbourhood; of the terms tried, rank-keep alone kept the gains without the alternatives' costs, and entered the first protocol at a small weight (\cref{app:rank-designs,app:specificity}).
 
 % app:v1-run (15,046 targets, 46%, attention 14%, layers 8-11 22%); app:heldout (66.8%); app:resample (0.1% vs 43.1%,
-% 747 targets); fig:failure-anatomy.
+% 747 targets). 2026-11-15 (DAN-219 decision 3): fig:failure-anatomy was removed with the v1 condensation; the
+% mean-ablation-only share (10% -> 53%) is now stated here and in the app:v1-run summary.
 \paragraph{The first run at scale.}
 Under that protocol, WCM was fitted to $15{,}046$ TuringLLM targets, and $46\%$ passed, $22\%$ at layers 8--11 and $14\%$ for attention outputs (\cref{app:v1-run}).
-Analyses of the run exposed three problems: $66.8\%$ of held-out strongest contexts repeated a training context, which led to deduplicated records split by groups of copies (\cref{app:heldout}); with depth, failing circuits increasingly failed only the two mean ablations (\cref{fig:failure-anatomy}); and $0.1\%$ of circuits passed a resample test, against $43.1\%$ under the pass criterion (\cref{app:resample}).
+Analyses of the run exposed three problems: $66.8\%$ of held-out strongest contexts repeated a training context, which led to deduplicated records split by groups of copies (\cref{app:heldout}); with depth, failing circuits increasingly failed only the two mean ablations, from $10\%$ of circuits at layers 0--4 to $53\%$ at 8--11 (\cref{app:v1-run}); and $0.1\%$ of circuits passed a resample test, against $43.1\%$ under the pass criterion (\cref{app:resample}).
 
 % experiments/093-v2-validation/README.md (out/tables.md): 72 targets, 8 per band x kind, paired, pass floor 0.8, the
 % v1 run's as-run held-out sets (leaky; same for both arms): 31 -> 50 of 72, +26.4 pp [15.3, 38.9]; L8-11 2 -> 11 of 24;

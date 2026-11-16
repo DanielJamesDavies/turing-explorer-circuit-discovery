@@ -1075,7 +1075,7 @@ t7_stage_body() {   # t7_stage_body STAGE: one 083 stage through run_pod.sh on t
   local s=$1 pool extra=()
   pool=$(fit_pool)
   if [ "$SMOKE" = 1 ]; then                                    # run_local.sh SMOKE=1's budgets, 1 target
-    extra+=(LIMIT=1 IG_STEPS=2 BISECT_STEPS=2 STEPS=4 SIZES=W_0.001,W_0.004 REF_ARMS=W_0.001,U_0.001 N_EXACT=1)
+    extra+=(LIMIT=1 IG_STEPS=2 BISECT_STEPS=2 STEPS=4 SIZES=W_0.001,W_0.004,N_64,N_65536 REF_ARMS=W_0.001,U_0.001 N_EXACT=1)
   fi
   say "  turingllm dan159 $s on GPUs $pool, CTX_DIR $(tl_ctx), REF_RUN $TL_V2_OUT"
   local gu0

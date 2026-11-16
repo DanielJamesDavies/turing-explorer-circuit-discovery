@@ -16,13 +16,16 @@ all sites together (circuit/instrument/ig_baseline's InterpolatedCodeInstrument,
            active latents only
 
 Each arm keeps its ranking (rankings/<arm>/<key>.<train hash>.pt, top KEEP_TOP entries) under three reductions of the
-per-(context, position) attribution:
+per-(context, position) attribution (all three are cached; only RANKINGS are scored, default max,sfc):
   max    the largest |attribution| at any context and position (031's ranking)
-  agg    mean over contexts of the summed |attribution| over the causal prefix
   sfc    |mean over contexts of the summed signed attribution|: the classic collapsed score, i.e. the aggregate
          ranking of prior work (sparse feature circuits)
-Each ranking is truncated (global top-n) to the target's WCM size at every WCM price (SIZES, default W_all: the DAN-77
-curve; W_0.001 is Table 2) and, with NATURAL=1 (default), scored at its natural size (031's position union: per batch
+  agg    mean over contexts of the summed |attribution| over the causal prefix (dropped from the defaults by Daniel,
+         2026-11-15; scored only when RANKINGS names it)
+Each ranking is truncated (global top-n) to the target's WCM size at every WCM price (W_all; W_0.001 is Table 2) and at
+the fixed absolute grid N_64 .. N_65536 (N_grid, powers of 2, independent of WCM: the DAN-77 curves); SIZES default
+W_all,N_grid. A grid size above the ranking's entry count is written as a skip row (skip = "n_above_ranked"), not
+scored. With NATURAL=1 (default) each arm is also scored at its natural size (031's position union: per batch
 one pooled 50th-percentile cut on |attribution|, entries in each context's causal prefix). Scoring is
 driver.Runner.score on held-out strongest: the same scorer, contexts, reference set and fills as every WCM row.
 
@@ -31,10 +34,11 @@ the 10^5-member natural union as a Circuit plus the pipeline eval. Contexts come
 driver's CTX_DIR (rebuilt held-out records) applies.
 
   CUDA_VISIBLE_DEVICES=0 SHARD=0/1 PYTHONPATH=src python experiments/083-v1-comparison/attr_baselines.py
-  env: ARMS (abl_ig,atp)  RANKINGS (max,agg,sfc)  SIZES (W_all)  IG_STEPS (10)  ATTR_BS (4, sequences per grad pass)
-       NATURAL (1)  KEEP_TOP (65536)  TARGETS  LIMIT  SHARD  OUT083  CTX_DIR (read by driver)
+  env: ARMS (abl_ig,atp)  RANKINGS (max,sfc; agg on request)  SIZES (W_all,N_grid)  IG_STEPS (10)
+       ATTR_BS (4, sequences per grad pass)  NATURAL (1)  KEEP_TOP (65536)  TARGETS  LIMIT  SHARD  OUT083
+       CTX_DIR (read by driver)
 Resumable: rankings are cached per (target, arm, training contexts); rows are keyed (seed, method, ranking, size_arm,
-ctx_dir).
+ctx_dir), size_arm = W_<lam> | N_<n> | natural, so W rows and caches written before the grid stay valid.
 """
 import os
 import sys
@@ -49,7 +53,7 @@ sys.path.insert(0, str(HERE))
 import cmp_common as C  # noqa: E402
 
 ARMS = [a for a in os.environ.get("ARMS", "abl_ig,atp").split(",") if a]
-RANKINGS = [r for r in os.environ.get("RANKINGS", "max,agg,sfc").split(",") if r]
+RANKINGS = [r for r in os.environ.get("RANKINGS", "max,sfc").split(",") if r]   # agg: cached, scored on request
 IG_STEPS = int(os.environ.get("IG_STEPS", 10))          # config.discovery.ablation_gradient.ig_steps, as in 031
 ATTR_BS = int(os.environ.get("ATTR_BS", 4))              # 031's probe_batch_size
 NATURAL = os.environ.get("NATURAL", "1") == "1"
@@ -187,6 +191,17 @@ def load_or_compute(path, fn, need_natural):
     return payload
 
 
+def plan_jobs(key, arm, size_arms, done, ctx_dir, rankings=None, natural=None):
+    """The (ranking, size_arm) scores still to do for one (target, arm): every ranking at every size arm, plus the
+    natural union, minus the KEY_FIELDS rows already written (scored or skipped) by any shard."""
+    rankings = RANKINGS if rankings is None else rankings
+    natural = NATURAL if natural is None else natural
+    jobs = [(rk, sz) for sz in size_arms for rk in rankings if (key, arm, rk, sz, ctx_dir) not in done]
+    if natural and (key, arm, "union", "natural", ctx_dir) not in done:
+        jobs.append(("union", "natural"))
+    return jobs
+
+
 def main():
     driver = C.import_driver()
     targets = C.shard_targets()
@@ -206,11 +221,10 @@ def main():
             log("%4d/%d %-16s skip (%s)" % (n_ + 1, len(targets), key, "no_contrast" if rec.get("no_contrast") else "too_few"))
             continue
         tr_arm, thin, pos, arg, h = C.training_contexts(R, rec)
-        size_arms = C.resolve_sizes(sizes.get(key, {}))
+        have = sizes.get(key, {})
+        size_arms = C.resolve_sizes(have, grid=True)
         for arm in ARMS:
-            jobs = [(rk, sz) for sz in size_arms for rk in RANKINGS if (key, arm, rk, sz, ctx_dir) not in done]
-            if NATURAL and (key, arm, "union", "natural", ctx_dir) not in done:
-                jobs.append(("union", "natural"))
+            jobs = plan_jobs(key, arm, size_arms, done, ctx_dir)
             if not jobs:
                 continue
             base = dict(method=arm, train_arm=tr_arm, thin=thin, held="strong", shard=C.TAG, **C.provenance(R, h))
@@ -231,8 +245,13 @@ def main():
                         members = {s: [int(x) for x in v] for s, v in payload["natural"].items() if len(v)}
                         row["n_target"] = None
                     else:
-                        row["n_target"] = sizes[key][sz]
+                        row["n_target"] = C.size_target(sz, have)
                         row["n_ranked"] = int(len(payload["rankings"][rk]["latent"]))
+                        if C.grid_skip(sz, row["n_ranked"]):          # a grid size the ranking cannot fill
+                            row.update(skip="n_above_ranked", n_nonzero=payload["info"].get("n_nonzero"),
+                                       keep_top=C.KEEP_TOP)
+                            C.write_row(fh, row)
+                            continue
                         members = C.truncate_global(payload["rankings"][rk], sites, row["n_target"])
                     t = time.time()
                     r = C.scalar_row(R.score(C.make_circuit(key, members), rec, "strong"))

@@ -3,8 +3,10 @@
 Part 1  rankings: ordering, ties, keep_top, truncation to matched size (global and per site)
 Part 2  ranking aggregation: AttrReducer (max / agg / sfc, causal-prefix mask, chunk invariance), and ig_reduce
         against circuit/instrument/ig_baseline.integrated_baseline_scores on an exactly linear stub pipeline
-Part 3  matched-size selection (nearest unweighted arm per target)
-Part 4  the DAN-8 pass rule and the Table 2 summary (vacuous exclusion, depth bands)
+Part 3  matched-size selection (nearest unweighted arm per target); the absolute top-n grid (N_grid expansion,
+        skips above the ranked count, job keys disjoint from the W rows, defaults max,sfc and W_all,N_grid)
+Part 4  the DAN-8 pass rule and the Table 2 summary (vacuous exclusion, depth bands); the grid curve points and the
+        smallest-grid-size-reaching-WCM companion table
 Part 5  the Ge bisection replay (034's discover_at_size, resumable)
 """
 import importlib.util
@@ -13,6 +15,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np
+import pandas as pd
 import pytest
 import torch
 
@@ -229,6 +232,28 @@ class TestNearestSize:
         assert C.resolve_sizes(have, ["W_0.001", "W_0.002", "U_all"]) == ["W_0.001", "U_1e-05", "U_0.001"]
         assert C.resolve_sizes(have, ["W_0.001", "W_all"]) == ["W_0.001", "W_2.5e-05", "W_0.004"]   # no duplicates
 
+    def test_n_grid_expands_to_eleven_powers_of_two(self, C):
+        have = {"W_0.001": 40, "W_0.004": 10, "U_0.001": 60}
+        grid = ["N_%d" % (2 ** k) for k in range(6, 17)]
+        assert C.GRID == tuple(2 ** k for k in range(6, 17)) and C.GRID[0] == 64 and C.GRID[-1] == 65536
+        assert C.GRID[-1] <= C.KEEP_TOP                                          # the cap holds the largest point
+        assert C.resolve_sizes(have, ["W_all", "N_grid"], grid=True) == ["W_0.001", "W_0.004"] + grid
+        assert C.resolve_sizes({}, ["W_all", "N_grid"], grid=True) == grid       # absolute: no WCM size needed
+        assert C.resolve_sizes(have, ["N_512", "N_grid"], grid=True) == ["N_512"] + [g for g in grid if g != "N_512"]
+        assert C.resolve_sizes(have, ["W_all", "N_grid", "N_64"]) == ["W_0.001", "W_0.004"]   # grid=False: dropped
+        assert [C.size_target(a, have) for a in ("N_64", "N_65536", "W_0.004", "W_0.002")] == [64, 65536, 10, None]
+        assert not C.GRID_ARM.match("N_0") and not C.GRID_ARM.match("N_grid") and not C.GRID_ARM.match("W_64")
+
+    def test_default_sizes_include_the_grid(self, monkeypatch):
+        monkeypatch.delenv("SIZES", raising=False)
+        c = _load("cmp_common.py", "_cmp_common_083_defaults")
+        assert c.SIZES == ["W_all", "N_grid"]
+
+    def test_grid_skip_only_above_the_ranked_count(self, C):
+        assert C.grid_skip("N_128", 100) and C.grid_skip("N_65536", 65535)
+        assert not C.grid_skip("N_64", 100) and not C.grid_skip("N_128", 128)
+        assert not C.grid_skip("W_0.001", 5) and not C.grid_skip("natural", 0)   # WCM sizes: truncate to all, as before
+
     def test_sweep_arm_names(self, C):
         assert all(C.SWEEP_ARM.match(a) for a in ("W_0.001", "W_2.5e-05", "U_1e-05"))
         assert not any(C.SWEEP_ARM.match(a) for a in ("W_0.001_s800", "W_0.001_g1_r0.03", "U_matched"))
@@ -286,6 +311,76 @@ class TestPassRule:
         assert (s["pass_L0-4"], s["pass_L5-7"], s["pass_L8-11"]) == ("1/2", "1/1", "1/2")
         assert s["n_over_wcm"] == pytest.approx(2.0)
         assert s["A"] == pytest.approx(1.0)                # medians over non-vacuous rows
+
+
+class TestGridJobsAndTable:
+    def test_default_rankings_are_max_and_sfc(self, monkeypatch):
+        monkeypatch.delenv("RANKINGS", raising=False)
+        monkeypatch.delenv("TABLE_RANKINGS", raising=False)
+        A = _load("attr_baselines.py", "_attr_baselines_083_defaults")
+        assert A.RANKINGS == ["max", "sfc"]
+        T2 = _load("table2.py", "_table2_083_defaults")
+        assert "agg" not in T2.TABLE_RANKINGS and "agg" not in T2.FIG_RANKINGS
+        assert {"max", "sfc"} <= set(T2.TABLE_RANKINGS)
+        monkeypatch.setenv("RANKINGS", "max,agg,sfc")                          # still computable on request
+        assert _load("attr_baselines.py", "_attr_baselines_083_agg").RANKINGS == ["max", "agg", "sfc"]
+
+    def test_grid_keys_are_new_and_old_w_rows_stay_done(self, C):
+        A = _load("attr_baselines.py", "_attr_baselines_083")
+        have = {"W_2.5e-05": 900, "W_0.001": 40, "W_0.004": 10}
+        arms = C.resolve_sizes(have, ["W_all", "N_grid"], grid=True)
+        ctx = "ctx_v2"
+        # a run from before the grid: every W row (max, agg, sfc) and the natural row are done
+        done = {("7.mlp.3", "abl_ig", rk, sz, ctx) for sz in have for rk in ("max", "agg", "sfc")}
+        done.add(("7.mlp.3", "abl_ig", "union", "natural", ctx))
+        jobs = A.plan_jobs("7.mlp.3", "abl_ig", arms, done, ctx, rankings=["max", "sfc"], natural=True)
+        assert jobs == [(rk, "N_%d" % n) for n in C.GRID for rk in ("max", "sfc")]   # only the grid is new
+        keys = [("7.mlp.3", "abl_ig", rk, sz, ctx) for rk, sz in jobs]
+        assert len(set(keys)) == len(keys) == 22 and not set(keys) & done          # 11 sizes x 2 rankings, per arm
+        assert not {sz for _, sz in jobs} & (set(have) | {"natural"})
+        fresh = A.plan_jobs("7.mlp.3", "abl_ig", arms, set(), ctx, rankings=["max", "sfc"], natural=True)
+        assert len(fresh) == len(set(fresh)) == 3 * 2 + 11 * 2 + 1               # W x 2 + grid x 2 + natural
+
+    def test_grid_points_and_crossover(self):
+        T2 = _load("table2.py", "_table2_083")
+        mk = lambda seed, sz, ok, rk="max", m="abl_ig", n=None: dict(
+            _row(seed, a=1.0 if ok else 0.2, n=n if n is not None else int(sz[2:]) if sz.startswith("N_") else 50),
+            method=m, ranking=rk, size_arm=sz)
+        shallow, deep = ["1.mlp.%d" % i for i in range(4)], ["9.mlp.%d" % i for i in range(4)]
+        rows = []
+        for i, s in enumerate(shallow):                     # shallow: 1/4 pass at 64, 3/4 at 128, 4/4 at 256
+            rows += [mk(s, "N_64", i < 1), mk(s, "N_128", i < 3), mk(s, "N_256", True)]
+        for s in deep:                                      # deep: never above 1/4 on the grid
+            rows += [mk(s, "N_64", s == deep[0]), mk(s, "N_128", s == deep[0])]
+        rows += [mk(s, "W_0.001", True) for s in shallow] + [mk(s, "natural", True, rk="union", n=9000) for s in deep]
+        pts = pd.DataFrame(T2.attr_points(rows))
+        kinds = pts.drop_duplicates("size_arm").set_index("size_arm").kind.to_dict()
+        assert kinds == {"N_64": "grid", "N_128": "grid", "N_256": "grid", "W_0.001": "attr", "natural": "natural"}
+        p = pts[(pts.series == "abl_ig/max") & (pts.band == "L0-4")].set_index("size_arm")
+        assert p.loc[["N_64", "N_128", "N_256"], "pass_rate"].tolist() == [0.25, 0.75, 1.0]
+        assert p.loc["N_128", "n_median"] == 128 and p.loc["N_128", "targets"] == 4
+        assert "N_256" not in set(pts[(pts.band == "L8-11")].size_arm)              # deep targets skipped at 256
+        wcm = pd.DataFrame([dict(series="WCM", kind="sweep", size_arm="W_0.001", band=b, targets=4, n_median=500,
+                                 pass_rate=r, A_median=1.0, sources="")
+                            for b, r in (("L0-4", 0.75), ("L8-11", 0.5), ("all", 0.5))])
+        gx = T2.grid_crossover(pd.concat([wcm, pts], ignore_index=True)).set_index(["series", "band"])
+        assert gx.loc[("abl_ig/max", "L0-4"), "n_cross"] == 128                    # first size with pass >= 75%
+        assert gx.loc[("abl_ig/max", "L0-4"), "pass_at_cross"] == pytest.approx(0.75)
+        assert pd.isna(gx.loc[("abl_ig/max", "L8-11"), "n_cross"])                 # 25% never reaches 50%
+        assert gx.loc[("abl_ig/max", "L8-11"), "grid_max_pass"] == pytest.approx(0.25)
+        assert ("abl_ig/max", "L5-7") not in gx.index                                # no band data: no row
+        assert gx.loc[("abl_ig/max", "all"), "n_cross"] == 128                     # all: 2/8 at 64, 4/8 at 128
+
+    def test_skip_rows_are_done_but_not_scored(self, C, tmp_path):
+        p = tmp_path / ("rows.%s.jsonl" % C.TAG)
+        with open(p, "w") as fh:
+            C.write_row(fh, dict(seed="1.mlp.1", method="atp", ranking="max", size_arm="N_65536", ctx_dir="c",
+                                 skip="n_above_ranked", n_ranked=900))
+            C.write_row(fh, dict(seed="1.mlp.1", method="atp", ranking="max", size_arm="N_64", ctx_dir="c",
+                                 error="boom"))
+        assert C.done_keys(p, ("seed", "method", "ranking", "size_arm", "ctx_dir")) == {
+            ("1.mlp.1", "atp", "max", "N_65536", "c")}                                 # skip: not retried; error: retried
+        assert C.ok_rows(C.read_jsonl(p, source_root=tmp_path)) == []                 # neither reaches a curve
 
 
 # =============================================================================================== Part 4b

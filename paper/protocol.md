@@ -1037,7 +1037,9 @@ C (and the donor-background pass), on both reads; the 1.5 ceiling and necessity 
 0.75 is the more appropriate tolerance on judgement, not on the numbers. Seen beforehand (sensitivity only): v1 15k
 46.4% → 49.5%; exp 093 v2 50 → 55 of 72; exp 095 resample-trained 45 → 48 of 72. Code: `src/eval/wcm_eval.py` BAND,
 `062/merge.py`, `083/cmp_common.py`, `paper/tables/common.py`, explorer `stage_circuits.py`. Earlier experiment
-reports in this file keep the 0.8 floor they were scored at. The paper states the rule without this history.
+reports in this file keep the 0.8 floor they were scored at. Since 2026-11-15 (DAN-218 #17, Daniel) the paper states
+this history: the protocol table's provenance row says the 0.8 floor was set on the 1,416-target subset and was lowered
+to 0.75 before any production fit, after the full v1 run and two 72-target panels had been scored.
 
 **Two pass rates, both recorded and reported (Daniel, 2026-10-26; stated before any v2 production fit).** For every
 target, the same rule is scored on two reads, and the two are never mixed inside one rule:
