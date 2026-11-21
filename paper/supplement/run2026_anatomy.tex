@@ -1,0 +1,13 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:production
+% ("How circuits fail"). The paper keeps fig:run2026-failure-anatomy and the prose numbers, and points here.
+% Not compiled with main.tex; \runtable is defined in main.tex's preamble.
+
+\begin{table}[tbp]
+\centering
+\scriptsize
+% experiments/111-failure-anatomy a1_anatomy.py writes tables/run2026_anatomy.tex.
+\runtable{anatomy}{per model, depth band and site kind: $n$, pass rate [95\% CI], exclusive outcome shares, share of fails above 1.5, median largest deviation}
+\caption{How the production circuits fail.
+Each non-vacuous circuit on held-out strongest contexts is counted once, in the order pass, undefined score, necessity below $0.9$, Z outside the band, and A and/or C only, by model, depth band, and site kind, with the pass rate and its $95\%$ bootstrap interval, the share of failing circuits with any of Z, A, C above $1.5$, and the median largest deviation $\max_{\pi} |\phi^{\mathrm{free}}_{\pi} - 1|$.}
+\label{tab:run2026-anatomy}
+\end{table}

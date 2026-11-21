@@ -276,8 +276,9 @@ def capture_donor_codes(inference: Any, bank: Any, tokens: torch.Tensor, sites: 
             s = (layer_idx, kd)
             if s in parts:
                 ta, ti = bank.encode(acts[k2i[kd]], kd, layer_idx)
-                parts[s][0].append(ta.detach().float())
-                parts[s][1].append(ti.detach())
+                ta, ti = _trim_zero_slots(ta.detach().float(), ti.detach())
+                parts[s][0].append(ta.cpu())
+                parts[s][1].append(ti.cpu())
 
     inference.disable_compile()
     try:
@@ -289,7 +290,52 @@ def capture_donor_codes(inference: Any, bank: Any, tokens: torch.Tensor, sites: 
     missing = sorted(s for s, (a, _i) in parts.items() if not a)
     if missing:
         raise RuntimeError(f"capture_donor_codes: no code captured at sites {missing[:3]}")
-    return {s: (torch.cat(a).cpu(), torch.cat(i).cpu()) for s, (a, i) in parts.items()}
+    return {s: _cat_padded(a, i) for s, (a, i) in parts.items()}
+
+
+# DONOR-CODE TRIM (2026-11-18, exp 128 RAM probe; Daniel approved). ReLU
+# dictionaries run with k = d_sae (arena A: 24,576), so the Top-K-format donor
+# codes stored every slot, almost all exactly 0: [48, 64, 24576] x 12 B = 864 MiB
+# per upstream site, ~22 GiB of host RAM for a deep target. A donor slot whose
+# value is exactly 0 adds nothing when DonorPool.get densifies the code into a
+# zero tensor, so dropping such slots leaves every densified donor code, and so
+# every fit, bit-identical. Top-K families (every slot nonzero) are unchanged.
+def _trim_zero_slots(a: torch.Tensor, i: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Drop the trailing slots that are 0 at every (row, position): nonzero
+    slots moved first (stable, so their order is kept), then cut to the largest
+    per-position nonzero count. The kept zero slots are original slots, so the
+    indices within a position stay distinct."""
+    nz = a != 0
+    kk = max(int(nz.sum(dim=-1).max()), 1) if a.numel() else int(a.shape[-1])
+    if kk >= int(a.shape[-1]):
+        return a, i
+    order = torch.argsort((~nz).to(torch.int8), dim=-1, stable=True)[..., :kk]
+    return a.gather(-1, order), i.gather(-1, order)
+
+
+def _cat_padded(a: List[torch.Tensor], i: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Concatenate per-batch trimmed codes. Batches cut to fewer slots than the
+    widest are padded with value 0 at a COPY of that position's first index:
+    a duplicate index carrying 0, which DonorPool.get adds (scatter_add_) instead
+    of writing, so the densified code is unchanged. Returns (acts, idx) like
+    before; idx.padded = True marks the padded case for DonorPool.get."""
+    kk = max(int(x.shape[-1]) for x in a)
+    if all(int(x.shape[-1]) == kk for x in a):
+        return torch.cat(a), torch.cat(i)
+    A, I = [], []
+    for x, y in zip(a, i):
+        p = kk - int(x.shape[-1])
+        if p:
+            x = torch.cat([x, x.new_zeros(*x.shape[:-1], p)], dim=-1)
+            y = torch.cat([y, y[..., :1].expand(*y.shape[:-1], p)], dim=-1)
+        A.append(x)
+        I.append(y)
+    acts, idx = torch.cat(A), torch.cat(I)
+    _PADDED_DONOR_IDX.add(idx.data_ptr())
+    return acts, idx
+
+
+_PADDED_DONOR_IDX: set = set()        # data_ptr of donor idx tensors that carry duplicate (value-0) pad slots
 
 
 class DonorPool:
@@ -308,6 +354,8 @@ class DonorPool:
         if self.n == 0:
             raise ValueError("DonorPool: no donor contexts")
         self.gen = torch.Generator().manual_seed(int(seed))
+        # sites whose codes carry value-0 pad slots at duplicate indices (_cat_padded): densified by addition
+        self.padded = {s for s, (_a, i) in codes.items() if i.data_ptr() in _PADDED_DONOR_IDX}
         self.rows: Optional[torch.Tensor] = None
         self.n_draws = 0
 
@@ -326,6 +374,8 @@ class DonorPool:
         a = acts[r].to(self.device, torch.float32)
         i = idx[r].to(self.device)
         dense = torch.zeros(a.shape[0], a.shape[1], self.d_sae, device=self.device, dtype=torch.float32)
+        if site in self.padded:
+            return dense.scatter_add_(-1, i, a)
         return dense.scatter_(-1, i, a)
 
 

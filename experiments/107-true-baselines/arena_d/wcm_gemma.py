@@ -46,8 +46,9 @@ native | caples (caples: the gsres family only; eps_bar and, under per_position 
 CLI (WSL, repo root):
   CUDA_VISIBLE_DEVICES=... ./.venv/bin/python experiments/107-true-baselines/arena_d/wcm_gemma.py run \
       --family gemma-2-2b-gsres-gap6 --mode caples --caples-means out/caples_means/rc_gap6.pt --means per_position \
-      --tasks rc --lams 1e-3,3e-3 [--data caples] [--steps 400] [--out DIR]
-  env: STOP_AT=HH:MM / STOP_EPOCH (no new fit after it), HELDOUT_N (081's)
+      --tasks rc --lams 1e-3,3e-3 [--data caples] [--steps 400] [--out DIR] [--wcm v3|v4]
+  env: STOP_AT=HH:MM / STOP_EPOCH (no new fit after it), HELDOUT_N (081's), ARENA_D_WCM (v3 | v4; --wcm wins; see
+       "the engine" below: v4 = the pod's, D7 2026-11-16)
 """
 from __future__ import annotations
 
@@ -589,14 +590,49 @@ def apply_caples(inf, bank, cm: Optional[Dict]) -> None:
 
 
 # ------------------------------------------------------------------------------------------------------- the engine
-# Behavioural WCM on tasks = arena C's V3_LOGIT, unchanged (IMPLEMENTATION_PLAN §0): Z + A + C + R, no rank-keep,
-# geometric lr. Not added: the x3.15 peak, warm-up, the censored term (validated on latent targets only).
+# Behavioural WCM on tasks, two versions (env ARENA_D_WCM, or make_engine(wcm=); default v3 = the pilot / lrtest runs):
+#   v3  arena C's V3_LOGIT, unchanged (IMPLEMENTATION_PLAN §0): Z + A + C + R (gamma_R 1.0, k 1, donors = the training
+#       patch prompts), sparse fill + STE, no rank-keep, geometric lr at 081's PROD_LR 0.05, no warm-up, 081's
+#       lr-rescaled weight decay (0.05 at lr 0.05).
+#   v4  (D7, Daniel 2026-11-16: arena D runs the production version; pod_stage_d.sh DW_WCM, default v4) = v3 + every
+#       piece of 062 driver.WCM_VERSIONS["v4"] that is defined for a logit-difference objective: the peak lr x3.15
+#       (WCM_LR_MULT, 0.1575), warm-up 0.1, and v4's ABSOLUTE AdamW decay 0.05 (not 081's 1/(400 lr) = 0.0159) - exactly
+#       lrtest's arm C1 (lrtest/README.md). Not applicable, as in v3: the censored read (censor_temp: run_learned_mask
+#       refuses it for objective != 'pos'; it censors a seed latent at its own Top-K cut, which a task objective does
+#       not have) and rank-keep 1e-1 (refused the same way; the behavioural rank-keep was tried and collapsed SVA fits,
+#       arena C wcm_marks.py:70-73). 081's own WCM_VERSION env stays v2 under both (its table knows v1 / v2 only, and
+#       V3_LOGIT's train_fill / sparse_grad override it).
 MEANS_MODES = ("pooled", "per_position")
 MODES = ("native", "caples")
+WCM_ARENA_D = ("v3", "v4")
+V4_LR_MULT = 3.15                                  # 062 driver.WCM_LR_MULT["v4"]
+V4_EXTRA = dict(warmup_frac=0.1, weight_decay=0.05)   # 062 driver.WCM_VERSIONS["v4"] warm-up; v4's absolute decay
 
 
 def v3_logit() -> Dict:
     return dict(_wcm_marks().V3_LOGIT)
+
+
+def wcm_version(v: Optional[str] = None) -> str:
+    """The arena D WCM version: v, else env ARENA_D_WCM, else v3."""
+    v = v or os.environ.get("ARENA_D_WCM") or "v3"
+    if v not in WCM_ARENA_D:
+        raise ValueError("arena D WCM version must be one of %s, got %r" % (WCM_ARENA_D, v))
+    return v
+
+
+def wcm_kwargs(v: str) -> Dict:
+    """The learned-mask kwargs a version sets on top of 081's engine_kwargs (v3 = V3_LOGIT exactly)."""
+    kw = v3_logit()
+    if v == "v4":
+        kw.update(V4_EXTRA)
+    return kw
+
+
+def wcm_lr(v: str) -> float:
+    """The version's peak lr (081's PROD_LR 0.05; x3.15 under v4)."""
+    C, _ = _import_081()
+    return C.PROD_LR * (V4_LR_MULT if v == "v4" else 1.0)
 
 
 def _import_081():
@@ -608,7 +644,8 @@ def _import_081():
 
 
 def make_engine(family: str, mode: str = "native", means: str = "pooled", caples_means: Optional[str] = None,
-                caples_source: str = "theirs", device=None, dtype: Optional[str] = None, shared=None):
+                caples_source: str = "theirs", device=None, dtype: Optional[str] = None, shared=None,
+                wcm: Optional[str] = None):
     """081's Engine on an arena-D family (arena C's MarksEngine pattern). Sites = the bank's dictionary sites. means:
     "pooled" = 081's [d_sae] means over every real token except BOS (bank.mean_skip_positions); "per_position" = [T,
     d_sae] means, A over the training clean prompts, C over the training patch prompts (arena C's), except in Caples
@@ -624,7 +661,8 @@ def make_engine(family: str, mode: str = "native", means: str = "pooled", caples
         # is per position (get_sae_means, [T, d_sae]), so a pooled C would be our computation in its place
         raise ValueError("--mode caples is per-position only (their fill is a per-position mean): use --means "
                          "per_position; pooled means are for --mode native")
-    V3 = v3_logit()
+    wv = wcm_version(wcm)                  # the arena D WCM version (None = env ARENA_D_WCM, else v3)
+    V3 = wcm_kwargs(wv)                    # v3: V3_LOGIT exactly; v4: + warm-up 0.1 and the absolute decay 0.05
 
     class GemmaEngine(E.Engine):
         def __init__(self):
@@ -640,6 +678,7 @@ def make_engine(family: str, mode: str = "native", means: str = "pooled", caples
             self.kinds = list(self.bank.kinds)
             self.sites = list(self.bank.real_sites)
             self.family, self.substrate, self.means_mode = family, mode, means
+            self.wcm_version, self.wcm_kw = wv, dict(V3)
             self.cm = None
             if mode == "caples":
                 if not caples_means:
@@ -745,18 +784,26 @@ def run(tasks: Sequence[str], lams: Sequence[float], family: str = FAM_RES, data
     data = data or ("sfc" if SPECS.get(family, {}).get("kind") == "tc" else "caples")
     started = _dt.datetime.now()
     stop_at = os.environ.get("STOP_AT")
-    V3 = v3_logit()
+    wv = eng.wcm_version if eng is not None else wcm_version()
+    V3 = wcm_kwargs(wv)                # provenance, read now (v3: = V3_LOGIT, which lrtest extends per arm)
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     vf = out / "WCM_VERSION"
-    if vf.exists():                    # one lr schedule per --out (the resume keys do not carry it)
+    if vf.exists():                    # one lr schedule and one arena D version per --out (the resume keys carry neither)
         lines = vf.read_text().splitlines()
-        have = (json.loads(lines[1]).get("lr_schedule") or "constant") if len(lines) > 1 else "constant"
+        hv = json.loads(lines[1]) if len(lines) > 1 else {}
+        have = hv.get("lr_schedule") or "constant"
         if have != V3.get("lr_schedule", "constant"):
             raise RuntimeError("%s holds fits with lr_schedule %s; this run uses %s: use another --out"
                                % (out, have, V3.get("lr_schedule", "constant")))
-    vf.write_text(WM.WCM_TAG + "\n" + json.dumps(V3) + "\n")
-    eng = eng or make_engine(family, mode, means, caples_means, caples_source)
+        if (hv.get("arena_d_wcm") or "v3") != wv:
+            raise RuntimeError("%s holds arena D WCM %s fits; this run is %s: use another --out"
+                               % (out, hv.get("arena_d_wcm") or "v3", wv))
+    tag = WM.WCM_TAG if wv == "v3" else ("behavioural v4 = v3 + v4's lr budget (peak x%g, warm-up %g, absolute wd %g); "
+                                         "no censored read, no rank-keep (undefined for a task objective)"
+                                         % (V4_LR_MULT, V4_EXTRA["warmup_frac"], V4_EXTRA["weight_decay"]))
+    vf.write_text(tag + "\n" + json.dumps(dict(V3, arena_d_wcm=wv)) + "\n")
+    eng = eng or make_engine(family, mode, means, caples_means, caples_source, wcm=wv)
     mode, means = eng.substrate, eng.means_mode
     if mode == "caples" and data != "caples":
         raise ValueError("--mode caples needs --data caples (their filter, batches and mean set)")
@@ -771,7 +818,7 @@ def run(tasks: Sequence[str], lams: Sequence[float], family: str = FAM_RES, data
                           r["substrate"]))
             except Exception:  # noqa: BLE001  (a truncated last line after a kill)
                 pass
-    lr = C.PROD_LR if lr is None else float(lr)
+    lr = wcm_lr(wv) if lr is None else float(lr)     # the version's peak (v4: 0.05 x 3.15)
     rows = []
     for task in tasks:
         T = build_task(task, data, tok=tok or tokenizer(_F.FAMILIES[family].tokenizer_id), family=family,
@@ -804,7 +851,8 @@ def run(tasks: Sequence[str], lams: Sequence[float], family: str = FAM_RES, data
                                                  means=means, substrate=sub, c_fill=eng.c_fill, family=family,
                                                  caples_means=cm, alphas=C.alphas_to_json(alphas),
                                                  t_fit=round(t_fit, 2), peak_mb=peak, fit=WM._small(prov),
-                                                 curve=WM.curve_summary(prov), wcm=V3, wcm_tag=WM.WCM_TAG),
+                                                 curve=WM.curve_summary(prov), wcm=V3, wcm_tag=tag,
+                                                 wcm_version=wv, lr_peak=lr),
                                             default=str) + "\n")
                 prov = WM._small(prov)
             if torch.cuda.is_available():
@@ -814,14 +862,15 @@ def run(tasks: Sequence[str], lams: Sequence[float], family: str = FAM_RES, data
             t_score = time.time() - ts
             peak_s = round(torch.cuda.max_memory_allocated() / 2 ** 20) if torch.cuda.is_available() else None
             row = dict(task=TASK_NAME[task], sfc_task=task, data_mode=data, arm=arm, lam=float(lam), steps=int(steps),
-                       means=means, substrate=sub, c_fill=eng.c_fill, family=family, wcm="v3",
+                       means=means, substrate=sub, c_fill=eng.c_fill, family=family, wcm=wv,
                        n_train=T["split_meta"]["n_train"], n_held=T["split_meta"]["n_held"], prompt_len=plen,
                        overlap=T["overlap"], **sizes(alphas, plen), t_fit=round(t_fit, 2), peak_fit_mb=peak,
                        t_score=round(t_score, 2), peak_score_mb=peak_s, circuit=str(cpath.relative_to(out)))
             row.update({k: v for k, v in sc.items() if not isinstance(v, (dict, list)) or k == "per_site"})
             row["fit_stats"] = {k: prov.get(k) for k in ("n_kept", "loss_final", "sparse_fill_calls", "resample_weight",
                                                          "resample_n_donors", "resample_draws", "resample_fill_calls",
-                                                         "rank_weight", "rank_mode") if k in prov}
+                                                         "rank_weight", "rank_mode", "lr_peak", "lr_sum",
+                                                         "warmup_steps", "weight_decay") if k in prov}
             with open(ev_path, "a") as fh:
                 fh.write(json.dumps(row, default=str) + "\n")
             rows.append(row)
@@ -851,6 +900,8 @@ def main():
     ap.add_argument("--steps", type=int, default=400)
     ap.add_argument("--dtype", default=None, help="bank / model dtype (default float32; bfloat16 = labelled)")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--wcm", default=None, choices=WCM_ARENA_D, help="arena D WCM version (default: env ARENA_D_WCM, "
+                    "else v3; the pod runs v4, pod_stage_d.sh DW_WCM)")
     a = ap.parse_args()
     if a.mode == "caples" and a.family != FAM_RES:
         ap.error("--mode caples exists for %s only" % FAM_RES)
@@ -859,7 +910,7 @@ def main():
                  "pooled means are for --mode native")
     out = Path(a.out) if a.out else OUT_DEFAULT / a.family
     data = a.data or ("sfc" if a.family == FAM_PLT else "caples")
-    eng = make_engine(a.family, a.mode, a.means, a.caples_means, a.caples_source, dtype=a.dtype)
+    eng = make_engine(a.family, a.mode, a.means, a.caples_means, a.caples_source, dtype=a.dtype, wcm=a.wcm)
     run([t for t in a.tasks.split(",") if t], [float(x) for x in a.lams.split(",")], a.family, data, a.mode,
         a.means, a.steps, out, eng=eng, caples_means=a.caples_means, caples_source=a.caples_source,
         task_kw=dict(n_held=a.n_held) if data == "caples" else None)

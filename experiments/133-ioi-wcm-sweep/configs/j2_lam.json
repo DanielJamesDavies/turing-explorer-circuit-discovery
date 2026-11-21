@@ -1,0 +1,7 @@
+[
+ {"name": "W_3e-4_lr05_pair", "lam": 3e-4, "lr": 0.05, "pair": true},
+ {"name": "W_1e-3_lr05_pair", "lam": 1e-3, "lr": 0.05, "pair": true},
+ {"name": "W_3e-3_lr05_pair", "lam": 3e-3, "lr": 0.05, "pair": true},
+ {"name": "W_1e-3_lr05_R0", "lam": 1e-3, "lr": 0.05, "R": 0.0},
+ {"name": "W_1e-3_lr016_pair", "lam": 1e-3, "lr": 0.016, "pair": true}
+]

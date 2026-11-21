@@ -152,6 +152,7 @@ class Engine:
             n = len(tr)
             B["c_tokens"], B["c_valid"] = self._t(A["cf_tokens"][:n]), self._t(A["cf_valid"][:n], torch.bool)
             B["cf_all"] = (self._t(A["cf_tokens"]), self._t(A["cf_anchors"]))      # every item's, for the probe
+            B["cf_valid_all"] = self._t(A["cf_valid"], torch.bool)                 # (v4 rerun) W_CF rows, score_cf
             B["c_source"] = "original"
         else:
             if contrast is None:
@@ -213,14 +214,42 @@ class Engine:
         self.H.configure(C.GAMMA, lam, bool(weighted), int(steps))      # 062's production config (sets rank 3e-3)
         lm = config.discovery.learned_mask
         lm.rank_weight = 0.0
-        lm.lr = float(lr)
-        lm.weight_decay = C.weight_decay(lr)
+        # v4: peak lr = the run config's lr x WCM_LR_MULT (3.15) and the absolute decay WCM_WD (0.05), as 062's
+        # driver.method() and arena D's v4; v1 / v2: lr as given, decay rescaled (lr x wd = 0.05 x 0.05), unchanged
+        lm.lr = float(lr) * C.WCM_LR_MULT.get(C.WCM_VERSION, 1.0)
+        lm.weight_decay = C.WCM_WD[C.WCM_VERSION] if C.WCM_VERSION in C.WCM_WD else C.weight_decay(lr)
         if not c_term:
             lm.dual_floor_weight = 0.0                                  # W_ZA: the C (floor) term weighs nothing
         return config
 
+    def presented_rows(self, B: dict, steps: int, batch_size: int, cf_train: bool = False):
+        """(tokens, anchors, valid, idx) of the presented training rows. idx = the item row behind each presentation
+        (its answers are the targets). cf_train (arm W_CF, 2026-11-18): the same steps x batch budget, the first half
+        of the presentation stream's items each presented twice, clean prompt then its own counterfactual prompt
+        (clean_0, cf_0, clean_1, cf_1, ...), both scored for the clean item's answers; the engine's target on a cf row
+        is the full model's value there, so the fit must reproduce the minimal-pair contrast, not only the clean
+        level. Original-contrast token / set tasks only."""
+        rows = self.presentations(B, steps, batch_size)
+        dev = B["tokens"].device
+        if not cf_train:
+            idx = torch.tensor(rows, dtype=torch.long, device=dev)
+            return B["tokens"][idx], B["anchors"][idx], B["valid"][idx], idx
+        if B["mode"] == "seq" or B["contrast"] != "original" or "cf_valid_all" not in B:
+            raise ValueError("cf_train needs an original-contrast token / set task (%s: mode %s, contrast %s)"
+                             % (B["name"], B["mode"], B["contrast"]))
+        n_rows = len(rows)
+        items = rows[:(n_rows + 1) // 2]
+        idx = torch.tensor([i for i in items for _ in (0, 1)][:n_rows], dtype=torch.long, device=dev)
+        is_cf = torch.tensor([k % 2 == 1 for k in range(n_rows)], device=dev)
+        ct, ca = B["cf_all"]
+        sel = is_cf.view(-1, 1)
+        tokens = torch.where(sel, ct[idx], B["tokens"][idx])
+        valid = torch.where(sel, B["cf_valid_all"][idx], B["valid"][idx])
+        anchors = torch.where(is_cf, ca[idx], B["anchors"][idx])
+        return tokens, anchors, valid, idx
+
     def engine_kwargs(self, B: dict, lam: float, weighted: bool, steps: int, lr: float, logit_norm: str,
-                      support=None, c_term: bool = True) -> dict:
+                      support=None, c_term: bool = True, cf_train: bool = False) -> dict:
         cfg = self.configure(lam, weighted, steps, lr, c_term)
         lm, disc = cfg.discovery.learned_mask, cfg.discovery
         bs = int(disc.probe_batch_size)
@@ -228,7 +257,7 @@ class Engine:
                 and bs % int(lm.deep_batch_size)):
             raise ValueError("the micro-batch %d does not divide the batch %d: the engine's draw would not walk the "
                              "presentation order in steps of one batch" % (lm.deep_batch_size, bs))
-        idx = torch.tensor(self.presentations(B, steps, bs), dtype=torch.long, device=B["tokens"].device)
+        p_tok, p_anc, p_val, idx = self.presented_rows(B, steps, bs, cf_train)
         if B["mode"] == "seq":
             tgt = dict(target_tokens=B["answers"][idx], contrast_tokens=None)
         elif B["logit_metric"] == "set":
@@ -240,8 +269,8 @@ class Engine:
         # micro-batch s = (step x batch) mod rows walks the steps x batch presentation rows exactly once, in order
         kw = dict(objective="logit", sites=list(self.sites), seed_layer=self.bank.n_layer - 1,
                   seed_kind=self.kinds[-1], seed_latent_idx=0,
-                  pos_tokens=B["tokens"][idx], pos_argmax=B["anchors"][idx].cpu(),
-                  neg_tokens=B["c_tokens"], pos_valid=B["valid"][idx], neg_valid=B["c_valid"],
+                  pos_tokens=p_tok, pos_argmax=p_anc.cpu(),
+                  neg_tokens=B["c_tokens"], pos_valid=p_val, neg_valid=B["c_valid"],
                   floor_means=M["C"], pos_floor_means=M["A"],
                   logit_metric=B["logit_metric"], logit_norm=logit_norm, **tgt,
                   mask_floor_source=lm.mask_floor_source, dual_floor_weight=lm.dual_floor_weight,
@@ -253,9 +282,16 @@ class Engine:
                   theta_init=lm.theta_init, log_every=0, deep_site_threshold=lm.deep_site_threshold,
                   deep_batch_size=lm.deep_batch_size, optimizer=lm.optimizer, weight_decay=lm.weight_decay,
                   code_dtype=lm.code_dtype, lr_schedule=lm.lr_schedule, lr_min_frac=lm.lr_min_frac,
-                  warmup_frac=lm.warmup_frac,
-                  # WCM_VERSION (v2 = the A / C terms under the scorer's sparsity-preserving fill, straight-through)
-                  **C.WCM_VERSIONS[C.WCM_VERSION])
+                  warmup_frac=lm.warmup_frac)
+        # WCM_VERSION (v2 = the A / C terms under the scorer's sparsity-preserving fill, straight-through; v4 = v2 + R +
+        # geometric lr with warm-up: task_common.WCM_VERSIONS), applied over the config's values
+        kw.update(C.WCM_VERSIONS[C.WCM_VERSION])
+        if float(kw.get("resample_weight") or 0) > 0:
+            # R's donors = the C pool (production's resample_pool "contrast"): the training items' own counterfactual
+            # prompts (IOI ABC, greater-than XX01), or the generated contrast pool. Right-padded to the clean width;
+            # donors are drawn at random per row (learned_mask.DonorPool), so on a mixed-length task (IOI, 14-20
+            # tokens) a donor can be shorter than the row it fills: its pad positions then supply the code
+            kw["resample_tokens"] = B["c_tokens"]
         if support is not None:
             kw.update(support={s: torch.tensor(v, dtype=torch.long) for s, v in support.items()}, l1_lambda=0.0,
                       binarize="none", theta_init=40.0)
@@ -266,7 +302,9 @@ class Engine:
         """(alphas {site: {latent: alpha}}, provenance, t_fit, peak MB)."""
         from circuit.instrument.learned_mask import run_learned_mask
         a = C.ARMS[arm]
-        kw = self.engine_kwargs(B, lam, bool(a["weighted"]), steps, lr, logit_norm, support, bool(a["c_term"]))
+        cf_train = bool(a.get("cf_train", False))
+        kw = self.engine_kwargs(B, lam, bool(a["weighted"]), steps, lr, logit_norm, support, bool(a["c_term"]),
+                                cf_train)
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
         t0 = time.time()
@@ -278,6 +316,9 @@ class Engine:
         n_pres = int(kw["pos_tokens"].shape[0]) // B["rows_per_item"]
         prov["present"] = dict(pool=B["n_items_train"], n=n_pres, epochs=round(n_pres / max(1, B["n_items_train"]), 3),
                                c_pool=int(B["c_tokens"].shape[0]))
+        if cf_train:
+            prov["present"].update(n_cf=n_pres // 2, n_items=(n_pres + 1) // 2)
+        prov["cf_train"] = cf_train
         prov["wcm_version"] = C.WCM_VERSION
         prov["train_means_source"] = "scorer"     # engine.means(B): the same tensors the scorer uses (= v2's eval_ref)
         peak = round(torch.cuda.max_memory_allocated() / 2 ** 20) if torch.cuda.is_available() else None
@@ -304,6 +345,61 @@ class Engine:
         return W.score_task(self.inf, self.bank, alphas, B["tokens"], B["anchors"], n, B["c_tokens"],
                             self.metrics(B), valid=B["valid"], cf_valid=B["c_valid"], sites=set(self.sites),
                             batch_size=EVAL_BS, vacuous_abs=B["vac"], means_A=M["A"], means_C=M["C"])
+
+    MP_FRAMES = (("free0", "e0"), ("freeM_topk", "eM_topk"), ("freeN_topk", "eN_topk"))
+
+    def score_cf(self, B: dict, alphas: dict, n: int, clean_row: dict = None) -> dict:
+        """(v4 rerun, 2026-11-18; exp 129's test 1) MINIMAL-PAIR faithfulness on the held-out items: the circuit must
+        reproduce the full model's clean-minus-counterfactual difference, not only the clean level. The same scorer
+        (score_task, the same A / C means, coefficients applied) is run on the first n held-out items' clean prompts
+        and on their own counterfactual prompts (IOI ABC, greater-than XX01), both scored for the clean item's
+        answers. Per metric m and frame f (Z / A_sp / C_sp, with its matching empty frame E):
+          mp_<m>_<f> = (D_f - D_E) / (D_full - D_E),  D_x = mean_x(clean) - mean_x(cf)
+        plus the raw differences mp_<m>_d_<x> and the circuit-only accuracy on the cf prompts. Descriptive, not part
+        of the registered pass rule. clean_row: the main held-out row, reused when n covers every held-out item.
+        Original-contrast token / set tasks only (None otherwise)."""
+        from eval import wcm_eval as W
+        if B["contrast"] != "original" or B["mode"] == "seq" or "cf_valid_all" not in B or n <= 0:
+            return None
+        n_tr = B["n_train"]
+        n = min(int(n), int(B["n_held"]))
+        rows = list(range(n_tr)) + list(range(n_tr, n_tr + n))
+        idx = torch.tensor(rows, dtype=torch.long, device=B["tokens"].device)
+        ct, ca = B["cf_all"]
+        held_cf = torch.zeros(len(rows), dtype=torch.bool, device=idx.device)
+        held_cf[n_tr:] = True
+        mets = {k: (kind, g[idx.cpu()], None if b is None else b[idx.cpu()])
+                for k, (kind, g, b) in self.metrics(B).items()}
+        M = self.means(B)
+
+        def run(cf):
+            sel = held_cf if cf else torch.zeros_like(held_cf)
+            tok = torch.where(sel.view(-1, 1), ct[idx], B["tokens"][idx])
+            anc = torch.where(sel, ca[idx], B["anchors"][idx])
+            val = torch.where(sel.view(-1, 1), B["cf_valid_all"][idx], B["valid"][idx])
+            return W.score_task(self.inf, self.bank, alphas, tok, anc, n_tr, B["c_tokens"], mets, valid=val,
+                                cf_valid=B["c_valid"], sites=set(self.sites), batch_size=EVAL_BS,
+                                vacuous_abs=B["vac"], means_A=M["A"], means_C=M["C"])
+
+        clean = clean_row if (clean_row is not None and n == int(B["n_held"])) else run(False)
+        cf = run(True)
+        out = dict(mp_n=n)
+        for m in (C.PRIMARY, C.OBJ):
+            d = {}
+            for x in ("full", "e0", "eM_topk", "eN_topk"):
+                d[x] = clean["%s_%s" % (m, x)] - cf["%s_%s" % (m, x)]
+            for f, _e in self.MP_FRAMES:
+                d[f] = clean["%s_%s_raw" % (m, f)] - cf["%s_%s_raw" % (m, f)]
+            for x, v in d.items():
+                out["mp_%s_d_%s" % (m, x)] = v
+            for f, e in self.MP_FRAMES:
+                den = d["full"] - d[e]
+                out["mp_%s_%s" % (m, f)] = (d[f] - d[e]) / den if abs(den) > 1e-9 else None
+            out["mp_%s_cf_full" % m] = cf["%s_full" % m]
+            out["mp_%s_cf_free0_raw" % m] = cf["%s_free0_raw" % m]
+            out["mp_%s_cf_acc_free0" % m] = cf["%s_acc_free0" % m]
+        out["mp_secs"] = round(float(cf.get("secs") or 0) + (0 if clean is clean_row else float(clean.get("secs") or 0)), 1)
+        return out
 
     # ------------------------------------------------------------------------------------------- probe
     def item_values(self, tokens, anchors, B, answers=None):

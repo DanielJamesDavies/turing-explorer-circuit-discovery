@@ -48,6 +48,23 @@ def _public_setup_fp32():
 
 driver.public_setup = _public_setup_fp32
 
+# ORDER=interleaved (arena A pod, 2026-11-17): 062's interleave() pairs shallow with deep in each shard but rotates by
+# slot PARITY only, so with P=3 fits per GPU slots 0 and 2 reach their deep targets together. Arena A rotates the same
+# pairing by the slot itself (slot s starts s places in), which spreads P co-tenants' deep fits apart. Order only: the
+# set of targets per shard and every fit are unchanged. 062's driver itself is untouched (the production runs use it).
+_interleave_062 = driver.interleave
+
+
+def _interleave_by_slot(targets, slot):
+    out = _interleave_062(targets, 0)
+    if len(out) < 2:
+        return out
+    r = slot % len(out)
+    return out[r:] + out[:r]
+
+
+driver.interleave = _interleave_by_slot
+
 # AA_RANK_W (2026-11-05, A13 tuning; TUNING.md): the rank-keep weight gamma_R of this process's WCM version, in every
 # mode (062's driver reaches it only through SWEEP_ARMS _r in MODE=sweep). On this substrate k = d_sae (ReLU), so no
 # latent is ever censored and rank-keep's Top-K motivation does not apply. Unset = the version's own (v4: 1e-1),

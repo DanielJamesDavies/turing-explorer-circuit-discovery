@@ -1,0 +1,5 @@
+[
+ {"name": "rs5k_AM_W_1e-6", "rescore": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_1e-6_lr05_pair.json", "sites": "attn_mlp"},
+ {"name": "AM_RND_1e-6_d0_5k", "arm": "RND", "lam": 1e-6, "lr": 0.05, "pair": true, "sites": "attn_mlp", "ref": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_1e-6_lr05_pair.json"},
+ {"name": "rs5k_AM_W_3e-6", "rescore": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_3e-6_lr05_pair.json", "sites": "attn_mlp"}
+]

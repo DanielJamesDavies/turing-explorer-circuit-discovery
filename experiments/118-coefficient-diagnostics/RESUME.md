@@ -1,5 +1,10 @@
 # 118 RESUME (gpu-44, DAN-44), written 2026-11-15 14:25 before the 15:05 shutdown
 
+**UPDATE 2026-11-16 03:40: COMPLETE.** Smokes passed; job 3 (54/54, `out/fit_tk/`) and job 4 (216/216,
+`out/diag_a1/`) ran 02:03–03:26; GPU lock released 03:26. `analyze.py` and `stability.py` re-run; README.md filled
+(all sections); DAN-44 results comment posted. Nothing left to run. The text below is the earlier state, kept for
+the record.
+
 Status: GPU jobs 1 and 2 are done. Jobs 3 and 4 (about 70 min of GPU in total) are not run. README.md is a skeleton:
 its Results, Caveats and Proposed paper text are placeholders. No DAN-44 results comment is posted yet. Nothing in
 paper/ was touched.

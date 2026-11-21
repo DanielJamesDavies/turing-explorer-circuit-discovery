@@ -204,3 +204,51 @@ stratified target draw; 2026-11-15: N_grid expansion, the skip above the ranked 
 the W rows (a pre-grid run resumes into the grid only), defaults max,sfc and W_all,N_grid, the grid curve points and
 the smallest-grid-size table). The smoke above predates the grid (`SIZES=W_0.001,W_0.004`, 3 rankings). Full
 `tests/analysis` (CPU, 2026-11-15): 106 passed.
+
+## v4 re-smoke 2026-11-16 (chain T7 on v4 OUTs, local GPU; DAN-220)
+
+**Passes.** The 082 chain's TuringLLM track in smoke mode into a fresh WORK, so every OUT is v4-marked
+(`out_v2/WCM_VERSION` = `v4`), with the current 083 code (rankings `max,sfc`, the N grid; uncommitted as of tonight):
+
+```bash
+LIMIT=1 TL_TRACK=1 STOP_AFTER=S0 TL_STOP_AFTER=T7 TL_DAN159_STAGES='ref attr fitted exact' \
+  WORK=experiments/082-public-runs/smoke_v4_t7 bash experiments/082-public-runs/chain.sh
+```
+
+- `DRY_RUN=1` first: no public stage (both tracks and S10 "after STOP_AFTER=S0"), T0-T6 (needed: a fresh WORK has
+  no v4 records or circuits), then T7 = ref, attr, fitted, exact, table (no ge), then "T8 after TL_STOP_AFTER=T7".
+- Real run on the RTX 5070 Ti (WSL), 03:26:55-04:26:45, **chain rc 0**; one target, `3.attn.11307` (the first of the
+  084 panel). Every job: 0 error rows. T1 3 min, T2 13 min, T3 7 min, T4 11 min, T5 4 min, T6 4.5 min, T7 17 min.
+- Output: `082/smoke_v4_t7/out_turingllm/dan159/` (logs in `logs/`, packed to `smoke_v4_t7/results/pub-turingllm-T7-dan159.tgz`).
+
+| stage | rc / rows | what it wrote |
+|---|---|---|
+| ref | 0 / 2, 0 errors | W_0.001, U_0.001 re-scored on ctx_fresh |
+| attr | 0 / 18, 0 errors | IG and AtP × {max, sfc} × {W_0.001, W_0.004, N_64, N_65536} + 2 natural (`union`); **no `agg` rows** |
+| fitted | 0 / 6, 0 errors | IG-max, act-mean, act-coact, each α = 1 and fitted |
+| exact | 0 / 3, 0 errors | stats + exact-ranked α = 1 / fitted; `exact/summary.md` (AtP ρ 0.85, IG ρ 0.61; 3,733 of 165,423 candidates, subset) |
+| table | 0 | `table2.md` (+ the grid section), `table2_grid.md/.csv`, `table2.{csv,tex}`, `table2_rows.csv`, `dan77_points.csv`, `dan77-faithfulness-vs-size.{png,pdf}` with the IG / AtP max / sfc top-n grid curves (64 → 65,536), natural-size stars, WCM, unweighted and the fitted / exact markers |
+
+What the smoke cannot exercise (budget, not code): at `STEPS=20` the WCM and unweighted fits do not sparsify (both
+arms keep all **368,640** upstream latents, as in the v2 smoke of 2026-10-26: same n, so not a v4 effect), so
+the W-matched truncations are capped at `KEEP_TOP` = 65,536 (`n=65536/368640`; the production maximum is 37,170) and
+the ranking is dense, so N_65536 is scored, not written as a skip row (the skip path is unit-tested only). WCM's
+pass rate is 0 on this target, so `table2_grid.md` reports the trivial crossover "smallest n = 64 at 0%"; with a
+non-zero WCM pass rate on the 190 this is meaningful. No code change was needed.
+
+**Timings** (one shallow L3 target, 1 process). Each stage process spends **~3 min starting up** (model, SAEs, stores)
+before its first target: ref 04:09:52 → first row 04:13:14, attr 04:13:25 → 04:16:47, fitted 04:17:36 → 04:20:58,
+exact 04:21:25 → 04:25:23. On the pod this is paid once per shard per stage (~3 stages × 3 min ≈ 10 min of T7 wall).
+Per-target work after start-up, and scaled to full settings:
+
+| stage | smoke (measured) | scaled to full settings | README estimate |
+|---|---|---|---|
+| ref | 2 scores, ~5 s each | 13 × 5 s ≈ 65 s | 65 s |
+| attr | IG 2 steps 3.4 s, AtP 0.9 s, 18 scores 1.5-3.8 s (mean ~2.4 s; N_65536 2.5 s, N_64 1.9 s) = 43 s | IG ×5 steps ≈ 17 s + AtP 1 s + 78 × 2.4 s ≈ 210 s | 540 s (5.6 s/score) |
+| fitted | 3 fits × 4 steps (t_fit 2.3-4.3 s, mostly set-up) + 6 scores = 20 s | not extrapolable from 4 steps; keep 145 s | 145 s |
+| exact | 44 s (38.5 s patching) | 1 target ≈ the smoke's cost × candidate count | ~5 min |
+
+So on this shallow target ref + attr + fitted ≈ 65 + 210 + 145 ≈ 420 s against the README's 750 s: the score cost is
+below the 5.6 s assumed, and the grid's large points (65,536 members) score no slower than the W points. A single
+shallow L3 target is the cheap end (deep targets have up to 35 upstream sites), so keep **750 s / target
+(40 local-h, ~20 H100 GPU-h)** as the planning figure; the smoke gives no sign it is an underestimate.

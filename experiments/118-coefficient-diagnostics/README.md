@@ -83,8 +83,9 @@ maximum over positions ≤ anchor, because the edit acts at every position.
 | 1 | full + reduced score, all no-refit variants, diagnostics | 216 | 09:41–10:20 | `out/job1.log`, `out/rows.jsonl`, `out/members/` |
 | (2a) | refits, `OBJ=pre`, batch 8: **aborted** after 8 targets (deep targets spilled past 16 GB; 616 s / target) | 8 | 10:21–10:40 | `out/fit/` (not used) |
 | 2 | refits, `OBJ=pre`, batch 4: global / site / member / member-c2 | 70 of 108 (time cap) | 10:41–11:51 | `out/fit4/` |
-| 3 | refits, `OBJ=tk`: global / site / member / member-warm | see below | | `out/fit_tk/` |
-| 4 | α = 1 edited capture (off-manifold control) | 216 | | `out/diag_a1/` |
+| (smoke) | one target each of `OBJ=tk` (4 arms) and `DIAG_A1=1`, 2026-11-16 | 1 + 1 | 01:55–02:02 | `out/smoke_tk/`, `out/smoke_a1/` |
+| 3 | refits, `OBJ=tk`: global / site / member / member-warm (51 before the 55-min cap, 3 in a resumed run) | 54 of 54 | 02:03–03:14 | `out/fit_tk/job3.log`, `job3b.log` |
+| 4 | α = 1 edited capture (off-manifold control) | 216 | 03:14–03:26 | `out/diag_a1/` |
 
 CPU: `stability.py` (T5 refits), `analyze.py` (writes `out/report.md` and the csvs).
 
@@ -116,7 +117,57 @@ Fitted α passes 81.5% [76.4, 86.6] in the local re-score (production on the sam
 - So the members' individual α matter: a per-site constant taken from the same α loses almost the whole effect, and
   the large coefficients (between 2 and 3) carry about two-thirds of it.
 
-JOB3_PLACEHOLDER
+### 2. Refits with members fixed
+
+**Job 2 (`OBJ=pre`, n = 70 of the 108 planned; 24 / 24 / 22 per band).** Production α passes 85.7% [77.1, 92.9].
+
+| arm | coefficients (median) | pass % [95% CI] | training loss (pre) |
+|---|---|---|---|
+| one scalar per circuit | 1 | 32.9 [21.4, 44.3] | 0.30 |
+| one scalar per site | 16 | 37.1 [25.7, 48.6] | 0.185 |
+| one per member | 638 | 35.7 [24.3, 47.1] | 0.014 |
+| one per member, in [0.5, 2] | 638 | 34.3 [22.9, 45.7] | 0.032 |
+| production α | 638 | 85.7 [77.1, 92.9] | 0.010 |
+| α = 1 | 0 | 2.9 [0.0, 7.1] | 2.26 |
+
+The untied refit reached production's training loss (0.014 vs 0.010) but failed held-out, mostly through Z (median
+0.71: the target drops out of the Top-K and that read scores 0). That pointed at the objective, so job 3 changed it.
+
+**Job 3 (`OBJ=tk`: the pass rule's post-Top-K read plus the censor hinge; n = 54, 6 per band × kind cell, complete).**
+
+| arm | coefficients (median) | pass % [95% CI] | Δ vs production, pp [CI] | median Z / A / C | training loss (tk) |
+|---|---|---|---|---|---|
+| production α | 628 | 85.2 [75.9, 94.4] | | 0.92 / 0.99 / 0.96 | 0.010 |
+| α = 1 | 0 | 3.7 [0.0, 9.3] | −81.5 | 0.00 / 0.01 / 0.04 | 2.17 |
+| each member at its site median α (no refit) | | 5.6 [0.0, 13.0] | −79.6 | 0.01 / 0.18 / 0.25 | |
+| one scalar per circuit | 1 | 33.3 [20.4, 46.3] | −51.9 [−64.8, −38.9] | 0.45 / 0.60 / 0.57 | 0.67 |
+| one scalar per site | 15 | 37.0 [24.1, 50.0] | −48.1 [−61.1, −35.2] | 0.65 / 0.94 / 0.83 | 0.33 |
+| one per member, from α = 1 | 628 | 44.4 [31.5, 57.4] | −40.7 [−53.7, −27.8] | 0.76 / 0.99 / 0.97 | 0.044 |
+| one per member, from production α (warm) | 628 | 83.3 [72.2, 92.6] | −1.9 [−14.8, +11.1] | 0.96 / 1.00 / 0.99 | 0.003 |
+
+- **The corrected objective lifts the per-member arm only a little.** Paired on the same 54 targets, tk − pre:
+  per member +5.6 pp [−1.9, +14.8] (38.9 → 44.4), per site −1.9 [−9.3, +3.7], per circuit 0.0 [−5.6, +5.6]. The
+  per-member arm stays about 41 pp below production.
+- **Paired between arms (job 3):** per member − per site +7.4 pp [−3.7, +18.5]; per site − per circuit +3.7
+  [−5.6, +14.8]; per member − per circuit +11.1 [−1.9, +22.2]. A refitted per-site scalar beats the per-site median of
+  production α by 31.5 pp [18.5, 44.4].
+- **By band (production / per site / per member):** L0-4 89 / 72 / 67; L5-7 100 / 39 / 61; L8-11 67 / 0 / 6 (n = 18
+  each). Per-site scalars are close to production only in L0-4 and fail every deep target.
+- **The warm start is a check on the objective and passes it.** Started from production α, the same 40 steps keep the
+  pass rate (83.3 vs 85.2) and lower the training loss (0.003 vs 0.010). There is churn: 39 of the 46 production
+  passes still pass, and 6 of the 8 production failures now pass. So the objective is consistent with production α;
+  the cold-start fitter just does not find it.
+- **The cold per-member fit now under-fits rather than over-fits:** its training loss is 0.044 against production's
+  0.010, and its held-out Z is still low (median 0.76), with 22 of the 46 production passes failing.
+- Per-site scalars (896 sites): median 1.46 (p10 0.54, p90 2.29); Spearman 0.35 with the site's median production α
+  and 0.18 with the site's SAE error.
+
+**Reading.** The refit arms are still fitter-limited: with 40 cold-start steps even the untied parameterisation reaches
+only 44%, about half of production's 85%. Under that fitter, one scalar per site (37%) is not distinguishable from one
+per member (paired +7.4 pp, CI includes 0), and both are far below production. What this run does show is that
+production α is a stable optimum of the pass-rule objective (warm start). Per-site scalars reach 5.6% as site medians of
+production α and 37% when refitted, with no deep target passing; a stronger fitter (production's 400 steps with gates
+co-adapted) could still raise them, and this run cannot bound how far.
 
 ### 3. Effective size by contribution (n = 216)
 
@@ -138,7 +189,29 @@ Contribution = α × natural activation at the anchor × decoder norm, on the 16
 - Spearman(α, natural contribution) ≈ 0.03: α does not just boost the members that already contribute most.
 - By band, the 80% share is 22% / 24% / 18% at the anchor (L0-4 / L5-7 / L8-11).
 
-JOB4_PLACEHOLDER
+### 4. Off-manifold check, with the α = 1 control (n = 216)
+
+The reference is each member's largest natural value over the target's 64 activating rows (positions ≤ anchor); the
+corpus z-score uses `latent_stats`. Shares are over active (member, held-out context) pairs, value = max over positions
+≤ anchor; median over targets (mean in brackets).
+
+| share of active pairs | natural | natural × α | Z run, fitted α | A run, fitted α | Z run, α = 1 | A run, α = 1 |
+|---|---|---|---|---|---|---|
+| above the local natural max | 0 | 19% (23%) | 36% (42%) | 35% (41%) | 10% (16%) | 4.8% (7.5%) |
+| above 1.5 × local max | 0 | 7.0% (8.7%) | 22% (30%) | 21% (30%) | 4.7% (11%) | 1.2% (4.3%) |
+| corpus z > 6 | 1.4% (2.0%) | 9.9% (11%) | 23% (31%) | 23% (30%) | 5.4% (12%) | 3.1% (5.4%) |
+| members ever above 1.5 × local max | 0 | 19% | 29% | 29% | 6.8% | 3.4% |
+
+- **Most of the excess is due to α, not to the ablation.** Paired fitted − α = 1 (n = 216), share above the local max:
+  Z +25.8 pp [23.1, 28.5], A +33.2 pp [30.3, 36.2]. Measured by the means, the α = 1 ablation alone accounts for 38%
+  of the fitted-α excess in the Z run and 18% in the A run; α accounts for the remaining ~62% (Z) and ~82% (A). The
+  same split holds for the 1.5 × max and z > 6 measures (Z 37–39%, A 14–18% from the ablation).
+- **Site reconstruction norm, edited / natural at the anchor:** at α = 1 the circuit-only run leaves about half the
+  natural norm (median 0.53 Z, 0.50 A; p90 0.97 / 0.93), and almost never exceeds the site's natural p99 (0.3% Z, 0% A).
+  With fitted α the median comes back to 0.91 (Z) / 0.98 (A), but the p90 is 1.8–1.9 and 12% of (site, context) pairs
+  exceed the natural p99.
+- So α largely restores the site norm the ablation removes, and in doing so drives about a third of active members
+  above anything they reach naturally on these contexts, with a tail of sites over-shooting the natural norm.
 
 ### 5. Gain vs SAE reconstruction error (3,782 target × site pairs, 216 targets)
 
@@ -175,6 +248,26 @@ JOB4_PLACEHOLDER
   (`top_ctx.pt` holds per-sequence means).
 - `out/fit/` is an aborted batch-8 attempt (memory spill) and is not used. `out/smoke_*` are one-target smoke runs.
 
-## Proposed paper text
+## Proposed paper text (draft; Daniel decides; paper/ not edited)
 
-PAPER_PLACEHOLDER
+**Body clause (coefficients paragraph).** "...the coefficients are not a per-site gain: replacing each member's α by its
+site's median recovers 1% of the α = 1 → fitted gap (3.7% vs 81.5% pass on 216 paired targets), while clipping α to
+[1/3, 3] keeps 96% of it. Refitting one scalar per site with members fixed reaches 37% (54 targets), against 85% for
+production α; under the same short fitter an untied per-member refit reaches 44%, so this comparison is bounded by the
+fitter rather than settled. α is uncorrelated with the site's SAE reconstruction error (Spearman 0.08)."
+
+**Appendix.**
+
+- Table: the no-refit variants (§1).
+- Refit paragraph: "With members fixed and 40 Adam steps on the pass rule's own post-Top-K read, one scalar per circuit
+  passes 33%, one per site 37% and one per member 44% (production 85%; n = 54, paired). Started from production α, the
+  same fitter keeps 83%, so the objective is consistent with production; the cold-start fitter does not reach it. Per-site
+  scalars fail every L8-11 target (0 / 18)."
+- Effective-size paragraph: about 21% of members carry 80% of the contribution at the anchor (34% using the maximum over
+  positions); 70% of members are active at ≥ 1 held-out anchor.
+- Stability paragraph: Spearman 0.65 between α across refits; 95% of α ≥ 2 members stay above 1.
+- Off-manifold paragraph: "In the circuit-only runs, 36% of active member values exceed the member's largest natural
+  value on the target's own 64 activating contexts (22% exceed 1.5×). With every α set to 1 the same runs give 10% (Z)
+  and 5% (A), so most of the excess comes from α rather than from the ablation: the ablation halves the site's
+  reconstruction norm (median 0.53 of natural) and α restores it (0.91), over-shooting the natural p99 in 12% of
+  (site, context) pairs."

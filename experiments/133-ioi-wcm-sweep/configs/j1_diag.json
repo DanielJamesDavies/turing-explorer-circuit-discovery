@@ -1,0 +1,10 @@
+[
+ {"name": "rs_v2_W_1e-3", "rescore": "experiments/081-task-circuits/out_v2/gpt2-small/circuits/ioi/W/0.001.json"},
+ {"name": "rs_v2_W_3e-4", "rescore": "experiments/081-task-circuits/out_v2/gpt2-small/circuits/ioi/W/0.0003.json"},
+ {"name": "rs_v2_W_1e-4", "rescore": "experiments/081-task-circuits/out_v2/gpt2-small/circuits/ioi/W/0.0001.json"},
+ {"name": "rs_v4_W_1e-4", "rescore": "experiments/081-task-circuits/out_v4/gpt2-small/circuits/ioi/W/0.0001.json"},
+ {"name": "rs_v4_U_1e-6", "rescore": "experiments/081-task-circuits/out_v4/gpt2-small/circuits/ioi/U/1e-06.json"},
+ {"name": "W_1e-4_R0", "lam": 1e-4, "R": 0.0},
+ {"name": "W_1e-4_lr05", "lam": 1e-4, "lr": 0.05},
+ {"name": "W_1e-4_lr05_pair", "lam": 1e-4, "lr": 0.05, "pair": true}
+]

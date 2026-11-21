@@ -1,0 +1,13 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:production.
+% Every number in it is stated in the prose of app:production ("How circuits fail"), which points here.
+% Not compiled with main.tex; \runtable is defined in main.tex's preamble.
+
+\begin{table}[tbp]
+\centering
+\scriptsize
+% experiments/111-failure-anatomy a1_anatomy.py writes tables/run2026_near_threshold.tex.
+\runtable{near_threshold}{per model: pass rate on the activation and pre-activation reads [95\% CI]; near-threshold stratum size and its pass rates on both reads; its split; others' pass rate}
+\caption{The pre-activation pass rate and the near-threshold stratum (\cref{app:loss-details}).
+Pass rates on the activation read (the criterion) and on the pre-activation read (Z and necessity from $0$), with $95\%$ bootstrap intervals; near-threshold targets (median unmodified rank at the held-out strongest anchors at least $K/2$), their pass rates on both reads, their split into passing both rules, the pre-activation rule only, the activation rule only, and neither; and the activation-read pass rate of the other targets.}
+\label{tab:run2026-near-threshold}
+\end{table}

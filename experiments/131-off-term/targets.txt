@@ -1,0 +1,16 @@
+4.attn.25180
+7.attn.12712
+9.attn.30928
+1.resid.10656
+3.mlp.15959
+5.resid.6963
+6.attn.28217
+8.resid.11283
+1.mlp.22405
+3.resid_mid.15558
+6.mlp.4271
+6.resid_mid.21305
+9.mlp.6797
+9.resid.15615
+9.resid_mid.22889
+8.mlp.28791

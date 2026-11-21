@@ -1,0 +1,12 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:production
+% ("Circuit sizes, sufficiency to induce, training dynamics"), whose prose states its headline cells and points here.
+% Not compiled with main.tex; \runtable is defined in main.tex's preamble.
+
+\begin{table}[tbp]
+\centering
+\small
+% experiments/111-failure-anatomy a1_anatomy.py writes tables/run2026_induce.tex.
+\runtable{induce}{per model: share of circuits with sufficiency to induce $\geq 0.5$ [95\% CI], all, passing, by site kind}
+\caption{The share of production circuits whose sufficiency to induce, $\phiind^{\alpha}$ on held-out contrast contexts, is at least $0.5$, with $95\%$ bootstrap intervals, over all non-vacuous circuits, passing circuits, and by site kind; undefined scores count as below. Reported for every circuit; not part of the pass criterion.}
+\label{tab:run2026-induce}
+\end{table}

@@ -1,0 +1,15 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:production
+% ("How circuits fail"), whose prose states the outcome shares by depth band and points here. Companion of
+% run2026_anatomy.tex (the same outcomes as a table).
+% Not compiled with main.tex; \runfigure is defined in main.tex's preamble.
+
+\begin{figure}[tbp]
+\centering
+% experiments/111-failure-anatomy a1_anatomy.py writes figures/run2026_failure_anatomy.pdf.
+\runfigure{failure_anatomy}{outcome anatomy by target layer and site kind, one row per model}
+\caption{Failures grow with depth on TuringLLM and GPT-2 small, are commonest at attention outputs on TuringLLM and Pythia-70m, and at layer 0 are mostly necessity failures.
+Outcomes of the production circuits on held-out strongest contexts by target layer (bars) and site kind (columns), one row per model; each circuit is counted once: it passes, fails only the mean ablations (A, C, or both) while zero ablation and necessity hold, fails zero ablation while necessity holds, or fails necessity. Panel titles give each site kind's pass rate; layer-0 attention has no upstream site, nor, in Pythia-70m's parallel block, does layer-0 MLP.}
+% DAN-219 (2026-11-16): caption completed (appendix review C, correctness 4): Pythia-70m layer-0 MLP has no upstream
+% site either (tab:protocol: 32 targets at each of Pythia-70m's 16 sites with an upstream site, of 18).
+\label{fig:run2026-failure-anatomy}
+\end{figure}

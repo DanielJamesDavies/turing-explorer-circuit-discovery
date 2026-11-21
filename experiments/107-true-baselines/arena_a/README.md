@@ -3,6 +3,16 @@
 Status (agent `hardstop`, CPU only): **`run_pod.sh` has a HARD time limit** (Daniel approved). See
 "Time limit" below.
 
+## Pod prep, 2026-11-17 (Daniel approved; CPU only, dry run rc 0)
+
+`run_pod.sh` changes for the 2026-11-21 pod:
+- **Stage order.** P4 (Ge + Dunefsky on the published grid) → P5 WCM → P6 scoring are the essential stages. Then come the optional ones: **P4x** (Dunefsky's extended 100–300 branch knob, moved out of P4) → **P6x** (P6 again, a2 only, for the P4x circuits; their Ge recovery jobs, less the ones P6 ran, go to `score/all/ge_recovery.x.s<i>.jsonl`) → P4h → P6b → P7. The time limit can now only cut optional work.
+- **Layer-0 tc targets leave a2.** A layer-0 transcoder latent has no tc upstream. WCM has no parameter to fit there and errors (exp 126, 2026-11-16), and a Dunefsky circuit there could hold no tc node, so both methods would score an empty circuit. They are listed in `WORK/a2_skipped_L0.txt` and still fitted and scored in a1. `make_targets.py` picks 2 of them.
+- **`AA_DF_PAR` [3]** sets the run_dunefsky.py processes per GPU (`--shard s/N` over the worker's tc targets) in P4, P4x and P4h. Each process logs to `<gpu log>.df<s>`. Their code is latency-bound: one process uses about 24% of a GPU.
+- **WCM fits run interleaved** (`ORDER=interleaved`, was `list`): 062 driver's shallow/deep pairing within each shard, rotated on odd GPU slots, so the fits sharing a GPU are not all on deep targets at once (VRAM and host RAM balanced). The order changes no result; each fit is independent.
+- **`AA_WCM_P` [3]** sets the WCM fits per GPU. A fit peaks at about 16 GB VRAM. Deep fits are host-RAM heavy (the L9 a2 fits overran 31 GB locally), so check the pod's host RAM before launch.
+- **λ grid default** is `2.5e-4,1e-3,4e-3,1.6e-2`: Daniel's 3 λ from 2026-11-08, plus 1.6e-2 for the small end of the size curve (exp 126: necessity starts to fail there).
+
 ## Time limit (agent `hardstop`; `run_pod.sh` header "TIME LIMIT" = the full doc)
 
 - **Soft stop** `STOP_EPOCH` (as before: no new target / arm / stage) and **hard stop** `AA_HARD_GRACE` (3600 s) later.
@@ -740,6 +750,33 @@ recovery (A11) for all three methods; Dunefsky "attribution coverage" and the gr
 | scoring (our tests, own + held-out) of ≈ 5k Ge (13 grid readings / prompt), 1.3k Dunefsky, 360 WCM circuits | ≈ 9 GPU-h | ≈ 5 s per scored circuit |
 | data pass on the OWT corpus (24 dense ReLU dictionaries) | ≈ 1–2 GPU-h | arena C pass 1: 54 s for 4,096 × 64 tokens at 19 sites |
 | **total** | **≈ 45–55 GPU-h ≈ 6–7 h wall on 8 × H100 ≈ $160–190** at the runbook's ≈ $3.45 / GPU-h, on top of the 082 budget **[decide]** | |
+
+**Dunefsky GPU timing test (2026-11-16, local RTX 5070 Ti; timing only).**
+- Setup: `~/venvs/tc107gpu` = a copy of tc107 with torch 2.8.0+cu128 (the pod's tc107 stays torch 2.2), plus
+  `TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1` (torch ≥ 2.6 refuses their pinned pickles by default). Their code is unchanged,
+  through `run_dunefsky.py`. Script, log and status: `out/gpu_test/` (not in git).
+- The D-F1 gate passed (root 7.570010; CPU 7.570007). Every circuit matched the CPU smoke's size at 5–60 branches,
+  and the roots matched the record peaks.
+
+| branches | 3.tc.13057: latents, GPU s (CPU s) | 9.tc.17800: latents, GPU s (CPU s) |
+|---|---|---|
+| 5 | 3, 0.1 (0.7) | 4, 0.5 (3.8) |
+| 30 | 10, 1.7 (7.9) | 17, 7.6 (41.0) |
+| 60 | 15, 5.2 (24.9) | 26, 22.8 (119.6) |
+| 150 | 154, 32.5 | 65, 113.4 |
+| 300 | 273, 106.8 | 205, 449.9 |
+
+- **Speed:** about 5× the CPU. Time grows roughly with branches^1.7–2.
+- **The GPU is mostly idle:** utilisation median 24% (max 31%), peak memory 4.5 GB including the 1.4 GB baseline.
+  So their search is latency-bound, and several processes per GPU should run in parallel.
+- **Size:** it jumps beyond 60 branches (15 → 154 → 273 on L3; 26 → 65 → 205 on L9). The extended knob reaches
+  WCM's size range, which the published range does not.
+- **Re-cost (serial, 5070 Ti seconds, interpolating 100 and 200 branches; 2 targets and 1 prompt only, so rough):**
+  - published sweep about 11–53 s per prompt → about 1.6 GPU-h for 24 × 8 (estimate above: 5–6);
+  - extended about 210–810 s per prompt → about 6.7 GPU-h for 24 × 2 (estimate: 10);
+  - P4h's Dunefsky about 1.6 GPU-h (estimate: 5–6).
+
+  H100 single-process speed is not measured.
 
 ## 8. Pod stage (`run_pod.sh`, to be written on Day 2; each stage resumable per circuit, `STOP_AT`)
 

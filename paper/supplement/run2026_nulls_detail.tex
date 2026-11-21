@@ -1,0 +1,13 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:nulls ("Harder
+% random circuits"), whose prose states its values and points here. The headline nulls table tab:run2026-controls
+% stays in the paper.
+% Not compiled with main.tex; \runtable is defined in main.tex's preamble.
+
+\begin{table}[tbp]
+\centering
+\small
+\runtable{nulls_detail}{harder nulls in detail: held-out and training scores, coefficients moved, overlap, matching}
+\caption{The harder random circuits fail on their own training contexts too, although their coefficients move as much as the production circuits'.
+Per model and circuit: pass rate on held-out and training strongest contexts, median Z/A/C and necessity on each, the median share of coefficients moved more than $0.01$ from the weight-decay-only value ($0.790$; IQR in brackets), the share of two-draw targets where the production circuit's lowest score beats both draws', the median Jaccard overlap with the production members, and the share of members matched within their own decile bin (\cref{app:nulls}).}
+\label{tab:run2026-nulls-detail}
+\end{table}

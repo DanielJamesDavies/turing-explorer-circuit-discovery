@@ -27,9 +27,11 @@
 #   P4 baselines a GPU canary (1 Ge circuit at 3 tau, 1 Dunefsky circuit at 5 branches) first; then one worker per GPU:
 #               run_ge.py (ge107) one process PER TARGET (the residual leak of their gate closure is VRAM on the GPU, so
 #               the process boundary releases it; the RSS re-exec stays ON, --max-rss-gb AA_GE_RSS), then run_dunefsky.py
-#               (tc107) on the worker's tc targets: num_branches 5..60 at num_iters 5, then the extended knob (100..300
-#               branches on K = 2 prompts, LABEL "beyond published range": the paper's runs stop at 60; the scorer's
-#               units carry num_branches, so > 60 = that label; AA_DUNEFSKY_EXT=0 drops it, cut line 1)
+#               (tc107, AA_DF_PAR processes per GPU on --shard s/N of the worker's tc targets) at num_branches 5..60,
+#               num_iters 5. The extended knob is P4x, after P6
+#   ORDER       P0-P3, P4, P5, P6 (essential), then P4x, P6x, P4h, P6b (optional), P7 (2026-11-17: the time limit can
+#               only cut optional work). snum: P4x / P4h order with 4 and P6x / P6b with 6 for STOP_AT / AA_FROM
+#               (AA_FROM=P5 or later takes P4x / P4h as done)
 #   P4h held    (Daniel 2026-11-05 13:35) the baselines ALSO on held-out prompts: score_perprompt.py
 #               --emit-heldout-prompts (CPU; the AA_HELD_K highest-peak held-out strongest rows per target, = K) into
 #               AA_WORK/targets_held/prompts.jsonl, which run_ge.py / run_dunefsky.py read unchanged through --targets;
@@ -37,10 +39,16 @@
 #               only (no > 60 knob on held-out) into dunefsky_heldout/
 #   P5 WCM      driver_tcz.py (062's driver, WCM_VERSION v4, MODE=main) through 062/launch.sh on all GPUs (one shard per
 #               GPU, P = AA_WCM_P), one launch per arm: scope a1 (z + z2 + tc, 48 targets) and a2 (tc only, the 24 tc
-#               targets: Dunefsky's universe) x AA_LAMBDAS; each arm its own OUT
+#               targets less the layer-0 ones: Dunefsky's universe) x AA_LAMBDAS; each arm its own OUT. Layer-0 tc
+#               targets have no tc upstream, so a2 (Dunefsky and WCM) skips them: WORK/a2_skipped_L0.txt
 #   P6 scoring  one worker per GPU: score_arena_a.py scope a1 (Ge + WCM a1) then a2 (Dunefsky + WCM a2) on the worker's
 #               targets, with --selftest --donor (one shared R pool, file-locked); then --emit-ge-jobs per scope (CPU) and
 #               ge_recovery_tcz.py (ge107, --check) on the jobs, split over the GPUs
+#   P4x ext     (optional, cut line 1) Dunefsky's extended knob: 100..300 branches on K = AA_DUNEFSKY_EXT_K prompts,
+#               LABEL "beyond published range" (the paper's runs stop at 60; the scorer's units carry num_branches, so
+#               > 60 = that label); AA_DUNEFSKY_EXT=0 drops it (P6x then does nothing)
+#   P6x         P6 again, a2 only, for the P4x circuits (finished units are skipped); their Ge recovery jobs (the ones P6
+#               did not run) into score/all/ge_recovery.x.s<i>.jsonl
 #   P6b perprompt  A8b ("their turf"; README A8b): one worker per GPU, score_perprompt.py scope a1 (WCM a1 arms:
 #               wcm_full, wcm_fire, wcm_fire_top in arm AA_PP_TOPK_ARM; + Ge on the held prompts) then a2 (WCM a2 arms
 #               + Dunefsky on the held prompts), on the train AND held prompt sets (AA_PP_PROMPTS each); the P4
@@ -72,6 +80,8 @@
 #                      see TIME LIMIT; 0 = no limit unless STOP_EPOCH is set). With STOP_EPOCH too, the earlier wins
 #   AA_HARD_GRACE [3600] s from the soft to the hard stop   AA_KILL_GRACE [30] s from SIGTERM to SIGKILL
 #   AA_PACK_MAX_H [2]  hours P7 may take after a hard stop before the watchdog kills run_pod.sh too
+#   AA_WAIT_MAX_H [8]  a second run_pod.sh on the same AA_WORK waits this long for the first to exit (STATE/run_pod.pid),
+#                      then exits 1 (pod plan option B: P0-P3 standalone during T7, then the chain's copy)
 #   AA_WATCH_EVERY [30] the watchdog's poll, s   AA_HARDSTOP_TEST [0] CPU-only test of the time limit (fake P4 process
 #                      trees of sleeps, one ignoring SIGTERM, then a fake P7; "hang" = a P7 that hangs, for the
 #                      backstop): nothing real runs; set AA_WORK to a scratch dir and AA_MAX_H to seconds' worth
@@ -80,9 +90,11 @@
 #   AA_DATA_SRC [data_public/gpt2-small] the 082 S1 corpus; AA_N_SEQ [524288] windows of arena A's own corpus (0 = use
 #                      AA_DATA_SRC as is: ~4M windows, a data pass of several H100-hours)
 #   AA_DP_BATCH [512]  data-pass batch (069's config default)
-#   AA_LAMBDAS [2.5e-4,5e-4,1e-3,2e-3,4e-3]  the WCM lambda arms: a PLACEHOLDER (coordinator 2026-11-05; tuning may
-#                      change it); AA_LAMS is read as a fallback name   AA_SCOPES ["a1 a2"]
-#   AA_WCM_VERSION [v4] (settled for arena A; the chain's WCM_VERSION is NOT inherited)   AA_WCM_P [1]   STAGGER [5]
+#   AA_LAMBDAS [2.5e-4,1e-3,4e-3,1.6e-2]  the WCM lambda arms (Daniel 2026-11-08: 3 lambdas; 1.6e-2 added 2026-11-17
+#                      for the small end of the size curve, exp 126); AA_LAMS is read as a fallback name   AA_SCOPES ["a1 a2"]
+#   AA_WCM_VERSION [v4] (settled for arena A; the chain's WCM_VERSION is NOT inherited)   STAGGER [5]
+#   AA_WCM_P [3]       WCM fits per GPU (a fit peaks ~16 GB VRAM; check host RAM: deep fits are RAM-heavy)
+#   AA_DF_PAR [3]      run_dunefsky.py processes per GPU (P4 / P4x / P4h; their code is latency-bound)
 #   AA_GE_RSS [9]      run_ge / ge_recovery --max-rss-gb (the re-exec stays on)   AA_GE_K [all = 8]   AA_GE_NTAU [30]
 #   AA_DUNEFSKY_K [all = 8] AA_DUNEFSKY_BRANCHES [5,10,15,20,30,40,60] (the published range)
 #   AA_DUNEFSKY_EXT [1] AA_DUNEFSKY_EXT_K [2] AA_DUNEFSKY_EXT_BRANCHES [100,150,200,300] ("beyond published range")
@@ -140,6 +152,30 @@ GPUS=${AA_GPUS:-0,1,2,3,4,5,6,7}
 IFS=',' read -r -a GL <<< "$GPUS"
 NG=${#GL[@]}
 
+# one run_pod.sh per AA_WORK (2026-11-16, option B of the pod plan: P0-P3 run standalone on GPU 0 while T7 runs, and the
+# chain's arena A stage may start before they end): a second copy WAITS until the first has exited (STATE/run_pod.pid:
+# a live process whose command line names run_pod.sh), at most AA_WAIT_MAX_H [8] hours, then exits 1 rather than run
+# two copies on one STATE. It then finds the first copy's markers and skips those stages. Before the time limit is set,
+# so the wait does not count against AA_MAX_H. Dry runs skip it
+if [ "$DRY_RUN" != 1 ]; then
+  mkdir -p "$STATE" || exit 1
+  W0=$(date +%s)
+  WMAX=$(awk -v h="${AA_WAIT_MAX_H:-8}" 'BEGIN { printf "%d", h * 3600 }')
+  WSAID=0
+  while OP=$(cat "$STATE/run_pod.pid" 2> /dev/null) && [ -n "$OP" ] && [ "$OP" != $$ ] && kill -0 "$OP" 2> /dev/null \
+        && tr '\0' ' ' < "/proc/$OP/cmdline" 2> /dev/null | grep -q run_pod.sh; do
+    if [ $(( $(date +%s) - W0 )) -ge "$WMAX" ]; then
+      echo "[arena_a $(date +%H:%M:%S)] another run_pod.sh (pid $OP) still holds $WORK after ${AA_WAIT_MAX_H:-8} h: not started"
+      exit 1
+    fi
+    [ "$WSAID" = 1 ] || echo "[arena_a $(date +%H:%M:%S)] another run_pod.sh (pid $OP) is running on $WORK: waiting for it to exit"
+    WSAID=1
+    sleep 60
+  done
+  [ "$WSAID" = 1 ] && echo "[arena_a $(date +%H:%M:%S)] the other run_pod.sh exited after $(( ($(date +%s) - W0) / 60 )) min: starting"
+  echo $$ > "$STATE/run_pod.pid"
+fi
+
 # the time limit (header TIME LIMIT): HARD_EPOCH = the hard stop, STOP_EPOCH = the soft stop (99999999999 = none)
 T0=$(date +%s)
 RUN_ID=$T0.$$                                            # AA_RUN_TAG of this run's commands (P7's: RUN_ID.P7)
@@ -171,10 +207,11 @@ STOP_EPOCH=${STOP_EPOCH:-99999999999}
 DATA_SRC=${AA_DATA_SRC:-data_public/gpt2-small}
 N_SEQ=${AA_N_SEQ:-524288}
 DP_BATCH=${AA_DP_BATCH:-512}
-LAMS=${AA_LAMBDAS:-${AA_LAMS:-2.5e-4,5e-4,1e-3,2e-3,4e-3}}     # placeholder grid (tuning may change it)
+LAMS=${AA_LAMBDAS:-${AA_LAMS:-2.5e-4,1e-3,4e-3,1.6e-2}}     # Daniel 2026-11-08 (3 lambdas) + 1.6e-2 (2026-11-17)
 SCOPES=${AA_SCOPES:-"a1 a2"}
 WCMV=${AA_WCM_VERSION:-v4}
-WCM_P=${AA_WCM_P:-1}
+WCM_P=${AA_WCM_P:-3}
+DF_PAR=${AA_DF_PAR:-3}
 STAGGER=${STAGGER:-5}
 GE_RSS=${AA_GE_RSS:-9}
 GE_K=${AA_GE_K:-}
@@ -448,7 +485,7 @@ make_lists() {   # the active lists downstream of P3 (AA_LIMIT cuts them; the tc
   if [ "$DRY_RUN" = 1 ]; then
     if [ -n "$KEYS" ]; then echo "    \$ echo $KEYS | tr , '\\n' > $LIST"
     elif [ -n "$LIMIT" ]; then echo "    \$ head -n $LIMIT $TGT/targets.txt > $LIST"; fi
-    echo "    \$ grep -F .tc. $LIST > $LIST_TC"
+    echo "    \$ grep -F .tc. $LIST | grep -v '^0\\.' > $LIST_TC   # layer-0 tc: no tc upstream in a2 (skipped, listed in $WORK/a2_skipped_L0.txt)"
     return 0
   fi
   [ -f "$TGT/targets.txt" ] || return 1
@@ -460,8 +497,13 @@ make_lists() {   # the active lists downstream of P3 (AA_LIMIT cuts them; the tc
     done
     echo "$KEYS" | tr ',' '\n' | grep . > "$LIST" || return 1
   elif [ -n "$LIMIT" ]; then head -n "$LIMIT" "$TGT/targets.txt" > "$LIST" || return 1; fi
-  grep -F .tc. "$LIST" > "$LIST_TC"
-  say "  active lists: $(nlines "$LIST") targets, $(nlines "$LIST_TC") tc"
+  # a2 is the tc-only universe (Dunefsky + WCM a2). A layer-0 tc latent has no tc upstream there: WCM has no parameter
+  # to fit (it errors, "element 0 of tensors does not require grad"; exp 126, 2026-11-16) and Dunefsky's circuit can
+  # hold no tc node (only embeddings / attention), so both would score an empty circuit. They leave the a2 list and
+  # are reported as "no tc upstream, skipped" (a2_skipped_L0.txt); a1 fits and scores them as usual.
+  grep -F .tc. "$LIST" | grep -v '^0\.' > "$LIST_TC"
+  grep -F .tc. "$LIST" | grep '^0\.' > "$WORK/a2_skipped_L0.txt"
+  say "  active lists: $(nlines "$LIST") targets, $(nlines "$LIST_TC") tc (a2)$([ -s "$WORK/a2_skipped_L0.txt" ] && echo "; a2 skips $(nlines "$WORK/a2_skipped_L0.txt") layer-0 tc target(s), no tc upstream: $(paste -sd' ' "$WORK/a2_skipped_L0.txt")")"
 }
 
 # ------------------------------------------------------------------------------------------------- P4 baselines
@@ -492,7 +534,20 @@ p4_canary() {   # one small circuit of each runner on the first GPU before 8 wor
   [ "$ok" = 1 ] || { say "  GPU canary FAILED ($L): no worker started"; return 1; }
 }
 
-p4_worker() {   # p4_worker I: Ge on the worker's targets (one process per target), then Dunefsky on its tc targets
+df_par() {   # df_par LOG GPU KEYS OUT [args]: AA_DF_PAR run_dunefsky.py processes on one GPU, each on --shard s/N of the
+  #           keys (their code is latency-bound: ~24% GPU utilisation for one process, GPU test 2026-11-16). Each
+  #           process logs to LOG.df<s>; the command fails if any of them fails
+  local L=$1 g=$2 keys=$3 out=$4; shift 4
+  local n=$DF_PAR s c=""
+  if [ "$n" -le 1 ]; then run_cmd "$L" "$(df_cmd "$g" "$keys" "$out" "$@")"; return; fi
+  for ((s = 0; s < n; s++)); do c+="( $(df_cmd "$g" "$keys" "$out" "$@" --shard "$s/$n") ) >> $L.df$s 2>&1 & p$s=\$!; "; done
+  c+="rc=0; "
+  for ((s = 0; s < n; s++)); do c+="wait \$p$s || rc=1; "; done
+  run_cmd "$L" "${c}exit \$rc"
+}
+
+p4_worker() {   # p4_worker I: Ge on the worker's targets (one process per target), then Dunefsky (published grid) on its
+  #               tc targets. The extended knob (> 60 branches) is stage P4x, after P5 / P6 (2026-11-17)
   local i=$1 g=${GL[$1]} key keys rc=0
   local L=$LOGS/P4/gpu$g.log
   while read -r key; do
@@ -502,25 +557,20 @@ p4_worker() {   # p4_worker I: Ge on the worker's targets (one process per targe
   done < <(keys_or_placeholder "$LIST" "$i")
   keys=$(keys_or_placeholder "$LIST_TC" "$i" | join_keys)
   if [ -n "$keys" ] && { [ "$DRY_RUN" = 1 ] || ! late; }; then
-    run_cmd "$L" "$(df_cmd "$g" "$keys" "$DF_OUT" --branches $DF_BRANCHES --iters 5${DF_K:+ --k $DF_K})" || rc=1
-    if [ "$DF_EXT" = 1 ]; then                           # LABEL: "beyond published range" (num_branches > 60)
-      [ "$DRY_RUN" = 1 ] && echo "    # Dunefsky extended knob, LABEL 'beyond published range' (their runs stop at 60 branches):"
-      run_cmd "$L" "$(df_cmd "$g" "$keys" "$DF_OUT" --k "$DF_EXT_K" --branches "$DF_EXT_BRANCHES" --iters 5)" || rc=1
-    fi
+    df_par "$L" "$g" "$keys" "$DF_OUT" --branches $DF_BRANCHES --iters 5${DF_K:+ --k $DF_K} || rc=1
   fi
   return "$rc"
 }
 
 p4_complete() {   # every expected circuit file is there (errors are not saved, so they show up here)
-  [ "$DRY_RUN" = 1 ] && { echo "    \$ (check) $GE_OUT: targets x ${GE_K:-$K} circuits; $DF_OUT: tc targets x ${DF_K:-$K} x $N_DF_PRIMARY branch values$([ "$DF_EXT" = 1 ] && echo " + $DF_EXT_K x ext")"; return 0; }
-  local key ng=0 nd=0 ne=0 kge=${GE_K:-$K} kdf=${DF_K:-$K} n_ext
-  n_ext=$(echo "$DF_EXT_BRANCHES" | tr ',' '\n' | grep -c .)
+  [ "$DRY_RUN" = 1 ] && { echo "    \$ (check) $GE_OUT: targets x ${GE_K:-$K} circuits; $DF_OUT: tc targets x ${DF_K:-$K} x $N_DF_PRIMARY branch values"; return 0; }
+  local key ng=0 nd=0 ne=0 kge=${GE_K:-$K} kdf=${DF_K:-$K} b
   while read -r key; do ng=$((ng + $(count "$GE_OUT/circuits/$key"/p*.pt))); done < "$LIST"
   while read -r key; do
-    nd=$((nd + $(count "$DF_OUT/circuits/$key"/p*.b*.i5.pt)))
+    for b in ${DF_BRANCHES//,/ }; do nd=$((nd + $(count "$DF_OUT/circuits/$key"/p*.b$b.i5.pt))); done
   done < "$LIST_TC"
   local want_g=$(( $(nlines "$LIST") * kge )) want_d
-  want_d=$(( $(nlines "$LIST_TC") * (kdf * N_DF_PRIMARY + (DF_EXT == 1 ? DF_EXT_K * n_ext : 0)) ))
+  want_d=$(( $(nlines "$LIST_TC") * kdf * N_DF_PRIMARY ))
   say "  P4 circuits: Ge $ng / $want_g, Dunefsky $nd / $want_d (status rows: $GE_OUT/status.jsonl, $DF_OUT/status.jsonl)"
   ne=$(cat "$GE_OUT/status.jsonl" "$DF_OUT/status.jsonl" 2> /dev/null | grep -c '"status": "error"')
   [ "$ne" = 0 ] || say "  P4: $ne error rows in the status files (a rerun retries them)"
@@ -536,6 +586,32 @@ p4_baselines() {
   return "$rc"
 }
 
+# ------------------------------------------------------------------------------------------------- P4x extended knob
+p4x_worker() {   # p4x_worker I: Dunefsky's extended knob on the worker's tc targets, LABEL "beyond published range"
+  local i=$1 g=${GL[$1]} keys
+  local L=$LOGS/P4x/gpu$g.log
+  keys=$(keys_or_placeholder "$LIST_TC" "$i" | join_keys)
+  [ -n "$keys" ] || return 0
+  [ "$DRY_RUN" = 1 ] && echo "    # Dunefsky extended knob, LABEL 'beyond published range' (their runs stop at 60 branches):"
+  df_par "$L" "$g" "$keys" "$DF_OUT" --k "$DF_EXT_K" --branches "$DF_EXT_BRANCHES" --iters 5
+}
+
+p4x_ext() {   # optional (cut line 1): after the WCM fits and their scoring, so the time limit can only cut optional work
+  [ "$DF_EXT" = 1 ] || { say "  AA_DUNEFSKY_EXT=0: no extended knob"; return 0; }
+  run_workers p4x_worker
+  local rc=$?
+  [ "$rc" = 0 ] || rc=1
+  [ "$DRY_RUN" = 1 ] && { echo "    \$ (check) $DF_OUT: tc targets x $DF_EXT_K x ext branch values ($DF_EXT_BRANCHES)"; return "$rc"; }
+  local key b nd=0 want
+  while read -r key; do
+    for b in ${DF_EXT_BRANCHES//,/ }; do nd=$((nd + $(count "$DF_OUT/circuits/$key"/p*.b$b.i5.pt))); done
+  done < "$LIST_TC"
+  want=$(( $(nlines "$LIST_TC") * DF_EXT_K * $(echo "$DF_EXT_BRANCHES" | tr ',' '\n' | grep -c .) ))
+  say "  P4x circuits: Dunefsky extended $nd / $want"
+  [ "$nd" -ge "$want" ] || return 1
+  return "$rc"
+}
+
 # ------------------------------------------------------------------------------------------------- P4h held baselines
 p4h_worker() {   # p4h_worker I: Ge on the worker's targets' held prompts (one process per target), then Dunefsky (the
   #                published branch grid only) on its tc targets' held prompts. --targets / --k come last (argparse: last wins)
@@ -548,7 +624,7 @@ p4h_worker() {   # p4h_worker I: Ge on the worker's targets' held prompts (one p
   done < <(keys_or_placeholder "$LIST" "$i")
   keys=$(keys_or_placeholder "$LIST_TC" "$i" | join_keys)
   if [ -n "$keys" ] && { [ "$DRY_RUN" = 1 ] || ! late; }; then
-    run_cmd "$L" "$(df_cmd "$g" "$keys" "$DF_HELD" --branches $DF_BRANCHES --iters 5 --targets "$HELD" --k "$HELD_K")" || rc=1
+    df_par "$L" "$g" "$keys" "$DF_HELD" --branches $DF_BRANCHES --iters 5 --targets "$HELD" --k "$HELD_K" || rc=1
   fi
   return "$rc"
 }
@@ -637,7 +713,7 @@ p5_wcm() {
       if [ "$DRY_RUN" != 1 ] && fits_done "$O" "$list"; then say "  WCM $name: every target fitted"; continue; fi
       if [ "$DRY_RUN" != 1 ] && late; then say "  WCM $name: STOP_EPOCH reached"; fails=$((fails + 1)); continue; fi
       say "  WCM $name on GPUs $GPUS (P=$WCM_P)"
-      run_cmd "$LOGS/P5/$name.launch.log" "env $BASEENV GPUS=$GPUS P=$WCM_P STAGGER=$STAGGER MERGE=0 LOGDIR=$LOGS/P5/$name PY=$PY SCRIPT=$A/driver_tcz.py ARENA_A_SCOPE=$scope OUT=$O CTX_DIR=$TGT/ctx TARGETS=$list MODE=main LAM=$lam ORDER=list SKIP_SPEC=1 CURVE_STRIDE=20${TUNE_KV:+ $TUNE_KV}${STEPS:+ STEPS=$STEPS} bash $D62/launch.sh" \
+      run_cmd "$LOGS/P5/$name.launch.log" "env $BASEENV GPUS=$GPUS P=$WCM_P STAGGER=$STAGGER MERGE=0 LOGDIR=$LOGS/P5/$name PY=$PY SCRIPT=$A/driver_tcz.py ARENA_A_SCOPE=$scope OUT=$O CTX_DIR=$TGT/ctx TARGETS=$list MODE=main LAM=$lam ORDER=interleaved SKIP_SPEC=1 CURVE_STRIDE=20${TUNE_KV:+ $TUNE_KV}${STEPS:+ STEPS=$STEPS} bash $D62/launch.sh" \
         || fails=$((fails + 1))
       if [ "$DRY_RUN" != 1 ]; then
         gu=$(cat "$LOGS/P5/$name"/*.log 2> /dev/null | grep -c "GIVING UP")
@@ -705,6 +781,48 @@ p6_score() {
     run_cmd "$LOGS/P6/emit.log" "$(score_cmd "" a2 "$SC/jobs" --dunefsky "$DF_OUT" --wcm "$(wcm_spec a2)" --keys "$tc_keys" --emit-ge-jobs)" || rc=1
   fi
   run_workers p6_recovery_worker || rc=1
+  return "$rc"
+}
+
+# P6x: P6 again for the extended knob's circuits (P4x ran after P6). a2 only; score_arena_a.py skips every unit with
+# rows, so only the new Dunefsky units are scored, into the same a2.s<i> shards. Their Ge recovery jobs: P6's emitter
+# into SC/jobs_x, minus every job P6 already ran (SC/jobs/ge_jobs.a2.jsonl), sharded into ge_recovery.x.s<i>.jsonl
+# (the summary merges ge_recovery*.jsonl), so no job moves between P6's shards
+p6x_worker() {
+  local i=$1 g=${GL[$1]} keys
+  local pool="--donor --donor-pool $SC/random_pool.pt --donor-records ${AA_DONOR_RECORDS:-$TGT/ctx} --selftest"
+  keys=$(keys_or_placeholder "$LIST_TC" "$i" | join_keys)
+  [ -n "$keys" ] || return 0
+  run_cmd "$LOGS/P6x/gpu$g.log" "$(score_cmd "$g" a2 "$SC/a2.s$i" --dunefsky "$DF_OUT" --wcm "$(wcm_spec a2)" --keys "$keys" $pool)"
+}
+
+p6x_recovery_worker() {
+  local i=$1 g=${GL[$1]}
+  local J=$SC/jobs_x/ge_jobs.s$i.jsonl
+  if [ "$DRY_RUN" = 1 ]; then echo "    \$ awk -v n=$NG -v i=$i 'NR % n == i' $SC/jobs_x/ge_jobs.new.jsonl > $J"
+  else
+    awk -v n="$NG" -v i="$i" 'NR % n == i' "$SC/jobs_x/ge_jobs.new.jsonl" > "$J.tmp" && mv "$J.tmp" "$J"
+    [ -s "$J" ] || return 0
+  fi
+  run_cmd "$LOGS/P6x/recovery.gpu$g.log" "$GE_SRC && CUDA_VISIBLE_DEVICES=$g python -I -B $A/ge_recovery_tcz.py --jobs $J --out $SC/all/ge_recovery.x.s$i.jsonl --check --device $BDEV --max-rss-gb $GE_RSS"
+}
+
+p6x_score() {
+  [ "$DF_EXT" = 1 ] || { say "  AA_DUNEFSKY_EXT=0: nothing to score"; return 0; }
+  [[ " $SCOPES " == *" a2 "* ]] || { say "  scope a2 not in AA_SCOPES: nothing to score"; return 0; }
+  local rc=0 tc_keys
+  run_workers p6x_worker || rc=1
+  if [ "$DRY_RUN" = 1 ]; then tc_keys="<every key of $(basename "$LIST_TC")>"; else tc_keys=$(join_keys < "$LIST_TC"); fi
+  run_cmd "$LOGS/P6x/emit.log" "$(score_cmd "" a2 "$SC/jobs_x" --dunefsky "$DF_OUT" --wcm "$(wcm_spec a2)" --keys "$tc_keys" --emit-ge-jobs)" || rc=1
+  if [ "$DRY_RUN" = 1 ]; then
+    echo "    \$ grep -vF -f <(grep -oE '\"job\": ?\"[^\"]*\"' $SC/jobs/ge_jobs.a2.jsonl) $SC/jobs_x/ge_jobs.a2.jsonl > $SC/jobs_x/ge_jobs.new.jsonl"
+  else
+    mkdir -p "$SC/jobs_x" "$SC/all"
+    grep -oE '"job": ?"[^"]*"' "$SC/jobs/ge_jobs.a2.jsonl" 2> /dev/null > "$SC/jobs_x/done_ids.txt"
+    grep -vF -f "$SC/jobs_x/done_ids.txt" "$SC/jobs_x/ge_jobs.a2.jsonl" > "$SC/jobs_x/ge_jobs.new.jsonl" 2> /dev/null
+    say "  P6x: $(nlines "$SC/jobs_x/ge_jobs.new.jsonl") new Ge recovery job(s) (extended-knob units)"
+  fi
+  run_workers p6x_recovery_worker || rc=1
   return "$rc"
 }
 
@@ -960,10 +1078,14 @@ if [ -f "$STATE/P3.done" ] || [ "$(snum "$FROM")" -gt 3 ]; then  # P3 skipped (m
   if [ "$DRY_RUN" = 1 ]; then [ "$(snum "$FROM")" -gt 3 ] && make_lists
   elif [ -n "$KEYS" ] || [ ! -f "$LIST" ] || [ ! -f "$LIST_TC" ]; then make_lists || finish 1; fi
 fi
+# order (2026-11-17, Daniel): the essential stages first (published baselines, WCM, their scoring), then the optional
+# ones (extended knob + its scoring, held-out baselines + per-prompt), so the time limit can only cut optional work
 stage P4 baselines p4_baselines; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
-stage P4h "held-out baselines" p4h_held; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
 stage P5 WCM p5_wcm; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
 stage P6 scoring p6_score; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
+stage P4x "extended Dunefsky knob" p4x_ext; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
+stage P6x "scoring, extended knob" p6x_score; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
+stage P4h "held-out baselines" p4h_held; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
 stage P6b "per-prompt (A8b)" p6b_perprompt; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
 stage P7 pack p7_pack; rc=$?; [ "$rc" = 3 ] && finish 3; [ "$rc" = 0 ] || FAILS=$((FAILS + 1))
 if [ "$FAILS" != 0 ] && [ "$DRY_RUN" != 1 ] && late; then

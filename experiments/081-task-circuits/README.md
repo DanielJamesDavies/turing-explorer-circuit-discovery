@@ -240,7 +240,7 @@ competent tasks are calibrated and fitted.
 | λ = 1e-3 | a grid from the task calibration (`config_main_<MODEL>.json`) |
 | loss scale mean(target²) | `logit_norm="gap"`, as 080 |
 | lr 0.05, wd 0.05 | lr from the run config (080's adopted lr if it exists, else 0.05); wd rescaled so lr × wd = 0.05 × 0.05 |
-| pass rule: Z, A_sp, C_sp in [0.8, 1.5], necessity ≥ 0.9, held-out | the same, on the task metric |
+| pass rule: Z, A_sp, C_sp in [0.75, 1.5], necessity ≥ 0.9, held-out (was written 0.8 here; the code, `wcm_eval.BAND`, and the paper use 0.75: Daniel, 2026-11-19) | the same, on the task metric |
 | scored with the fitted coefficients | always (the keep_scales trap); Z at α = 1 also recorded |
 
 **Padding and valid masks.** Prompts in a batch differ in length and are right-padded. The anchor read is exact for a
@@ -664,3 +664,88 @@ PYTHONPATH=src python -X utf8 experiments/081-task-circuits/v2_tables.py      # 
 ```
 Note: the stopped gender invocation left an unterminated gzip member at the end of `out_v2/gpt2-small/members.jsonl.gz`
 / `profiles.jsonl.gz` only if it had written to them. report.py read both cleanly after the stop.
+
+## v4 rerun 2026-11-18 (DAN-221; prepared, NOT run)
+
+**Question.** Does WCM v4 recover the published heads on the behavioural endpoint (Wang et al. 2022 IOI; Hanna et al.
+2023 greater-than)? Exp 129 showed why the latent-endpoint circuits of 117 / 120 missed them: the fit and the pass rule
+only asked for the target's level on firing contexts, so nothing required the routing heads.
+
+**What "v4" means here** (`task_common.WCM_VERSIONS["v4"]`, `WCM_LR_MULT`, `WCM_WD`). It is arena D's behavioural v4
+(Daniel's D7, 2026-11-16; `107/arena_d/wcm_gemma.py:592-609`, `V4_CHECK.md`): every piece of 062 `driver.WCM_VERSIONS
+["v4"]` that is defined for a logit objective.
+- v2's sparse fill + STE;
+- **R** (γ_R 1.0, k 1): the donors are the C pool, i.e. the training items' own counterfactual prompts (IOI ABC,
+  greater-than XX01), the analogue of production's `resample_pool="contrast"`;
+- the geometric lr schedule, warm-up 0.1, peak lr = the config's 0.05 × 3.15 = 0.1575;
+- v4's absolute AdamW decay 0.05 (not 081's lr-rescaled decay).
+- **Not applied:** the censored read, rank-keep 1e-1 and arena A's `NEC_W` 0.3. `run_learned_mask` refuses all three
+  for `objective != "pos"` (`learned_mask.py:1128, 1136, 1152`). There is no seed latent or Top-K cut on a task
+  objective; the behavioural rank-keep collapsed SVA fits in arena C. src is unchanged.
+- `WCM_VERSION=v4` is a new value; the default stays v2, and v1 / v2 fits are unchanged (`test_v2_is_unchanged`).
+  Arena C / D pin `WCM_VERSION=v2` and apply their own overrides, so they are unaffected.
+
+**Minimal pairs (129's lesson).**
+- *Already in 081 (v2):* the objective is the task decision itself, logit(IO) − logit(S) for IOI and log P(> YY) − log
+  P(≤ YY) for greater-than, fitted row by row against the full model. IOI mixes BABA / ABBA, so the S-inhibition
+  routing is needed to reproduce the sign. The A / C ablation values are the scorer's (padding-masked means), and every
+  score applies the coefficients (keep_scales).
+- *New, training:* (1) under v4 the R term fills non-members with real ABC / XX01 codes; (2) arm **W_CF**: half the
+  1,600 presentations are the items' own counterfactual prompts (clean_i, cf_i, ...), scored for the clean answers,
+  with the full model's value there as the target. The budget is unchanged, so W_CF sees 800 items, not 1,600.
+- *New, scoring* (`engine.score_cf`, all W / W_CF / U rows, the first `CF_SCORE_N` = 1,000 held-out items): for each
+  frame, mp_f = (D_f − D_E) / (D_full − D_E), with D = mean(clean) − mean(cf) and E the frame's empty circuit. It is
+  descriptive; the registered pass rule is unchanged. Exp 129's test 1 is this, on the behavioural endpoint.
+
+**Files.** `config_v4_ioi.json` and `config_v4_greater_than.json` (hand-written; NOT calibrated under v4) and
+`queue_v4.sh`. Code changes:
+- `task_common.py`: v4, `W_CF`;
+- `engine.py`: `presented_rows`, v4 kwargs and R donors, `score_cf`;
+- `run.py`: `CF_LAMS`, `CF_SCORE_N`, `CF_SCORE_ARMS`, `STOP_EPOCH` (exit 7), and the v4 provenance in rows.
+
+Test: `test_081_v4_cpu.py` (6).
+
+**Queue** (`queue_v4.sh`; `DRY_RUN=1` prints the plan). Stages in value order, each a resumable run.py process into
+`out_v4/gpt2-small`:
+
+| stage | content | estimate (min) |
+|---|---|---|
+| ioi_W | IOI W at λ 3e-5, 1e-5, 1e-4 | 40 |
+| gt_W | greater-than W at λ 3e-5, 1e-5, 1e-4 | 29 |
+| ioi_CF | IOI W_CF at 3e-5 | 14 |
+| gt_CF | greater-than W_CF at 3e-5 | 10 |
+| ioi_RND | IOI 2 random draws at 3e-5 | 21 |
+| gt_RND | greater-than 2 random draws at 3e-5 | 16 |
+| ioi_U | IOI U at λ 3e-6, 1e-6, 1e-5 | 38 |
+| gt_U | greater-than U at λ 3e-6, 1e-6, 1e-5 | 27 |
+| report | report.py + figure.py | 2 |
+| total | 18 circuits | ~197 (3.3 h) |
+
+The safety rules follow `128/run_night.sh`:
+- it refuses if `.gpu-lock` exists or the GPU holds > 2,500 MiB;
+- it writes its own lock and removes it only while the lock names its pid;
+- the watchdog kills the job at GPU > 15,300 MiB or MemAvailable < 3 GB;
+- after `STOP_EPOCH` no new stage, fit, score or profile starts.
+
+**Estimate basis.** The out_v2 timings on this card, float32, `EVAL_BS` 64:
+- IOI: fit 172-177 s, 5,000-item score 351-364 s;
+- greater-than: fit 141-148 s, score 212-218 s;
+- profile 24-49 s, peak 10.9 GB;
+- ~2 min start-up per process.
+
+The v4 additions are assumed, NOT timed:
+- R adds a fourth forward and backward per step (fit × 4/3);
+- the minimal-pair score is 2 × 0.2 of a full score.
+
+**Open (for Daniel).**
+1. The λ grids are not calibrated under v4. They are the v2 grids moved ~3-10× down, after arena D's ~2.5× smaller
+   v4 circuits.
+2. IOI prompts are 14-20 tokens and R draws donors at random. 38.7% of draws are shorter than the row, so pad-token
+   codes fill the tail. Greater-than is a single length (12), so it is unaffected.
+3. greater-than still fits the log-odds while the pass rule reads the probability difference: src has no
+   probability-difference objective.
+4. W_CF halves the clean items and shifts the `gap` normaliser, which is computed over the presented rows including
+   the cf rows.
+5. The head check is report.py's T4 (head-drive enrichment, ≥ 2× base). Exp 129 showed that even the full model fails
+   that rule (2 / 66), so ranks / signed effects are the better readout. Adapting 129's `c_heads.py` (latent target)
+   to the task metric is a CPU follow-up and is not built.

@@ -1,0 +1,10 @@
+{
+ "note": "v4 rerun (2026-11-18, DAN-221), written by hand, NOT calibrated under v4. lr = the BASE lr: WCM_VERSION=v4 multiplies it by 3.15 (peak 0.1575, geometric + 0.1 warm-up, absolute wd 0.05). v2 held-out (out_v2): W 1e-4 -> 21.0k latents Z 0.47, 3e-4 -> 9.5k Z 0.33, 1e-3 -> 4.2k Z 0.24; nothing passed, Z rose with size. v4's lr budget gave ~2.5x smaller circuits at a fixed lambda in arena D's lrtest (107/arena_d/V4_CHECK.md), so the grid moves ~3-10x down, toward the sizes where v2 was improving. Order = run order: 3e-5 first (it also gets W_CF and RND in queue_v4.sh), then 1e-5 (largest), then 1e-4.",
+ "arms": {
+  "W": {"lams": [3e-05, 1e-05, 0.0001], "lr": 0.05},
+  "U": {"lams": [3e-06, 1e-06, 1e-05], "lr": 0.05}
+ },
+ "logit_norm": "gap",
+ "steps": 400,
+ "n_draws": 2
+}

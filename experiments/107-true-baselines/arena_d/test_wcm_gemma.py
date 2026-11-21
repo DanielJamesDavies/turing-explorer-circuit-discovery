@@ -350,11 +350,11 @@ def test_caples_splice_once_under_capture_and_patch():
 
 
 # ------------------------------------------------------------------------------------------------------ D2 tiny fits
-def _fit_tiny(tmp_path, family, mode, means, data, task_kw=None, caples_means=None):
+def _fit_tiny(tmp_path, family, mode, means, data, task_kw=None, caples_means=None, wcm="v3"):
     os.environ.pop("STOP_AT", None)
     os.environ.pop("STOP_EPOCH", None)
     inf, bank = tiny_stack(family, vocab=GEMMA_VOCAB)
-    eng = W.make_engine(family, mode, means, caples_means, shared=(inf, bank))
+    eng = W.make_engine(family, mode, means, caples_means, shared=(inf, bank), wcm=wcm)
     logs = []
     kw = dict(family=family, data=data, mode=mode, means=means, steps=6, out=tmp_path, eng=eng, log=logs.append,
               caples_means=caples_means, task_kw=task_kw)
@@ -364,7 +364,10 @@ def _fit_tiny(tmp_path, family, mode, means, data, task_kw=None, caples_means=No
     circ = tmp_path / r["circuit"]
     assert circ.exists()
     c = json.loads(circ.read_text())
-    assert c["family"] == family and c["wcm"] == W.v3_logit() and c["means"] == means
+    wv = W.wcm_version(wcm)                                            # None = the env's (else v3)
+    assert c["family"] == family and c["wcm"] == W.wcm_kwargs(wv) and c["means"] == means
+    assert c["wcm_version"] == wv and r["wcm"] == wv
+    assert (c["wcm"] == W.v3_logit()) == (wv == "v3")
     assert c["wcm"]["lr_schedule"] == "geometric" and c["wcm"]["rank_weight"] == 0.0
     f = c["fit"]
     assert f.get("sparse_fill_calls", 0) > 0 and f.get("resample_weight") == 1.0 and f.get("resample_draws", 0) > 0
@@ -387,6 +390,30 @@ CAPLES_TINY = dict(n=160, mean_batches=2, n_held=16)                 # 10 batche
 def test_tiny_fit_plt_sfc_pooled(tmp_path):
     eng, r = _fit_tiny(tmp_path, TINY_PLT, "native", "pooled", "sfc")
     assert r["n_train"] == 100 and r["n_held"] == 40 and r["substrate"] == "native"
+
+
+def test_tiny_fit_v4_lr_budget(tmp_path, monkeypatch):
+    """D7 (2026-11-16): arena D's v4 = v3 + v4's lr budget, read back from the fit's own provenance: peak 0.05 x 3.15,
+    warm-up round(0.1 x steps), AdamW decay 0.05 absolute (not 081's lr-rescaled one); R on, rank-keep off, no censor.
+    The env selects it (pod_stage_d.sh exports ARENA_D_WCM), and an --out holding v4 fits refuses a v3 run."""
+    monkeypatch.setenv("ARENA_D_WCM", "v4")
+    assert W.wcm_version() == "v4" and W.wcm_version("v3") == "v3"
+    with pytest.raises(ValueError, match="must be one of"):
+        W.wcm_version("v2")
+    eng, r = _fit_tiny(tmp_path, TINY_PLT, "native", "pooled", "sfc", wcm=None)
+    c = json.loads((tmp_path / r["circuit"]).read_text())
+    f = c["fit"]
+    C, _ = W._import_081()
+    assert C.WCM_VERSION == "v2"                                       # 081's own table, untouched
+    assert abs(c["lr_peak"] - C.PROD_LR * W.V4_LR_MULT) < 1e-12 and abs(f["lr_peak"] - 0.1575) < 1e-9
+    assert f["warmup_steps"] == round(0.1 * 6) and abs(f["weight_decay"] - 0.05) < 1e-12
+    assert f["lr_schedule"] == "geometric" and "censor_temp" not in c["wcm"]
+    assert r["fit_stats"]["lr_peak"] == f["lr_peak"]
+    head = (tmp_path / "WCM_VERSION").read_text().splitlines()
+    assert json.loads(head[1])["arena_d_wcm"] == "v4" and head[0].startswith("behavioural v4")
+    eng3 = W.make_engine(TINY_PLT, "native", "pooled", shared=(eng.inf, eng.bank), wcm="v3")
+    with pytest.raises(RuntimeError, match="arena D WCM v4"):
+        W.run(["rc"], [1e-3], TINY_PLT, "sfc", "native", "pooled", 6, tmp_path, eng=eng3, log=lambda s: None)
 
 
 def test_tiny_fit_gsres_native_per_position(tmp_path):

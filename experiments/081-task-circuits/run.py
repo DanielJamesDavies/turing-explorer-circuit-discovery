@@ -23,8 +23,10 @@ the run moves on; error rows are retried on resume. Circuits on disk are reloade
   env: MODEL (gpt2-small)  OUT (out/<MODEL>)  CONFIG (config_main_<MODEL>.json)  TASKS (default: the competent
        ones)  ARMS (W,U,RND,W_ZA)  N_DRAWS (the config's, else 5)  NO_PROFILE=1  LIMIT (first N tasks)  FORCE_TASKS=1
        HELDOUT_N (score on the first N held-out items only; smoke.sh)  PROFILE_N (held-out items per profile; 256)
-       RND_LAMS (the W lambdas that get random-null draws; default all)  WCM_VERSION (v2 default; task_common)
-       EVAL_BS (scorer batch; 16)
+       RND_LAMS (the W lambdas that get random-null draws; default all)  WCM_VERSION (v2 default; task_common;
+       v4 = behavioural v4, README "v4 rerun 2026-11-18")  EVAL_BS (scorer batch; 16)
+       CF_LAMS (W lambdas for the W_CF arm)  CF_SCORE_N (minimal-pair score items; 1000, 0 = off)  CF_SCORE_ARMS
+       (W,W_CF,U)  STOP_EPOCH (no new fit / score / profile after it; exit 7)
 Training (2026-10-21): every fit draws its steps x batch presentations from the task's whole training pool, without
 replacement within an epoch (engine.presentations); A / C are the whole training / contrast pools' means, computed
 once per task (engine.means).
@@ -49,8 +51,27 @@ LIMIT = int(os.environ["LIMIT"]) if os.environ.get("LIMIT") else None
 # (2026-10-27) RND_LAMS: draw the random null only at these W lambdas (comma list; default every W lambda)
 RND_LAMS = ({C.lam_tag(float(x)) for x in os.environ["RND_LAMS"].split(",") if x}
             if os.environ.get("RND_LAMS") else None)
+# (2026-11-18, v4 rerun) CF_LAMS: the W lambdas that get a W_CF fit (minimal pairs in the training rows; default every
+# W lambda, when W_CF is in ARMS). CF_SCORE_N: held-out items of the minimal-pair score (engine.score_cf; 0 = off,
+# default 1000), on the arms in CF_SCORE_ARMS (W,W_CF,U). STOP_EPOCH: no new fit / scoring / profile once
+# time.time() >= it (the circuit in progress finishes; a rerun resumes).
+CF_LAMS = ({C.lam_tag(float(x)) for x in os.environ["CF_LAMS"].split(",") if x}
+           if os.environ.get("CF_LAMS") else None)
+CF_SCORE_N = int(os.environ.get("CF_SCORE_N", "1000"))
+CF_SCORE_ARMS = [a for a in os.environ.get("CF_SCORE_ARMS", "W,W_CF,U").split(",") if a]
+STOP_EPOCH = float(os.environ["STOP_EPOCH"]) if os.environ.get("STOP_EPOCH") else None
 for _a in ARMS:
     assert _a in C.ARMS, "unknown arm %r (task_common.ARMS)" % _a
+
+
+class StopEpoch(Exception):
+    pass
+
+
+def check_stop(what):
+    """Raise StopEpoch when STOP_EPOCH has passed (before anything new starts)."""
+    if STOP_EPOCH is not None and time.time() >= STOP_EPOCH:
+        raise StopEpoch("STOP_EPOCH %s reached before %s" % (time.strftime("%H:%M", time.localtime(STOP_EPOCH)), what))
 
 
 def log(s):
@@ -92,6 +113,12 @@ def circuit_path(task, arm, lt, draw=-1):
     return OUT / "circuits" / task / arm / (("%s.json" % lt) if draw < 0 else ("%s.d%d.json" % (lt, draw)))
 
 
+# (v4 rerun) the fit provenance that shows v4 in effect: R, the lr budget, the decay, the (refused) censor / rank-keep
+V4_STATS = ("resample_weight", "resample_k", "resample_n_donors", "resample_draws", "resample_fill_calls",
+            "lr_schedule", "lr_peak", "lr_sum", "warmup_steps", "weight_decay", "rank_weight", "censor_temp",
+            "necessity_weight")
+
+
 def save_circuit(path, alphas, prov, extra):
     path.parent.mkdir(parents=True, exist_ok=True)
     keep = {k: prov.get(k) for k in ("loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_kept",
@@ -99,7 +126,7 @@ def save_circuit(path, alphas, prov, extra):
                                      "floors_valid_masked", "floors_precomputed", "present", "wcm_version",
                                      "train_fill", "sparse_grad", "sparse_fill_calls", "train_means_source",
                                      "logit_norm", "logit_term_scales", "dual_norm_zero", "dual_norm_floor",
-                                     "dual_norm_pos")}
+                                     "dual_norm_pos", "cf_train") + V4_STATS}
     path.write_text(json.dumps(dict(alphas=C.alphas_to_json(alphas), fit=keep, **extra)) + "\n")
 
 
@@ -168,6 +195,10 @@ def main():
                    logit_norm=norm, weighted=bool(C.ARMS[arm]["weighted"]), wcm_version=C.WCM_VERSION,
                    **(extra or {}))
         alphas = None
+        if not path.exists():
+            check_stop("fit %s %s %s d%d" % (task, arm, lt, draw))
+        elif key not in done:
+            check_stop("scoring %s %s %s d%d" % (task, arm, lt, draw))
         try:
             if path.exists():
                 alphas, saved = load_circuit(path)
@@ -177,11 +208,13 @@ def main():
                 save_circuit(path, alphas, prov, dict(task=task, arm=arm, lam=lam, lr=lr, steps=steps, draw=draw,
                                                       t_fit=round(t_fit, 1)))
                 row.update(t_fit=round(t_fit, 1), peak_mb_fit=peak, fresh_fit=True,
-                           sparse_fill_calls=prov.get("sparse_fill_calls"))
+                           sparse_fill_calls=prov.get("sparse_fill_calls"), cf_train=prov.get("cf_train"),
+                           **{k: prov.get(k) for k in V4_STATS})
                 tr = dict(task=task, arm=arm, lam=lt, draw=draw, **{k: prov.get(k) for k in (
                     "loss_initial", "loss_final", "holdout_data_loss", "n_kept", "mean_m_kept", "amp_stats",
                     "logit_scale", "dual_norm_zero", "dual_norm_floor", "n_train_pos", "n_holdout_pos", "present",
-                    "wcm_version", "train_fill", "sparse_fill_calls", "logit_term_scales", "dual_norm_pos")})
+                    "wcm_version", "train_fill", "sparse_fill_calls", "logit_term_scales", "dual_norm_pos",
+                    "cf_train") + V4_STATS})
                 curve = prov.get("curve") or {}
                 tr["curve_loss"] = [float("%.4g" % v) for v in (curve.get("loss") or [])]
                 tr["curve_n"] = curve.get("n_members")
@@ -190,7 +223,12 @@ def main():
                 ft.write(json.dumps(tr) + "\n"); ft.flush()
             if key not in done:
                 t = time.time()
-                row.update(scalars(eng.score(B, alphas)), t_score=round(time.time() - t, 1))
+                sc = eng.score(B, alphas)
+                row.update(scalars(sc), t_score=round(time.time() - t, 1))
+                if CF_SCORE_N > 0 and arm in CF_SCORE_ARMS:
+                    mp = eng.score_cf(B, alphas, CF_SCORE_N, clean_row=sc)
+                    if mp:
+                        row.update(mp)
                 fm.write(json.dumps(dict(task=task, arm=arm, lam=lt, draw=draw,
                                          members=C.alphas_to_json(alphas))) + "\n"); fm.flush()
         except Exception as e:  # noqa: BLE001
@@ -203,12 +241,17 @@ def main():
             fe.write(json.dumps(row) + "\n"); fe.flush()
             if "error" not in row:
                 done.add(key)
-            log("%-34s %-3s lam %-7s d%-2d n=%-6s fit %6ss  Z %s A %s C %s nec %s pass %s acc %s %s" % (
-                task, arm, lt, draw, row.get("n"), row.get("t_fit"), _f(row.get("task_free0")),
-                _f(row.get("task_freeM_topk")), _f(row.get("task_freeN_topk")), _f(row.get("task_nec")),
-                row.get("task_pass"), _f(row.get("task_acc_free0")), row.get("error") or ""))
+            log("%-34s %-4s lam %-7s d%-2d n=%-6s fit %6ss  Z %s A %s C %s nec %s pass %s acc %s | obj Z %s pass %s"
+                " | mp Z %s A %s C %s | R %s lr %s wd %s %s" % (
+                    task, arm, lt, draw, row.get("n"), row.get("t_fit"), _f(row.get("task_free0")),
+                    _f(row.get("task_freeM_topk")), _f(row.get("task_freeN_topk")), _f(row.get("task_nec")),
+                    row.get("task_pass"), _f(row.get("task_acc_free0")), _f(row.get("obj_free0")),
+                    row.get("obj_pass"), _f(row.get("mp_task_free0")), _f(row.get("mp_task_freeM_topk")),
+                    _f(row.get("mp_task_freeN_topk")), row.get("resample_weight"), row.get("lr_peak"),
+                    row.get("weight_decay"), row.get("error") or ""))
         return alphas
 
+    st = {}
     for n_, task in enumerate(names):
         st = dict(task=task)
         t_all = time.time()
@@ -234,10 +277,15 @@ def main():
             if "W_ZA" in ARMS and generated:                     # the no-C sensitivity arm, at W's lambdas
                 for lam in cfg["arms"]["W"]["lams"]:
                     one(task, B, "W_ZA", float(lam), float(cfg["arms"]["W"]["lr"]))
+            if "W_CF" in ARMS and not generated:                 # minimal pairs in the training rows, at W's lambdas
+                for lam in cfg["arms"]["W"]["lams"]:
+                    if CF_LAMS is None or C.lam_tag(float(lam)) in CF_LAMS:
+                        one(task, B, "W_CF", float(lam), float(cfg["arms"]["W"]["lr"]))
             if os.environ.get("NO_PROFILE") != "1":
                 for lt, (lam, al) in w_alphas.items():
                     if (task, "W", lt) in prof_done or not al:
                         continue
+                    check_stop("profile %s W %s" % (task, lt))
                     t = time.time()
                     prof = eng.profile(B, al)
                     fp.write(json.dumps(dict(task=task, arm="W", lam=lt, lam_value=lam, members=prof)) + "\n")
@@ -260,14 +308,22 @@ def main():
                             extra=dict(n_ref=sum(counts.values()), n_drawn=sum(len(v) for v in sup.values()),
                                        short_sites=short))
             st["ok"] = True
+        except StopEpoch as e:
+            st["stopped"] = str(e)
         except Exception as e:  # noqa: BLE001
             st["error"] = "%s: %s" % (type(e).__name__, str(e)[:300])
             traceback.print_exc()
         st["t_total"] = round(time.time() - t_all, 1)
         fs.write(json.dumps(st) + "\n"); fs.flush()
-        log("%2d/%d %-34s %s (%.0fs)" % (n_ + 1, len(names), task, st.get("error") or "ok", st["t_total"]))
+        log("%2d/%d %-34s %s (%.0fs)" % (n_ + 1, len(names), task, st.get("stopped") or st.get("error") or "ok",
+                                         st["t_total"]))
+        if st.get("stopped"):
+            break
     fm.close()
     fp.close()
+    if st.get("stopped"):
+        log("STOPPED: %s" % st["stopped"])
+        sys.exit(7)                                               # the queue reads 7 as "cut by STOP_EPOCH"
     log("DONE")
 
 

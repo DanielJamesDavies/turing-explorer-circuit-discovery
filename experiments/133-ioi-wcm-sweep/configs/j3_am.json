@@ -1,0 +1,7 @@
+[
+ {"name": "AM_W_3e-4_lr05_pair", "lam": 3e-4, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_1e-3_lr05_pair", "lam": 1e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_1e-4_lr05_pair", "lam": 1e-4, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_3e-3_lr05_pair", "lam": 3e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_1e-3_lr05_pair_off4", "lam": 1e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp", "off_w": 4.0, "off_mode": "hinge"}
+]

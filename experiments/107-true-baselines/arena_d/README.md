@@ -1,6 +1,27 @@
 # Arena D: attribution graphs (D1) and Caples masks (D2) on Gemma-2-2B, plus the WCM adapters (plan)
 
-## Status 5, newest (agent `hardstop`, CPU only): the AG graphs are saved
+## Status 7, newest (2026-11-19, Daniel): the pod's WCM is back to v3
+
+- `pod_stage_d.sh` `DW_WCM` now defaults to **v3** (the dry run prints `WCM v3`, `ARENA_D_WCM=v3`). The reasons:
+  - lrtest's verdict on v4's lr budget was "does not help": 11 of 13 pairs worse, 3 passes lost, res rc 1e-2 collapses;
+  - the same peak lr (0.1575) broke the 081 IOI W fits (exp 133). At peak lr 0.05 they fit.
+- The confirming GPU check is `lrcheck_1119.sh`, run on the night of 2026-11-19 from 21:00:
+  - it fills lrtest's gaps: within_rc, and res rc at λ 3e-3;
+  - it reproduces lrtest C0 through the production path;
+  - `lrcheck_compare.py` writes `out/lrcheck_1119/RESULT.md` under lrtest's pre-stated rule.
+- D7 below is superseded on the version. Its v4 code path stays available (`DW_WCM=v4`).
+
+## Status 6 (agent `arena-prep`, 2026-11-16, CPU only): the pod's WCM is v4 (D7)
+
+- Daniel's D7: arena D's WCM fits run the production version v4. `pod_stage_d.sh` `DW_WCM` defaults to v4 (exported
+  as `ARENA_D_WCM`); `wcm_gemma.py --wcm` / `ARENA_D_WCM` defaults to v3 for local runs. Arena D's v4 = v3 + v4's lr
+  budget: peak × 3.15, warm-up 0.1, absolute wd 0.05 (= lrtest arm C1). v4's censored read and rank-keep are
+  undefined for a task objective and stay off. 081's `WCM_VERSION=v2` pin stays (its own fill table, not the arena
+  version).
+- lrtest found this budget "does not help" by its pre-stated rule (`lrtest/out/RESULTS.md`): smaller circuits at fixed
+  λ, mostly by moving along the λ curve. Details, the GPU check (not run) and its expected output: `V4_CHECK.md`.
+
+## Status 5 (agent `hardstop`, CPU only): the AG graphs are saved
 
 - `pod_stage_d.sh`'s `ag_*` jobs now run **`ag_tasks_graphs.py`**: `ag_tasks.py` unchanged, plus every attribution
   graph saved as `out/pod/ag_tasks/<task>/held/p<id>.graph.pt`. The adjacency is float16 (~0.1 GB each, ~16 GB for

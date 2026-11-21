@@ -71,6 +71,10 @@
 #   (at most 4 copies at once: geesefs ENOMEM) and runs md5sum -c ON THE VOLUME. A stage is marked done only after that.
 #   C4 (S10)    per-model results + stores tgz, one md5 file, md5sum -c on the volume, tar -tzf counts.
 #   STOP_POD=1  (opt-in, D9) `runpodctl stop pod $RUNPOD_POD_ID` only after S10's verification passed in this run.
+#               D4 (2026-11-17, Daniel approved): also when STOP_AFTER keeps S10 from running (e.g. the arenas-only pod,
+#               STOP_AFTER=S0) AND no public stage or arm started in this run (no new *.start marker outside
+#               turingllm.* / arena_*), since then this run made no public result that S10 would have to verify.
+#               If any public stage did start, the old rule holds and the pod stays up.
 #
 # RESUME: every stage writes STATE/<model>.<stage>.done; a rerun skips done stages, and the fits resume per target
 # (driver / companions). To redo a stage delete its marker. FROM=S4 treats S1-S3 as done (their outputs must exist).
@@ -1308,7 +1312,8 @@ for m in $MODELS; do
 done
 if [ "$DRY_RUN" != 1 ]; then
   mkdir -p "$STATE" "$LOGS" || exit 1
-  rm -f "$STATE"/want.*                                  # stale lock-priority flags of an earlier (killed) chain
+  touch "$STATE/.chain-run-start"                        # D4: markers newer than this were written by this run
+  rm -f "$STATE"/want.*                                 # stale lock-priority flags of an earlier (killed) chain
   if [ "$SMOKE" != 1 ]; then
     mkdir -p "$RESULTS" || { echo "RESULTS=$RESULTS is not writable" >&2; exit 1; }
     if [ "$MPS" = 1 ] && command -v nvidia-cuda-mps-control > /dev/null && ! pgrep -f nvidia-cuda-mps-control > /dev/null; then
@@ -1356,7 +1361,12 @@ if [ "$DRY_RUN" != 1 ] && allowed S10; then
 fi
 stage S10 S10 s10_pack
 rc=$?
-[ "$rc" = 3 ] && { say "stopped after $STOP_AFTER as asked"; rc=0; }
+s10_not_allowed=0
+[ "$rc" = 3 ] && { say "stopped after $STOP_AFTER as asked"; rc=0; s10_not_allowed=1; }
+public_ran_this_run() {   # D4: any public stage / arm marker started by this run (TuringLLM and arena markers excluded)
+  [ -n "$(find "$STATE" -maxdepth 1 -name '*.start' ! -name 'turingllm.*' ! -name 'arena_*' \
+    -newer "$STATE/.chain-run-start" 2> /dev/null | head -1)" ]
+}
 if [ -s "$STATE/failed.list" ]; then say "arms that failed (rerun to resume): $(sort -u "$STATE/failed.list" | tr '\n' ' ')"; fi
 tl_wait                                                   # D9: the last verified backup may be the TuringLLM track's
 arena_rc=0                                                # post-main exp 107 stages (off by default): arena A, then
@@ -1365,6 +1375,11 @@ if [ "${ARENA_D:-0}" = 1 ]; then arena_d_stage || arena_rc=1; fi
 if [ "$STOP_POD" = 1 ]; then
   # the arenas do not gate the stop (D9, 2026-11-05): a failed arena must not keep an idle pod up. Each arena packs its
   # own results to RESULTS (arena D also after a failure); a failed arena's logs go to RESULTS best-effort first
+  if [ "$FINAL_VERIFIED" != 1 ] && [ "$s10_not_allowed" = 1 ] && [ "$DRY_RUN" != 1 ] && [ -f "$STATE/.chain-run-start" ] \
+     && ! public_ran_this_run; then
+    say "STOP_POD=1: S10 not allowed (STOP_AFTER=$STOP_AFTER) and no public stage started in this run: nothing public to verify (D4)"
+    FINAL_VERIFIED=1
+  fi
   if [ "$rc" = 0 ] && [ "$FINAL_VERIFIED" = 1 ] && [ "$tl_rc" = 0 ]; then
     if [ "$arena_rc" != 0 ]; then
       say "STOP_POD=1: an exp 107 arena failed (rc above); its logs to $RESULTS/$TAG-arena-logs.tgz (best effort), then the stop"

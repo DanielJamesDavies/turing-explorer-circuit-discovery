@@ -1,0 +1,15 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex, app:production
+% ("Circuit sizes, sufficiency to induce, training dynamics"), whose prose states the curves' statistics and points here.
+% Not compiled with main.tex; \runfigure is defined in main.tex's preamble.
+
+\begin{figure}[tbp]
+\centering
+% experiments/111-failure-anatomy a3_curves.py writes figures/run2026_training_curves.pdf.
+\runfigure{training_curves}{circuit size per step, data loss per pass, members removed over the last 100 steps by layer; one row per model}
+\caption{Production circuits shrink slowly by the 400-step budget, more at depth.
+Training dynamics of the production fits by target depth band, one row per model (median and interquartile range).
+Left: circuit size (latents above the keep threshold) per step.
+Middle: the data loss (the Z, C, A, and R terms, with the rank-keep parts, penalty excluded), averaged over each pass through the training contexts.
+Right: the share of members removed over the last 100 steps, by target layer (median and interquartile range).}
+\label{fig:run2026-training-curves}
+\end{figure}

@@ -1,0 +1,11 @@
+[
+ {"name": "AM_W_3e-6_lr05_pair", "lam": 3e-6, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_1e-6_lr05_pair", "lam": 1e-6, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_RND_1e-2_d0", "arm": "RND", "lam": 1e-2, "lr": 0.05, "pair": true, "sites": "attn_mlp", "ref": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_1e-2_lr05_pair.json"},
+ {"name": "AM_RND_3e-3_d0", "arm": "RND", "lam": 3e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp", "ref": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_3e-3_lr05_pair.json"},
+ {"name": "AM_W_5e-3_lr05_pair", "lam": 5e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_RND_1e-2_d1", "arm": "RND", "lam": 1e-2, "lr": 0.05, "pair": true, "sites": "attn_mlp", "ref": "experiments/133-ioi-wcm-sweep/out/circuits/AM_W_1e-2_lr05_pair.json"},
+ {"name": "AM_W_3e-3_lr10_pair", "lam": 3e-3, "lr": 0.1, "pair": true, "sites": "attn_mlp"},
+ {"name": "AM_W_3e-3_lr05_R0", "lam": 3e-3, "lr": 0.05, "R": 0.0, "sites": "attn_mlp"},
+ {"name": "AM_W_3e-3_lr05_pair_800st", "lam": 3e-3, "lr": 0.05, "pair": true, "sites": "attn_mlp", "steps": 800}
+]

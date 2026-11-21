@@ -1,0 +1,13 @@
+% Supplementary material (DAN-219, 2026-11-16, decision 7): moved verbatim out of paper/main.tex,
+% app:underdetermination ("A stable core at scale"), whose prose states the band values and points here; the pooled
+% rows equal tab:run2026-stable-core, which stays in the paper.
+% Not compiled with main.tex; \runtable is defined in main.tex's preamble.
+
+\begin{table}[tbp]
+\centering
+\scriptsize
+% experiments/111-failure-anatomy a5_stable_bands.py writes tables/run2026_stable_core_bands.tex.
+\runtable{stable_core_bands}{per model, depth band and site kind: targets, Jaccard, pass rates of both fits and of the core alone [95\% CI]}
+\caption{The stable core by depth band and site kind: targets, median Jaccard between the original fit and the reordered refit, pass rates of both fits and of the core alone (coefficients refitted on the core) with $95\%$ bootstrap intervals, and the number of targets whose core passes among those where both fits pass.}
+\label{tab:run2026-stable-core-bands}
+\end{table}

@@ -1,0 +1,10 @@
+{
+ "note": "v4 rerun (2026-11-18, DAN-221), written by hand, NOT calibrated under v4. lr = the BASE lr: WCM_VERSION=v4 multiplies it by 3.15 (peak 0.1575, geometric + 0.1 warm-up, absolute wd 0.05). Grid = the v2 grid (out_v2: W 3e-5 -> 11.4k latents, 1e-4 -> 5.0k, objective pass at both; task-metric pass at none) moved ~3x down (arena D lrtest: v4 ~2.5x smaller circuits at a fixed lambda). The fit still reproduces log P(>YY) - log P(<=YY) (logit_metric set: src has no probability-difference objective); both metrics are scored. Order = run order: the middle lambda first (W_CF and RND in queue_v4.sh), then the larger circuit, then the smaller.",
+ "arms": {
+  "W": {"lams": [3e-05, 1e-05, 0.0001], "lr": 0.05},
+  "U": {"lams": [3e-06, 1e-06, 1e-05], "lr": 0.05}
+ },
+ "logit_norm": "gap",
+ "steps": 400,
+ "n_draws": 2
+}

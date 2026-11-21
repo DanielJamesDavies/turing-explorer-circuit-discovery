@@ -81,6 +81,18 @@ WCM_VERSIONS = {
     "v1": dict(train_fill="dense", sparse_grad="ste"),
     "v2": dict(train_fill="sparse", sparse_grad="ste"),
 }
+# v4 (2026-11-18, DAN-221; behavioural v4 = arena D's D7 recipe, 107/arena_d/wcm_gemma.py:592-609 and V4_CHECK.md):
+# every piece of 062 driver.WCM_VERSIONS["v4"] that is defined for a logit objective. = v2 + the donor-resample term R
+# (gamma_R 1.0, k 1, donors = the C pool: the training items' own counterfactual prompts for original-contrast tasks,
+# i.e. IOI's ABC and greater-than's XX01 prompts; resample_pool "contrast" as production) + the geometric lr schedule
+# with a 0.1 warm-up at peak lr x3.15 (WCM_LR_MULT) + v4's ABSOLUTE AdamW decay 0.05 (WCM_WD, not weight_decay(lr)).
+# NOT applied: the censored read (censor_temp), rank-keep 1e-1 and arena A's NEC_W 0.3: run_learned_mask refuses all
+# three for objective != 'pos' (learned_mask.py:1128, 1136, 1152: no seed latent, no Top-K cut, no pre-activation
+# necessity on a task objective); src is unchanged.
+WCM_VERSIONS["v4"] = dict(WCM_VERSIONS["v2"], resample_weight=1.0, resample_k=1, lr_schedule="geometric",
+                          warmup_frac=0.1)
+WCM_LR_MULT = {"v4": 3.15}        # the version's peak-lr multiplier on the run config's lr (062 driver.WCM_LR_MULT)
+WCM_WD = {"v4": 0.05}             # the version's absolute weight decay (default: weight_decay(lr), lr x wd fixed)
 WCM_VERSION = os.environ.get("WCM_VERSION", "v2")
 if WCM_VERSION not in WCM_VERSIONS:
     raise SystemExit("WCM_VERSION must be one of %s, got %r" % (sorted(WCM_VERSIONS), WCM_VERSION))
@@ -115,6 +127,10 @@ ARMS: Dict[str, Dict[str, object]] = {
     # sensitivity arm (generated-contrast tasks only): W trained on Z + A, NO C term (the generated contrast set is
     # Daniel's latent rule transferred to outputs; this arm shows what the fit does without it)
     "W_ZA": dict(weighted=True, random=False, c_term=False),
+    # (2026-11-18, v4 rerun; exp 129's lesson) W with MINIMAL PAIRS IN THE TRAINING ROWS: half the presentations are
+    # the items' own counterfactual prompts (IOI ABC, greater-than XX01), scored for the clean item's answers, with
+    # the full model's value there as the target; original-contrast token / set tasks only (engine.engine_kwargs)
+    "W_CF": dict(weighted=True, random=False, c_term=True, cf_train=True),
 }
 FIT_ARMS = ("W", "U")             # arms with their own lambda grid in the run config (RND and W_ZA use W's)
 

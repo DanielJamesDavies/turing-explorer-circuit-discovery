@@ -32,8 +32,10 @@
 #   P3 jobs    one job per GPU from a shared queue (flock; a free GPU takes the next job), D2 first (plan §3 cut lines):
 #              Caples dense, D2-WCM rc (caples mode per_position = the like-for-like row; native per_position; native
 #              pooled), Caples B, C; then D1: D1-WCM (PLT, 4 SVA tasks x {pooled, per_position}), AG (4 tasks x 40 held
-#              prompts, fp32 google, as published). Behavioural WCM = arena C's adopted setting (wcm_gemma.py run,
-#              unchanged; 081 WCM_VERSION=v2 pinned, as arena C's runs), DW_LAMS = arena C's 9-lambda grid, 400 steps.
+#              prompts, fp32 google, as published). Behavioural WCM = wcm_gemma.py run at DW_WCM (default v3 since 2026-11-19;
+#              was v4 under D7 = arena C's behavioural v3 + v4's lr budget, peak x3.15, warm-up 0.1,
+#              absolute wd 0.05; v4's censored read and rank-keep are undefined for a task objective; 081's own
+#              WCM_VERSION stays v2), DW_LAMS = arena C's 9-lambda grid, 400 steps.
 #   P4 score   caples_fidelity.py A,B,C (CPU), then the queue again: score_d.py all (ours: Z / A / C / necessity (a)
 #              errors live + (b) all errors clean, both substrates; theirs: their SAEMasks on their eval batches, binary,
 #              alpha dropped, labelled) per Caples grid and per D2-WCM configuration.
@@ -54,6 +56,11 @@
 #   DW_GPUS [0,...,7]   DW_GATE_GPUS [first two of DW_GPUS]   DW_GATE_MODE [strict | warn]
 #   DW_D1 [1]           0 = no D1 (cut line 1: D2 only)   DW_D2_NATIVE [1]  0 = D2-WCM Caples mode only (cut line 2)
 #   DW_LAMS [3e-6,1e-5,3e-5,1e-4,3e-4,1e-3,3e-3,1e-2,3e-2] (arena C's grid)   DW_STEPS [400]
+#   DW_STAGGER [60]     s between the job workers' first jobs (P3 / P4): worker w waits w x DW_STAGGER (0 = all at once)
+#   DW_WCM [v3]         the arena D WCM version of every wcm_gemma.py fit (env ARENA_D_WCM): v3 = arena C's behavioural
+#                       setting as the pilot / lrtest C0 ran it (default since 2026-11-19, Daniel: v4's lr budget did not
+#                       help in lrtest and broke the 081 IOI W fits, exp 133); v4 = v3 + v4's lr budget (D7). One version per
+#                       WORK: wcm_gemma.py refuses an --out that holds the other version's fits
 #   DW_TASKS [simple,within_rc,rc,nounpp] (D1)   DW_AG_LIMIT [0 = all 40 held prompts]   DW_AG_BATCH [64]
 #   AG_SAVE_GRAPHS [1]  1 = the ag_* jobs run ag_tasks_graphs.py (= ag_tasks.py unchanged + every attribution graph saved
 #                       as AGO/<task>/held/p<id>.graph.pt, float16 adjacency, ~0.1 GB each, ~16 GB for 4 x 40; per-prompt
@@ -98,6 +105,9 @@ D2_NATIVE=${DW_D2_NATIVE:-1}
 LAMS=${DW_LAMS:-3e-6,1e-5,3e-5,1e-4,3e-4,1e-3,3e-3,1e-2,3e-2}
 N_LAMS=$(echo "$LAMS" | tr ',' '\n' | grep -c .)
 STEPS=${DW_STEPS:-400}
+STAGGER=${DW_STAGGER:-60}   # s between q_run workers' first jobs (2026-11-20): fp32 Gemma / Caples TL loads peak host RAM together otherwise
+WCMD=${DW_WCM:-v3}   # v3 since 2026-11-19 (Daniel): v4's lr budget hurt lrtest (11/13 pairs worse) and broke 081 IOI W fits
+case $WCMD in v3|v4) ;; *) echo "DW_WCM must be v3 or v4, got $WCMD" >&2; exit 1 ;; esac
 TASKS=${DW_TASKS:-simple,within_rc,rc,nounpp}
 AG_LIMIT=${DW_AG_LIMIT:-0}
 AG_BATCH=${DW_AG_BATCH:-64}
@@ -145,10 +155,12 @@ if [ "$STOP_EPOCH" != 99999999999 ] && [ $((STOP_EPOCH - $(date +%s))) -lt 86000
   STOP_HHMM=$(date -d "@$STOP_EPOCH" +%H:%M)
 fi
 # the environment of every python step. PYTHONPATH is dropped (the chain exports src: it must not shadow their imports);
-# WCM_VERSION=v2 = 081 task_common's default, which arena C's adopted behavioural setting ran under (the chain exports
-# v4, which 081 refuses). HF_TOKEN is inherited from the shell untouched and never appears in a command or a log.
+# WCM_VERSION=v2 = 081 task_common's own fill table (v1 / v2 only; the chain exports v4, which 081 refuses at import):
+# it is NOT the arena D WCM version, which is ARENA_D_WCM (= DW_WCM; wcm_gemma.py: v4 = v3 + v4's lr budget; V3_LOGIT's
+# sparse fill + STE override 081's table under both). HF_TOKEN is inherited from the shell untouched and never appears
+# in a command or a log.
 BASE="env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 WANDB_MODE=disabled PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-WCM_VERSION=v2 GEMMA_HF_ID=google/gemma-2-2b HF_HUB_OFFLINE=$HF_OFF TORCH_THREADS=8 OMP_NUM_THREADS=8 \
+WCM_VERSION=v2 ARENA_D_WCM=$WCMD GEMMA_HF_ID=google/gemma-2-2b HF_HUB_OFFLINE=$HF_OFF TORCH_THREADS=8 OMP_NUM_THREADS=8 \
 STOP_EPOCH=$STOP_EPOCH STOP_AT=$STOP_HHMM"
 
 # ------------------------------------------------------------------------------------------------- helpers
@@ -232,8 +244,9 @@ qreset() { QN=(); QC=(); QD=(); }
 qadd() { QN+=("$1"); QC+=("$2"); QD+=("$3"); }
 
 q_worker() {   # q_worker STAGE GPU: take the next job index under flock until the queue is empty
-  local st=$1 g=$2 i name cmd fails=0
+  local st=$1 g=$2 i name cmd fails=0 wait_s=$(( ${3:-0} * STAGGER ))
   local L=$LOGS/$st
+  if [ "$wait_s" -gt 0 ]; then echo "[$(date '+%F %T')] worker on GPU $g: start stagger ${wait_s} s" >> "$L/gpu$g.log"; sleep "$wait_s"; fi
   while :; do
     i=$( { flock 9; local k; k=$(cat "$STATE/$st.qidx"); echo $((k + 1)) > "$STATE/$st.qidx"; echo "$k"; } 9> "$STATE/$st.qlock")
     [ "$i" -ge "${#QN[@]}" ] && break
@@ -265,7 +278,8 @@ q_run() {   # q_run STAGE: the queue over every GPU of DW_GPUS (a dry run prints
   mkdir -p "$LOGS/$st" "$STATE"
   echo 0 > "$STATE/$st.qidx"
   say "  $st: ${#QN[@]} jobs on GPUs $GPUS"
-  for g in "${GL[@]}"; do q_worker "$st" "$g" & pids+=($!); done
+  local w=0
+  for g in "${GL[@]}"; do q_worker "$st" "$g" "$w" & pids+=($!); w=$((w + 1)); done   # worker w waits w x STAGGER s
   for j in "${pids[@]}"; do wait "$j" || fails=$((fails + $?)); done
   [ "$fails" = 0 ] || say "  $st: $fails job(s) failed or incomplete (a rerun resumes them)"
   return "$fails"
@@ -561,7 +575,7 @@ p5_pack() {
 }
 
 # ------------------------------------------------------------------------------------------------- main
-say "arena D pod stage | $(git --no-pager log -1 --format='%h %s' 2> /dev/null) | GPUs $GPUS (gate $GATE_GPUS, $GATE_MODE) | D1 $D1 D2-native $D2_NATIVE | lambdas $LAMS | steps $STEPS | tasks $TASKS | Caples grids A(gate) $CAPLES_GRIDS | HF offline $HF_OFF | WORK $WORK | FROM $FROM STOP_AFTER $STOP_AFTER$([ "$STOP_EPOCH" != 99999999999 ] && echo " | STOP_EPOCH $(date -d "@$STOP_EPOCH" '+%a %H:%M')")$([ "$DRY_RUN" = 1 ] && echo ' | DRY RUN')"
+say "arena D pod stage | $(git --no-pager log -1 --format='%h %s' 2> /dev/null) | GPUs $GPUS (gate $GATE_GPUS, $GATE_MODE) | D1 $D1 D2-native $D2_NATIVE | WCM $WCMD | lambdas $LAMS | steps $STEPS | tasks $TASKS | Caples grids A(gate) $CAPLES_GRIDS | HF offline $HF_OFF | WORK $WORK | FROM $FROM STOP_AFTER $STOP_AFTER$([ "$STOP_EPOCH" != 99999999999 ] && echo " | STOP_EPOCH $(date -d "@$STOP_EPOCH" '+%a %H:%M')")$([ "$DRY_RUN" = 1 ] && echo ' | DRY RUN')"
 if [ "$DRY_RUN" != 1 ]; then
   mkdir -p "$LOGS" "$STATE/pids" || exit 1
   (                                                        # GPU memory every 30 s, for the D10 re-cost
