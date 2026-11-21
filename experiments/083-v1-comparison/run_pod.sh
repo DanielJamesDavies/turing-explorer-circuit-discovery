@@ -31,7 +31,8 @@ for s in ${STAGES//,/ }; do
     fitted) script=attr_fitted.py ;;
     exact)  # 10 targets: one shard per GPU, then the summary
             echo "[$(date +%H:%M:%S)] stage exact: K=$K x 1 shards" | tee -a "$OUT083/queue.log"
-            P=1 MODE=exact SCRIPT=$D/exact_patching.py LOGDIR=$OUT083/logs ./experiments/062-h100-protocol-v1/launch.sh
+            P=1 MODE=exact SCRIPT=$D/exact_patching.py LOGDIR=$OUT083/logs bash ./experiments/062-h100-protocol-v1/launch.sh \
+              || { echo "stage exact: launch.sh FAILED (rc $?)" | tee -a "$OUT083/queue.log"; exit 1; }
             REPORT=1 PYTHONPATH=src "${PY:-./.venv/bin/python}" -X utf8 $D/exact_patching.py; continue ;;
     ge)     script=ge_hier.py ;;
     table)  PYTHONPATH=src "${PY:-./.venv/bin/python}" -X utf8 $D/table2.py 2>&1 | tee "$OUT083/logs/table2.log"; continue ;;
@@ -39,6 +40,9 @@ for s in ${STAGES//,/ }; do
   esac
   echo "[$(date +%H:%M:%S)] stage $s: K=$K x P=$P shards" | tee -a "$OUT083/queue.log"
   # launch.sh names its logs <MODE>.shard<i>.log in LOGDIR; MODE is unused by the 083 scripts
-  MODE=$s SCRIPT=$D/$script LOGDIR=$OUT083/logs ./experiments/062-h100-protocol-v1/launch.sh
+  # via bash (2026-11-21): launch.sh is mode 100644 in git, so ./launch.sh on the pod failed with "Permission denied"
+  # in < 1 s and this script still returned 0 (T7 "done" with 0 rows). Locally (WSL /mnt/x) every file is executable.
+  MODE=$s SCRIPT=$D/$script LOGDIR=$OUT083/logs bash ./experiments/062-h100-protocol-v1/launch.sh \
+    || { echo "[$(date +%H:%M:%S)] stage $s: launch.sh FAILED (rc $?)" | tee -a "$OUT083/queue.log"; exit 1; }
   echo "[$(date +%H:%M:%S)] stage $s done" | tee -a "$OUT083/queue.log"
 done
