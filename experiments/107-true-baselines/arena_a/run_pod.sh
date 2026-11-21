@@ -424,7 +424,9 @@ p0_assets() {
     run_cmd "$LOGS/P0/hf_link.log" "mkdir -p $(dirname "$HARDCODED_HUB") && ln -s $(q "$HF_HUB") $HARDCODED_HUB" || return 1
   fi
   # 035's LN-folded transcoders (the WCM site model reads them; not in git): regenerated offline, asserted equivalent
-  if [ "$DRY_RUN" = 1 ] || [ ! -f experiments/035-transcoder-compare/transcoders_ct/meta.json ]; then
+  # test the 12 layer files, not meta.json: meta.json is tracked in git but *.safetensors are git-ignored, so on a fresh
+  # clone meta.json alone exists and the conversion was skipped (2026-11-21 pod: P2 data pass FileNotFoundError layer_0)
+  if [ "$DRY_RUN" = 1 ] || [ "$(count experiments/035-transcoder-compare/transcoders_ct/layer_*.safetensors)" != 12 ]; then
     run_cmd "$LOGS/P0/convert_transcoders.log" "CUDA_VISIBLE_DEVICES=${GL[0]} HF_HUB_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 $PY -X utf8 experiments/035-transcoder-compare/convert_transcoders.py" \
       || return 1
   fi
